@@ -1,0 +1,244 @@
+# Secrets Lifecycle
+
+**Status**: v1 — created 2026-05-08 in response to security review §P1-9
+**Owner**: Platform team (GOV) + Customer security team
+**Companion**: [`security-control-matrix.md`](security-control-matrix.md) §15
+
+This document specifies the full lifecycle of every secret used by spring-ai-fin: source, rotation, revocation, scoping, memory handling, no-logging, break-glass.
+
+---
+
+## 1. Secret inventory
+
+| Secret | Used by | Rotation cadence | Storage |
+|---|---|---|---|
+| `APP_JWT_SECRET` (HS256) | `JwtValidator` (BYOC HS256 carve-out only) | 90 days | OpenBao primary; K8s Secret fallback |
+| JWKS public key fingerprints | `JwksValidator` | Per IdP key rotation (typically 90 days) | Platform JWKS cache (TTL ≤ 1h) |
+| Postgres credentials | `agent-runtime/server/DataSource` | 30 days | OpenBao |
+| Valkey credentials | `agent-runtime/llm/PromptCache` | 30 days | OpenBao |
+| LLM provider API keys (Anthropic, DeepSeek, OpenAI-compat) | `LLMGateway.CredentialPool` | Per provider TOS (Anthropic 90d, OpenAI 365d, DeepSeek 90d) | OpenBao; per-tenant |
+| MCP server credentials | `agent-runtime/skill/McpToolBridge` | Per tool TOS | OpenBao |
+| WORM storage credentials (S3 / SeaweedFS) | `agent-runtime/audit/WormAnchor` | 90 days | OpenBao |
+| RFC 3161 timestamp service credentials | `WormAnchor` | Per service TOS | OpenBao |
+| Sidecar gRPC mTLS certificates | `PySidecarAdapter` | 30 days | OpenBao + cert-manager |
+| Gateway attestation HMAC secret | `ReadinessController` | 90 days | OpenBao |
+| OPA bundle signing key | `OpaPolicyDecider` | 180 days | OpenBao |
+| Operator JWT signing key | Operator IdP | 30 days | Customer-side IdP |
+| Customer behaviour-pinning encryption key (premium) | `agent-runtime/evolve/PinnedSnapshotStore` | Customer-controlled | Customer KMS or platform OpenBao |
+
+---
+
+## 2. Source
+
+### 2.1 OpenBao primary (replaces HashiCorp Vault BUSL)
+
+- **Why**: license safety per L0 D-15 (BUSL → MPL 2.0)
+- **Auth**: Spring Boot integration via `spring-cloud-vault` adapter against OpenBao API (compatible)
+- **Path namespace**:
+  - `secret/spring-ai-fin/platform/<env>/<secret-name>` for platform-shared secrets
+  - `secret/spring-ai-fin/tenants/<tenant-id>/<secret-name>` for per-tenant secrets
+- **Lease lifecycle**: short-lived dynamic secrets where supported; static for legacy
+
+### 2.2 Kubernetes Secrets fallback
+
+- For BYOC customers without OpenBao, K8s Secrets at `springaifin-platform/<secret-name>`
+- mounted into pod via projected volumes; never via environment variables (env vars leak in process listings)
+- ServiceAccount RBAC restricts which pods can mount which secrets
+
+### 2.3 Environment variables (local dev only)
+
+- `dev` posture only; `research`/`prod` boot-time guard rejects env-var secrets
+- Used for fast iteration; documented as such
+
+---
+
+## 3. Rotation
+
+### 3.1 Rotation cadence
+
+| Class | Cadence | Trigger |
+|---|---|---|
+| HMAC keys (JWT, gateway attestation) | 90 days | Cron + per-incident |
+| DB credentials | 30 days | Cron + per-incident |
+| LLM API keys | Per provider TOS | Per provider |
+| mTLS certs | 30 days | cert-manager auto-renewal |
+| WORM credentials | 90 days | Cron + per-incident |
+| Per-tenant credentials | Customer-controlled | Customer-side |
+
+### 3.2 Rotation mechanism
+
+- **Atomic rotation**: new credential generated → tested in shadow mode → swapped atomically; rollback capability for 24h
+- **Zero-downtime**: rotation does not require service restart; secrets re-read on next request via `SecretRefresher` (`@RefreshScope` Spring annotation)
+- **Audit**: rotation event = `AuditClass.SECURITY_EVENT`; `springaifin_secret_rotated_total{secret_name}` metric
+
+### 3.3 Rotation failure handling
+
+- If rotation fails, OLD credential stays valid; alarm fires; manual intervention
+- If old credential expires before new credential ready, platform enters degraded state (not safe-read-only; only the affected feature degrades)
+
+---
+
+## 4. Revocation
+
+### 4.1 On compromise detection
+
+- Detected via: log analysis, threat intel feed, customer report, internal scan
+- **Immediate**: revoke at OpenBao (mark lease invalid)
+- **Within 1 minute**: all platform replicas re-fetch secrets and reject revoked credential
+- **Audit**: `AuditClass.SECURITY_EVENT` with reason "compromise_revocation"
+- **Customer notification**: per-tenant credentials rotated immediately; customer notified within 4h
+
+### 4.2 On personnel change
+
+- Operator credentials revoked at IdP (customer-side)
+- Platform's operator session tokens invalidated within 1 minute via JWT issuer's revocation list
+
+---
+
+## 5. Per-tenant scoping
+
+### 5.1 Customer-supplied LLM keys
+
+For SaaS customers preferring to use their own LLM provider account:
+
+```yaml
+# tenant config (per-tenant; customer-managed)
+tenant:
+  id: bank-a
+  llm_credentials:
+    anthropic_api_key: ${OPENBAO_PATH:/tenants/bank-a/anthropic-api-key}
+    deepseek_api_key: ${OPENBAO_PATH:/tenants/bank-a/deepseek-api-key}
+```
+
+- Stored in OpenBao at `secret/spring-ai-fin/tenants/bank-a/...`
+- `LLMGateway.CredentialPool` resolves at request time based on `tenantId`
+- Customer rotates independently; platform reads on next request
+
+### 5.2 BYOC customer-managed secrets
+
+For BYOC, customer may operate own OpenBao or KMS. Platform reads via `spring-cloud-vault` against customer's secret backend. Cross-tenant secret leak prevented by OpenBao/KMS-level ACL.
+
+---
+
+## 6. Memory handling
+
+### 6.1 Java in-memory secrets
+
+- Secrets held as `char[]`, never `String` (since `String` immutable; cannot scrub)
+- Zero-after-use:
+
+```java
+public class HmacSigner {
+    public byte[] sign(byte[] data, char[] secretKey) {
+        try {
+            return doSign(data, secretKey);
+        } finally {
+            Arrays.fill(secretKey, '\0');  // scrub
+        }
+    }
+}
+```
+
+- For long-lived signing keys, hold in `byte[]` and zero on `@PreDestroy`
+- For short-lived (per-request) secrets, scrub immediately after use
+
+### 6.2 Heap dumps
+
+- Secrets-bearing classes annotated `@JvmHeapDumpExclude` (custom annotation processed by heap-dump filter)
+- Production heap dumps disabled by default; enable via dual-approval for incident response
+
+---
+
+## 7. No secret logging
+
+### 7.1 Log redaction
+
+- `LogRedactor` (Presidio-integrated) redacts:
+  - Anything matching `Bearer\s+[A-Za-z0-9._-]+` → `Bearer <REDACTED>`
+  - Anything matching `(api_key|secret|password|token)["\s:=]+[A-Za-z0-9_-]+` → `<REDACTED>`
+  - PII (email, SSN, account numbers) → tokenized
+- Applied at log emit, not log write (defence-in-depth)
+
+### 7.2 Trace attributes
+
+- Allowlist for OpenTelemetry span attributes
+- Forbidden: `Authorization`, `X-API-Key`, any `password`/`secret`/`token` field
+- Custom span attribute `org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping.requestArgs` filtered
+
+### 7.3 Exception messages
+
+- `SafeExceptionFilter` strips secret-shaped substrings from exception messages before propagating to client
+- Stack traces stripped in `prod` posture; full stack in `dev`/`research` (with redaction)
+
+---
+
+## 8. Break-glass workflow
+
+For incident response when normal access is unavailable:
+
+### 8.1 Emergency secret reveal
+
+```
+[Incident commander] requests reveal of operational secret X
+  -> [Compliance Officer 1] verifies justification
+  -> AuditFacade.write(SECURITY_EVENT, "break_glass_request_co1")
+  -> [Compliance Officer 2] approves
+  -> AuditFacade.write(SECURITY_EVENT, "break_glass_approved_co2")
+  -> Plaintext returned to incident commander; one-time view; 1h TTL
+  -> AuditFacade.write(SECURITY_EVENT, "break_glass_revealed")
+  -> After incident: secret rotated immediately
+  -> AuditFacade.write(SECURITY_EVENT, "break_glass_rotation")
+```
+
+- Workflow durably persisted; cannot bypass
+- Even Compliance Officer cannot break-glass without second approval
+- All events WORM-anchored
+
+### 8.2 Recovery from total credential loss
+
+- If platform loses access to OpenBao + K8s Secrets (catastrophic): boot fails; manual operator intervention required
+- Documented in `docs/runbooks/total-credential-loss.md` (W2.5 deliverable)
+
+---
+
+## 9. Compliance evidence
+
+For OJK / MAS audits, the platform provides:
+
+- Rotation log: every rotation in WORM-anchored audit
+- Revocation log: every revocation event
+- Break-glass log: every emergency access
+- Per-tenant credential isolation evidence: OpenBao ACL dump
+- No-secret-logging evidence: log sample showing redaction in action
+
+Evidence retention: 7 years (WORM-anchored); query via inspector role + dual-approval if PII-class.
+
+---
+
+## 10. Customer responsibilities (BYOC)
+
+- Provide OpenBao or compatible secret backend
+- Rotate IdP keys per industry cadence
+- Rotate sidecar workload identity per cadence
+- Provide cert-manager or equivalent for mTLS auto-renewal
+- Run break-glass drills annually
+- Maintain operator IdP and revocation procedures
+
+Platform team responsibilities:
+
+- Build platform with secret references, never embedded credentials
+- Provide rotation tooling (`tools/secrets/rotate-*.sh`)
+- Provide compliance evidence export
+- Document secret inventory and rotation cadence
+
+---
+
+## 11. Maintenance
+
+This document is owned by GOV. Adding a new secret class requires:
+
+- PR adding to §1 inventory
+- Defined rotation cadence
+- Defined source
+- Defined memory-handling pattern
+- Updated `SecretsCatalogTest` enforcing inventory match

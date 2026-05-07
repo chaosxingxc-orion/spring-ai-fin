@@ -1,0 +1,364 @@
+# Supply Chain Controls
+
+**Status**: v1 — created 2026-05-08 in response to security review §P1-10
+**Owner**: Platform team (GOV)
+**Companion**: [`security-control-matrix.md`](security-control-matrix.md) §15
+
+License preference (Apache 2.0 / MIT only on runtime path; L0 D-15) handles **legal** risk. Supply-chain controls handle **security** risk: malicious code in dependencies, compromised build pipelines, vulnerable transitive deps.
+
+---
+
+## 1. Maven dependency pinning
+
+### 1.1 Strict pinning
+
+```xml
+<!-- pom.xml — every dependency pinned to specific version, no LATEST/RELEASE -->
+<dependencies>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+        <version>3.3.4</version>  <!-- exact version -->
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.ai</groupId>
+        <artifactId>spring-ai-core</artifactId>
+        <version>1.1.0</version>
+    </dependency>
+    <!-- ... all deps pinned -->
+</dependencies>
+```
+
+CI gate `DepPinningTest` reflectively scans `pom.xml` and rejects:
+- `LATEST` keyword
+- `RELEASE` keyword
+- Version ranges (`[1.0,2.0)`)
+- Missing `<version>` (would inherit from parent — explicit forbidden)
+
+### 1.2 Maven Enforcer Plugin
+
+```xml
+<!-- pom.xml — enforces dependency convergence -->
+<plugin>
+    <artifactId>maven-enforcer-plugin</artifactId>
+    <executions>
+        <execution>
+            <goals><goal>enforce</goal></goals>
+            <configuration>
+                <rules>
+                    <DependencyConvergence />
+                    <RequireUpperBoundDeps />
+                    <BannedDependencies>
+                        <excludes>
+                            <!-- AGPL/GPL banned per L0 D-15 -->
+                            <exclude>com.grafana:loki-*</exclude>
+                            <exclude>com.langfuse:*</exclude>
+                            <!-- BUSL banned -->
+                            <exclude>com.hashicorp:vault</exclude>
+                            <exclude>com.hashicorp:terraform-*</exclude>
+                            <!-- Proprietary -->
+                            <exclude>com.ontotext:graphdb-free</exclude>
+                        </excludes>
+                    </BannedDependencies>
+                </rules>
+            </configuration>
+        </execution>
+    </executions>
+</plugin>
+```
+
+---
+
+## 2. SBOM (Software Bill of Materials)
+
+### 2.1 Generation
+
+CI builds produce a CycloneDX SBOM at every release:
+
+```bash
+# CI step — runs at build
+mvn -B org.cyclonedx:cyclonedx-maven-plugin:makeBom \
+    -DoutputName=sbom \
+    -DoutputFormat=json
+# Produces target/sbom.json
+```
+
+### 2.2 SBOM contents
+
+- Every Maven dependency (direct + transitive) with: groupId, artifactId, version, license, hash, source URL
+- Every Docker image base layer dependency (if applicable for sidecar)
+- License classification per component (Apache-2.0, MIT, BSD-*, etc.)
+- CVE references known at build time
+
+### 2.3 SBOM signing
+
+```bash
+# Sign with cosign
+cosign sign-blob --key cosign.key target/sbom.json --output-signature sbom.json.sig
+# Publish to artifact registry alongside the JAR
+```
+
+### 2.4 SBOM verification
+
+At deployment, the orchestration platform (Helm chart, Terraform, etc.) verifies SBOM signature via `cosign verify-blob`. Rejects if:
+- Signature invalid
+- Key not in trusted keyring
+- SBOM contents changed since signing
+
+---
+
+## 3. Vulnerability scanning
+
+### 3.1 At build (Maven dependencies)
+
+```yaml
+# .github/workflows/security.yml
+- name: OWASP Dependency Check
+  run: mvn org.owasp:dependency-check-maven:check
+  # CVSS >= 7.0 → fail build
+  # CVSS >= 4.0 + exploit available → fail build
+```
+
+### 3.2 At image push (Docker container)
+
+```yaml
+- name: Trivy scan
+  uses: aquasecurity/trivy-action@master
+  with:
+    image-ref: 'springaifin/agent-platform:${{ github.sha }}'
+    severity: 'CRITICAL,HIGH'
+    exit-code: '1'
+```
+
+### 3.3 At runtime (continuous monitoring)
+
+- Trivy operator deployed in cluster scans running images periodically
+- Findings emitted as Kubernetes events; integrated with platform alerting
+
+### 3.4 Allowlist for known false positives
+
+Maintained in `docs/governance/cve-allowlist.yaml`:
+
+```yaml
+- cve: CVE-2024-12345
+  affected: org.example:lib:1.0.0
+  reason: "Vulnerable code path not used in our build; verified by static analysis"
+  evidence: "tests/security/CveExclusionTest.java"
+  expiry_wave: W14
+  reviewer: security-team@platform.com
+```
+
+Allowlist entries expire and require renewal; CVE alarm fires if expired.
+
+---
+
+## 4. Provenance via SLSA
+
+### 4.1 SLSA Level 2 minimum
+
+SLSA (Supply-chain Levels for Software Artifacts) Level 2 requires:
+
+- Hosted build platform (we use GitHub Actions)
+- Source-controlled build configuration (in this repo, signed commits)
+- Provenance generated and signed at build
+
+### 4.2 Provenance attestation
+
+```bash
+# CI generates provenance
+slsa-verifier verify-artifact \
+  --provenance-path provenance.intoto.jsonl \
+  --source-uri github.com/chaosxingxc-orion/spring-ai-fin \
+  --source-tag v1.0.0 \
+  agent-platform.jar
+```
+
+Provenance attestation includes:
+- Source repo URL + commit SHA
+- Builder identity (GitHub Actions)
+- Build configuration
+- Dependency versions
+- Build environment (GHA runner)
+
+### 4.3 SLSA Level 3 path
+
+Future: move to SLSA Level 3 (hardened build platform):
+- Non-falsifiable provenance
+- Build platform attestation by external party
+
+---
+
+## 5. Transitive dependency review
+
+### 5.1 PR-time review
+
+Every PR that adds or upgrades a dependency triggers `DepReviewBot`:
+
+- Diff dependency graph (`mvn dependency:tree --output=before.txt` vs `after.txt`)
+- For each new transitive: license check + CVE check
+- For each upgrade: CHANGELOG diff
+- For each removal: confirm not in `transitive-allowlist.yaml`
+- Bot comments on PR with findings
+
+### 5.2 Dependency reachability analysis
+
+For high-risk transitives (CVSS ≥ 4.0), run `proguard-deps` or equivalent:
+- Determines if vulnerable code path is reachable from our entry points
+- If unreachable, allowlist with evidence
+- If reachable, must upgrade or substitute
+
+---
+
+## 6. Container scanning
+
+### 6.1 Base image hardening
+
+- Minimal base images: `eclipse-temurin:21-jre-jammy` (Java); `python:3.12-slim-bookworm` (Python sidecar)
+- Pinned by digest, not tag: `eclipse-temurin:21-jre-jammy@sha256:...`
+- Distroless considered for v1.1+ (smaller attack surface)
+- Multi-stage builds: build artifacts in builder image; copy minimal runtime to final image
+
+### 6.2 Container hardening
+
+```dockerfile
+# Dockerfile (excerpt)
+FROM eclipse-temurin:21-jre-jammy@sha256:<digest>
+
+# Non-root user
+RUN groupadd -g 10001 springaifin && useradd -u 10001 -g springaifin -m springaifin
+USER springaifin
+
+# Read-only root filesystem at runtime (Kubernetes-side)
+# Drop all capabilities (Kubernetes-side)
+# AppArmor profile (Kubernetes-side)
+
+WORKDIR /app
+COPY --chown=springaifin:springaifin target/agent-platform.jar /app/
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD wget -q -O - http://localhost:8080/actuator/health/liveness || exit 1
+
+ENTRYPOINT ["java", "-jar", "/app/agent-platform.jar"]
+```
+
+### 6.3 Continuous container scanning
+
+- Trivy or Grype runs against all running images every 24h
+- New CVE matching running image → alarm to security team
+- Critical/High → emergency rebuild within 24-72h depending on severity
+
+---
+
+## 7. Model / provider SDK review
+
+### 7.1 We use Spring AI, not provider SDKs
+
+Per L0 D-4, we use Spring AI 1.1+ unmodified. We do NOT depend on:
+- `com.openai:openai-java` (provider SDK; transitive bloat; algorithm confusion potential)
+- `com.anthropic:anthropic-java` (provider SDK)
+- Provider-specific clients
+
+Spring AI's HTTP-based ChatClient uses Spring's `WebClient` (stdlib-grade HTTP). This minimizes:
+- Transitive dependency risk
+- Provider-specific quirk leakage
+- License risk (Apache 2.0 throughout)
+
+### 7.2 Provider TOS review
+
+Each LLM provider's TOS is reviewed annually by legal team:
+- Data usage rights
+- Training opt-out (we always opt out)
+- Liability terms
+- Compliance attestations
+
+Findings recorded in `docs/governance/provider-review.yaml` per provider per year.
+
+---
+
+## 8. Build pipeline integrity
+
+### 8.1 Reproducible builds
+
+Goal: byte-identical artifact from same source commit. Currently partial:
+
+- Maven build is mostly reproducible (timestamps, build metadata excluded)
+- Docker images use BuildKit with `SOURCE_DATE_EPOCH`
+- Verification: `tools/build/reproduce.sh` rebuilds from given commit and compares hashes
+
+### 8.2 Build environment isolation
+
+- GitHub Actions runners ephemeral (per-build)
+- No long-lived secrets in build environment
+- Build credentials rotated per-build (OIDC-based)
+
+### 8.3 Code signing
+
+- Every Maven artifact signed with cosign
+- Every Docker image signed with cosign
+- Every release tag GPG-signed
+
+---
+
+## 9. Customer-supplied dependencies
+
+### 9.1 fin-domain-pack
+
+Customer's `fin-domain-pack/` (out of repo) supplies:
+- Glossary JSON (KYC/AML/suitability classes)
+- OPA policies
+- Skill definitions
+- Golden Set test cases
+
+Customer responsibilities:
+- Pin own dependency versions
+- Generate own SBOM
+- Vulnerability scan own code
+
+Platform provides:
+- Schema validation at load time (`GlossaryLoader`)
+- Sandboxed execution for OPA policies
+- Skill load gate (dangerous-capability check)
+
+### 9.2 Customer Spring Boot Starters
+
+Customers consume:
+- `fin-starter-core`, `fin-starter-memory`, `fin-starter-skill`, `fin-starter-flow`, `fin-starter-advanced`
+
+Each Starter pinned to specific Spring AI version + spring-ai-fin version. Customer's own application BOM resolves transitive versions.
+
+Cross-version compatibility tracked in `docs/governance/starter-compat-matrix.yaml`.
+
+---
+
+## 10. Continuous monitoring
+
+### 10.1 Dependency drift detection
+
+- Weekly `mvn versions:display-dependency-updates` report
+- Weekly `npm audit` for any frontend deps
+- Findings reviewed at weekly security team meeting
+
+### 10.2 Threat intelligence
+
+- Subscribe to CVE feeds for our dependency set
+- Subscribe to known-malicious-package feeds (e.g., npmjs / Maven Central security advisories)
+- Internal triage within 24h for `CRITICAL` severity
+
+---
+
+## 11. Maintenance
+
+This document is owned by GOV track. Annual review required:
+
+- Update banned dependencies list per legal review
+- Update Trivy / OWASP DC versions
+- Re-evaluate SLSA level (target Level 3 within 18 months)
+- Re-evaluate base image choices
+
+`SupplyChainComplianceTest` runs in CI:
+- All deps pinned
+- SBOM generated
+- License audit clean (Apache/MIT/BSD only on runtime path)
+- Vulnerability scan exit code 0
+- Image signature valid

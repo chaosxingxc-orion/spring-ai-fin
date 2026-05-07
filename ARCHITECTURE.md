@@ -11,16 +11,21 @@
 > - **L2 per-subsystem** — every leaf module under each package owns its own ARCHITECTURE.md when it lands.
 >
 > **Existing docs:**
+> - **Security review baseline** (UPDATED 2026-05-08): [`docs/security-response-2026-05-08.md`](docs/security-response-2026-05-08.md) responds to the security committee review with all 10 P0 + 10 P1 findings accepted; new docs below
 > - L1 northbound facade: [`agent-platform/ARCHITECTURE.md`](agent-platform/ARCHITECTURE.md)
 > - L1 cognitive runtime: [`agent-runtime/ARCHITECTURE.md`](agent-runtime/ARCHITECTURE.md)
 > - L2 contracts: [`agent-platform/contracts/ARCHITECTURE.md`](agent-platform/contracts/ARCHITECTURE.md)
 > - L2 transport: [`agent-platform/api/ARCHITECTURE.md`](agent-platform/api/ARCHITECTURE.md)
 > - L2 runtime binding: [`agent-platform/runtime/ARCHITECTURE.md`](agent-platform/runtime/ARCHITECTURE.md)
+> - **L2 ActionGuard (NEW 2026-05-08)**: [`agent-runtime/action-guard/ARCHITECTURE.md`](agent-runtime/action-guard/ARCHITECTURE.md) — closes security review P0-1 (unified action authorization)
+> - **L2 audit (NEW 2026-05-08)**: [`agent-runtime/audit/ARCHITECTURE.md`](agent-runtime/audit/ARCHITECTURE.md) — closes security review P0-8 (5-class audit model)
 > - L2 TRACE runner: [`agent-runtime/runner/ARCHITECTURE.md`](agent-runtime/runner/ARCHITECTURE.md)
 > - L2 LLM gateway: [`agent-runtime/llm/ARCHITECTURE.md`](agent-runtime/llm/ARCHITECTURE.md)
 > - L2 framework adapters: [`agent-runtime/adapters/ARCHITECTURE.md`](agent-runtime/adapters/ARCHITECTURE.md)
 > - L2 outbox: [`agent-runtime/outbox/ARCHITECTURE.md`](agent-runtime/outbox/ARCHITECTURE.md)
 > - L2 observability: [`agent-runtime/observability/ARCHITECTURE.md`](agent-runtime/observability/ARCHITECTURE.md)
+> - **Security profiles** (deployment-time): [`docs/gateway-conformance-profile.md`](docs/gateway-conformance-profile.md), [`docs/sidecar-security-profile.md`](docs/sidecar-security-profile.md), [`docs/secrets-lifecycle.md`](docs/secrets-lifecycle.md), [`docs/supply-chain-controls.md`](docs/supply-chain-controls.md)
+> - **Security control matrix + trust-boundary diagram**: [`docs/security-control-matrix.md`](docs/security-control-matrix.md), [`docs/trust-boundary-diagram.md`](docs/trust-boundary-diagram.md)
 > - Behavioural rules: [`CLAUDE.md`](CLAUDE.md)
 
 ---
@@ -859,16 +864,23 @@ This is the section the architecture review committee is most likely to challeng
 - **Tradeoffs**: Three postures means three test profiles to validate per release. We accept this; the gate is automated.
 - **Falsifiable**: If a customer demands a fourth posture ("staging"), we either reject (A2 sufficient with `prod` posture + non-prod data) or fail and add it.
 
-### D-7: Auth-authoritative `tenantId` (mirrors hi-agent W35-T3)
+### D-7: Auth-authoritative `tenantId` (mirrors hi-agent W35-T3) — UPDATED 2026-05-08 per security review P0-2
 
 - **Statement**: `tenantId` is sourced from JWT claim only. Filter chain validates `X-Tenant-Id` matches the claim; mismatch under research/prod = 400 `TenantScopeException`. Body's `tenantId` field is allowed but cross-checked; no fallback to body value.
+- **JWT validation algorithm** (updated 2026-05-08):
+  - **research/prod default**: RS256 or ES256 with JWKS endpoint per issuer; `iss`/`aud`/`kid`/`exp`/`nbf`/`iat`/`jti` enforced; `alg=none` rejected; HS/RS confusion rejected
+  - **dev posture, loopback bind**: HS256 OR anonymous (fast iteration)
+  - **dev posture, non-loopback bind**: fail boot unless `ALLOW_DEV_NON_LOOPBACK_HS256=true` set explicitly (closes P0-4 + P0-2 jointly)
+  - **research posture, BYOC small (single tenant, customer's existing HS256 IdP)**: HS256 PERMITTED with audit alarm + explicit BYOC contract acknowledgment (Q-S1 carve-out)
+  - **research posture, SaaS multi-tenant**: RS256/JWKS REQUIRED for per-issuer trust isolation
+  - **prod posture, any deployment**: RS256/JWKS REQUIRED
 - **Alternatives**:
   - **A1** Tenant from request body.
   - **A2** Tenant from header only.
   - **A3** Tenant from JWT claim only, header for cross-check (current).
 - **Why this won (A3)**: A1 is forgeable by any client with a valid JWT — Bob's JWT can write to Alice's tenant by setting `tenantId=alice` in body. A2 is partly forgeable: client controls the header. A3 places a single trust origin (the customer's IdP signing the JWT) and uses everything else for cross-checks.
-- **Tradeoffs**: Customers must mint JWTs with `tenantId` claim; this requires customer IdP integration. We provide reference Keycloak config.
-- **Falsifiable**: If a customer's IdP cannot embed `tenantId` in the JWT, A3 fails. We've validated against Keycloak, Okta, AWS Cognito — all support custom claims.
+- **Tradeoffs**: Customers must mint JWTs with `tenantId` claim; this requires customer IdP integration. We provide reference Keycloak config. RS256/JWKS adds JWKS cache + key rotation handling complexity in production.
+- **Falsifiable**: If a customer's IdP cannot embed `tenantId` in the JWT, A3 fails. We've validated against Keycloak, Okta, AWS Cognito — all support custom claims and RS256/JWKS.
 
 ### D-8: Outbox + Sync-Saga + Direct-DB (the H6 fix)
 
@@ -978,6 +990,54 @@ This is the section the architecture review committee is most likely to challeng
 - **Why this won (A3)**: A1 and A2 conflate "the API exists" with "the API behaves correctly under load with all four Rule-7 signals attached." A3 is a fine-grained ladder where each rung names what evidence is required. Hi-agent's W12 audit found 8 of 18 capabilities labeled "production_ready" had no posture-aware default; the L0–L4 model rejected those claims.
 - **Tradeoffs**: Per-component maturity reporting is more verbose than a single platform-level "GA" stamp. We accept this; the verbosity is the value (reviewer can see exactly which capability is shippable).
 - **Falsifiable**: If reviewers find the L0–L4 ladder ambiguous in practice, it loses value. We've used hi-agent's `docs/governance/maturity-glossary.md` as the canonical source of definitions.
+
+### D-18: ActionGuard — unified action authorization pipeline (added 2026-05-08 per security review P0-1)
+
+- **Statement**: Every model/tool/framework-proposed action passes through `ActionGuard.authorize(envelope)` — a 10-stage pipeline that is the unavoidable runtime path between proposal and side effect. `ActionGuardCoverageTest` is a CI gate that fails the build if any side-effect site bypasses ActionGuard.
+- **Alternatives**:
+  - **A1** Status-quo: separate gates (CapabilityPolicy + skill load-time gate + harness PermissionGate + HITL) without unification.
+  - **A2** Single gate per capability instead of per-action.
+  - **A3** ActionGuard as the central pipeline (current).
+- **Why this won (A3)**: A1 = the security reviewer's central P0-1 finding — an attacker exploiting prompt injection or retrieval poisoning needs only ONE bypass path (one adapter or one tool bridge missing the gate). A1's defence is the maximum-of-gates, not the minimum. A2 is too coarse; capability granularity misses runtime context (tenant, role, target resource, arguments). A3 makes the pipeline the minimum: every action passes every gate.
+- **Tradeoffs**: ~10ms p95 overhead per action; reviewer audit on the 10-stage definition; OPA dependency for stage 7. We accept the overhead; the alternative is unprovable security.
+- **Falsifiable**: If `ActionGuardCoverageTest` produces false negatives (real bypass found in production), the gate is incomplete. Tracked via recurrence-ledger.
+- **Detail**: [`agent-runtime/action-guard/ARCHITECTURE.md`](agent-runtime/action-guard/ARCHITECTURE.md)
+
+### D-19: Audit class model — 5 classes with class-aware failure semantics (added 2026-05-08 per security review P0-8)
+
+- **Statement**: Every audit event carries one of 5 classes — `TELEMETRY` / `SECURITY_EVENT` / `REGULATORY_AUDIT` / `PII_ACCESS` / `FINANCIAL_ACTION`. Each class has explicit persistence requirement and failure behaviour. PII reveal blocked on audit failure; financial commit rolled back on audit failure.
+- **Alternatives**:
+  - **A1** Single audit channel (status quo before review): mixed with telemetry; spine emitters never raise.
+  - **A2** Two-tier (telemetry / mandatory).
+  - **A3** Five-class with explicit semantics (current).
+- **Why this won (A3)**: A1 violates P0-8 — audit failure for PII decode would still allow plaintext return. A2 is closer but lacks granularity for the regulatory_audit (WORM-anchored) vs financial_action (in-transaction) distinction. A3 makes the security-vs-telemetry boundary sharp: telemetry can never raise; security/regulatory/PII/financial classes MUST persist or block.
+- **Tradeoffs**: Audit code paths now have class-specific handlers; reviewer audit on every new audit emit.
+- **Falsifiable**: If an audit failure for any non-telemetry class results in a side effect proceeding, A3 fails.
+- **Detail**: [`agent-runtime/audit/ARCHITECTURE.md`](agent-runtime/audit/ARCHITECTURE.md)
+
+### D-20: Financial write classes (added 2026-05-08 per security review P0-10)
+
+- **Statement**: Above the 3 mechanisms (OUTBOX_ASYNC / SYNC_SAGA / DIRECT_DB) we layer 4 financial write classes — `LEDGER_ATOMIC` / `SAGA_COMPENSATED` / `EXTERNAL_SETTLEMENT` / `ADVISORY_ONLY`. The `@WriteSite` annotation is extended with `financialClass`. CI enforces compatibility (e.g., `LEDGER_ATOMIC` only allowed on `DIRECT_DB`).
+- **Alternatives**:
+  - **A1** Use only consistency mechanism (status quo): saga = "strong within saga" without naming financial semantics.
+  - **A2** Single financial flag (boolean isFinancial).
+  - **A3** Four-class system (current).
+- **Why this won (A3)**: A1 confuses developers about saga vs ACID; "strong within saga" overstates per P0-10. A2 doesn't distinguish ledger-atomic (single-DB-txn double-entry) from saga-compensated (multi-step reversible). A3 names the financial semantics explicitly; reviewer audit can map each write to the right class.
+- **Tradeoffs**: Annotation surface grows; reviewer audit at every financial write site.
+- **Falsifiable**: If a saga compensation failure goes unnoticed (Attack Path D), A3's OperationalGate + LedgerDiscrepancyRecord didn't fire — A3 fails.
+- **Detail**: [`agent-runtime/outbox/ARCHITECTURE.md`](agent-runtime/outbox/ARCHITECTURE.md) §Financial Classes
+
+### D-21: Sidecar Security Profile (added 2026-05-08 per security review P0-7)
+
+- **Statement**: Out-of-process Python sidecar honours a published Security Profile: mTLS or UDS 0600; SPIFFE workload identity OR static service account with peer-cred check; tenantId required in payload (not just metadata); 4MB request / 16MB response max; cosign-signed image with SBOM; AppArmor + read-only fs; egress allowlist.
+- **Alternatives**:
+  - **A1** Operate sidecar with default container settings (no profile).
+  - **A2** Per-tenant sidecar only (no shared mode).
+  - **A3** Both per-tenant and shared modes, profile binding for both (current).
+- **Why this won (A3)**: A1 = security reviewer's P0-7 finding — sidecar is a high-risk execution environment without a profile. A2 forfeits resource efficiency for SaaS multi-tenant. A3 supports both deployment shapes with the SAME security profile binding.
+- **Tradeoffs**: Customer must adopt either SPIFFE or peer-cred check; container hardening adds operational complexity.
+- **Falsifiable**: If Attack Path B (cross-tenant leak via sidecar) succeeds in any test, A3 fails.
+- **Detail**: [`docs/sidecar-security-profile.md`](docs/sidecar-security-profile.md)
 
 ### How to evaluate §6
 
@@ -1567,18 +1627,36 @@ flowchart LR
 | Concern | Path |
 |---|---|
 | Behavioral rules | [`CLAUDE.md`](CLAUDE.md) |
+| **Security review (committee)** | [`docs/deep-architecture-security-assessment-2026-05-07.en.md`](docs/deep-architecture-security-assessment-2026-05-07.en.md) |
+| **Security response (platform team)** | [`docs/security-response-2026-05-08.md`](docs/security-response-2026-05-08.md) |
+| **Security control matrix** | [`docs/security-control-matrix.md`](docs/security-control-matrix.md) |
+| **Trust-boundary diagram** | [`docs/trust-boundary-diagram.md`](docs/trust-boundary-diagram.md) |
+| **Gateway conformance profile** | [`docs/gateway-conformance-profile.md`](docs/gateway-conformance-profile.md) |
+| **Sidecar security profile** | [`docs/sidecar-security-profile.md`](docs/sidecar-security-profile.md) |
+| **Secrets lifecycle** | [`docs/secrets-lifecycle.md`](docs/secrets-lifecycle.md) |
+| **Supply chain controls** | [`docs/supply-chain-controls.md`](docs/supply-chain-controls.md) |
 | L1 northbound facade | [`agent-platform/ARCHITECTURE.md`](agent-platform/ARCHITECTURE.md) |
 | L1 cognitive runtime | [`agent-runtime/ARCHITECTURE.md`](agent-runtime/ARCHITECTURE.md) |
 | L2 contracts | [`agent-platform/contracts/ARCHITECTURE.md`](agent-platform/contracts/ARCHITECTURE.md) |
 | L2 transport | [`agent-platform/api/ARCHITECTURE.md`](agent-platform/api/ARCHITECTURE.md) |
 | L2 runtime binding | [`agent-platform/runtime/ARCHITECTURE.md`](agent-platform/runtime/ARCHITECTURE.md) |
+| **L2 ActionGuard (NEW)** | [`agent-runtime/action-guard/ARCHITECTURE.md`](agent-runtime/action-guard/ARCHITECTURE.md) |
+| **L2 audit (NEW)** | [`agent-runtime/audit/ARCHITECTURE.md`](agent-runtime/audit/ARCHITECTURE.md) |
 | L2 TRACE runner | [`agent-runtime/runner/ARCHITECTURE.md`](agent-runtime/runner/ARCHITECTURE.md) |
 | L2 LLM gateway | [`agent-runtime/llm/ARCHITECTURE.md`](agent-runtime/llm/ARCHITECTURE.md) |
 | L2 framework adapters | [`agent-runtime/adapters/ARCHITECTURE.md`](agent-runtime/adapters/ARCHITECTURE.md) |
 | L2 outbox | [`agent-runtime/outbox/ARCHITECTURE.md`](agent-runtime/outbox/ARCHITECTURE.md) |
 | L2 observability | [`agent-runtime/observability/ARCHITECTURE.md`](agent-runtime/observability/ARCHITECTURE.md) |
+| L2 server (RunManager + DurableBackends) | [`agent-runtime/server/ARCHITECTURE.md`](agent-runtime/server/ARCHITECTURE.md) |
+| L2 posture | [`agent-runtime/posture/ARCHITECTURE.md`](agent-runtime/posture/ARCHITECTURE.md) |
+| L2 auth | [`agent-runtime/auth/ARCHITECTURE.md`](agent-runtime/auth/ARCHITECTURE.md) |
+| L2 capability | [`agent-runtime/capability/ARCHITECTURE.md`](agent-runtime/capability/ARCHITECTURE.md) |
+| L2 skill | [`agent-runtime/skill/ARCHITECTURE.md`](agent-runtime/skill/ARCHITECTURE.md) |
+| L2 memory | [`agent-runtime/memory/ARCHITECTURE.md`](agent-runtime/memory/ARCHITECTURE.md) |
+| L2 knowledge | [`agent-runtime/knowledge/ARCHITECTURE.md`](agent-runtime/knowledge/ARCHITECTURE.md) |
 | Historical input | [`docs/architecture-v5.0.md`](docs/architecture-v5.0.md) |
 | Adversarial review | [`docs/architecture-v5.0-review-2026-05-07.md`](docs/architecture-v5.0-review-2026-05-07.md) |
+| Committee review baseline | [`docs/architecture-review-2026-05-07.md`](docs/architecture-review-2026-05-07.md) |
 
 ### 14.2 Predecessor (hi-agent)
 

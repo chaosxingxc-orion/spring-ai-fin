@@ -5,6 +5,8 @@
 > **Status:** authoritative.
 >
 > **Sub-package docs:**
+> - **[`action-guard/ARCHITECTURE.md`](action-guard/ARCHITECTURE.md) — Unified action authorization pipeline (NEW 2026-05-08; closes security review P0-1)**
+> - **[`audit/ARCHITECTURE.md`](audit/ARCHITECTURE.md) — 5-class audit model + WORM (NEW 2026-05-08; closes security review P0-8)**
 > - [`runner/ARCHITECTURE.md`](runner/ARCHITECTURE.md) — TRACE S1–S5 RunExecutor
 > - [`llm/ARCHITECTURE.md`](llm/ARCHITECTURE.md) — Spring AI ChatClient gateway, tier router, failover, budget
 > - [`memory/ARCHITECTURE.md`](memory/ARCHITECTURE.md) — L0 → L1 → L2 → L3 progression
