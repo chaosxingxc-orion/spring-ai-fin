@@ -1,0 +1,69 @@
+# Maven
+target/
+*.jar
+*.war
+*.ear
+*.class
+.mvn/wrapper/maven-wrapper.jar
+mvnw
+mvnw.cmd
+
+# Gradle (in case any module switches)
+build/
+.gradle/
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.project
+.classpath
+.settings/
+.factorypath
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs + runtime state
+*.log
+logs/
+var/
+state/
+state-dir/
+*.pid
+
+# Environment + secrets — NEVER commit
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.crt
+secrets/
+
+# Spring Boot
+application-local.yaml
+application-local.yml
+application-local.properties
+
+# Test artifacts
+*.lcov
+coverage/
+.nyc_output/
+
+# Python sidecar (when adopted)
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Architecture artifacts
+docs/delivery/*.json
+docs/verification/*.json
+!docs/delivery/.gitkeep
+!docs/verification/.gitkeep
