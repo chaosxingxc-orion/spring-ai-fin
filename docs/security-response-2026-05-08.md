@@ -1,3 +1,5 @@
+> ⚠ **HISTORICAL DOCUMENT — DO NOT IMPLEMENT.** This is the 2026-05-08 response to the security assessment. Original closure-style language (`closes P0-N`, `P0-N closure`) is preserved here for traceability but is **forbidden** in current L0/L1/L2 docs per [`docs/governance/closure-taxonomy.md`](governance/closure-taxonomy.md). Closure status of each finding lives in [`docs/governance/architecture-status.yaml`](governance/architecture-status.yaml). The architecture-sync gate excludes this file from its scan because of its historical role. Current authoritative corpus: [`docs/governance/current-architecture-index.md`](governance/current-architecture-index.md).
+
 # Security Review Response — 2026-05-08
 
 **Subject**: Response to `docs/deep-architecture-security-assessment-2026-05-07.en.md`

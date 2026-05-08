@@ -1,3 +1,5 @@
+> ⚠ **HISTORICAL DOCUMENT — DO NOT IMPLEMENT.** This is the 2026-05-07 critique of v5.0 that drove the v6.0 refactor. Kept for traceability. Current authoritative corpus is indexed in [`docs/governance/current-architecture-index.md`](governance/current-architecture-index.md).
+
 # Architecture v5.0 — Adversarial Review
 
 **Date:** 2026-05-07

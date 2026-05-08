@@ -68,8 +68,8 @@ docs/verification/*.json
 !docs/delivery/.gitkeep
 !docs/verification/.gitkeep
 
-# Gate logs — tracked as audit-trail evidence (see docs/delivery/README.md).
-# Maintainers should `git add gate/log/<new-sha>.json` after each gate run
-# whose evidence will be referenced from a delivery file.
-# (Was previously gitignored; reversed per user request to preserve all
-# process artifacts on GitHub for future decision-making.)
+# Gate logs:
+#   - gate/log/<sha>.json     — delivery-valid evidence; tracked (committed by maintainer)
+#   - gate/log/local/         — local-only / failed / dirty-tree / fail-closed runs;
+#                               NEVER tracked, never delivery evidence (cycle-4 sec-A3)
+gate/log/local/

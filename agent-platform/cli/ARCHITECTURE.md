@@ -102,7 +102,7 @@ agent-platform tail-events --tenant-id TID --run-id RID [--since-cursor CUR] [--
 
 - **SAS-1**: only `ServeCommand` may import `agent-platform/bootstrap/`; others use HTTP
 - **Rule 8**: `serve --prod` is the operator-shape gate step 1 (long-lived process); CLI documents the PM2/systemd/docker overlay
-- **Rule 11**: CLI honours posture; CLI fails-fast if `--prod` flag without `APP_JWT_SECRET`
+- **Rule 11**: CLI honours posture; under `--prod`, CLI fails-fast if `IssuerRegistry` has no RS256/ES256 entry (per L0 §A3 and `agent-runtime/auth/`). HS256 (`APP_JWT_SECRET`) is permitted only for DEV loopback or BYOC single-tenant carve-outs documented in `docs/governance/allowlists.yaml`; the operative invariant is "auth path matches posture × deployment shape," not "APP_JWT_SECRET is set"
 - **Rule 7**: SSE → poll fallback emits visible "fallback: sse-not-available" log line so operators see what happened
 
 ---

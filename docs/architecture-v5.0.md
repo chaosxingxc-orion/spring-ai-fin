@@ -1,3 +1,5 @@
+> ⚠ **HISTORICAL DOCUMENT — DO NOT IMPLEMENT.** This is the v5.0 architecture, superseded by v6.0 in [`ARCHITECTURE.md`](../ARCHITECTURE.md). Kept for traceability of the v5.0 → v6.0 transition. The current authoritative corpus is indexed in [`docs/governance/current-architecture-index.md`](governance/current-architecture-index.md).
+
 # Enterprise Agent Platform Architecture v5.0
 
 **Architecture Review Edition · PhD-Level Technical Design Document**

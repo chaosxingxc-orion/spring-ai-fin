@@ -239,7 +239,7 @@ The 13 numbered boundaries above; each row specifies the 7 control concerns:
 |---|---|
 | **Authentication** | DB credential (rotated 30-day); secret from OpenBao |
 | **Authorization** | DB role `runtime_role` (INSERT, SELECT, UPDATE on operational tables; only INSERT, SELECT on `audit_event`) |
-| **Tenant propagation** | `SET LOCAL app.tenant_id = ?` at every transaction begin (RLS protocol); reset on connection check-in |
+| **Tenant propagation** | `SET LOCAL app.tenant_id = ?` at every transaction begin (RLS protocol). Postgres scopes `SET LOCAL` to the current transaction and auto-discards it on `COMMIT`/`ROLLBACK`; pooled connection reuse cannot leak the previous tenant's GUC. `TenantBinder` validates `current_setting('app.tenant_id', true)` is empty at transaction start as defense-in-depth (`PooledConnectionLeakageIT`). HikariCP `connectionInitSql` is NOT a per-checkout reset hook. |
 | **Data classification** | Postgres RLS policies per tenant-scoped table; sensitive columns encrypted with pgcrypto |
 | **Audit** | Failed auth = SECURITY_EVENT; UPDATE/DELETE attempt on audit_event = SECURITY_EVENT (DB-level reject) |
 | **Allowed protocols** | TLS-encrypted JDBC |

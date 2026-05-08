@@ -1,3 +1,5 @@
+> ⚠ **HISTORICAL DOCUMENT — DO NOT IMPLEMENT.** This is the 2026-05-07 security assessment that produced the 10 P0 + 10 P1 findings. Some examples (e.g., HS256-first identity sketches) are explicitly superseded by the cycle-1+ L0 + L2 corrections. Closure status of each finding is tracked in [`docs/governance/architecture-status.yaml`](governance/architecture-status.yaml). Current authoritative corpus: [`docs/governance/current-architecture-index.md`](governance/current-architecture-index.md).
+
 # spring-ai-fin Deep Architecture Security Assessment
 
 **Date**: 2026-05-07  

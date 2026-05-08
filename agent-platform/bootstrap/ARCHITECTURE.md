@@ -101,7 +101,14 @@ public class PlatformBootstrap {
     public void assertInvariants() {
         var posture = appPosture(/* env */);
         if (posture.requiresStrict()) {
-            assertEnvSet("APP_JWT_SECRET", "research/prod posture requires JWT secret");
+            // Posture-aware identity per L0 D-block §A3 and `agent-runtime/auth/`:
+            //   research SaaS multi-tenant + prod  -> RS256/ES256 + JWKS via IssuerRegistry (mandatory)
+            //   research BYOC single-tenant        -> HS256 carve-out only with allowlist entry
+            //   dev loopback                       -> HS256 or anonymous
+            // PostureBootGuard (in `agent-runtime/posture/`) is the canonical boot gate;
+            // bootstrap delegates by asserting prerequisites match the active validator path:
+            assertJwksIssuerRegistryWhenSaasMultiTenant();
+            assertHmacAllowlistWhenHmacActive();   // APP_JWT_SECRET is asserted >=32 bytes ONLY when HmacValidator is active
             assertEnvSet("APP_LLM_MODE", "research/prod posture requires real LLM");
             assertStateDirWritable();
         }

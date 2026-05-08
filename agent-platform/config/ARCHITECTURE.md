@@ -39,7 +39,7 @@ app:
   state-dir: ./var/state
   api-version: v1
   posture: ${APP_POSTURE:dev}
-  jwt-secret: ${APP_JWT_SECRET:}    # required under research/prod
+  jwt-secret: ${APP_JWT_SECRET:}    # optional; active only when HmacValidator path is enabled (DEV loopback or BYOC single-tenant carve-out per docs/governance/allowlists.yaml). Research SaaS multi-tenant + prod use RS256/ES256 + JWKS via IssuerRegistry instead.
   llm-mode: ${APP_LLM_MODE:mock}    # research/prod requires real
   datasource-url: ${SPRING_DATASOURCE_URL}
 ```
@@ -120,7 +120,7 @@ Bound via `@EnableConfigurationProperties(PlatformSettings.class)` in `bootstrap
 | ADR | Decision | Why |
 |---|---|---|
 | **AD-1: Settings stay minimal in v1** | 4 fields only | v5.0 over-config; per-tenant overrides + lease/retention deferred |
-| **AD-2: Posture lives in `agent-runtime/posture/`** | NOT in this package | Posture is a runtime-domain concept, predates v1 facade; mirror via `Environment.getProperty` |
+| **AD-2: Posture lives in `agent-runtime/posture/`** | NOT in this package | Posture is a runtime-domain concept; read once at boot via `AppPosture.fromEnv()` and injected into facade validators. The `config/` package never branches on posture by `Environment.getProperty` at call-time (cycle-2 correction); spring profiles activated by posture provide the binding seam |
 | **AD-3: `V1_FROZEN_HEAD` cross-check** | `ContractFreezeTest` validates pin matches actual digest | Eliminates drift between two locations |
 | **AD-4: Posture-tied Spring Profiles** | `application-{dev,research,prod}.yaml` overrides | Standard Spring; clean override boundary |
 | **AD-5: Validation at record canonical constructor** | port range, paths, etc. checked at construction | Fail-fast at boot |

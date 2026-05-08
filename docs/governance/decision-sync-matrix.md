@@ -82,7 +82,7 @@ For every hard L0 decision, this matrix records:
 | Decision id | TenantSpineRLS |
 | L1 documents | `agent-runtime/ARCHITECTURE.md`, `agent-platform/ARCHITECTURE.md` |
 | L2 documents | `agent-runtime/server/ARCHITECTURE.md`, `agent-runtime/outbox/ARCHITECTURE.md`, `agent-platform/api/ARCHITECTURE.md` |
-| Implementation paths | `agent-platform/api/filter/TenantContextFilter.java`, `agent-runtime/server/TenantBinder.java`, `RlsConnectionInterceptor.java`, `HikariConnectionResetPolicy.java`, `agent-runtime/server/migrations/V*__rls_policies.sql` |
+| Implementation paths | `agent-platform/api/filter/TenantContextFilter.java`, `agent-runtime/server/TenantBinder.java`, `RlsConnectionInterceptor.java`, `agent-runtime/server/migrations/V*__rls_policies.sql`. Note: `HikariConnectionResetPolicy.java` was removed in cycle-3 — `connectionInitSql` only runs at connection creation, not at checkout, so it cannot be the per-lease reset mechanism. Safety property is the transaction-scoped `SET LOCAL` GUC auto-discarded by Postgres on `COMMIT`/`ROLLBACK`, validated by `PooledConnectionLeakageIT`. |
 | Tests | `TenantBindingIT`, `RlsConnectionIsolationIT`, `CrossTenantEventReadReturns404IT`, `PooledConnectionLeakageIT`, `MissingTenantFailsClosedIT`, `RlsPolicyCoverageTest`, `RlsConnectionAuditTest` |
 | Gate evidence | W2 operator-shape gate cross-tenant read returns 404 |
 | Status | design_accepted |

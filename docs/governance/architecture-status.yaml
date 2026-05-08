@@ -98,7 +98,7 @@ capabilities:
     tests: []
     operator_gate: null
     open_findings: [P0-3, REM-2026-05-08-3]
-    allowed_claim: "Accepted design with TenantBinder + RlsConnectionInterceptor + HikariCP reset codified; no implementation evidence yet"
+    allowed_claim: "Accepted design with TenantBinder + transaction-scoped SET LOCAL + GUC-empty validation at transaction start codified; no implementation evidence yet"
 
   identity_jwt_validation:
     status: design_accepted
@@ -198,7 +198,7 @@ capabilities:
     tests: []
     operator_gate: null
     open_findings: [P0-3, REM-2026-05-08-3]
-    allowed_claim: "Accepted SET LOCAL + HikariCP reset + RlsConnectionInterceptor protocol; no implementation evidence"
+    allowed_claim: "Accepted SET LOCAL transaction-scoped GUC (auto-discarded by Postgres on COMMIT/ROLLBACK) + RlsConnectionInterceptor protocol; no implementation evidence"
 
   observability_emitter_health:
     status: design_accepted
@@ -296,7 +296,7 @@ findings:
 
   REM-2026-05-08-3:
     source: docs/systematic-architecture-remediation-plan-2026-05-08.en.md
-    description: "Tenant RLS connection protocol must be specified in server L2: SET LOCAL, HikariCP reset, RlsConnectionInterceptor, fail-closed under research/prod."
+    description: "Tenant RLS connection protocol must be specified in server L2: SET LOCAL (transaction-scoped; auto-discarded on COMMIT/ROLLBACK), GUC-empty validation at transaction start, RlsConnectionInterceptor, fail-closed under research/prod. HikariCP connectionInitSql is NOT a per-checkout reset hook (cycle-2 + cycle-3 correction)."
     status: design_accepted
     target_wave: W2
     capability: server_rls_protocol
@@ -408,11 +408,12 @@ findings:
 
   REM-2026-05-08-C3-4:
     source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-3.en.md
-    description: "Closure-language enforcement was too narrow (only literal 'closes security review P0-' substring). Cycle-3 replaces with case-insensitive regex covering the closure phrase family across all L0/L1/L2/docs and excludes only review/taxonomy/historical-response files by path."
-    status: implemented_unverified
+    description: "Closure-language enforcement was too narrow. Cycle-3 added a case-insensitive regex set; cycle-4 found the bash gate's grep -P silently failed in non-UTF-8 locales (Windows GBK), bypassing the regex check. Cycle-4 fix exports LC_ALL=C in bash so grep -P works."
+    status: design_accepted
     target_wave: W0
     capability: operator_shape_gate
-    notes: "Architecture-sync portion only."
+    notes: "Downgraded by cycle-4 finding A4 until current HEAD passes the gate cleanly with the locale fix applied. Architecture-sync portion only."
+    last_validated_sha: null
 
   REM-2026-05-08-C3-5:
     source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-3.en.md

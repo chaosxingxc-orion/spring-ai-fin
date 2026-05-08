@@ -1,22 +1,25 @@
 #!/usr/bin/env bash
-# spring-ai-fin architecture-sync gate (cycle-3 expanded; POSIX bash).
+# spring-ai-fin architecture-sync gate (cycle-4 expanded; POSIX bash).
 # Catches drift classes from:
 #   docs/systematic-architecture-improvement-plan-2026-05-07.en.md sec-4-2
 #   docs/systematic-architecture-remediation-plan-2026-05-08.en.md sec-5 + sec-6 + sec-12
 #   docs/systematic-architecture-remediation-plan-2026-05-08-cycle-2.en.md sec-4 through sec-9
 #   docs/systematic-architecture-remediation-plan-2026-05-08-cycle-3.en.md sec-4 through sec-8
+#   docs/systematic-architecture-remediation-plan-2026-05-08-cycle-4.en.md A1..A4 + B1..B2 + C1 + D1 + E1
 #
-# Default mode: fails if working tree is dirty.
-# --local-only: permits dirty tree, writes evidence_valid_for_delivery=false.
-#
-# Cycle-3 changes:
-#   - Closure-language enforcement is case-insensitive and uses regex.
-#   - rls_pool_lifecycle_matrix rule for docs/security-control-matrix.md.
-#   - docs/security-response-2026-05-08.md is excluded as historical.
+# Cycle-4 changes:
+#   - LC_ALL=C exported so grep -P works in non-UTF-8 locales (Windows GBK).
+#   - auth_algorithm_policy + contract_posture_purity rules now scan ALL
+#     agent-platform/**/ARCHITECTURE.md, not only the L1 file.
+#   - Failed/local runs write to gate/log/local/<sha>.json (gitignored);
+#     gate/log/<sha>.json receives only delivery-valid evidence.
+#   - rls_reset_vocabulary rule flags stale HikariCP reset / connection
+#     check-in reset / HikariConnectionResetPolicy claims.
 #
 # Architecture-sync gate, NOT Rule 8 operator-shape gate.
 
 set -euo pipefail
+export LC_ALL=C   # cycle-4 A1: ensure grep -P works in non-UTF-8 locales
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
@@ -30,7 +33,9 @@ for arg in "$@"; do
 Usage: $0 [--local-only]
 
 Default mode fails when 'git status --porcelain' is non-empty.
---local-only mode permits dirty tree but writes evidence_valid_for_delivery=false.
+--local-only mode permits dirty tree; in any non-delivery-valid case
+the log is written to gate/log/local/<sha>.json (gitignored), not
+gate/log/<sha>.json.
 EOF
       exit 0
       ;;
@@ -41,7 +46,6 @@ failures_json=""
 fail_count=0
 dirty_tree_count=0
 
-# JSON-escape helper (handles common chars; strict ASCII).
 json_escape() {
   local s="$1"
   s="${s//\\/\\\\}"
@@ -75,6 +79,7 @@ fi
 # Build scan lists.
 declare -a all_scan_files=()
 declare -a non_docs_arch_files=()
+declare -a platform_arch_files=()    # cycle-4 B2: all agent-platform/**/ARCHITECTURE.md
 
 [[ -f ARCHITECTURE.md ]] && { all_scan_files+=("ARCHITECTURE.md"); non_docs_arch_files+=("ARCHITECTURE.md"); }
 
@@ -86,23 +91,30 @@ done < <(find agent-platform agent-runtime -type f -name 'ARCHITECTURE.md' 2>/de
 
 while IFS= read -r f; do
   [[ -z "$f" ]] && continue
+  platform_arch_files+=("$f")
+done < <(find agent-platform -type f -name 'ARCHITECTURE.md' 2>/dev/null || true)
+
+while IFS= read -r f; do
+  [[ -z "$f" ]] && continue
   case "$f" in
     *systematic-architecture-improvement-plan*) continue ;;
     *systematic-architecture-remediation-plan*) continue ;;
     *closure-taxonomy.md*) continue ;;
-    *security-response-2026-05-08*) continue ;;   # cycle-3: historical
+    *security-response-2026-05-08*) continue ;;
+    *architecture-v5.0*) continue ;;                          # cycle-4 E1: historical
+    *architecture-review-2026-05-07*) continue ;;             # cycle-4 E1: historical
+    *deep-architecture-security-assessment*) continue ;;      # cycle-4 E1: historical
   esac
   all_scan_files+=("$f")
 done < <(find docs -type f -name '*.md' 2>/dev/null || true)
 
-# Self-test invariants (cycle-3 sec-4).
 for f in "${all_scan_files[@]}"; do
   if [[ ! -e "$f" ]]; then
     fail "gate_self_test_failed" "scan list contains non-existent path: $f" "" 0
   fi
 done
 
-# 1. Forbidden closure shortcuts: substring patterns (existing fixed phrases).
+# 1. Forbidden closure shortcuts: substring patterns.
 forbidden_substrings=(
   "production-ready pending implementation"
   "operator-gated by intention"
@@ -205,29 +217,29 @@ if [[ -f "$ag_l2" ]]; then
   fi
 fi
 
-# 5. Contract posture purity.
-ap_l1="agent-platform/ARCHITECTURE.md"
-if [[ -f "$ap_l1" ]]; then
-  bad_patterns=(
-    'contracts read .* `Environment\.getProperty'
-    'contracts read posture from .Environment'
-    'Posture in .Environment\.getProperty. for contracts'
-    'contracts/.* package reads .APP_POSTURE'
-    'contracts read .* via .Environment'
-  )
-  for pat in "${bad_patterns[@]}"; do
+# 5. Contract posture purity (cycle-4 B2: all platform L2s).
+bad_posture_patterns=(
+  'contracts read .* `Environment\.getProperty'
+  'contracts read posture from .Environment'
+  'Posture in .Environment\.getProperty. for contracts'
+  'contracts/.* package reads .APP_POSTURE'
+  'contracts read .* via .Environment'
+  'mirror via .Environment\.getProperty'
+)
+for f in "${platform_arch_files[@]}"; do
+  for pat in "${bad_posture_patterns[@]}"; do
     while IFS= read -r m; do
       [[ -z "$m" ]] && continue
       lineno="${m%%:*}"
-      fail "contract_posture_purity" "matched pattern '$pat'" "$ap_l1" "$lineno"
-    done < <(grep -nE "$pat" "$ap_l1" 2>/dev/null || true)
+      fail "contract_posture_purity" "matched pattern '$pat'" "$f" "$lineno"
+    done < <(grep -nE "$pat" "$f" 2>/dev/null || true)
   done
-fi
+done
 
-# 6. Auth algorithm policy.
-if [[ -f "$ap_l1" ]]; then
+# 6. Auth algorithm policy (cycle-4 B2: all platform L2s).
+for f in "${platform_arch_files[@]}"; do
   declare -a buf=()
-  while IFS= read -r line || [[ -n "$line" ]]; do buf+=("$line"); done < "$ap_l1"
+  while IFS= read -r line || [[ -n "$line" ]]; do buf+=("$line"); done < "$f"
   n=${#buf[@]}
   for ((i=0; i<n; i++)); do
     line="${buf[i]}"
@@ -242,14 +254,17 @@ if [[ -f "$ap_l1" ]]; then
       [[ "$ctx" == *carve-out* ]] && qualified=1
       [[ "$ctx" == *allowlist* ]] && qualified=1
       [[ "$ctx" == *"no longer the standard"* ]] && qualified=1
+      [[ "$ctx" == *"HmacValidator"* ]] && qualified=1
+      [[ "$ctx" == *"only when"* ]] && qualified=1
+      [[ "$ctx" == *"optional"* ]] && qualified=1
       shopt -u nocasematch
       if [[ $qualified -eq 0 ]]; then
-        fail "auth_algorithm_policy" "APP_JWT_SECRET mentioned without BYOC/loopback/carve-out/allowlist qualifier" "$ap_l1" "$((i+1))"
+        fail "auth_algorithm_policy" "APP_JWT_SECRET mentioned without BYOC/loopback/carve-out/allowlist/HmacValidator/optional qualifier" "$f" "$((i+1))"
       fi
     fi
   done
   unset buf
-fi
+done
 
 # 7. RLS pool lifecycle (L1/L2 architecture docs).
 for f in "${non_docs_arch_files[@]}"; do
@@ -285,17 +300,63 @@ for f in "${non_docs_arch_files[@]}"; do
   unset buf
 done
 
-# 7b. RLS pool lifecycle in security-control-matrix.md (cycle-3 sec-6).
+# 7b. RLS pool lifecycle in security-control-matrix.md.
 security_matrix="docs/security-control-matrix.md"
 if [[ -f "$security_matrix" ]]; then
   lineno=0
   while IFS= read -r line || [[ -n "$line" ]]; do
     lineno=$((lineno + 1))
     if [[ "$line" == *connectionInitSql* ]]; then
-      fail "rls_pool_lifecycle_matrix" "security-control-matrix.md cites 'connectionInitSql' as a tenant reset control (cycle-2 server L2 corrected this; the matrix must use TenantBinder + transaction-scoped GUC + PooledConnectionLeakageIT)" "$security_matrix" "$lineno"
+      fail "rls_pool_lifecycle_matrix" "security-control-matrix.md cites 'connectionInitSql' as a tenant reset control" "$security_matrix" "$lineno"
     fi
   done < "$security_matrix"
 fi
+
+# 7c. RLS reset vocabulary across governance + diagrams + matrix (cycle-4 C1).
+declare -a rls_vocab_files=(
+  "docs/governance/architecture-status.yaml"
+  "docs/governance/decision-sync-matrix.md"
+  "docs/trust-boundary-diagram.md"
+  "docs/security-control-matrix.md"
+)
+declare -a rls_vocab_phrases=(
+  "HikariCP reset"
+  "HikariConnectionResetPolicy"
+  "reset on connection check-in"
+  "reset on check-in"
+  "connection check-in reset"
+)
+for f in "${rls_vocab_files[@]}"; do
+  [[ ! -f "$f" ]] && continue
+  declare -a buf=()
+  while IFS= read -r line || [[ -n "$line" ]]; do buf+=("$line"); done < "$f"
+  n=${#buf[@]}
+  for ((i=0; i<n; i++)); do
+    line="${buf[i]}"
+    for phrase in "${rls_vocab_phrases[@]}"; do
+      if [[ "$line" == *"$phrase"* ]]; then
+        # Allowed if line carries a negation/deprecation marker.
+        shopt -s nocasematch
+        allowed=0
+        [[ "$line" == *"not "* ]] && allowed=1
+        [[ "$line" == *"NOT "* ]] && allowed=1
+        [[ "$line" == *"removed"* ]] && allowed=1
+        [[ "$line" == *"deprecated"* ]] && allowed=1
+        [[ "$line" == *"no longer"* ]] && allowed=1
+        [[ "$line" == *"instead of"* ]] && allowed=1
+        [[ "$line" == *"was wrong"* ]] && allowed=1
+        [[ "$line" == *"cycle-2"* ]] && allowed=1
+        [[ "$line" == *"cycle-3"* ]] && allowed=1
+        [[ "$line" == *"cycle-4"* ]] && allowed=1
+        shopt -u nocasematch
+        if [[ $allowed -eq 0 ]]; then
+          fail "rls_reset_vocabulary" "matched stale RLS reset wording '$phrase' without negation/deprecation marker" "$f" "$((i+1))"
+        fi
+      fi
+    done
+  done
+  unset buf
+done
 
 # 8. Gate path drift.
 matrix="docs/governance/decision-sync-matrix.md"
@@ -353,12 +414,9 @@ if [[ -f ARCHITECTURE.md ]]; then
   fi
 fi
 
-# Emit structured log.
+# Compute final state.
 sha_candidate="$(git rev-parse --short HEAD 2>/dev/null || echo no-git)"
 [[ -z "$sha_candidate" ]] && sha_candidate=no-git
-log_dir="gate/log"
-mkdir -p "$log_dir"
-log_path="$log_dir/${sha_candidate}.json"
 
 semantic_fail_count=$((fail_count - dirty_tree_count))
 semantic_pass=true
@@ -366,6 +424,16 @@ semantic_pass=true
 evidence_valid=true
 [[ "$tree_clean" == "false" ]] && evidence_valid=false
 [[ "$semantic_pass" == "false" ]] && evidence_valid=false
+
+# Cycle-4 A3: split log path. Delivery-valid -> gate/log/<sha>.json.
+# Anything else -> gate/log/local/<sha>.json (gitignored).
+if [[ "$evidence_valid" == "true" ]]; then
+  log_dir="gate/log"
+else
+  log_dir="gate/log/local"
+fi
+mkdir -p "$log_dir"
+log_path="$log_dir/${sha_candidate}.json"
 
 local_only_json=false
 [[ $local_only -eq 1 ]] && local_only_json=true
@@ -375,7 +443,7 @@ porcelain_escaped="$(json_escape "$porcelain")"
 {
   printf '{'
   printf '"script":"check_architecture_sync.sh",'
-  printf '"version":"cycle-3-expanded",'
+  printf '"version":"cycle-4-expanded",'
   printf '"sha":"%s",' "$sha_candidate"
   printf '"generated":"%s",' "$(date -Iseconds 2>/dev/null || date -u +%Y-%m-%dT%H:%M:%SZ)"
   printf '"scan_files_count":%d,' "${#all_scan_files[@]}"
@@ -397,7 +465,7 @@ fi
 if [[ "$evidence_valid" == "true" ]]; then
   ev_msg="evidence_valid_for_delivery=true"
 else
-  ev_msg="evidence_valid_for_delivery=false (local-only or dirty)"
+  ev_msg="evidence_valid_for_delivery=false (local-only or dirty); log under gate/log/local/"
 fi
 echo "PASS: architecture corpus is internally consistent. $ev_msg. Log: $log_path"
 exit 0

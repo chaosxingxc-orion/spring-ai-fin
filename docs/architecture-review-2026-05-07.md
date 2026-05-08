@@ -1,3 +1,5 @@
+> ⚠ **HISTORICAL DOCUMENT — DO NOT IMPLEMENT.** This is a 2026-05-07 review snapshot kept for traceability. The current authoritative architecture corpus is indexed in [`docs/governance/current-architecture-index.md`](governance/current-architecture-index.md). Do not copy examples, claims, or recommendations from this file into current implementation work without cross-checking the current L0/L1/L2 documents.
+
 # spring-ai-fin Architecture Review Document
 
 **Document version:** 1.0 · **Date:** 2026-05-07 · **Status:** Architecture Review Committee Edition
