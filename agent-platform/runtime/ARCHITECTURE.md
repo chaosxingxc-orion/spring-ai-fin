@@ -1,18 +1,18 @@
-# runtime — Kernel Binding Seam (L2)
+# runtime -- Kernel Binding Seam (L2)
 
-> **L2 sub-architecture of `agent-platform/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) · L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
+> **L2 sub-architecture of `agent-platform/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) . L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
 
 ---
 
 ## 1. Purpose & Boundary
 
-`agent-platform/runtime/` is the **second SAS-1 seam** that may import `agent-runtime.*` (every line annotated with `// sas-1-seam:`). The first seam is `bootstrap/` (assembly); this is the runtime-binding seam (production-only — stub-binding doesn't import `agent-runtime.*`).
+`agent-platform/runtime/` is the **second SAS-1 seam** that may import `agent-runtime.*` (every line annotated with `// sas-1-seam:`). The first seam is `bootstrap/` (assembly); this is the runtime-binding seam (production-only -- stub-binding doesn't import `agent-runtime.*`).
 
 Three concerns:
 
 1. **Real-kernel binding**: `RealKernelBackend` wraps `agent-runtime.server.AgentRuntime` and exposes 7 facade callables.
 2. **Lifespan supervisor**: `LifespanController` runs background tasks (rehydrate, lease-expiry, watchdog, idempotency-purge, outbox-relay, SIGTERM drain).
-3. **JWT validation seam**: `AuthSeam` mounts `agent-runtime.auth.JwtValidator` and exposes a façade callable for the filter chain.
+3. **JWT validation seam**: `AuthSeam` mounts `agent-runtime.auth.JwtValidator` and exposes a facade callable for the filter chain.
 
 Does NOT own:
 
@@ -29,12 +29,12 @@ Hi-agent's W31-N introduced this split: bootstrap was approaching its LOC budget
 
 ```
 agent-platform/                <- can NOT import agent-runtime.* anywhere except:
-├── bootstrap/                 [SEAM #1] assembly
-│   └── PlatformBootstrap.java   // 100–200 LOC, declarative @Bean
-└── runtime/                   [SEAM #2] kernel binding
-    ├── RealKernelBackend.java     // sas-1-seam: real-kernel-binding
-    ├── LifespanController.java    // sas-1-seam: lifespan tasks
-    └── AuthSeam.java              // sas-1-seam: JWT primitives
++-- bootstrap/                 [SEAM #1] assembly
+|   +-- PlatformBootstrap.java   // 100-200 LOC, declarative @Bean
++-- runtime/                   [SEAM #2] kernel binding
+    +-- RealKernelBackend.java     // sas-1-seam: real-kernel-binding
+    +-- LifespanController.java    // sas-1-seam: lifespan tasks
+    +-- AuthSeam.java              // sas-1-seam: JWT primitives
 ```
 
 Every line that imports `agent-runtime.*` carries a `// sas-1-seam: <reason>` annotation. CI gate `ArchitectureRulesTest::facadeSeams` enumerates these and fails on missing annotations.
@@ -160,11 +160,11 @@ public class AuthSeam {
 
 | Attribute | Target | Verification |
 |---|---|---|
-| Lifespan startup time | ≤ 5s | OperatorShapeGate |
-| SIGTERM drain | ≤ 30s for in-flight runs | `gate/check_sigterm_drain.sh` |
+| Lifespan startup time | <= 5s | OperatorShapeGate |
+| SIGTERM drain | <= 30s for in-flight runs | `gate/check_sigterm_drain.sh` |
 | Lease expiry | re-claims within `lease_ttl + 1s` | `tests/integration/LeaseRecoveryIT` |
 | Idempotency purge | clears expired rows; emits counter | `tests/integration/IdempotencyTtlPurgeIT` |
-| Outbox relay | publishes pending events ≤ 200ms | `tests/integration/OutboxLatencyIT` |
+| Outbox relay | publishes pending events <= 200ms | `tests/integration/OutboxLatencyIT` |
 | Auth seam | rejects malformed JWT in research/prod; passes in dev | `tests/integration/AuthSeamIT` |
 
 ---

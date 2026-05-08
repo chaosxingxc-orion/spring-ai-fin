@@ -1,8 +1,8 @@
 # Secrets Lifecycle
 
-**Status**: v1 — created 2026-05-08 in response to security review §P1-9
+**Status**: v1 -- created 2026-05-08 in response to security review sec-P1-9
 **Owner**: Platform team (GOV) + Customer security team
-**Companion**: [`security-control-matrix.md`](security-control-matrix.md) §15
+**Companion**: [`security-control-matrix.md`](security-control-matrix.md) sec-15
 
 This document specifies the full lifecycle of every secret used by spring-ai-fin: source, rotation, revocation, scoping, memory handling, no-logging, break-glass.
 
@@ -13,7 +13,7 @@ This document specifies the full lifecycle of every secret used by spring-ai-fin
 | Secret | Used by | Rotation cadence | Storage |
 |---|---|---|---|
 | `APP_JWT_SECRET` (HS256) | `JwtValidator` (BYOC HS256 carve-out only) | 90 days | OpenBao primary; K8s Secret fallback |
-| JWKS public key fingerprints | `JwksValidator` | Per IdP key rotation (typically 90 days) | Platform JWKS cache (TTL ≤ 1h) |
+| JWKS public key fingerprints | `JwksValidator` | Per IdP key rotation (typically 90 days) | Platform JWKS cache (TTL <= 1h) |
 | Postgres credentials | `agent-runtime/server/DataSource` | 30 days | OpenBao |
 | Valkey credentials | `agent-runtime/llm/PromptCache` | 30 days | OpenBao |
 | LLM provider API keys (Anthropic, DeepSeek, OpenAI-compat) | `LLMGateway.CredentialPool` | Per provider TOS (Anthropic 90d, OpenAI 365d, DeepSeek 90d) | OpenBao; per-tenant |
@@ -32,7 +32,7 @@ This document specifies the full lifecycle of every secret used by spring-ai-fin
 
 ### 2.1 OpenBao primary (replaces HashiCorp Vault BUSL)
 
-- **Why**: license safety per L0 D-15 (BUSL → MPL 2.0)
+- **Why**: license safety per L0 D-15 (BUSL -> MPL 2.0)
 - **Auth**: Spring Boot integration via `spring-cloud-vault` adapter against OpenBao API (compatible)
 - **Path namespace**:
   - `secret/spring-ai-fin/platform/<env>/<secret-name>` for platform-shared secrets
@@ -67,7 +67,7 @@ This document specifies the full lifecycle of every secret used by spring-ai-fin
 
 ### 3.2 Rotation mechanism
 
-- **Atomic rotation**: new credential generated → tested in shadow mode → swapped atomically; rollback capability for 24h
+- **Atomic rotation**: new credential generated -> tested in shadow mode -> swapped atomically; rollback capability for 24h
 - **Zero-downtime**: rotation does not require service restart; secrets re-read on next request via `SecretRefresher` (`@RefreshScope` Spring annotation)
 - **Audit**: rotation event = `AuditClass.SECURITY_EVENT`; `springaifin_secret_rotated_total{secret_name}` metric
 
@@ -154,9 +154,9 @@ public class HmacSigner {
 ### 7.1 Log redaction
 
 - `LogRedactor` (Presidio-integrated) redacts:
-  - Anything matching `Bearer\s+[A-Za-z0-9._-]+` → `Bearer <REDACTED>`
-  - Anything matching `(api_key|secret|password|token)["\s:=]+[A-Za-z0-9_-]+` → `<REDACTED>`
-  - PII (email, SSN, account numbers) → tokenized
+  - Anything matching `Bearer\s+[A-Za-z0-9._-]+` -> `Bearer <REDACTED>`
+  - Anything matching `(api_key|secret|password|token)["\s:=]+[A-Za-z0-9_-]+` -> `<REDACTED>`
+  - PII (email, SSN, account numbers) -> tokenized
 - Applied at log emit, not log write (defence-in-depth)
 
 ### 7.2 Trace attributes
@@ -237,7 +237,7 @@ Platform team responsibilities:
 
 This document is owned by GOV. Adding a new secret class requires:
 
-- PR adding to §1 inventory
+- PR adding to sec-1 inventory
 - Defined rotation cadence
 - Defined source
 - Defined memory-handling pattern

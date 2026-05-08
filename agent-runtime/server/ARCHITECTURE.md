@@ -1,6 +1,6 @@
-# server — AgentRuntime + RunManager + DurableBackends + RLS Protocol (L2)
+# server -- AgentRuntime + RunManager + DurableBackends + RLS Protocol (L2)
 
-> **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) · L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
+> **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) . L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
 
 ---
 
@@ -10,14 +10,14 @@
 
 Owns:
 
-- `AgentRuntime` — top-level umbrella; built by `agent-platform/runtime/RealKernelBackend`
-- `RunManager` — run lifecycle state machine + lease heartbeat + queue-worker dispatch
-- `DurableBackends.build()` — single construction path for all durable stores (Rule 6)
+- `AgentRuntime` -- top-level umbrella; built by `agent-platform/runtime/RealKernelBackend`
+- `RunManager` -- run lifecycle state machine + lease heartbeat + queue-worker dispatch
+- `DurableBackends.build()` -- single construction path for all durable stores (Rule 6)
 - 8 durable stores: `RunStore`, `RunQueue`, `EventStore`, `IdempotencyStore`, `GateStore`, `AuditStore`, `OutboxStore`, `SessionStore`
-- `EventBus` — in-process pub-sub for outbox subscribers and SSE event fan-out
-- `TenantBinder` — single seam that runs `SET LOCAL app.tenant_id = :tenantId` at the start of every tenant-scoped transaction
-- `RlsConnectionInterceptor` — AOP advice that asserts a tenant binding is active before any tenant-scoped store call runs
-- `TransactionStartGucValidator` — defense-in-depth invoked by `TenantBinder` at the start of every tenant-scoped transaction; asserts `current_setting('app.tenant_id', true)` is empty (i.e., no stale GUC survived from a prior lease) before the new `SET LOCAL` runs. NOT a HikariCP lifecycle hook — `connectionInitSql` runs only at connection creation, not at checkout (per HikariCP docs); the actual safety property is Postgres's transaction-scoped `SET LOCAL` auto-discard, validated by `PooledConnectionLeakageIT`.
+- `EventBus` -- in-process pub-sub for outbox subscribers and SSE event fan-out
+- `TenantBinder` -- single seam that runs `SET LOCAL app.tenant_id = :tenantId` at the start of every tenant-scoped transaction
+- `RlsConnectionInterceptor` -- AOP advice that asserts a tenant binding is active before any tenant-scoped store call runs
+- `TransactionStartGucValidator` -- defense-in-depth invoked by `TenantBinder` at the start of every tenant-scoped transaction; asserts `current_setting('app.tenant_id', true)` is empty (i.e., no stale GUC survived from a prior lease) before the new `SET LOCAL` runs. NOT a HikariCP lifecycle hook -- `connectionInitSql` runs only at connection creation, not at checkout (per HikariCP docs); the actual safety property is Postgres's transaction-scoped `SET LOCAL` auto-discard, validated by `PooledConnectionLeakageIT`.
 
 Does NOT own:
 
@@ -80,7 +80,7 @@ flowchart TB
 
 ---
 
-## 3. RunManager — state machine
+## 3. RunManager -- state machine
 
 ```java
 public class RunManager {
@@ -126,15 +126,15 @@ Every entry to a tenant-scoped store call goes through `TenantBinder.inTenantTra
 ## 4. State transitions
 
 ```
-INITIALIZED → WORKING → AWAITING_TOOL → WORKING → AWAITING_HITL → WORKING → FINALIZING → TERMINAL
-                                                                        ↘ TERMINAL (CANCELLED / FAILED)
+INITIALIZED -> WORKING -> AWAITING_TOOL -> WORKING -> AWAITING_HITL -> WORKING -> FINALIZING -> TERMINAL
+                                                                        -> TERMINAL (CANCELLED / FAILED)
 ```
 
-Single write path: `RunManager.transition(runId, fromState, toState)` rejects illegal edges (e.g., `TERMINAL → WORKING`). Lock-free via Postgres compare-and-swap (`UPDATE ... WHERE state = fromState`).
+Single write path: `RunManager.transition(runId, fromState, toState)` rejects illegal edges (e.g., `TERMINAL -> WORKING`). Lock-free via Postgres compare-and-swap (`UPDATE ... WHERE state = fromState`).
 
 ---
 
-## 5. DurableBackends — single construction path (Rule 6)
+## 5. DurableBackends -- single construction path (Rule 6)
 
 ```java
 public class DurableBackends {
@@ -164,13 +164,13 @@ public class DurableBackends {
 
 ## 6. Tenant RLS connection protocol
 
-The platform claims that every tenant-scoped record in Postgres is RLS-isolated. That claim is real **only if every database transaction runs with the right tenant binding active**. The protocol below makes the binding a structural property of the data path, not a matter of caller discipline. This is the explicit answer to security review §P0-3 and remediation §7.3.
+The platform claims that every tenant-scoped record in Postgres is RLS-isolated. That claim is real **only if every database transaction runs with the right tenant binding active**. The protocol below makes the binding a structural property of the data path, not a matter of caller discipline. This is the explicit answer to security review sec-P0-3 and remediation sec-7.3.
 
 ### 6.1 Three layered guarantees
 
 1. **Database (Postgres RLS)**: every tenant-scoped table has `ENABLE ROW LEVEL SECURITY` plus a policy of the shape `USING (tenant_id = current_setting('app.tenant_id'))`. Migrations ship the policy alongside the table; `RlsPolicyCoverageTest` greps the Flyway scripts and asserts every tenant-scoped table has its policy.
 2. **Connection (`SET LOCAL app.tenant_id`)**: every tenant-scoped transaction issues `SET LOCAL app.tenant_id = :tenantId` immediately after `BEGIN` and before any tenant-scoped read or write. Because `SET LOCAL` is transaction-scoped, the binding cannot leak past `COMMIT` / `ROLLBACK`.
-3. **Pool (transaction-scoped GUC; not `connectionInitSql`)**: `app.tenant_id` is set with `SET LOCAL`, which Postgres scopes to the current transaction and **automatically discards on `COMMIT` / `ROLLBACK`** (per Postgres docs on `SET LOCAL`). When the connection returns to the HikariCP pool, no `app.tenant_id` value persists on it. This is the actual safety property; it does **not** depend on HikariCP `connectionInitSql` — that hook only runs once when a new connection is created and added to the pool, **not on every checkout**, so it is unsuitable as a per-checkout reset mechanism. Defense-in-depth: `TenantBinder` validates that `current_setting('app.tenant_id', true)` is empty at the start of each transaction (catches a hypothetical `SET` without `LOCAL` from a different code path). `PooledConnectionLeakageIT` proves connection reuse does not leak state by leasing a connection under tenant A, returning it, and asserting the next lease for tenant B starts with no `app.tenant_id` set.
+3. **Pool (transaction-scoped GUC; not `connectionInitSql`)**: `app.tenant_id` is set with `SET LOCAL`, which Postgres scopes to the current transaction and **automatically discards on `COMMIT` / `ROLLBACK`** (per Postgres docs on `SET LOCAL`). When the connection returns to the HikariCP pool, no `app.tenant_id` value persists on it. This is the actual safety property; it does **not** depend on HikariCP `connectionInitSql` -- that hook only runs once when a new connection is created and added to the pool, **not on every checkout**, so it is unsuitable as a per-checkout reset mechanism. Defense-in-depth: `TenantBinder` validates that `current_setting('app.tenant_id', true)` is empty at the start of each transaction (catches a hypothetical `SET` without `LOCAL` from a different code path). `PooledConnectionLeakageIT` proves connection reuse does not leak state by leasing a connection under tenant A, returning it, and asserting the next lease for tenant B starts with no `app.tenant_id` set.
 
 ### 6.2 The TenantBinder seam
 
@@ -252,7 +252,7 @@ The following are static-analysis violations and fail CI via `RlsConnectionAudit
 - A tenant-scoped store method that does not run inside `TenantBinder.inTenantTransaction`.
 - A `JdbcTemplate.execute(...)` against a tenant-scoped table that did not first issue `SET LOCAL app.tenant_id`.
 - A connection checkout that bypasses HikariCP (e.g., `DriverManager.getConnection`).
-- A query whose WHERE clause filters by `tenant_id` parameter rather than relying on RLS — RLS is the trust boundary; filter-by-parameter is defense-in-depth, not the boundary.
+- A query whose WHERE clause filters by `tenant_id` parameter rather than relying on RLS -- RLS is the trust boundary; filter-by-parameter is defense-in-depth, not the boundary.
 
 ### 6.5 Cross-tenant read returns 404, not empty success
 
@@ -264,7 +264,7 @@ A tenant-scoped query that finds zero rows because the row belongs to another te
 |---|---|
 | `TenantBindingIT` | Every tenant-scoped store call inside `TenantBinder` emits `SET LOCAL app.tenant_id` at transaction start |
 | `RlsConnectionIsolationIT` | A query running under tenant A cannot read rows belonging to tenant B; Postgres returns zero rows; controller maps to 404 |
-| `CrossTenantEventReadReturns404IT` | `GET /v1/runs/{id}/events` for a run owned by tenant B, requested by tenant A, returns 404 — not 200 with an empty array |
+| `CrossTenantEventReadReturns404IT` | `GET /v1/runs/{id}/events` for a run owned by tenant B, requested by tenant A, returns 404 -- not 200 with an empty array |
 | `PooledConnectionLeakageIT` | After a connection serving tenant A returns to the pool, the next checkout for tenant B does not see `app.tenant_id` set to A |
 | `MissingTenantFailsClosedIT` | Under `research` and `prod` posture, a store call without active tenant binding raises `TenantContextMissingException` |
 | `RlsPolicyCoverageTest` | Every Flyway script defining a tenant-scoped table also creates the matching `tenant_isolation` RLS policy |
@@ -303,7 +303,7 @@ A tenant-scoped query that finds zero rows because the row belongs to another te
 
 | Attribute | Target | Verification |
 |---|---|---|
-| Run dispatch p95 (excl. LLM) | ≤ 50ms | OperatorShapeGate |
+| Run dispatch p95 (excl. LLM) | <= 50ms | OperatorShapeGate |
 | Restart-survival | every persisted run recoverable | `tests/integration/RunCrashRecoveryIT` |
 | Lease re-claim | within 60s of expiry | `tests/integration/LeaseRecoveryIT` |
 | Tenant isolation | cross-tenant read returns 404 | `tests/integration/CrossTenantIsolationIT` |
@@ -321,7 +321,7 @@ A tenant-scoped query that finds zero rows because the row belongs to another te
 - **EventBus is process-local**: multi-replica deployment requires every replica to wire to same DB; EventBus does not federate. Adopt Kafka in v1.1.
 - **Single-process kernel**: `_runs` (in-flight registry) is process-local; partial restart between enqueue and event publish reconciles via lease expiry + rehydrate. Cross-process run sharing deferred.
 - **Postgres CAS contention**: at very high concurrency on a single run, CAS may need retry; bounded retry budget configured.
-- **`SHOW app.tenant_id` per-call cost**: cached per-transaction; profiled at <1µs hit; not on hot path.
+- **`SHOW app.tenant_id` per-call cost**: cached per-transaction; profiled at <1us hit; not on hot path.
 
 ---
 
@@ -332,5 +332,5 @@ A tenant-scoped query that finds zero rows because the row belongs to another te
 - Outbox: [`../outbox/ARCHITECTURE.md`](../outbox/ARCHITECTURE.md)
 - Action-guard (consumer of TenantBinder via Stage 2 TenantBindingChecker): [`../action-guard/ARCHITECTURE.md`](../action-guard/ARCHITECTURE.md)
 - Posture: [`../posture/ARCHITECTURE.md`](../posture/ARCHITECTURE.md)
-- Security review: [`../../docs/deep-architecture-security-assessment-2026-05-07.en.md`](../../docs/deep-architecture-security-assessment-2026-05-07.en.md) §P0-3
-- Systematic-architecture-remediation-plan: [`../../docs/systematic-architecture-remediation-plan-2026-05-08.en.md`](../../docs/systematic-architecture-remediation-plan-2026-05-08.en.md) §7.3
+- Security review: [`../../docs/deep-architecture-security-assessment-2026-05-07.en.md`](../../docs/deep-architecture-security-assessment-2026-05-07.en.md) sec-P0-3
+- Systematic-architecture-remediation-plan: [`../../docs/systematic-architecture-remediation-plan-2026-05-08.en.md`](../../docs/systematic-architecture-remediation-plan-2026-05-08.en.md) sec-7.3

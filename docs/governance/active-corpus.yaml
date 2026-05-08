@@ -1,0 +1,310 @@
+# spring-ai-fin active-corpus registry.
+#
+# Per docs/systemic-remediation-operating-plan-2026-05-08.en.md Phase 3 and
+# docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
+# sec-D1.
+#
+# Purpose: replace the ad-hoc filename-skip patterns inside the gate with a
+# single machine-readable registry. The architecture-sync gate derives its
+# scan list from this file. Encoding (`ascii_only_active_corpus`) and
+# closure-language rules apply to every entry under `active_documents`.
+# Documents under `historical_documents` are explicitly excluded with a
+# reason.
+#
+# Schema:
+#   active_documents:
+#     - path: <repo-relative-path>
+#       layer: L0|L1|L2|cross_cutting|governance|plan|gate
+#       owner: <team-or-stream>
+#       encoding_policy: ascii|utf8_clean
+#   historical_documents:
+#     - path: <repo-relative-path>
+#       reason: <one-line rationale>
+#       active_scan: false
+#       banner_required: true|false
+#
+# Update rule: when a new authoritative L2 lands or a current document is
+# superseded, update this file in the same PR. The architecture-sync gate's
+# `active_corpus_registry_freshness` rule (W1 deliverable) will fail if the
+# registry is stale relative to the docs tree.
+
+version: 1
+schema_version: active-corpus/v1
+generated_at: 2026-05-08
+generated_by: cycle-8 architectural commit (sec-D1 + Phase 3)
+
+# Active corpus: scanned for closure-language, encoding, and per-rule
+# violations.
+active_documents:
+
+  # ---- L0 ----
+  - path: ARCHITECTURE.md
+    layer: L0
+    owner: architecture
+    encoding_policy: ascii
+
+  # ---- L1 ----
+  - path: agent-platform/ARCHITECTURE.md
+    layer: L1
+    owner: platform
+    encoding_policy: ascii
+  - path: agent-runtime/ARCHITECTURE.md
+    layer: L1
+    owner: runtime
+    encoding_policy: ascii
+
+  # ---- L2: agent-platform ----
+  - path: agent-platform/contracts/ARCHITECTURE.md
+    layer: L2
+    owner: platform
+    encoding_policy: ascii
+  - path: agent-platform/api/ARCHITECTURE.md
+    layer: L2
+    owner: platform
+    encoding_policy: ascii
+  - path: agent-platform/runtime/ARCHITECTURE.md
+    layer: L2
+    owner: platform
+    encoding_policy: ascii
+  - path: agent-platform/facade/ARCHITECTURE.md
+    layer: L2
+    owner: platform
+    encoding_policy: ascii
+  - path: agent-platform/bootstrap/ARCHITECTURE.md
+    layer: L2
+    owner: platform
+    encoding_policy: ascii
+  - path: agent-platform/cli/ARCHITECTURE.md
+    layer: L2
+    owner: platform
+    encoding_policy: ascii
+  - path: agent-platform/config/ARCHITECTURE.md
+    layer: L2
+    owner: platform
+    encoding_policy: ascii
+
+  # ---- L2: agent-runtime ----
+  - path: agent-runtime/server/ARCHITECTURE.md
+    layer: L2
+    owner: runtime
+    encoding_policy: ascii
+  - path: agent-runtime/runner/ARCHITECTURE.md
+    layer: L2
+    owner: runtime
+    encoding_policy: ascii
+  - path: agent-runtime/llm/ARCHITECTURE.md
+    layer: L2
+    owner: runtime
+    encoding_policy: ascii
+  - path: agent-runtime/skill/ARCHITECTURE.md
+    layer: L2
+    owner: runtime
+    encoding_policy: ascii
+  - path: agent-runtime/capability/ARCHITECTURE.md
+    layer: L2
+    owner: runtime
+    encoding_policy: ascii
+  - path: agent-runtime/memory/ARCHITECTURE.md
+    layer: L2
+    owner: runtime
+    encoding_policy: ascii
+  - path: agent-runtime/knowledge/ARCHITECTURE.md
+    layer: L2
+    owner: runtime
+    encoding_policy: ascii
+  - path: agent-runtime/adapters/ARCHITECTURE.md
+    layer: L2
+    owner: runtime
+    encoding_policy: ascii
+  - path: agent-runtime/observability/ARCHITECTURE.md
+    layer: L2
+    owner: runtime
+    encoding_policy: ascii
+  - path: agent-runtime/outbox/ARCHITECTURE.md
+    layer: L2
+    owner: runtime
+    encoding_policy: ascii
+  - path: agent-runtime/posture/ARCHITECTURE.md
+    layer: L2
+    owner: runtime
+    encoding_policy: ascii
+  - path: agent-runtime/auth/ARCHITECTURE.md
+    layer: L2
+    owner: runtime
+    encoding_policy: ascii
+  - path: agent-runtime/action-guard/ARCHITECTURE.md
+    layer: L2
+    owner: runtime
+    encoding_policy: ascii
+  - path: agent-runtime/audit/ARCHITECTURE.md
+    layer: L2
+    owner: runtime
+    encoding_policy: ascii
+  - path: agent-runtime/evolve/ARCHITECTURE.md
+    layer: L2
+    owner: runtime
+    encoding_policy: ascii
+  - path: agent-runtime/runtime/ARCHITECTURE.md
+    layer: L2
+    owner: runtime
+    encoding_policy: ascii
+
+  # ---- Cross-cutting current docs ----
+  - path: docs/security-control-matrix.md
+    layer: cross_cutting
+    owner: security
+    encoding_policy: ascii
+  - path: docs/trust-boundary-diagram.md
+    layer: cross_cutting
+    owner: security
+    encoding_policy: ascii
+  - path: docs/sidecar-security-profile.md
+    layer: cross_cutting
+    owner: security
+    encoding_policy: ascii
+  - path: docs/gateway-conformance-profile.md
+    layer: cross_cutting
+    owner: platform
+    encoding_policy: ascii
+  - path: docs/secrets-lifecycle.md
+    layer: cross_cutting
+    owner: security
+    encoding_policy: ascii
+  - path: docs/supply-chain-controls.md
+    layer: cross_cutting
+    owner: security
+    encoding_policy: ascii
+  - path: docs/observability/cardinality-policy.md
+    layer: cross_cutting
+    owner: observability
+    encoding_policy: ascii
+
+  # ---- Governance corpus ----
+  - path: docs/governance/architecture-status.yaml
+    layer: governance
+    owner: architecture
+    encoding_policy: ascii
+  - path: docs/governance/decision-sync-matrix.md
+    layer: governance
+    owner: architecture
+    encoding_policy: ascii
+  - path: docs/governance/closure-taxonomy.md
+    layer: governance
+    owner: architecture
+    encoding_policy: ascii
+  - path: docs/governance/maturity-glossary.md
+    layer: governance
+    owner: architecture
+    encoding_policy: ascii
+  - path: docs/governance/allowlists.yaml
+    layer: governance
+    owner: architecture
+    encoding_policy: ascii
+  - path: docs/governance/current-architecture-index.md
+    layer: governance
+    owner: architecture
+    encoding_policy: ascii
+  - path: docs/governance/evidence-manifest.yaml
+    layer: governance
+    owner: architecture
+    encoding_policy: ascii
+  - path: docs/governance/active-corpus.yaml
+    layer: governance
+    owner: architecture
+    encoding_policy: ascii
+
+  # ---- Plans ----
+  - path: docs/plans/W0-evidence-skeleton.md
+    layer: plan
+    owner: architecture
+    encoding_policy: ascii
+  - path: docs/plans/roadmap-W0-W4.md
+    layer: plan
+    owner: architecture
+    encoding_policy: ascii
+
+  # ---- Gate ----
+  - path: gate/README.md
+    layer: gate
+    owner: architecture
+    encoding_policy: ascii
+  - path: docs/delivery/README.md
+    layer: gate
+    owner: architecture
+    encoding_policy: ascii
+
+# Historical documents: explicitly excluded from active scans.
+# They legitimately reference superseded designs or forbidden phrases for
+# traceability and review record. They MUST carry a "HISTORICAL DOCUMENT"
+# banner where banner_required is true.
+historical_documents:
+
+  - path: docs/architecture-v5.0.md
+    reason: superseded design (architecture v5.0)
+    active_scan: false
+    banner_required: true
+  - path: docs/architecture-v5.0-review-2026-05-07.md
+    reason: review record for superseded design v5.0
+    active_scan: false
+    banner_required: true
+  - path: docs/architecture-review-2026-05-07.md
+    reason: review record predating cycle-1
+    active_scan: false
+    banner_required: true
+  - path: docs/deep-architecture-security-assessment-2026-05-07.en.md
+    reason: original security assessment that introduced the P0-* findings
+    active_scan: false
+    banner_required: true
+  - path: docs/security-response-2026-05-08.md
+    reason: response history preserved for traceability
+    active_scan: false
+    banner_required: true
+
+  # Review-cycle inputs: these are reviewer prose that legitimately uses
+  # forbidden phrases when describing them. They are quarantined from the
+  # gate via filename-pattern exclusion, NOT banner-marked, because they
+  # are inputs to specific cycles rather than design documents.
+  - path: docs/systematic-architecture-improvement-plan-2026-05-07.en.md
+    reason: review input (improvement plan)
+    active_scan: false
+    banner_required: false
+  - path: docs/systematic-architecture-remediation-plan-2026-05-08.en.md
+    reason: review input (cycle 1)
+    active_scan: false
+    banner_required: false
+  - path: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-2.en.md
+    reason: review input (cycle 2)
+    active_scan: false
+    banner_required: false
+  - path: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-3.en.md
+    reason: review input (cycle 3)
+    active_scan: false
+    banner_required: false
+  - path: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-4.en.md
+    reason: review input (cycle 4)
+    active_scan: false
+    banner_required: false
+  - path: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md
+    reason: review input (cycle 5)
+    active_scan: false
+    banner_required: false
+  - path: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-6.en.md
+    reason: review input (cycle 6)
+    active_scan: false
+    banner_required: false
+  - path: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-7.en.md
+    reason: review input (cycle 7)
+    active_scan: false
+    banner_required: false
+  - path: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
+    reason: review input (cycle 8)
+    active_scan: false
+    banner_required: false
+  - path: docs/systemic-remediation-operating-plan-2026-05-08.en.md
+    reason: review input (systemic operating plan)
+    active_scan: false
+    banner_required: false
+  - path: docs/systematic-architecture-remediation-cycle-8-response.en.md
+    reason: cycle-8 response document (records reviewer prose verbatim)
+    active_scan: false
+    banner_required: false

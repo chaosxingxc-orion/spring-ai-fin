@@ -1,6 +1,6 @@
-# config — Settings + Version Pin (L2)
+# config -- Settings + Version Pin (L2)
 
-> **L2 sub-architecture of `agent-platform/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) · L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
+> **L2 sub-architecture of `agent-platform/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) . L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
 
 ---
 
@@ -13,14 +13,14 @@
 
 Owns:
 
-- `ContractVersion.java` — version constants
-- `PlatformSettings.java` — `@ConfigurationProperties` record bound to `app.*` properties
-- `application.yaml` — defaults for all postures
-- `application-{dev,research,prod}.yaml` — posture-specific overrides
+- `ContractVersion.java` -- version constants
+- `PlatformSettings.java` -- `@ConfigurationProperties` record bound to `app.*` properties
+- `application.yaml` -- defaults for all postures
+- `application-{dev,research,prod}.yaml` -- posture-specific overrides
 
 Does NOT own:
 
-- **Posture itself** — owned by `agent-runtime/posture/AppPosture.java`. We surface posture choice via Spring Profile activation.
+- **Posture itself** -- owned by `agent-runtime/posture/AppPosture.java`. We surface posture choice via Spring Profile activation.
 - Per-tenant overrides (deferred to v1.1+; see hi-agent's W35-T7 for the pattern)
 - Lease intervals, retention policies (deferred; tracked in `docs/governance/retention-roadmap.md`)
 - Model routing config (deferred to v1.1+)
@@ -141,7 +141,7 @@ Bound via `@EnableConfigurationProperties(PlatformSettings.class)` in `bootstrap
 
 | Attribute | Target | Verification |
 |---|---|---|
-| Settings count at v1 | ≤ 6 (4 in PlatformSettings + 2 env: posture + jwt-secret) | `SettingsLocTest` |
+| Settings count at v1 | <= 6 (4 in PlatformSettings + 2 env: posture + jwt-secret) | `SettingsLocTest` |
 | Posture-profile override | overrides apply correctly | `tests/integration/PostureProfileIT` |
 | Contract freeze cross-check | `V1_FROZEN_HEAD` matches `contract_v1_freeze.json` | `ContractFreezeTest` |
 | Boot-time validation | port/path validity at startup | `tests/integration/SettingsValidationIT` |

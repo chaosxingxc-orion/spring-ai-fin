@@ -1,6 +1,6 @@
-# llm — LLM Gateway + Prompt-Security Control Plane (L2)
+# llm -- LLM Gateway + Prompt-Security Control Plane (L2)
 
-> **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) · L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
+> **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) . L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
 
 ---
 
@@ -10,23 +10,23 @@
 
 Owns:
 
-- `LLMGateway` — wraps Spring AI `ChatClient` per provider; binds to ReactorScheduler (Rule 5)
-- `TierRouter` — maps purpose × complexity × budget × confidence → tier (`strong` / `medium` / `light`)
-- `FailoverChain` — ordered provider sequence with HTTP-error classification
-- `BudgetTracker` — per-tenant per-call cost ceilings; raises `LLMBudgetExceededException`
-- `PromptCache` — Spring AI prompt cache adapter (Anthropic-style cache_control blocks; OpenAI-compat prefix cache); cache keys include security classification (see §6)
-- `CredentialPool` — per-provider credential rotation; disable on auth_permanent / billing errors
-- `PromptComposer` — constructs the prompt from typed sections (see §6); never accepts a single raw String "prompt"
-- `PromptSection` — typed enum naming each prompt region (see §6.1)
-- `TaintLevel` — typed enum for the kind of trust attached to a piece of prompt input (see §6.2)
-- `PromptTaintPropagator` — propagates taint from input sections to model output and to any tool calls the model produces
+- `LLMGateway` -- wraps Spring AI `ChatClient` per provider; binds to ReactorScheduler (Rule 5)
+- `TierRouter` -- maps purpose x complexity x budget x confidence -> tier (`strong` / `medium` / `light`)
+- `FailoverChain` -- ordered provider sequence with HTTP-error classification
+- `BudgetTracker` -- per-tenant per-call cost ceilings; raises `LLMBudgetExceededException`
+- `PromptCache` -- Spring AI prompt cache adapter (Anthropic-style cache_control blocks; OpenAI-compat prefix cache); cache keys include security classification (see sec-6)
+- `CredentialPool` -- per-provider credential rotation; disable on auth_permanent / billing errors
+- `PromptComposer` -- constructs the prompt from typed sections (see sec-6); never accepts a single raw String "prompt"
+- `PromptSection` -- typed enum naming each prompt region (see sec-6.1)
+- `TaintLevel` -- typed enum for the kind of trust attached to a piece of prompt input (see sec-6.2)
+- `PromptTaintPropagator` -- propagates taint from input sections to model output and to any tool calls the model produces
 
 Does NOT own:
 
-- Capability invocation, action governance (delegated to `../action-guard/`) — but tool calls produced by the LLM go through ActionGuard with their taint preserved
+- Capability invocation, action governance (delegated to `../action-guard/`) -- but tool calls produced by the LLM go through ActionGuard with their taint preserved
 - Persisted run state (delegated to `../server/`)
-- Framework dispatch (delegated to `../adapters/`) — adapters call this gateway
-- Audit storage (delegated to `../audit/`) — audit class for tool calls is computed by ActionGuard from the propagated taint
+- Framework dispatch (delegated to `../adapters/`) -- adapters call this gateway
+- Audit storage (delegated to `../audit/`) -- audit class for tool calls is computed by ActionGuard from the propagated taint
 
 ---
 
@@ -36,7 +36,7 @@ Does NOT own:
 
 v5.0 listed 80+ components including 4 model tiers (Pro / Flash / Specialist / fine-tuned). v6.0 review (M7) found this premature: at MVP, one provider is sufficient; multi-tier is added when traffic justifies.
 
-v6.0: `LLMGateway` is the single seam. Adapters never call Spring AI's `ChatClient` directly except inside `SpringAiAdapter` — and even there, `SpringAiAdapter.chatClient` is provided as `@Bean`, built by this package.
+v6.0: `LLMGateway` is the single seam. Adapters never call Spring AI's `ChatClient` directly except inside `SpringAiAdapter` -- and even there, `SpringAiAdapter.chatClient` is provided as `@Bean`, built by this package.
 
 ### Four reasons for the wrapper
 
@@ -99,8 +99,8 @@ public record LLMRequest(
 }
 
 public record PromptSegment(
-    @NonNull PromptSection section,                // see §6.1
-    @NonNull TaintLevel taint,                     // see §6.2
+    @NonNull PromptSection section,                // see sec-6.1
+    @NonNull TaintLevel taint,                     // see sec-6.2
     @NonNull String content                        // canonical text or token stream
 ) {}
 
@@ -108,7 +108,7 @@ public record LLMResponse(
     @NonNull String tenantId,                      // spine
     @Nullable String runId,                        // spine
     @NonNull String text,
-    @NonNull TaintLevel outputTaint,               // see §6.3 (output taint = sup of input taints)
+    @NonNull TaintLevel outputTaint,               // see sec-6.3 (output taint = sup of input taints)
     @NonNull String modelUsed,
     @NonNull String providerUsed,
     @NonNull TokenUsage tokens,
@@ -141,15 +141,15 @@ public record FailoverReason(
 | **AD-5: BudgetTracker raises LLMBudgetExceededException** | Sync exception, not silent return | Budget exhaustion is an explicit signal; runner decides to fail or gate |
 | **AD-6: Prompt cache namespace + classification** | Cache keys composed of `tenant_id`, `model`, `prompt_version`, `section_classification` | Cross-tenant cache leak prevented at construction (Rule 11); cross-classification leak (e.g., a tenant-policy hash also keying user-input output) prevented by classification (P0-5; P1-3) |
 | **AD-7: TierRouter is pluggable** | Default rolling-EMA-per-tier; customer can override via `@ConditionalOnMissingBean` | Cost-sensitive customers can swap to RouteLLM (deferred Tier-2) |
-| **AD-8: One inference engine at MVP** | vLLM **or** OpenAI-compat — pick one (review M7) | v5.0's 3-engine multi-tier was premature |
-| **AD-9: Typed PromptSegment, no raw String prompts** | `LLMRequest.segments: List<PromptSegment>`; raw String constructor forbidden | addresses P0-5 (status: design_accepted); the dangerous moment is "raw user input → tool call"; making sections + taint mandatory makes the dangerous shape unconstructable |
+| **AD-8: One inference engine at MVP** | vLLM **or** OpenAI-compat -- pick one (review M7) | v5.0's 3-engine multi-tier was premature |
+| **AD-9: Typed PromptSegment, no raw String prompts** | `LLMRequest.segments: List<PromptSegment>`; raw String constructor forbidden | addresses P0-5 (status: design_accepted); the dangerous moment is "raw user input -> tool call"; making sections + taint mandatory makes the dangerous shape unconstructable |
 | **AD-10: Output taint = supremum of input taints** | `outputTaint = max(inputTaint)` per `TaintLevel` ordering | Conservatively propagate; tool calls produced from a UNTRUSTED retrieved-context segment carry UNTRUSTED through ActionGuard |
 
 ---
 
 ## 6. Prompt-security control plane
 
-The dangerous moment in an LLM-driven agent is not the user prompt itself — it is the conversion of model output (which absorbed taint from many sections) into a side effect via a tool call. The control plane makes the prompt's structure, taint, and cache classification **typed and verifiable** rather than convention-driven.
+The dangerous moment in an LLM-driven agent is not the user prompt itself -- it is the conversion of model output (which absorbed taint from many sections) into a side effect via a tool call. The control plane makes the prompt's structure, taint, and cache classification **typed and verifiable** rather than convention-driven.
 
 ### 6.1 PromptSection taxonomy
 
@@ -221,7 +221,7 @@ section_classification = sorted-tuple-of (
 
 Two important consequences:
 
-- A cache hit is only possible when **every** section's classification matches — a SYSTEM-sections-only key cannot retrieve an entry that included a USER_INPUT section.
+- A cache hit is only possible when **every** section's classification matches -- a SYSTEM-sections-only key cannot retrieve an entry that included a USER_INPUT section.
 - Raw user prompt content never enters key derivation. The classifier consumes a `Redactor.classifyAndRedact(content)` hash for any segment whose taint is `ATTRIBUTED_USER` or higher.
 
 ### 6.4 Forbidden surfaces
@@ -231,10 +231,10 @@ The platform guarantees that **none** of the following surfaces ever carries a r
 - log lines (`log.info("prompt={}", ...)`)
 - metric labels (`tenant_id`, `provider`, `model`, etc. are typed; raw text is never a label value)
 - OpenTelemetry span attributes (the prompt is referenced by hash, not by content)
-- prompt cache keys (see §6.3)
+- prompt cache keys (see sec-6.3)
 - audit metadata (audit stores classification + hash, not raw text)
 
-These are enforced by named CI gates in `../observability/` and tested per §7 below.
+These are enforced by named CI gates in `../observability/` and tested per sec-7 below.
 
 ### 6.5 Tool-call taint to ActionGuard
 
@@ -299,11 +299,11 @@ Every fallback is recorded in `LLMResponse.fallbackEvents` (Rule 7 four-prong).
 
 | Attribute | Target | Verification |
 |---|---|---|
-| LLM call p95 (excl. provider) | ≤ 50ms gateway overhead | OperatorShapeGate |
-| Failover round-trip | ≤ 200ms p95 (one fallback) | `tests/integration/FailoverChainIT` |
+| LLM call p95 (excl. provider) | <= 50ms gateway overhead | OperatorShapeGate |
+| Failover round-trip | <= 200ms p95 (one fallback) | `tests/integration/FailoverChainIT` |
 | Cross-loop stability | 3 sequential runs reuse same WebClient | `gate/check_cross_loop.sh` |
 | Mock vs real | T3 gate refuses mock provider in research/prod | `gate/check_llm_real.sh` |
-| Provenance | Every run has ≥1 real-provider request | `gate/check_real_provenance.sh` |
+| Provenance | Every run has >=1 real-provider request | `gate/check_real_provenance.sh` |
 | No raw prompt in logs / traces / metric labels / cache keys | enforced by CI | `NoRawPromptInLogsTest`, `NoRawToolArgsInTracesTest`, `PromptCacheClassificationTest` (in `../observability/`) |
 | Prompt segments are typed | `LLMRequest.segments: List<PromptSegment>` is the only constructor | `PromptSectionTaxonomyTest` |
 | Tool-output taint reaches ActionGuard | every model-generated tool call's envelope has the right `proposalTaint` | `ToolOutputTaintToActionGuardIT` |
@@ -327,6 +327,6 @@ Every fallback is recorded in `LLMResponse.fallbackEvents` (Rule 7 four-prong).
 - L1: [`../ARCHITECTURE.md`](../ARCHITECTURE.md)
 - Adapters: [`../adapters/ARCHITECTURE.md`](../adapters/ARCHITECTURE.md)
 - Action-guard (consumer of ActionEnvelope from LLM tool calls): [`../action-guard/ARCHITECTURE.md`](../action-guard/ARCHITECTURE.md)
-- Observability privacy policy: [`../observability/ARCHITECTURE.md`](../observability/ARCHITECTURE.md) §6
-- Security review §P0-5: [`../../docs/deep-architecture-security-assessment-2026-05-07.en.md`](../../docs/deep-architecture-security-assessment-2026-05-07.en.md)
-- Systematic-architecture-remediation-plan: [`../../docs/systematic-architecture-remediation-plan-2026-05-08.en.md`](../../docs/systematic-architecture-remediation-plan-2026-05-08.en.md) §7.4
+- Observability privacy policy: [`../observability/ARCHITECTURE.md`](../observability/ARCHITECTURE.md) sec-6
+- Security review sec-P0-5: [`../../docs/deep-architecture-security-assessment-2026-05-07.en.md`](../../docs/deep-architecture-security-assessment-2026-05-07.en.md)
+- Systematic-architecture-remediation-plan: [`../../docs/systematic-architecture-remediation-plan-2026-05-08.en.md`](../../docs/systematic-architecture-remediation-plan-2026-05-08.en.md) sec-7.4

@@ -1,26 +1,26 @@
-# evolve — Postmortem + Experiments + Champion/Challenger (L2)
+# evolve -- Postmortem + Experiments + Champion/Challenger (L2)
 
-> **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) · L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
+> **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) . L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
 
 ---
 
 ## 1. Purpose & Boundary
 
-`evolve/` owns the **evolution primitives**: postmortem, experiment management, champion/challenger versioning, recurrence ledger. At v1, this package provides primitives only — the full **auto-optimization flywheel** (Reflection → Sedimentation → Auto-optimizer) is **deferred to v1.1** as a research-posture-only opt-in feature (per L0 §9 and the v5.0 review M7).
+`evolve/` owns the **evolution primitives**: postmortem, experiment management, champion/challenger versioning, recurrence ledger. At v1, this package provides primitives only -- the full **auto-optimization flywheel** (Reflection -> Sedimentation -> Auto-optimizer) is **deferred to v1.1** as a research-posture-only opt-in feature (per L0 sec-9 and the v5.0 review M7).
 
 Owns:
 
-- `ExperimentStore` — versioned experiment records; per-tenant
-- `ChampionChallenger` — A/B traffic split between champion (production) and challenger versions
-- `PostmortemAnalyser` — structured analysis of failed runs; outputs human-reviewable findings
-- `RecurrenceLedger` — repeat-cause tracking (mirrors hi-agent's `recurrence-ledger.yaml` discipline)
-- `RegressionDetector` — Golden-Set comparison for behaviour drift
+- `ExperimentStore` -- versioned experiment records; per-tenant
+- `ChampionChallenger` -- A/B traffic split between champion (production) and challenger versions
+- `PostmortemAnalyser` -- structured analysis of failed runs; outputs human-reviewable findings
+- `RecurrenceLedger` -- repeat-cause tracking (mirrors hi-agent's `recurrence-ledger.yaml` discipline)
+- `RegressionDetector` -- Golden-Set comparison for behaviour drift
 
 Does NOT own:
 
 - Run execution (delegated to `../runner/`)
 - LLM-powered reflection (deferred to v1.1; would be `ReflectionEngine` here when adopted)
-- DSPy-based asset sedimentation (Tier-3 deferred per L0 §9)
+- DSPy-based asset sedimentation (Tier-3 deferred per L0 sec-9)
 - Auto-optimizer (Tier-3 deferred)
 
 ---
@@ -29,17 +29,17 @@ Does NOT own:
 
 The v5.0 review (M7) demoted "continuous cost reduction" and "continuous evolution" from first principles to operational disciplines. v1 ships:
 
-- **ExperimentStore** primitive — store experiment records for manual review
-- **ChampionChallenger** primitive — manual A/B split for skill versions
-- **PostmortemAnalyser** primitive — schema for structured postmortem; LLM-aided analysis is opt-in
-- **RecurrenceLedger** primitive — repeated-defect tracking
+- **ExperimentStore** primitive -- store experiment records for manual review
+- **ChampionChallenger** primitive -- manual A/B split for skill versions
+- **PostmortemAnalyser** primitive -- schema for structured postmortem; LLM-aided analysis is opt-in
+- **RecurrenceLedger** primitive -- repeated-defect tracking
 
 What's deferred:
 
-- **Reflection engine** (LLM analyses failure traces) — v1.1 research-posture opt-in with Rule 7 four-prong
-- **Sedimentation** (DSPy mining successful patterns) — v1.1 Tier-3
-- **Auto-optimizer** (proposes prompt/model changes from reflection + sedimentation) — v1.1 with HITL approval gate
-- **Dreaming engine** (memory consolidation) — v1.1 in `../memory/L2DreamConsolidator`
+- **Reflection engine** (LLM analyses failure traces) -- v1.1 research-posture opt-in with Rule 7 four-prong
+- **Sedimentation** (DSPy mining successful patterns) -- v1.1 Tier-3
+- **Auto-optimizer** (proposes prompt/model changes from reflection + sedimentation) -- v1.1 with HITL approval gate
+- **Dreaming engine** (memory consolidation) -- v1.1 in `../memory/L2DreamConsolidator`
 
 The v1 architecture is **flywheel-ready**: outbox emits `cost_observed` and `trace_emitted` events; ExperimentStore primitive in place; capability maturity ladder allows incremental rollout.
 
@@ -132,7 +132,7 @@ YAML file `docs/governance/recurrence-ledger.yaml` (mirrors hi-agent):
 
 1. Validates yaml shape
 2. Asserts every closed defect has resolution_wave + resolution_commit
-3. Flags entries with occurrence_count ≥ 3 as "recurrence-class defects" requiring system-level fix
+3. Flags entries with occurrence_count >= 3 as "recurrence-class defects" requiring system-level fix
 
 ---
 
@@ -165,7 +165,7 @@ YAML file `docs/governance/recurrence-ledger.yaml` (mirrors hi-agent):
 | Attribute | Target | Verification |
 |---|---|---|
 | ExperimentStore restart-survival | yes | `tests/integration/ExperimentStoreCrashIT` |
-| PostmortemAnalyser deterministic | same input → same output | `tests/unit/PostmortemDeterministicTest` |
+| PostmortemAnalyser deterministic | same input -> same output | `tests/unit/PostmortemDeterministicTest` |
 | RecurrenceLedger schema validity | YAML lints clean | `RecurrenceLedgerLinterTest` in CI |
 | Champion/Challenger correctness | traffic split matches configured fraction | `tests/integration/ChampionChallengerSplitIT` |
 

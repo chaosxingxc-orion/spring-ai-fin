@@ -1,6 +1,6 @@
-# cli — Operator CLI (L2)
+# cli -- Operator CLI (L2)
 
-> **L2 sub-architecture of `agent-platform/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) · L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
+> **L2 sub-architecture of `agent-platform/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) . L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
 
 ---
 
@@ -8,21 +8,21 @@
 
 `cli/` is the **operator-facing command-line wrapper** over the v1 HTTP routes. Four thin subcommands:
 
-- `agent-platform serve` — boot the Spring Boot app in-process
-- `agent-platform run` — submit a run via `POST /v1/runs`
-- `agent-platform cancel` — cancel via `POST /v1/runs/{id}/cancel`
-- `agent-platform tail-events` — SSE-stream `/v1/runs/{id}/events`
+- `agent-platform serve` -- boot the Spring Boot app in-process
+- `agent-platform run` -- submit a run via `POST /v1/runs`
+- `agent-platform cancel` -- cancel via `POST /v1/runs/{id}/cancel`
+- `agent-platform tail-events` -- SSE-stream `/v1/runs/{id}/events`
 
 Owns:
 
-- `CliApp` — Spring Shell dispatcher
+- `CliApp` -- Spring Shell dispatcher
 - 4 subcommand classes (`ServeCommand`, `RunCommand`, `CancelCommand`, `TailEventsCommand`)
 - HTTP client (stdlib `java.net.http.HttpClient`; no third-party HTTP)
 
 Does NOT own:
 
 - Persistent state (no config file, no token cache, no session)
-- Sophisticated routing (no `--profile` for tenant pre-selection — every invocation explicit)
+- Sophisticated routing (no `--profile` for tenant pre-selection -- every invocation explicit)
 
 ---
 
@@ -36,7 +36,7 @@ Does NOT own:
 
 **No state**: every invocation is fully self-describing. Tenant id is a CLI flag (`--tenant-id alice`); idempotency key auto-generated or specified (`--idempotency-key foo`); JWT supplied via env (`APP_OPERATOR_JWT`).
 
-The discipline: **operator CLI is for incidents and one-off tasks**, not interactive workflow. For interactive workflow, use the Operations Console (Tier-A two-product architecture; see L0 §11).
+The discipline: **operator CLI is for incidents and one-off tasks**, not interactive workflow. For interactive workflow, use the Operations Console (Tier-A two-product architecture; see L0 sec-11).
 
 ---
 
@@ -91,10 +91,10 @@ agent-platform tail-events --tenant-id TID --run-id RID [--since-cursor CUR] [--
 | **AD-2: SAS-1 split** | `serve` may import `bootstrap/`; other subcommands talk HTTP only | `run/cancel/tail-events` work against any v1 server, not just local |
 | **AD-3: No persistent state** | every invocation self-describing; no config file | Avoid stale-state surprises; mirrors hi-agent CLI principle |
 | **AD-4: Default loopback in dev** | `--host 127.0.0.1` default | Prevents accidental external exposure |
-| **AD-5: `--prod` flips posture + host** | combined flag forces explicit production intent | Hi-agent's W33 lesson — partial-prod-config caused outages |
+| **AD-5: `--prod` flips posture + host** | combined flag forces explicit production intent | Hi-agent's W33 lesson -- partial-prod-config caused outages |
 | **AD-6: Deterministic exit codes** | 0 success / 1 HTTP / 2 input | Scriptable in shell pipelines |
 | **AD-7: Newline-delimited JSON output** | one event per line for `grep` / `jq` | Operator-friendly |
-| **AD-8: SSE 404 → poll fallback** | if SSE returns 404 (route stub at v1), fall back to polling `GET /v1/runs/{id}` | Graceful degradation per Rule 7 |
+| **AD-8: SSE 404 -> poll fallback** | if SSE returns 404 (route stub at v1), fall back to polling `GET /v1/runs/{id}` | Graceful degradation per Rule 7 |
 
 ---
 
@@ -102,8 +102,8 @@ agent-platform tail-events --tenant-id TID --run-id RID [--since-cursor CUR] [--
 
 - **SAS-1**: only `ServeCommand` may import `agent-platform/bootstrap/`; others use HTTP
 - **Rule 8**: `serve --prod` is the operator-shape gate step 1 (long-lived process); CLI documents the PM2/systemd/docker overlay
-- **Rule 11**: CLI honours posture; under `--prod`, CLI fails-fast if `IssuerRegistry` has no RS256/ES256 entry (per L0 §A3 and `agent-runtime/auth/`). HS256 (`APP_JWT_SECRET`) is permitted only for DEV loopback or BYOC single-tenant carve-outs documented in `docs/governance/allowlists.yaml`; the operative invariant is "auth path matches posture × deployment shape," not "APP_JWT_SECRET is set"
-- **Rule 7**: SSE → poll fallback emits visible "fallback: sse-not-available" log line so operators see what happened
+- **Rule 11**: CLI honours posture; under `--prod`, CLI fails-fast if `IssuerRegistry` has no RS256/ES256 entry (per L0 sec-A3 and `agent-runtime/auth/`). HS256 (`APP_JWT_SECRET`) is permitted only for DEV loopback or BYOC single-tenant carve-outs documented in `docs/governance/allowlists.yaml`; the operative invariant is "auth path matches posture x deployment shape," not "APP_JWT_SECRET is set"
+- **Rule 7**: SSE -> poll fallback emits visible "fallback: sse-not-available" log line so operators see what happened
 
 ---
 
@@ -111,7 +111,7 @@ agent-platform tail-events --tenant-id TID --run-id RID [--since-cursor CUR] [--
 
 | Attribute | Target | Verification |
 |---|---|---|
-| CLI startup time | ≤ 500ms (excluding `serve`) | `tests/integration/CliStartupTimeIT` |
+| CLI startup time | <= 500ms (excluding `serve`) | `tests/integration/CliStartupTimeIT` |
 | All subcommands have integration tests | 100% | `CliCoverageTest` |
 | Exit code consistency | matches `--help` documented codes | `tests/unit/CliExitCodeTest` |
 | No third-party HTTP | only `java.net.http` and Spring Shell allowed | `ArchitectureRulesTest::cliMinDeps` |

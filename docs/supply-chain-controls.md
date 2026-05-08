@@ -1,8 +1,8 @@
 # Supply Chain Controls
 
-**Status**: v1 — created 2026-05-08 in response to security review §P1-10
+**Status**: v1 -- created 2026-05-08 in response to security review sec-P1-10
 **Owner**: Platform team (GOV)
-**Companion**: [`security-control-matrix.md`](security-control-matrix.md) §15
+**Companion**: [`security-control-matrix.md`](security-control-matrix.md) sec-15
 
 License preference (Apache 2.0 / MIT only on runtime path; L0 D-15) handles **legal** risk. Supply-chain controls handle **security** risk: malicious code in dependencies, compromised build pipelines, vulnerable transitive deps.
 
@@ -13,7 +13,7 @@ License preference (Apache 2.0 / MIT only on runtime path; L0 D-15) handles **le
 ### 1.1 Strict pinning
 
 ```xml
-<!-- pom.xml — every dependency pinned to specific version, no LATEST/RELEASE -->
+<!-- pom.xml -- every dependency pinned to specific version, no LATEST/RELEASE -->
 <dependencies>
     <dependency>
         <groupId>org.springframework.boot</groupId>
@@ -33,12 +33,12 @@ CI gate `DepPinningTest` reflectively scans `pom.xml` and rejects:
 - `LATEST` keyword
 - `RELEASE` keyword
 - Version ranges (`[1.0,2.0)`)
-- Missing `<version>` (would inherit from parent — explicit forbidden)
+- Missing `<version>` (would inherit from parent -- explicit forbidden)
 
 ### 1.2 Maven Enforcer Plugin
 
 ```xml
-<!-- pom.xml — enforces dependency convergence -->
+<!-- pom.xml -- enforces dependency convergence -->
 <plugin>
     <artifactId>maven-enforcer-plugin</artifactId>
     <executions>
@@ -76,7 +76,7 @@ CI gate `DepPinningTest` reflectively scans `pom.xml` and rejects:
 CI builds produce a CycloneDX SBOM at every release:
 
 ```bash
-# CI step — runs at build
+# CI step -- runs at build
 mvn -B org.cyclonedx:cyclonedx-maven-plugin:makeBom \
     -DoutputName=sbom \
     -DoutputFormat=json
@@ -115,8 +115,8 @@ At deployment, the orchestration platform (Helm chart, Terraform, etc.) verifies
 # .github/workflows/security.yml
 - name: OWASP Dependency Check
   run: mvn org.owasp:dependency-check-maven:check
-  # CVSS >= 7.0 → fail build
-  # CVSS >= 4.0 + exploit available → fail build
+  # CVSS >= 7.0 -> fail build
+  # CVSS >= 4.0 + exploit available -> fail build
 ```
 
 ### 3.2 At image push (Docker container)
@@ -202,7 +202,7 @@ Every PR that adds or upgrades a dependency triggers `DepReviewBot`:
 
 ### 5.2 Dependency reachability analysis
 
-For high-risk transitives (CVSS ≥ 4.0), run `proguard-deps` or equivalent:
+For high-risk transitives (CVSS >= 4.0), run `proguard-deps` or equivalent:
 - Determines if vulnerable code path is reachable from our entry points
 - If unreachable, allowlist with evidence
 - If reachable, must upgrade or substitute
@@ -245,8 +245,8 @@ ENTRYPOINT ["java", "-jar", "/app/agent-platform.jar"]
 ### 6.3 Continuous container scanning
 
 - Trivy or Grype runs against all running images every 24h
-- New CVE matching running image → alarm to security team
-- Critical/High → emergency rebuild within 24-72h depending on severity
+- New CVE matching running image -> alarm to security team
+- Critical/High -> emergency rebuild within 24-72h depending on severity
 
 ---
 

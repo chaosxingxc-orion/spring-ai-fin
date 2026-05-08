@@ -1,39 +1,59 @@
-# spring-ai-fin evidence manifest (v2; cycle-7 sec-B1).
+# spring-ai-fin evidence manifest (v3; cycle-8 evidence graph closure).
 #
-# Per docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md sec-F1
-# and cycle-6 sec-A2, with cycle-7 sec-B1 two-SHA model upgrade.
+# Per docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
+# sec-B1, sec-B2, sec-B3, sec-B4 and
+# docs/systemic-remediation-operating-plan-2026-05-08.en.md Phase 1.
 #
-# Schema v2 distinguishes "reviewed content" from "evidence commit" so the
-# audit-trail commit pattern is machine-verifiable, not a prose convention.
+# Schema v3 closes the evidence graph: every identity field is explicit, every
+# log slot has a state from the closed enum, no TBD anywhere in delivery-valid
+# fields. The two-SHA model from cycle-7 is preserved.
+#
+# State enum (per Phase 1 sec-3):
+#   pass | fail | missing_blocker | not_applicable | historical_only
+#   pre_audit_trail   (architectural-commit-only sentinel)
 #
 # Updated by the same commit that produces a delivery file + log.
 # The architecture-sync gate's audit_trail_shape rule enforces:
 #   - HEAD == reviewed_content_sha (direct), OR
-#   - HEAD == evidence_commit_sha AND HEAD's parent == reviewed_content_sha
+#   - HEAD's parent == reviewed_content_sha
 #     AND HEAD's diff vs reviewed_content_sha is a subset of
 #     allowed_audit_trail_paths.
 
-version: 2
-schema_version: evidence-manifest/v2
+version: 3
+schema_version: evidence-manifest/v3
 
-# Cycle-7 sec-B3: schema_capabilities are machine-readable booleans for
+# Cycle-8 sec-B3: schema_capabilities are machine-readable booleans for
 # manifest-driven gate rule completeness. true means the gate enforces it now.
 schema_capabilities:
-  head_coverage: true                      # cycle-7 audit_trail_shape rule
-  delivery_log_parity: true                # cycle-6 + cycle-7 (sha + semantic + evidence)
-  status_ledger_parity: true               # cycle-7 manifest_edge_consistency
-  index_freshness: true                    # cycle-7 manifest_edge_consistency
-  rule_8_state_parity: false               # W1 deliverable
-  ledger_coverage_finding_to_capability: false   # W1 deliverable
+  head_coverage: true                            # cycle-7 audit_trail_shape
+  delivery_log_parity: true                      # cycle-6 + cycle-7 + cycle-8 (no skip on missing log)
+  delivery_log_exact_binding: true               # cycle-8 sec-B1
+  manifest_no_tbd: true                          # cycle-8 sec-B3
+  manifest_no_null_log_slots: true               # cycle-8 sec-B3
+  status_ledger_parity: true                     # cycle-7 manifest_edge_consistency
+  index_freshness: true                          # cycle-7 manifest_edge_consistency
+  active_corpus_registry_used: true              # cycle-8 sec-D1 + Phase 3
+  ascii_only_active_corpus: true                 # cycle-8 sec-D1
+  eol_policy: true                               # cycle-8 sec-A1
+  rule_8_state_consistency: true                 # cycle-8 sec-C2
+  self_test_required_for_delivery: true          # cycle-8 sec-A2
+  ledger_coverage_finding_to_capability: false   # W1
+  cross_platform_ci_matrix: false                # W1 (Phase 2.4)
+  fixture_test_suite: false                      # W1 (Phase 2.3)
+  capability_registry_separated: false           # W1 (Phase 4.1)
 
-# ---- Two-SHA evidence model (cycle-7 sec-B1) ----
+# ---- Two-SHA evidence model (cycle-7 sec-B1; cycle-8 sec-B3) ----
+#
+# evidence_commit_sha is NOT stored: it equals git rev-parse HEAD by
+# definition at evidence emit time. Storing it as TBD reverses the direction
+# of cycle-8's remediation. The gate derives it from HEAD when verifying
+# audit_trail_shape.
 
-reviewed_content_sha: ba4bcd5                       # cycle-7 architectural SHA
-evidence_commit_sha: TBD                            # set to HEAD by gate; not stored authoritatively
+reviewed_content_sha: ba4bcd5                       # cycle-7 architectural; cycle-8 audit-trail commit replaces
 evidence_commit_parent_sha: ba4bcd5                 # MUST equal reviewed_content_sha (gate enforced)
 evidence_commit_classification: audit_trail_only    # one of: direct_reviewed_content | audit_trail_only
 
-# Backward compatibility with v1 readers (cycle-5/cycle-6).
+# Backward compatibility with v1/v2 readers (cycle-5/cycle-6/cycle-7).
 reviewed_sha: ba4bcd5
 
 current_head_policy:
@@ -47,32 +67,66 @@ current_head_policy:
     - docs/governance/evidence-manifest.yaml
     - gate/log/**
 
-# ---- Delivery and logs ----
+# ---- Delivery and logs (cycle-8 sec-B1, sec-B2, sec-B3) ----
 
-delivery_file: docs/delivery/2026-05-08-ba4bcd5.md   # cycle-7 delivery
+delivery_file: docs/delivery/2026-05-08-ba4bcd5.md   # cycle-7 delivery; cycle-8 audit-trail replaces
+
+# Per cycle-8 sec-B3: log slots use the explicit state enum, never null.
+# Per cycle-8 sec-B1: when state == pass, path MUST exist and the log's
+# "sha" field MUST equal reviewed_content_sha or evidence_commit_sha.
+# The cycle-8 architectural commit replaces the prior 'null' values with
+# 'pre_audit_trail' (an explicit state) until the audit-trail commit lands.
 
 architecture_sync_logs:
-  # Cycle-7 sec-B1 bootstrap policy: the manifest does not name a log keyed
-  # to reviewed_content_sha because the gate cannot have run at that SHA with
-  # the audit-trail-current manifest (chicken-and-egg). delivery_log_parity
-  # iterates docs/delivery/2026-05-08-*.md filenames; if a matching
-  # gate/log/<sha>-{posix,windows,legacy}.json exists, it is checked. The
-  # canonical pass-evidence is the gate's stdout PASS line at the
-  # audit-trail SHA, captured in CI / dev terminal at run time.
-  posix: null
-  windows: null
+  posix:
+    state: pre_audit_trail
+    path: null
+    reason: "Cycle-8 architectural commit; audit-trail commit will publish gate/log/<arch_sha>-posix.json with state: pass."
+  windows:
+    state: pre_audit_trail
+    path: null
+    reason: "Cycle-8 architectural commit; audit-trail commit will publish gate/log/<arch_sha>-windows.json (or set state: missing_blocker if pwsh is not available)."
   prior_delivery_valid_logs:
     - gate/log/81ff802-posix.json     # cycle-6 architectural
     - gate/log/302337f-posix.json     # cycle-5 architectural
     - gate/log/a070a77.json           # cycle-4 (pre-suffix naming)
   cycle_5_platform_suffix_in_effect_starting: 302337f
+  legacy_exemptions:
+    # Cycle-8 sec-B2: deliveries before platform-suffix naming get an explicit
+    # legacy exemption so delivery_log_parity does not require a per-platform
+    # log for them. Pure historical record.
+    - delivery_file: docs/delivery/2026-05-08-7025ac9.md
+      reason: pre_platform_suffix_legacy
+      log: gate/log/7025ac9.json
+    - delivery_file: docs/delivery/2026-05-08-003ed6f.md
+      reason: pre_platform_suffix_legacy
+      log: gate/log/003ed6f.json
+    - delivery_file: docs/delivery/2026-05-08-a070a77.md
+      reason: pre_platform_suffix_legacy
+      log: gate/log/a070a77.json
+    - delivery_file: docs/delivery/2026-05-08-d284232.md
+      reason: pre_platform_suffix_legacy
+      log: gate/log/d284232.json
 
 operator_shape_logs:
-  posix: null    # gate/log/local/operator-shape-<sha>-posix.json (gitignored fail-closed)
-  windows: null  # gate/log/local/operator-shape-<sha>-windows.json (gitignored fail-closed)
-  notes: |
-    Operator-shape smoke produces FAIL_ARTIFACT_MISSING. Logs go to
-    gate/log/local/ (gitignored) and are NOT delivery evidence.
+  posix:
+    state: missing_blocker
+    path: null
+    reason: "FAIL_ARTIFACT_MISSING (no pom.xml / Spring Boot artifact). Logs go to gate/log/local/ (gitignored) and are NOT delivery evidence."
+  windows:
+    state: missing_blocker
+    path: null
+    reason: "FAIL_ARTIFACT_MISSING + pwsh availability not assumed; same blocker as posix."
+  unblocks_at: W0   # docs/plans/W0-evidence-skeleton.md
+
+# Cycle-8 sec-A2: self-test PASS at the evidence commit SHA is required
+# for delivery validity. The audit-trail commit fills in pass_sha + log.
+self_test:
+  state: pre_audit_trail
+  pass_sha: null
+  log_path: null
+  reason: "Cycle-8 architectural commit; audit-trail commit records the self-test pass at the evidence commit SHA."
+  blocking_for_delivery: true
 
 rule_8:
   state: fail_closed_artifact_missing
@@ -84,6 +138,15 @@ rule_8:
     - "No agent-platform/src/main/java tree"
     - "No agent-runtime/src/main/java tree"
   unblocks_at: W0   # docs/plans/W0-evidence-skeleton.md
+  # Cycle-8 sec-C2: rule_8_state_consistency assertion targets.
+  no_capability_above_l2_unless_pass: true
+  no_evidence_state_operator_gated_unless_pass: true
+
+# ---- Active-corpus and capability registries (Phase 3 + Phase 4 partial) ----
+
+active_corpus_path: docs/governance/active-corpus.yaml
+capability_registry_path: docs/governance/architecture-status.yaml   # W1 may move to capability-registry.yaml
+current_index_path: docs/governance/current-architecture-index.md
 
 # ---- Status findings addressed ----
 
@@ -141,19 +204,29 @@ status_findings_addressed:
     - REM-2026-05-08-C6-8
     - REM-2026-05-08-C6-9
   cycle_7:
-    - REM-2026-05-08-C7-1   # A1: PowerShell crash fix (variable-order)
-    - REM-2026-05-08-C7-2   # A2: PowerShell parity with POSIX delivery_log_parity
-    - REM-2026-05-08-C7-3   # B1: two-SHA evidence model (manifest v2)
-    - REM-2026-05-08-C7-4   # B2: manifest_edge_consistency rule
-    - REM-2026-05-08-C7-5   # B3: schema metadata refreshed
-    - REM-2026-05-08-C7-6   # D1: maturity-as-primary note
-    - REM-2026-05-08-C7-7   # D2: legacy_capability migration
-    - REM-2026-05-08-C7-8   # D3: ASCII-only active governance
-    - REM-2026-05-08-C7-9   # E1: gate self-test harness
+    - REM-2026-05-08-C7-1
+    - REM-2026-05-08-C7-2
+    - REM-2026-05-08-C7-3
+    - REM-2026-05-08-C7-4
+    - REM-2026-05-08-C7-5
+    - REM-2026-05-08-C7-6
+    - REM-2026-05-08-C7-7
+    - REM-2026-05-08-C7-8
+    - REM-2026-05-08-C7-9
+  cycle_8:
+    - REM-2026-05-08-C8-1   # A1: CRLF + .gitattributes + eol_policy gate rule
+    - REM-2026-05-08-C8-2   # A2: self-test required for delivery
+    - REM-2026-05-08-C8-3   # A3: per-platform missing_blocker state
+    - REM-2026-05-08-C8-4   # B1: delivery_log_exact_binding
+    - REM-2026-05-08-C8-5   # B2: delivery_log_parity no-skip
+    - REM-2026-05-08-C8-6   # B3: manifest v3 + no TBD + no null log slots
+    - REM-2026-05-08-C8-7   # B4: stdout demoted to convenience; committed log canonical
+    - REM-2026-05-08-C8-8   # C2: rule_8_state_consistency
+    - REM-2026-05-08-C8-9   # D1: ascii_only_active_corpus + active-corpus.yaml registry
+    - REM-2026-05-08-C8-10  # E1: maturity-first ordering + evidence_state alias
 
 authoritative_index: docs/governance/current-architecture-index.md
-authoritative_index_last_updated_in_cycle: cycle-7
-authoritative_index_sha: TBD   # set to evidence_commit_sha when committed
+authoritative_index_last_updated_in_cycle: cycle-8
 
 artifact_present: false
 test_reference_state_default: planned   # cycle-7 sec-C2: explicit field for test references

@@ -1,6 +1,6 @@
-# action-guard — Unified Action Authorization Pipeline (L2)
+# action-guard -- Unified Action Authorization Pipeline (L2)
 
-> **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) · L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
+> **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) . L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
 >
 > **Origin**: created 2026-05-08 in response to security review finding **P0-1**. ActionGuard is the unavoidable runtime path between every model/tool/framework output and every side-effectful execution.
 
@@ -8,21 +8,21 @@
 
 ## 1. Purpose & Boundary
 
-`action-guard/` owns the **single unavoidable action-authorization pipeline**. Every action proposed by a model, framework adapter, or tool — before it can produce any side effect — passes through `ActionGuard.authorize(envelope)`. Code that reaches a side-effectful operation without passing through ActionGuard is a **CI-detected violation** (`ActionGuardCoverageTest`).
+`action-guard/` owns the **single unavoidable action-authorization pipeline**. Every action proposed by a model, framework adapter, or tool -- before it can produce any side effect -- passes through `ActionGuard.authorize(envelope)`. Code that reaches a side-effectful operation without passing through ActionGuard is a **CI-detected violation** (`ActionGuardCoverageTest`).
 
-This is the architectural answer to the security reviewer's central observation: an agent system's dangerous moment is not the user prompt, it is **"model output → tool call → side effect"**. If every action path does not pass through the same gate, one adapter or one tool bridge becomes the bypass.
+This is the architectural answer to the security reviewer's central observation: an agent system's dangerous moment is not the user prompt, it is **"model output -> tool call -> side effect"**. If every action path does not pass through the same gate, one adapter or one tool bridge becomes the bypass.
 
 Owns:
 
-- `ActionGuard` — the pipeline orchestrator
-- `ActionEnvelope` — the typed proposal record passed through the pipeline
-- `PolicyDecision` — outcome record (approve / deny / require-hitl + rationale)
-- `ActionGuardCoverageTest` — reflective CI gate ensuring no side-effect site bypasses
+- `ActionGuard` -- the pipeline orchestrator
+- `ActionEnvelope` -- the typed proposal record passed through the pipeline
+- `PolicyDecision` -- outcome record (approve / deny / require-hitl + rationale)
+- `ActionGuardCoverageTest` -- reflective CI gate ensuring no side-effect site bypasses
 - 11 pipeline stages (each pluggable via `@Bean`):
   1. `SchemaValidator`
   2. `TenantBindingChecker`
   3. `ActorAuthorizer` (consults CapabilityPolicy + TenantEntitlement)
-  4. `MaturityChecker` (capability descriptor × posture)
+  4. `MaturityChecker` (capability descriptor x posture)
   5. `EffectClassifier`
   6. `DataAccessClassifier`
   7. `OpaPolicyDecider` (OPA red-line)
@@ -53,7 +53,7 @@ User / retrieved content / memory
 
 Pre-v6.0 review, the architecture had:
 
-- `CapabilityPolicy` — RBAC at registry
+- `CapabilityPolicy` -- RBAC at registry
 - Skill dangerous-capability gate at LOAD time
 - HarnessExecutor PermissionGate
 - LLMGateway budget/failover
@@ -116,7 +116,7 @@ flowchart LR
     PROP[Proposal:<br/>ActionEnvelope] --> SV[1 SchemaValidator]
     SV --> TBC[2 TenantBindingChecker]
     TBC --> AA[3 ActorAuthorizer<br/>CapabilityPolicy + TenantEntitlement]
-    AA --> MC[4 MaturityChecker<br/>descriptor × posture]
+    AA --> MC[4 MaturityChecker<br/>descriptor x posture]
     MC --> EC[5 EffectClassifier]
     EC --> DAC[6 DataAccessClassifier]
     DAC --> OPA[7 OpaPolicyDecider<br/>red-line policies]
@@ -153,24 +153,24 @@ Validates `envelope.tenantId == ctx.tenantContext.tenantId`. Rejects mismatch un
 
 Two-tier check (addresses P1-7; status: design_accepted):
 
-1. **RBAC**: `CapabilityPolicy.canRoleInvoke(actor.roles, capabilityName)` — does the actor's role permit this capability?
-2. **TenantEntitlement**: `TenantEntitlementStore.isGranted(tenantId, capabilityName)` — has the tenant been granted access?
+1. **RBAC**: `CapabilityPolicy.canRoleInvoke(actor.roles, capabilityName)` -- does the actor's role permit this capability?
+2. **TenantEntitlement**: `TenantEntitlementStore.isGranted(tenantId, capabilityName)` -- has the tenant been granted access?
 
 BOTH must pass. Default-deny.
 
 ### Stage 4: MaturityChecker
 
-Reads `CapabilityDescriptor.maturityLevel` and `availableInDev/Research/Prod` flags. Rejects if posture forbids capability at current maturity level. Closes the v6.0 capability descriptor → posture interaction.
+Reads `CapabilityDescriptor.maturityLevel` and `availableInDev/Research/Prod` flags. Rejects if posture forbids capability at current maturity level. Closes the v6.0 capability descriptor -> posture interaction.
 
 ### Stage 5: EffectClassifier
 
-Reads `descriptor.effectClass`; cross-checks against envelope. If envelope says READ_ONLY but descriptor says NON_IDEMPOTENT → reject (anti-tampering). The descriptor is authoritative.
+Reads `descriptor.effectClass`; cross-checks against envelope. If envelope says READ_ONLY but descriptor says NON_IDEMPOTENT -> reject (anti-tampering). The descriptor is authoritative.
 
 ### Stage 6: DataAccessClassifier
 
 Reads `descriptor.dataAccessClass` and any `resourceScope`-derived class. If accessing PII or FINANCIAL_LEDGER:
-- DataAccessClass = PII → require dual-approval workflow integration (P0-8 PII_ACCESS audit class)
-- DataAccessClass = FINANCIAL_LEDGER → cross-check against `FinancialWriteClass` (P0-10)
+- DataAccessClass = PII -> require dual-approval workflow integration (P0-8 PII_ACCESS audit class)
+- DataAccessClass = FINANCIAL_LEDGER -> cross-check against `FinancialWriteClass` (P0-10)
 
 ### Stage 7: OpaPolicyDecider
 
@@ -294,10 +294,10 @@ Any side-effect site outside ActionGuard fails CI.
 
 | Attribute | Target | Verification |
 |---|---|---|
-| Pipeline latency overhead | ≤ 12ms p95 (11 stages incl. audit dual write) | `tests/integration/ActionGuardLatencyIT` |
+| Pipeline latency overhead | <= 12ms p95 (11 stages incl. audit dual write) | `tests/integration/ActionGuardLatencyIT` |
 | Coverage of side-effect sites | 100% | `ActionGuardCoverageTest` (CI gate) |
 | Cross-tenant rejection | 100% under research/prod | `tests/integration/CrossTenantActionGuardIT` |
-| OPA decision latency | ≤ 5ms p95 | `tests/integration/OpaPolicyLatencyIT` |
+| OPA decision latency | <= 5ms p95 | `tests/integration/OpaPolicyLatencyIT` |
 | Audit-before-action correctness | PII decode without successful audit = no plaintext | `tests/integration/AuditBeforeActionIT` |
 | Anti-tampering hash check | argument substitution = rejected | `tests/integration/ArgumentsHashTamperingIT` |
 | Pre/post evidence chaining | every terminal entry references its pre-action entry id | `tests/integration/EvidenceChainContiguityIT` |
@@ -319,7 +319,7 @@ Any side-effect site outside ActionGuard fails CI.
 
 ## 9. Risks & Technical Debt
 
-- **Pipeline latency**: 11 stages add overhead; profiled at <12ms p95; if measured higher in operator-shape gate, parallelize stages 1–6 (independent) or remove non-critical stages
+- **Pipeline latency**: 11 stages add overhead; profiled at <12ms p95; if measured higher in operator-shape gate, parallelize stages 1-6 (independent) or remove non-critical stages
 - **OPA dependency**: introduces external policy engine; pin OPA version; alternative is an in-process Rego runtime
 - **HitlGate timeout policy**: per-posture; default 24h research, 4h prod; configurable per capability
 - **Posture-aware gate strictness**: reviewer audit on every gate addition
@@ -335,7 +335,7 @@ Any side-effect site outside ActionGuard fails CI.
 - LLM gateway (proposal source): [`../llm/ARCHITECTURE.md`](../llm/ARCHITECTURE.md)
 - Audit (evidence writer): [`../audit/ARCHITECTURE.md`](../audit/ARCHITECTURE.md)
 - Outbox financial write classes: [`../outbox/ARCHITECTURE.md`](../outbox/ARCHITECTURE.md)
-- Security review: [`../../docs/deep-architecture-security-assessment-2026-05-07.en.md`](../../docs/deep-architecture-security-assessment-2026-05-07.en.md) §P0-1
-- Response: [`../../docs/security-response-2026-05-08.md`](../../docs/security-response-2026-05-08.md) §P0-1
-- Systematic-architecture-improvement-plan: [`../../docs/systematic-architecture-improvement-plan-2026-05-07.en.md`](../../docs/systematic-architecture-improvement-plan-2026-05-07.en.md) §4.5
+- Security review: [`../../docs/deep-architecture-security-assessment-2026-05-07.en.md`](../../docs/deep-architecture-security-assessment-2026-05-07.en.md) sec-P0-1
+- Response: [`../../docs/security-response-2026-05-08.md`](../../docs/security-response-2026-05-08.md) sec-P0-1
+- Systematic-architecture-improvement-plan: [`../../docs/systematic-architecture-improvement-plan-2026-05-07.en.md`](../../docs/systematic-architecture-improvement-plan-2026-05-07.en.md) sec-4.5
 - OPA: https://www.openpolicyagent.org/

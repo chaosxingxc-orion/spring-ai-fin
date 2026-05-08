@@ -1,6 +1,6 @@
-# api — HTTP Transport (L2)
+# api -- HTTP Transport (L2)
 
-> **L2 sub-architecture of `agent-platform/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) · L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
+> **L2 sub-architecture of `agent-platform/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) . L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
 
 ---
 
@@ -8,12 +8,12 @@
 
 `agent-platform/api/` owns the **HTTP transport layer**: Spring Web `@RestController`s and the filter chain. It does NOT own contract types (delegated to `../contracts/`), facade adaptation (delegated to `../facade/`), kernel binding (delegated to `../runtime/`), or background tasks (delegated to `../runtime/LifespanController.java`).
 
-Route handlers are thin: parse → dispatch to facade → serialize. Tenant identity is read exclusively from filter-attached request attribute, never the request body.
+Route handlers are thin: parse -> dispatch to facade -> serialize. Tenant identity is read exclusively from filter-attached request attribute, never the request body.
 
 Owns:
 
 - 9 `@RestController` classes (one per major resource family)
-- Filter chain (3 filters, ordered: JWTAuth → TenantContext → Idempotency)
+- Filter chain (3 filters, ordered: JWTAuth -> TenantContext -> Idempotency)
 - `@ControllerAdvice` for `ContractError` envelope mapping
 - `WebConfig` + boot-time invariant assertion
 
@@ -82,11 +82,11 @@ Spring Boot's `OncePerRequestFilter` order set explicitly via `@Order(10/20/30)`
 
 ---
 
-## 4. Controllers — design philosophy
+## 4. Controllers -- design philosophy
 
 ### Thin handlers
 
-Every `@RestController` method is ≤ 30 lines:
+Every `@RestController` method is <= 30 lines:
 
 ```java
 @RestController
@@ -139,7 +139,7 @@ Every public route handler has Javadoc:
 
 ### SAS-7: Route coverage
 
-Every public route exercised by ≥1 integration test using `WebTestClient`. `RouteCoverageTest` enumerates routes from `RequestMappingHandlerMapping` and asserts coverage.
+Every public route exercised by >=1 integration test using `WebTestClient`. `RouteCoverageTest` enumerates routes from `RequestMappingHandlerMapping` and asserts coverage.
 
 ---
 
@@ -177,7 +177,7 @@ Mirrors hi-agent's W35-T8: fail-fast at boot rather than 500 at first request.
 | **AD-5: SAS-9 no in-handler state mutation** | Controllers delegate to facade; RouteScopeTest enforces | Layering rule: controllers don't know about persistence |
 | **AD-6: SSE for streaming, WebSocket deferred** | `text/event-stream` for `/v1/runs/{id}/events` | SSE is simpler, browser-friendly, http/2-compatible; WebSocket adds bidirectional which v1 doesn't need |
 | **AD-7: Boot-time invariant** | Fail at construction if mutable routes lack idempotency | hi-agent W35-T8 lesson |
-| **AD-8: ContractError envelope via `@ControllerAdvice`** | All exceptions → `ContractError` JSON | Single error shape; reviewers grep error categories |
+| **AD-8: ContractError envelope via `@ControllerAdvice`** | All exceptions -> `ContractError` JSON | Single error shape; reviewers grep error categories |
 
 ---
 
@@ -186,7 +186,7 @@ Mirrors hi-agent's W35-T8: fail-fast at boot rather than 500 at first request.
 - **Posture (Rule 11)**: `JWTAuthFilter` strict in research/prod; passthrough in dev
 - **Spine (Rule 11)**: every `RunRequest` / `MemoryWriteRequest` etc. validated at canonical-constructor; spine completeness enforced
 - **Resilience (Rule 7)**: filter failures emit `springaifin_filter_errors_total{filter, reason}` + WARNING
-- **Operator-shape (Rule 8)**: every route exercised in OperatorShapeGate's N≥3 sequential runs
+- **Operator-shape (Rule 8)**: every route exercised in OperatorShapeGate's N>=3 sequential runs
 
 ---
 
@@ -194,12 +194,12 @@ Mirrors hi-agent's W35-T8: fail-fast at boot rather than 500 at first request.
 
 | Attribute | Target | Verification |
 |---|---|---|
-| Filter chain p95 latency | ≤ 5ms | OperatorShapeGate |
+| Filter chain p95 latency | <= 5ms | OperatorShapeGate |
 | All routes documented | 100% | DocumentedRoutesTest |
 | All routes covered by integration test | 100% | RouteCoverageTest |
 | All routes have TDD red-first SHA | 100% | TddEvidenceTest |
 | Filter chain order respected | filter ordering 10/20/30 | `tests/unit/FilterOrderTest` |
-| Cross-controller LOC budget | controllers ≤ 200 LOC | `RouteScopeTest` (controller LOC measure) |
+| Cross-controller LOC budget | controllers <= 200 LOC | `RouteScopeTest` (controller LOC measure) |
 
 ---
 

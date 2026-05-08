@@ -1,6 +1,6 @@
-# runtime — Reactor Scheduler + Harness (L2)
+# runtime -- Reactor Scheduler + Harness (L2)
 
-> **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) · L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
+> **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) . L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
 
 ---
 
@@ -10,12 +10,12 @@
 
 Owns:
 
-- `ReactorScheduler` — single persistent `Scheduler` per process (Rule 5 enforcement)
-- `CancellationToken` — cooperative cancellation token; durable flag for cross-thread/process cancellation
-- `HarnessExecutor` — unified action lifecycle (PREPARED → DISPATCHED → SUCCEEDED/FAILED)
-- `PermissionGate` — fail-closed pre-dispatch check (RBAC + capability policy)
-- `GovernanceEngine` — effect-class validation
-- `EvidenceStore` — append-only audit trail per successful action
+- `ReactorScheduler` -- single persistent `Scheduler` per process (Rule 5 enforcement)
+- `CancellationToken` -- cooperative cancellation token; durable flag for cross-thread/process cancellation
+- `HarnessExecutor` -- unified action lifecycle (PREPARED -> DISPATCHED -> SUCCEEDED/FAILED)
+- `PermissionGate` -- fail-closed pre-dispatch check (RBAC + capability policy)
+- `GovernanceEngine` -- effect-class validation
+- `EvidenceStore` -- append-only audit trail per successful action
 
 Does NOT own:
 
@@ -26,7 +26,7 @@ Does NOT own:
 
 ---
 
-## 2. ReactorScheduler — the Rule 5 enforcement seam
+## 2. ReactorScheduler -- the Rule 5 enforcement seam
 
 ```java
 @Configuration
@@ -51,7 +51,7 @@ public class ReactorSchedulerConfig {
 
 **Rule 5 enforcement**: `ArchitectureRulesTest::noBlockOutsideEntryPoints` greps for `Mono.block()` / `Flux.blockLast()` outside `agent-platform/cli/`, `tests/`, and `main`. Every match must carry `// rule5-exempt: <reason>` annotation OR be in an entry point.
 
-This is the canonical fix for hi-agent's 2026-04-22 prod incident (`Event loop is closed` on retry due to per-call `asyncio.run`). Java equivalent failure mode is "Reactor scheduler disposed" — same root cause.
+This is the canonical fix for hi-agent's 2026-04-22 prod incident (`Event loop is closed` on retry due to per-call `asyncio.run`). Java equivalent failure mode is "Reactor scheduler disposed" -- same root cause.
 
 ---
 
@@ -85,13 +85,13 @@ Used by `RunExecutor` between stage boundaries (Rule 8 step 6: cancellation hono
 
 ---
 
-## 4. HarnessExecutor — unified action pipeline
+## 4. HarnessExecutor -- unified action pipeline
 
 Every external action (LLM call, MCP tool invocation, database write, framework dispatch) flows through this pipeline:
 
 ```
-PREPARED → PermissionGate.check → GovernanceEngine.validate → CapabilityInvoker.invoke 
-        → DISPATCHED → SUCCEEDED (record EvidenceStore) | FAILED (record fallback + propagate)
+PREPARED -> PermissionGate.check -> GovernanceEngine.validate -> CapabilityInvoker.invoke 
+        -> DISPATCHED -> SUCCEEDED (record EvidenceStore) | FAILED (record fallback + propagate)
 ```
 
 ```java
@@ -130,8 +130,8 @@ Mirrors hi-agent's `HarnessExecutor`. Strict pipeline; no partial-state success.
 |---|---|---|
 | **AD-1: One persistent Scheduler** | `Schedulers.newBoundedElastic` daemon; bound at boot | Rule 5: prevent "Reactor disposed" on retry |
 | **AD-2: AsyncBridgeService = process singleton ExecutorService** | Replaces per-call `ThreadPoolExecutor` allocations | Hi-agent's 04-23 latency regression class |
-| **AD-3: HarnessExecutor requires injected `EvidenceStore`** | No inline default — raises if absent | Rule 6 applied; hi-agent's pattern |
-| **AD-4: Strict harness pipeline** | PermissionGate → GovernanceEngine → CapabilityInvoker → EvidenceStore | No partial-state success |
+| **AD-3: HarnessExecutor requires injected `EvidenceStore`** | No inline default -- raises if absent | Rule 6 applied; hi-agent's pattern |
+| **AD-4: Strict harness pipeline** | PermissionGate -> GovernanceEngine -> CapabilityInvoker -> EvidenceStore | No partial-state success |
 | **AD-5: Cancellation durable flag in RunQueue** | survives across thread / restart | Tenant-scoped via RunQueue (W33 D.2 in hi-agent) |
 | **AD-6: Rule 5 enforcement test** | grep for `Mono.block()` outside entry points | CI gate `ArchitectureRulesTest::noBlockOutsideEntryPoints` |
 | **AD-7: Permission gate fail-closed** | refuses if descriptor's posture flag is false | Rule 1 strongest interpretation |
@@ -153,7 +153,7 @@ Mirrors hi-agent's `HarnessExecutor`. Strict pipeline; no partial-state success.
 | Attribute | Target | Verification |
 |---|---|---|
 | Scheduler lifecycle | one per JVM | `tests/integration/SchedulerLifecycleIT` |
-| Cancellation propagation | mid-stage cancel drives terminal in ≤ 30s | `gate/check_cancel.sh` |
+| Cancellation propagation | mid-stage cancel drives terminal in <= 30s | `gate/check_cancel.sh` |
 | Harness pipeline correctness | no partial-state success | `tests/unit/HarnessPipelineTest` |
 | Rule 5 enforcement | zero `Mono.block()` outside entry points | `ArchitectureRulesTest::noBlockOutsideEntryPoints` |
 | Evidence completeness | every successful action has EvidenceRecord | `tests/integration/EvidenceCoverageIT` |
@@ -168,5 +168,5 @@ Mirrors hi-agent's `HarnessExecutor`. Strict pipeline; no partial-state success.
 
 - L1: [`../ARCHITECTURE.md`](../ARCHITECTURE.md)
 - Server (consumer): [`../server/ARCHITECTURE.md`](../server/ARCHITECTURE.md)
-- Hi-agent prior art: `D:/chao_workspace/hi-agent/hi_agent/runtime/ARCHITECTURE.md` — same SyncBridge pattern
+- Hi-agent prior art: `D:/chao_workspace/hi-agent/hi_agent/runtime/ARCHITECTURE.md` -- same SyncBridge pattern
 - Reactor Schedulers: https://projectreactor.io/docs/core/release/reference/schedulers.html

@@ -1,10 +1,10 @@
 # Security Control Matrix
 
-**Status**: v1 — created 2026-05-08 in response to security review §6.2
+**Status**: v1 -- created 2026-05-08 in response to security review sec-6.2
 **Owner**: Platform team (GOV track)
-**Companion docs**: [`trust-boundary-diagram.md`](trust-boundary-diagram.md) · [`gateway-conformance-profile.md`](gateway-conformance-profile.md) · [`sidecar-security-profile.md`](sidecar-security-profile.md) · [`security-response-2026-05-08.md`](security-response-2026-05-08.md)
+**Companion docs**: [`trust-boundary-diagram.md`](trust-boundary-diagram.md) . [`gateway-conformance-profile.md`](gateway-conformance-profile.md) . [`sidecar-security-profile.md`](sidecar-security-profile.md) . [`security-response-2026-05-08.md`](security-response-2026-05-08.md)
 
-This matrix maps every named security control to: **owner module · enforcement point · posture behaviour · test name · evidence artifact · failure mode**. Reviewers can audit each row independently.
+This matrix maps every named security control to: **owner module . enforcement point . posture behaviour . test name . evidence artifact . failure mode**. Reviewers can audit each row independently.
 
 ---
 
@@ -12,15 +12,15 @@ This matrix maps every named security control to: **owner module · enforcement 
 
 | Control | Owner | Enforcement | Posture | Test | Evidence | Failure mode |
 |---|---|---|---|---|---|---|
-| JWT signature validation (HS256) | `agent-runtime/auth/HmacValidator` | Filter chain | dev loopback: allowed; research BYOC single-tenant: allowed only with allowlist entry + audit alarm; research SaaS multi-tenant: rejected; prod: rejected | `JwtSecurityIT.testHs256OnLoopback`, `JwtSecurityIT.testHs256RejectedInProd`, `AlgConfusionRejectedIT` | T3 evidence; gate run | HS256 token under prod / SaaS multi-tenant → 401; valid HS256 under dev loopback → claims accepted |
-| JWT signature validation (RS256/ES256/JWKS) | `agent-runtime/auth/JwksValidator` | Filter chain | research/prod default (SaaS multi-tenant + enterprise BYOC) | `JwtSecurityIT.testRs256Validation` | T3 evidence | invalid sig / kid miss → 401 |
+| JWT signature validation (HS256) | `agent-runtime/auth/HmacValidator` | Filter chain | dev loopback: allowed; research BYOC single-tenant: allowed only with allowlist entry + audit alarm; research SaaS multi-tenant: rejected; prod: rejected | `JwtSecurityIT.testHs256OnLoopback`, `JwtSecurityIT.testHs256RejectedInProd`, `AlgConfusionRejectedIT` | T3 evidence; gate run | HS256 token under prod / SaaS multi-tenant -> 401; valid HS256 under dev loopback -> claims accepted |
+| JWT signature validation (RS256/ES256/JWKS) | `agent-runtime/auth/JwksValidator` | Filter chain | research/prod default (SaaS multi-tenant + enterprise BYOC) | `JwtSecurityIT.testRs256Validation` | T3 evidence | invalid sig / kid miss -> 401 |
 | `alg=none` rejection | JwtAuthFilter | Filter chain | all | `JwtSecurityIT.testAlgNoneRejected` | gate | 401 |
 | HS/RS algorithm confusion | JwtAuthFilter | Filter chain | all | `JwtSecurityIT.testAlgConfusion` | gate | 401 |
 | `iss` validation | JwksValidator | Per-issuer allowlist | research/prod | `JwtSecurityIT.testIssuerValidation` | gate | 401 wrong issuer |
 | `aud` validation | JwksValidator | Platform `aud` constant | research/prod | `JwtSecurityIT.testAudienceValidation` | gate | 401 wrong audience |
 | `exp/nbf/iat` validation | JwksValidator | Standard claims | all | `JwtSecurityIT.testTimeValidation` | gate | 401 expired/not-yet-valid |
-| `kid` rotation cache | JwksValidator | TTL ≤ 1h cache | research/prod | `JwtSecurityIT.testKidRotation` | log | refetch on miss |
-| Token replay (`jti` tracking) | JwksValidator | Per-tenant `jti` cache (deferred to v1.1) | n/a v1; prod v1.1 | `JwtReplayIT` (v1.1) | v1.1 deliverable | – |
+| `kid` rotation cache | JwksValidator | TTL <= 1h cache | research/prod | `JwtSecurityIT.testKidRotation` | log | refetch on miss |
+| Token replay (`jti` tracking) | JwksValidator | Per-tenant `jti` cache (deferred to v1.1) | n/a v1; prod v1.1 | `JwtReplayIT` (v1.1) | v1.1 deliverable | - |
 | Tenant header binding | `JwtAuthFilter` + `TenantContextFilter` | Filter chain | dev: warn; research/prod: 401 mismatch | `TenantBindingIT` | gate | 400 TenantScopeException |
 
 ## 2. Authorization (Role + Tenant)
@@ -129,10 +129,10 @@ This matrix maps every named security control to: **owner module · enforcement 
 | Deadline (60s default) | PySidecarAdapter | Per-call | all | `SidecarSecurityIT.testDeadline` | test | DEADLINE_EXCEEDED |
 | Cancellation contract | gRPC stream cancel | Bidirectional | all | `SidecarSecurityIT.testCancel` | test | propagate |
 | Egress allowlist (container netpol) | Container runtime | Network policy | research/prod | `SidecarSecurityIT.testEgress` | infra | block |
-| Read-only container fs | Container runtime | RO mount | research/prod | infra | – | enforce |
-| AppArmor / seccomp profile | Container runtime | Per-pod | research/prod | infra | – | enforce |
+| Read-only container fs | Container runtime | RO mount | research/prod | infra | - | enforce |
+| AppArmor / seccomp profile | Container runtime | Per-pod | research/prod | infra | - | enforce |
 | Image SBOM signed | CI (cosign) | At build | all (verified at runtime in research/prod) | `SidecarImageSignatureIT` | gate | reject deploy |
-| Image vulnerability scan | CI (Trivy) | At push | all (CVSS≥7 blocks release) | CI gate | gate | reject release |
+| Image vulnerability scan | CI (Trivy) | At push | all (CVSS>=7 blocks release) | CI gate | gate | reject release |
 
 ## 10. Gateway Conformance
 
@@ -141,7 +141,7 @@ This matrix maps every named security control to: **owner module · enforcement 
 | OAuth2 / JWT verification | Gateway (Higress / substitute) | At edge | all | `GatewayConformanceIT.testJwt` | gateway log | reject |
 | mTLS option | Gateway | Configurable | all | `GatewayConformanceIT.testMtls` | gateway log | reject |
 | Tenant header normalization | Gateway | Strip + re-inject | all | `GatewayConformanceIT.testTenantHeader` | test | not spoofable |
-| `X-Internal-Trust` HMAC | Gateway → Platform | Validated by platform | all | `GatewayConformanceIT.testInternalTrust` | gate | reject |
+| `X-Internal-Trust` HMAC | Gateway -> Platform | Validated by platform | all | `GatewayConformanceIT.testInternalTrust` | gate | reject |
 | Rate limit by tenant/user/capability | Gateway | At edge | all | `GatewayRateLimitIT` | gateway metric | 429 |
 | Body size limits | Gateway | At edge (default 8MB) | all | `GatewayBodySizeIT` | gateway log | 413 |
 | SSE concurrency limit | Gateway | Per tenant | all | `GatewaySseLimitIT` | gateway metric | 429 |
@@ -171,7 +171,7 @@ This matrix maps every named security control to: **owner module · enforcement 
 | `LEDGER_ATOMIC` only on `DIRECT_DB` | WriteSiteAuditTest | CI | all | gate | gate | reject build |
 | `SAGA_COMPENSATED` on `SYNC_SAGA` | WriteSiteAuditTest | CI | all | gate | gate | reject build |
 | `FINANCIAL_ACTION` audit class | `outbox/SyncSagaOrchestrator` | Per saga step | all | `FinancialWriteIT` | test | rollback if audit fails |
-| Saga compensation failure → OperationalGate | SyncSagaOrchestrator | On compensation failure | all | `SagaCompensationFailureIT` | test | escalate |
+| Saga compensation failure -> OperationalGate | SyncSagaOrchestrator | On compensation failure | all | `SagaCompensationFailureIT` | test | escalate |
 | LedgerDiscrepancyRecord on compensation failure | SyncSagaOrchestrator | Durable record | all | `SagaCompensationFailureIT.testRecord` | test | recorded |
 | Daily 3-way reconciliation | `agent-runtime/audit/Reconciliation` | Cron | research/prod | `ReconciliationIT` | gate | alarm |
 
@@ -180,7 +180,7 @@ This matrix maps every named security control to: **owner module · enforcement 
 | Control | Owner | Enforcement | Posture | Test | Evidence | Failure mode |
 |---|---|---|---|---|---|---|
 | Operator JWT required | `agent-platform/cli/CliApp` | At command | all (loopback can use anonymous in dev) | `OperatorCliAuthIT` | test | reject |
-| Loopback default | CliApp | Bind config | all | inspection | – | n/a |
+| Loopback default | CliApp | Bind config | all | inspection | - | n/a |
 | mTLS for remote | CliApp | TLS config | research/prod | `OperatorCliMtlsIT` | test | reject |
 | CLI command audit | AuditFacade | Per command (SECURITY_EVENT) | all | `OperatorCliAuditIT` | audit | log |
 | Role separation (no PII decode) | CliApp + CapabilityPolicy | Per command | all | `OperatorCliRoleIT` | test | reject |
@@ -210,8 +210,8 @@ This matrix maps every named security control to: **owner module · enforcement 
 | Break-glass workflow | dual-approval | per incident | research/prod | `BreakGlassIT` | audit | requires SECURITY_EVENT |
 | Maven dependency pinning | `pom.xml` | Build | all | `DepPinningIT` | gate | reject build with `LATEST` |
 | SBOM generation (CycloneDX) | CI build | At build | all | `SbomGenerationIT` | artifact | gate |
-| Vulnerability scanning (OWASP DC) | CI | At build | all | CI gate | gate | reject CVSS≥7 |
-| Container vulnerability scan (Trivy) | CI | At push | all | CI gate | gate | reject CVSS≥7 |
+| Vulnerability scanning (OWASP DC) | CI | At build | all | CI gate | gate | reject CVSS>=7 |
+| Container vulnerability scan (Trivy) | CI | At push | all | CI gate | gate | reject CVSS>=7 |
 | Provenance via SLSA Level 2 | CI | At build | all | `SlsaProvenanceIT` | attestation | gate |
 
 ## 16. Idempotency Abuse Controls
@@ -261,9 +261,9 @@ Pick a row. The row tells you:
 - **What evidence is produced** (artifact)
 - **What happens on failure** (failure mode)
 
-If the test doesn't exist → P0 not closed.
-If the failure mode is unspecified → P0 not closed.
-If the posture column is empty → P0 not closed.
+If the test doesn't exist -> P0 not closed.
+If the failure mode is unspecified -> P0 not closed.
+If the posture column is empty -> P0 not closed.
 
 ### For implementers
 
@@ -284,8 +284,8 @@ The matrix is the source of truth for the W2.5 security gate. Wave 2.5 release n
 - In-prod (research/prod fail-closed): count
 - WARN-only (dev permissive paths): count
 
-If `implemented < tested` → release blocker.
-If any P0-derived row is missing → release blocker.
+If `implemented < tested` -> release blocker.
+If any P0-derived row is missing -> release blocker.
 
 ---
 

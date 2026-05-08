@@ -1,6 +1,6 @@
-# facade — Contract↔Kernel Adaptation (L2)
+# facade -- Contract<->Kernel Adaptation (L2)
 
-> **L2 sub-architecture of `agent-platform/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) · L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
+> **L2 sub-architecture of `agent-platform/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) . L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
 
 ---
 
@@ -12,12 +12,12 @@ Each facade is **constructor-injected with callables, not typed protocols** (mir
 
 Owns:
 
-- `RunFacade` — start, get, cancel, signal, iter-events
-- `EventFacade` — append, query, SSE source
-- `ArtifactFacade` — register, fetch, list-by-run
-- `ManifestFacade` — render manifest, capability matrix, posture, version constants
-- `IdempotencyFacade` — reserve-or-replay, mark-complete, query
-- `AuditFacade` — append, query (read-only inspector role), dual-approval decode
+- `RunFacade` -- start, get, cancel, signal, iter-events
+- `EventFacade` -- append, query, SSE source
+- `ArtifactFacade` -- register, fetch, list-by-run
+- `ManifestFacade` -- render manifest, capability matrix, posture, version constants
+- `IdempotencyFacade` -- reserve-or-replay, mark-complete, query
+- `AuditFacade` -- append, query (read-only inspector role), dual-approval decode
 
 Does NOT own:
 
@@ -29,7 +29,7 @@ Does NOT own:
 
 ## 2. The 200-LOC budget (SAS-8)
 
-Every facade is **≤ 200 lines** (excluding imports + Javadoc). Enforced by `FacadeLocTest`. The discipline: facades translate, not compute. Computation lives in the kernel.
+Every facade is **<= 200 lines** (excluding imports + Javadoc). Enforced by `FacadeLocTest`. The discipline: facades translate, not compute. Computation lives in the kernel.
 
 If a facade exceeds 200 LOC, the wave's GOV track requires either:
 - (a) splitting the facade into two, or
@@ -45,7 +45,7 @@ Hi-agent's W31-N had one allowlisted facade (`RunFacade.start` exceeded 200 LOC 
 ```java
 public class RunFacade {
     // Each callable is a Function<Input, Output> or BiFunction injected at construction.
-    // No typed protocol — keeps facade free of agent-runtime.* imports (SAS-1).
+    // No typed protocol -- keeps facade free of agent-runtime.* imports (SAS-1).
     private final BiFunction<TenantContext, RunRequest, RunResponse> startFn;
     private final BiFunction<TenantContext, RunId, Optional<RunResponse>> getFn;
     private final BiFunction<TenantContext, RunId, Mono<Void>> cancelFn;
@@ -94,9 +94,9 @@ Test bootstrap wires stub callables; same facade, different backend.
 | ADR | Decision | Why |
 |---|---|---|
 | **AD-1: Constructor-injected callables, not protocols** | `BiFunction<...>`, not typed interfaces | Keeps facade free of `agent-runtime.*` typing imports; SAS-1 layering preserved |
-| **AD-2: SAS-8 ≤ 200 LOC per facade** | Enforced by `FacadeLocTest` | Forces facades to translate, not compute; computation is kernel's job |
+| **AD-2: SAS-8 <= 200 LOC per facade** | Enforced by `FacadeLocTest` | Forces facades to translate, not compute; computation is kernel's job |
 | **AD-3: Tenant-scoped composite keys** | `(tenantId, key)` for idempotency, `(tenantId, runId)` for runs | Cross-tenant collision impossible by construction |
-| **AD-4: Strict-posture orphan filtering (HD-4)** | Under research/prod, facade filters orphan artifact records | hi-agent W23 pattern — kernel may have orphans during recovery; facade hides them |
+| **AD-4: Strict-posture orphan filtering (HD-4)** | Under research/prod, facade filters orphan artifact records | hi-agent W23 pattern -- kernel may have orphans during recovery; facade hides them |
 | **AD-5: Identity strip on idempotency snapshots (HD-7)** | strip `requestId, traceId` before storing replay snapshot | Otherwise replay returns identity-leaked response |
 | **AD-6: Each facade owns ONE resource family** | RunFacade for runs only, etc. | Easier to enforce 200 LOC; clearer ownership |
 
@@ -115,7 +115,7 @@ Test bootstrap wires stub callables; same facade, different backend.
 
 | Attribute | Target | Verification |
 |---|---|---|
-| LOC per facade | ≤ 200 | `FacadeLocTest` |
+| LOC per facade | <= 200 | `FacadeLocTest` |
 | Tenant required-arg | every facade method | `FacadeTenantArgTest` |
 | Backend agnosticism | same facade, real + stub | `tests/integration/FacadeBackendIT` |
 | Error envelope discipline | only `ContractError` thrown across boundary | `FacadeErrorEnvelopeTest` |

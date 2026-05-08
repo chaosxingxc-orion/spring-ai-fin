@@ -1,6 +1,6 @@
-# bootstrap — Assembly Seam #1 (L2)
+# bootstrap -- Assembly Seam #1 (L2)
 
-> **L2 sub-architecture of `agent-platform/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) · L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
+> **L2 sub-architecture of `agent-platform/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) . L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
 
 ---
 
@@ -10,7 +10,7 @@
 
 Owns:
 
-- `PlatformBootstrap` — `@SpringBootApplication`-annotated; entry point for `java -jar`
+- `PlatformBootstrap` -- `@SpringBootApplication`-annotated; entry point for `java -jar`
 - `@Bean` methods that wire facades, idempotency store, real kernel backend, lifespan controller
 - Spring profile activation tied to `APP_POSTURE`
 - Boot-time invariant assertions
@@ -29,9 +29,9 @@ Does NOT own:
 
 Hi-agent's W11 lesson: assembly logic scattered across multiple modules creates "two construction sites for the same resource" defects (DF-11 class). Concentrating assembly in one module:
 
-1. **Makes Rule 6 enforceable** — every shared resource has exactly one `@Bean` method here.
-2. **Makes SAS-1 auditable** — `agent-runtime.*` imports concentrated; reviewer scans 200 LOC, not the whole package.
-3. **Makes test-vs-prod swap clean** — tests inject stub callables; production wires `RealKernelBackend` callables; same facades.
+1. **Makes Rule 6 enforceable** -- every shared resource has exactly one `@Bean` method here.
+2. **Makes SAS-1 auditable** -- `agent-runtime.*` imports concentrated; reviewer scans 200 LOC, not the whole package.
+3. **Makes test-vs-prod swap clean** -- tests inject stub callables; production wires `RealKernelBackend` callables; same facades.
 
 ---
 
@@ -44,7 +44,7 @@ public class PlatformBootstrap {
         SpringApplication.run(PlatformBootstrap.class, args);
     }
     
-    // Posture — single boot-time read (Rule 11)
+    // Posture -- single boot-time read (Rule 11)
     @Bean
     public AppPosture appPosture(Environment env) {
         return AppPosture.fromEnv(env);
@@ -67,7 +67,7 @@ public class PlatformBootstrap {
         return backend;
     }
     
-    // Facades — constructor-injected with method references (SAS-1 seam concentrated here)
+    // Facades -- constructor-injected with method references (SAS-1 seam concentrated here)
     @Bean
     public RunFacade runFacade(RealKernelBackend backend) {
         return new RunFacade(
@@ -101,7 +101,7 @@ public class PlatformBootstrap {
     public void assertInvariants() {
         var posture = appPosture(/* env */);
         if (posture.requiresStrict()) {
-            // Posture-aware identity per L0 D-block §A3 and `agent-runtime/auth/`:
+            // Posture-aware identity per L0 D-block sec-A3 and `agent-runtime/auth/`:
             //   research SaaS multi-tenant + prod  -> RS256/ES256 + JWKS via IssuerRegistry (mandatory)
             //   research BYOC single-tenant        -> HS256 carve-out only with allowlist entry
             //   dev loopback                       -> HS256 or anonymous
@@ -116,7 +116,7 @@ public class PlatformBootstrap {
 }
 ```
 
-LOC budget: bootstrap target ≤ 300 LOC (allowlisted to ≤ 500 if necessary; expiry_wave required).
+LOC budget: bootstrap target <= 300 LOC (allowlisted to <= 500 if necessary; expiry_wave required).
 
 ---
 
@@ -146,7 +146,7 @@ LOC budget: bootstrap target ≤ 300 LOC (allowlisted to ≤ 500 if necessary; e
 
 | Attribute | Target | Verification |
 |---|---|---|
-| LOC budget | ≤ 300 (≤ 500 with allowlist) | `BootstrapLocTest` |
+| LOC budget | <= 300 (<= 500 with allowlist) | `BootstrapLocTest` |
 | All `@Bean` methods are single construction | no inline `x != null ? x : new DefaultX()` | `Rule6BootstrapTest` |
 | Boot-time assertions trigger on missing config | strict posture without JWT secret = fail at startup | `tests/integration/BootstrapInvariantsIT` |
 

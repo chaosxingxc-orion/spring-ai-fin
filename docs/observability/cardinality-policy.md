@@ -1,6 +1,6 @@
 # Observability Cardinality Policy
 
-> Per `docs/systematic-architecture-remediation-plan-2026-05-08.en.md` §9.4 and `agent-runtime/observability/ARCHITECTURE.md` AD-5.
+> Per `docs/systematic-architecture-remediation-plan-2026-05-08.en.md` sec-9.4 and `agent-runtime/observability/ARCHITECTURE.md` AD-5.
 > Defines what may appear as a metric label in spring-ai-fin and what cardinality budget the platform commits to.
 
 ## Why this exists
@@ -21,8 +21,8 @@ Metric labels are **low-cardinality by default**. A label may carry a raw `tenan
 
 Where no such entry exists, the platform replaces the raw `tenant_id` label with one of:
 
-- `tenant_bucket` — an eight-bucket hash of `tenant_id` (`bucket_0..bucket_7`) for cardinality-bounded slicing;
-- `tenant_class` — a typed class (`internal`, `pilot`, `enterprise`) supplied at boot by the deployment operator;
+- `tenant_bucket` -- an eight-bucket hash of `tenant_id` (`bucket_0..bucket_7`) for cardinality-bounded slicing;
+- `tenant_class` -- a typed class (`internal`, `pilot`, `enterprise`) supplied at boot by the deployment operator;
 - omitted from the label set entirely; the value lives in the trace span attribute, not the metric label.
 
 The trace span attribute path is the **default carrier of tenant identity for diagnostics**, because trace storage is cardinality-agnostic and exemplars are typed.
@@ -56,7 +56,7 @@ Independent of cardinality, the following labels are forbidden by `agent-runtime
 - secrets, credentials, headers;
 - raw customer financial values without bucketing.
 
-See `agent-runtime/observability/ARCHITECTURE.md` §6.
+See `agent-runtime/observability/ARCHITECTURE.md` sec-6.
 
 ## How to request a raw-tenant label
 

@@ -1,14 +1,14 @@
-# skill — MCP Tools + Spring AI Advisors (L2)
+# skill -- MCP Tools + Spring AI Advisors (L2)
 
-> **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) · L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
+> **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) . L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
 
 ---
 
 ## 1. Purpose & Boundary
 
-`skill/` owns the **skill capability layer**: definition parsing, lifecycle registry (Candidate → Provisional → Certified → Deprecated → Retired), observation telemetry, evolution loop, and version management (A/B + Champion/Challenger). It also owns the **load-time registry hygiene gate** (the dangerous-capability check).
+`skill/` owns the **skill capability layer**: definition parsing, lifecycle registry (Candidate -> Provisional -> Certified -> Deprecated -> Retired), observation telemetry, evolution loop, and version management (A/B + Champion/Challenger). It also owns the **load-time registry hygiene gate** (the dangerous-capability check).
 
-> **Important security boundary** (per `../action-guard/` AD-1 and security review §P0-1, §P0-6):
+> **Important security boundary** (per `../action-guard/` AD-1 and security review sec-P0-1, sec-P0-6):
 > The load-time gate in this package is **registry hygiene**, not the runtime security boundary. It catches *registration* of skills that declare dangerous capabilities. Every actual side-effectful skill **invocation** at runtime must additionally pass through `ActionGuard.authorize(envelope)` (`../action-guard/`). Load-time and runtime are complementary, not redundant; both must hold for a skill to take effect on a tenant resource.
 
 In the spring-ai-fin context, a "skill" = a reusable agent capability composed of:
@@ -19,15 +19,15 @@ In the spring-ai-fin context, a "skill" = a reusable agent capability composed o
 
 Owns:
 
-- `SkillDefinition` — parsed YAML
-- `SkillLoader` — definition parser + validator + load-time hygiene gate
-- `SkillRegistry` — JSON-backed lifecycle store
-- `ManagedSkill` — lifecycle stage record
-- `SkillObservation` — JSONL telemetry per usage
-- `SkillEvolver` — OPTIMIZE / CREATE modes for prompt+tool evolution
-- `SkillVersionManager` — A/B versioning + Champion/Challenger
-- `McpToolBridge` — runtime entry point that constructs an `ActionEnvelope` and routes through `ActionGuard.authorize` for every tool invocation
-- `SkillInvocationEntryPoint` — runtime entry point that does the same for Spring AI Advisor calls that produce side effects
+- `SkillDefinition` -- parsed YAML
+- `SkillLoader` -- definition parser + validator + load-time hygiene gate
+- `SkillRegistry` -- JSON-backed lifecycle store
+- `ManagedSkill` -- lifecycle stage record
+- `SkillObservation` -- JSONL telemetry per usage
+- `SkillEvolver` -- OPTIMIZE / CREATE modes for prompt+tool evolution
+- `SkillVersionManager` -- A/B versioning + Champion/Challenger
+- `McpToolBridge` -- runtime entry point that constructs an `ActionEnvelope` and routes through `ActionGuard.authorize` for every tool invocation
+- `SkillInvocationEntryPoint` -- runtime entry point that does the same for Spring AI Advisor calls that produce side effects
 
 Does NOT own:
 
@@ -65,11 +65,11 @@ stateDiagram-v2
 
 Each stage has eligibility rules:
 
-- **Candidate** — loaded but not validated
-- **Provisional** — schema valid + dangerous-capability **load-time hygiene** gate passes
-- **Certified** — promoted with evidence (≥30 successful invocations through ActionGuard, posture default-on, audit clean)
-- **Deprecated** — superseded by Challenger; still callable but warning-logged
-- **Retired** — removed from registry; only audit history remains
+- **Candidate** -- loaded but not validated
+- **Provisional** -- schema valid + dangerous-capability **load-time hygiene** gate passes
+- **Certified** -- promoted with evidence (>=30 successful invocations through ActionGuard, posture default-on, audit clean)
+- **Deprecated** -- superseded by Challenger; still callable but warning-logged
+- **Retired** -- removed from registry; only audit history remains
 
 A skill that is `Provisional` or higher is **registered** but not yet authorized for any specific runtime invocation. Authorization is decided at runtime by `ActionGuard`, per envelope.
 
@@ -107,7 +107,7 @@ This gate prevents a malformed or hostile skill definition from entering the reg
 
 ## 5. Runtime security boundary (ActionGuard authorization)
 
-Every side-effectful invocation of a registered skill — whether through `McpToolBridge` (MCP tool) or `SkillInvocationEntryPoint` (Spring AI Advisor) — constructs an `ActionEnvelope` and routes through `ActionGuard.authorize(envelope)`. The skill cannot reach its handler without the envelope being approved.
+Every side-effectful invocation of a registered skill -- whether through `McpToolBridge` (MCP tool) or `SkillInvocationEntryPoint` (Spring AI Advisor) -- constructs an `ActionEnvelope` and routes through `ActionGuard.authorize(envelope)`. The skill cannot reach its handler without the envelope being approved.
 
 ```java
 @Component
@@ -155,9 +155,9 @@ Both gates are mandatory. Removing the load-time gate would let malformed regist
 | ADR | Decision | Why |
 |---|---|---|
 | **AD-1: JSON-backed registry per tenant** | Not a DB | Read-once-at-boot pattern; small working set; git-diff-friendly |
-| **AD-2: Lifecycle 5-stage** | Candidate → Provisional → Certified → Deprecated → Retired | Mirrors hi-agent's lifecycle; well-trodden |
+| **AD-2: Lifecycle 5-stage** | Candidate -> Provisional -> Certified -> Deprecated -> Retired | Mirrors hi-agent's lifecycle; well-trodden |
 | **AD-3: Load-time gate is registry hygiene; runtime authorization is ActionGuard** | Both gates run; neither replaces the other | addresses P0-1 + P0-6 (status: design_accepted); load-time alone leaves the runtime side-effect boundary undefended |
-| **AD-4: SkillUsageRecorder ≠ EventStore** | Two distinct stores | Recorder updates lifecycle counters; EventStore logs run events for replay |
+| **AD-4: SkillUsageRecorder != EventStore** | Two distinct stores | Recorder updates lifecycle counters; EventStore logs run events for replay |
 | **AD-5: Champion/Challenger via SkillVersionManager** | A/B versioning with explicit promotion | Evolution loop produces challengers; champion holds production traffic until challenger proves out |
 | **AD-6: Spine on every record** | tenant_id, project_id, run_id (where applicable) | Rule 11 strict-posture validation |
 | **AD-7: Promotion history capped N=20** | per skill | Bounded growth; older history archived |
@@ -178,7 +178,7 @@ Both gates are mandatory. Removing the load-time gate would let malformed regist
 
 | Attribute | Target | Verification |
 |---|---|---|
-| Skill load time at boot | ≤ 2s for 100-skill registry | `tests/integration/SkillLoaderIT` |
+| Skill load time at boot | <= 2s for 100-skill registry | `tests/integration/SkillLoaderIT` |
 | Cross-tenant skill isolation | yes | `tests/integration/SkillTenantIsolationIT` |
 | Dangerous capability load-time gate enforcement | yes under strict posture | `tests/integration/DangerousCapabilityLoadTimeIT` |
 | Runtime authorization for every side-effect invocation | 100% of invocations route through ActionGuard | `tests/integration/RuntimeActionGuardForEverySideEffectIT` |
@@ -199,4 +199,4 @@ Both gates are mandatory. Removing the load-time gate would let malformed regist
 - Hi-agent prior art: `D:/chao_workspace/hi-agent/hi_agent/skill/ARCHITECTURE.md`
 - Spring AI Advisors: https://docs.spring.io/spring-ai/reference/1.1/api/advisors.html
 - MCP: https://modelcontextprotocol.io/
-- Systematic-architecture-remediation-plan: [`../../docs/systematic-architecture-remediation-plan-2026-05-08.en.md`](../../docs/systematic-architecture-remediation-plan-2026-05-08.en.md) §7.2
+- Systematic-architecture-remediation-plan: [`../../docs/systematic-architecture-remediation-plan-2026-05-08.en.md`](../../docs/systematic-architecture-remediation-plan-2026-05-08.en.md) sec-7.2

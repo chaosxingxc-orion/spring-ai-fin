@@ -1,35 +1,35 @@
-# outbox — Outbox + Sync-Saga + Direct-DB (L2)
+# outbox -- Outbox + Sync-Saga + Direct-DB (L2)
 
-> **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) · L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
+> **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) . L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
 
 ---
 
 ## 1. Purpose & Boundary
 
-`outbox/` owns the **three-path write taxonomy** that resolves v5.0's H6 finding (the "Outbox-as-universal" antipattern that punted A→B fund transfer to "Saga, somehow").
+`outbox/` owns the **three-path write taxonomy** that resolves v5.0's H6 finding (the "Outbox-as-universal" antipattern that punted A->B fund transfer to "Saga, somehow").
 
 Three named write paths, each declared via `@WriteSite(consistency=...)` annotation at the call site. CI fails on unannotated writes. Each path has different latency, consistency, and failure semantics:
 
 | Path | Used for | Mechanism | Latency | Consistency |
 |---|---|---|---|---|
-| **OUTBOX_ASYNC** | Telemetry, agent run events, artifact metadata, cost events, audit-non-PII | Same-Postgres-txn outbox table; `OutboxRelay` polls and publishes | event visible in 200ms–2s | eventual within tenant |
-| **SYNC_SAGA** | Cross-business-entity strong-progress (fund transfer A→B; multi-account post; loan disbursement; settlement) | `SyncSagaOrchestrator` over typed steps with explicit compensations | sub-second p95 | restartable, idempotent, journaled progress with explicit compensations and reconciliation; isolated across tenants. **Not ACID across entities** — saga compensation is a forward business action (reversal entry, refund journal), not a true transactional rollback |
+| **OUTBOX_ASYNC** | Telemetry, agent run events, artifact metadata, cost events, audit-non-PII | Same-Postgres-txn outbox table; `OutboxRelay` polls and publishes | event visible in 200ms-2s | eventual within tenant |
+| **SYNC_SAGA** | Cross-business-entity strong-progress (fund transfer A->B; multi-account post; loan disbursement; settlement) | `SyncSagaOrchestrator` over typed steps with explicit compensations | sub-second p95 | restartable, idempotent, journaled progress with explicit compensations and reconciliation; isolated across tenants. **Not ACID across entities** -- saga compensation is a forward business action (reversal entry, refund journal), not a true transactional rollback |
 | **DIRECT_DB** | Read-your-write within one aggregate (single account read after write; balance lookup); `LEDGER_ATOMIC` double-entry within one ledger | Single Postgres transaction; no relay | sub-100ms | strict serializable at row level |
 
 The package owns:
 
-- `OutboxStore` — durable Postgres table (`outbox_event`) with append-only semantics
-- `OutboxRelay` — polling worker that publishes events to in-process subscribers (and, when Kafka is adopted in v1.1+, to Kafka topics)
-- `DebeziumFeed` — opt-in CDC source for downstream consumers to tail the outbox without polling
-- `SyncSagaOrchestrator` — typed step + compensation framework
-- `FinancialWriteClass` — typed financial-write classifier, declared at call sites alongside `consistency` (see §6)
+- `OutboxStore` -- durable Postgres table (`outbox_event`) with append-only semantics
+- `OutboxRelay` -- polling worker that publishes events to in-process subscribers (and, when Kafka is adopted in v1.1+, to Kafka topics)
+- `DebeziumFeed` -- opt-in CDC source for downstream consumers to tail the outbox without polling
+- `SyncSagaOrchestrator` -- typed step + compensation framework
+- `FinancialWriteClass` -- typed financial-write classifier, declared at call sites alongside `consistency` (see sec-6)
 - `@WriteSite` annotation + `WriteSiteAuditTest` reflective gate
-- `FinancialWriteCompatibilityTest` — CI gate enforcing the §6 compatibility matrix
+- `FinancialWriteCompatibilityTest` -- CI gate enforcing the sec-6 compatibility matrix
 
 Does NOT own:
 
 - Postgres schema migrations (Flyway/Liquibase under `agent-runtime/server/migrations/`).
-- Kafka transport (deferred to v1.1+; adoption trigger in §11).
+- Kafka transport (deferred to v1.1+; adoption trigger in sec-11).
 - Event-bus federation (in-process subscribers only at MVP).
 - Event-payload schemas (carried by `agent-platform/contracts/v1/streaming/Event.java`).
 
@@ -39,11 +39,11 @@ Does NOT own:
 
 ### v5.0's mistake
 
-v5.0 Ch.8.3 framed Outbox as "the cross-store transaction model" (singular). §8.3.4 admitted Outbox does NOT handle cross-business-entity strong consistency (fund transfer A→B), punting it to "Seata TCC or business-layer Saga" — without specifying *which* fund-flow paths use Saga vs Outbox. In a finance platform, A→B fund transfer is the canonical transaction; saying "use Saga for that" without enforcement is exactly the gap that produces the inconsistency Rule 1 was designed to prevent.
+v5.0 Ch.8.3 framed Outbox as "the cross-store transaction model" (singular). sec-8.3.4 admitted Outbox does NOT handle cross-business-entity strong consistency (fund transfer A->B), punting it to "Seata TCC or business-layer Saga" -- without specifying *which* fund-flow paths use Saga vs Outbox. In a finance platform, A->B fund transfer is the canonical transaction; saying "use Saga for that" without enforcement is exactly the gap that produces the inconsistency Rule 1 was designed to prevent.
 
 ### v6.0's resolution
 
-Three paths, each declared at the call site via annotation. The annotation is greppable; CI fails on unannotated writes; reviewers can audit consistency choices in O(N) where N = number of write sites. For financial writes, the annotation also carries a `financialClass` value (see §6) so the chosen consistency mechanism is cross-checked against the financial semantics required.
+Three paths, each declared at the call site via annotation. The annotation is greppable; CI fails on unannotated writes; reviewers can audit consistency choices in O(N) where N = number of write sites. For financial writes, the annotation also carries a `financialClass` value (see sec-6) so the chosen consistency mechanism is cross-checked against the financial semantics required.
 
 ```java
 @WriteSite(consistency = OUTBOX_ASYNC,
@@ -67,7 +67,7 @@ public PostingId post(AccountId acct, Money debit, Money credit) { ... }
 public Money balance(AccountId id) { ... }
 ```
 
-`WriteSiteAuditTest` reflects over `@WriteSite` annotations and asserts every write-bearing method (`EntityManager.persist`, `JdbcTemplate.update`, `JpaRepository.save`, etc.) carries the annotation. Unannotated writes fail CI. `FinancialWriteCompatibilityTest` cross-checks `(consistency × financialClass)` against the compatibility matrix in §6.
+`WriteSiteAuditTest` reflects over `@WriteSite` annotations and asserts every write-bearing method (`EntityManager.persist`, `JdbcTemplate.update`, `JpaRepository.save`, etc.) carries the annotation. Unannotated writes fail CI. `FinancialWriteCompatibilityTest` cross-checks `(consistency x financialClass)` against the compatibility matrix in sec-6.
 
 ---
 
@@ -172,7 +172,7 @@ When Kafka is adopted in v1.1+, the `OutboxRelay` additionally publishes to a Ka
 
 ## 4. SYNC_SAGA path
 
-> **Saga semantics**: SYNC_SAGA provides **restartable, idempotent, journaled progress** through a typed sequence of business steps with **explicit forward-compensation actions** (reversal entries, refund journals, settlement reversals) and a **reconciliation record**. It is **not ACID across entities** — compensation is a new business event, not a transactional rollback. An intermediate state observed during saga execution is a real, audit-recorded state. Compensation does not erase it; it records a counter-action that brings the system back to a consistent business position.
+> **Saga semantics**: SYNC_SAGA provides **restartable, idempotent, journaled progress** through a typed sequence of business steps with **explicit forward-compensation actions** (reversal entries, refund journals, settlement reversals) and a **reconciliation record**. It is **not ACID across entities** -- compensation is a new business event, not a transactional rollback. An intermediate state observed during saga execution is a real, audit-recorded state. Compensation does not erase it; it records a counter-action that brings the system back to a consistent business position.
 
 ### Step + Compensation framework
 
@@ -254,7 +254,7 @@ class DebitStep extends SagaStep<DebitResult> {
 }
 ```
 
-Each step's `execute()` is a single Postgres transaction. The orchestrator drives the sequence; compensation runs in reverse on failure. The original `debit_journal` row is **preserved** — compensation posts a `reversal_journal` row that points to it. This is the "compensation is a forward business action" property in concrete form.
+Each step's `execute()` is a single Postgres transaction. The orchestrator drives the sequence; compensation runs in reverse on failure. The original `debit_journal` row is **preserved** -- compensation posts a `reversal_journal` row that points to it. This is the "compensation is a forward business action" property in concrete form.
 
 ### Saga state durability
 
@@ -306,7 +306,7 @@ public void transition(RunId id, RunState from, RunState to) {
 
 ## 6. FinancialWriteClass
 
-The `consistency` axis says *how the write is committed*. For financial writes, that is not enough — the architecture also needs to record *what kind of financial commitment* is being made and what guarantees the caller is allowed to claim. `FinancialWriteClass` is the second axis, declared at the call site:
+The `consistency` axis says *how the write is committed*. For financial writes, that is not enough -- the architecture also needs to record *what kind of financial commitment* is being made and what guarantees the caller is allowed to claim. `FinancialWriteClass` is the second axis, declared at the call site:
 
 ```java
 public enum FinancialWriteClass {
@@ -354,7 +354,7 @@ Rules:
 | **AD-7: OutboxRelay polls every 100ms** | Polling, not LISTEN/NOTIFY | LISTEN/NOTIFY drops messages on disconnect; polling is simpler and more resilient. CDC (Debezium) for high-volume customers |
 | **AD-8: Postgres RLS on outbox_event** | `tenant_id = current_setting('app.tenant_id')` | Cross-tenant outbox leak prevented at the database level |
 | **AD-9: FinancialWriteClass alongside consistency** | Each `@WriteSite` on a financial write declares both axes; compatibility matrix enforced by CI | addresses P0-10 (status: design_accepted); prevents misuse such as `OUTBOX_ASYNC` for fund transfer |
-| **AD-10: Saga is journaled progress with compensations, not ACID** | User-facing wording must not say "strong" or "all-or-nothing" for saga; reversal journal is the source of truth on compensation | Reviewer §4.6; prevents over-promised guarantees |
+| **AD-10: Saga is journaled progress with compensations, not ACID** | User-facing wording must not say "strong" or "all-or-nothing" for saga; reversal journal is the source of truth on compensation | Reviewer sec-4.6; prevents over-promised guarantees |
 
 ---
 
@@ -376,13 +376,13 @@ Rules:
 
 | Attribute | Target | Verification |
 |---|---|---|
-| **OUTBOX_ASYNC visibility latency** | p95 ≤ 500ms (in-process); p95 ≤ 2s (CDC) | `tests/integration/OutboxLatencyIT` |
-| **SYNC_SAGA round-trip** | p95 ≤ 1s for 4-step saga | `tests/integration/SyncSagaLatencyIT` |
+| **OUTBOX_ASYNC visibility latency** | p95 <= 500ms (in-process); p95 <= 2s (CDC) | `tests/integration/OutboxLatencyIT` |
+| **SYNC_SAGA round-trip** | p95 <= 1s for 4-step saga | `tests/integration/SyncSagaLatencyIT` |
 | **Saga compensation correctness** | Compensation runs in reverse on every step failure; reversal-journal rows produced; failed compensations enqueue reconciliation; saga enters `RECONCILIATION_REQUIRED` rather than silent `FAILED` | `tests/integration/SyncSagaCompensationIT` (all failure permutations + compensation-failure permutations) |
 | **WriteSite coverage** | 100% of write methods annotated | `WriteSiteAuditTest` |
-| **WriteSite financial compatibility** | Every financial-write site obeys the §6 matrix | `FinancialWriteCompatibilityTest` |
+| **WriteSite financial compatibility** | Every financial-write site obeys the sec-6 matrix | `FinancialWriteCompatibilityTest` |
 | **Saga restart-survival** | In-flight saga survives JVM crash; recovers on startup; RECONCILIATION_REQUIRED is durable | `tests/integration/SagaCrashRecoveryIT` |
-| **OutboxRelay backpressure** | Backlog ≥ 10K events triggers WARNING + scaling alarm | `springaifin_outbox_pending_total{tenant_id}` gauge |
+| **OutboxRelay backpressure** | Backlog >= 10K events triggers WARNING + scaling alarm | `springaifin_outbox_pending_total{tenant_id}` gauge |
 | **Reversal journal integrity** | Every compensation produces a journal row that links to the original step's journal id | `tests/integration/ReversalJournalLinkageIT` |
 
 ---
@@ -402,12 +402,12 @@ Rules:
 
 ## 11. References
 
-- L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md) §5.4 (sync transaction example)
+- L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md) sec-5.4 (sync transaction example)
 - L1: [`../ARCHITECTURE.md`](../ARCHITECTURE.md)
 - Server / RunManager: [`../server/ARCHITECTURE.md`](../server/ARCHITECTURE.md)
 - Audit: [`../audit/ARCHITECTURE.md`](../audit/ARCHITECTURE.md)
 - Action-guard (calls `PostActionEvidenceWriter` for FINANCIAL_ACTION): [`../action-guard/ARCHITECTURE.md`](../action-guard/ARCHITECTURE.md)
-- Hi-agent prior art (Outbox in Python/SQLite): `D:/chao_workspace/hi-agent/hi_agent/server/idempotency.py` — same purge pattern adapted to Postgres
+- Hi-agent prior art (Outbox in Python/SQLite): `D:/chao_workspace/hi-agent/hi_agent/server/idempotency.py` -- same purge pattern adapted to Postgres
 - Postgres outbox pattern: https://microservices.io/patterns/data/transactional-outbox.html
 - Saga pattern: https://microservices.io/patterns/data/saga.html
-- Systematic-architecture-improvement-plan: [`../../docs/systematic-architecture-improvement-plan-2026-05-07.en.md`](../../docs/systematic-architecture-improvement-plan-2026-05-07.en.md) §4.6
+- Systematic-architecture-improvement-plan: [`../../docs/systematic-architecture-improvement-plan-2026-05-07.en.md`](../../docs/systematic-architecture-improvement-plan-2026-05-07.en.md) sec-4.6

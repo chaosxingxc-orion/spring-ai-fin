@@ -1,6 +1,6 @@
-# audit — Audit Class Model + WORM Anchoring (L2)
+# audit -- Audit Class Model + WORM Anchoring (L2)
 
-> **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) · L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
+> **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) . L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
 >
 > **Origin**: created 2026-05-08 in response to security review finding **P0-8**. Audit is broken out of `observability/` into its own L2 because the security boundary between optional telemetry and mandatory regulatory evidence must be sharp.
 
@@ -8,22 +8,22 @@
 
 ## 1. Purpose & Boundary
 
-`audit/` owns the **classified audit-event model** with class-specific failure semantics. The pre-v6.0-review architecture allowed spine emitters to never raise — appropriate for telemetry, but unsafe for regulatory evidence. The 5-class model (verbatim from the security reviewer) draws the security/telemetry boundary clearly.
+`audit/` owns the **classified audit-event model** with class-specific failure semantics. The pre-v6.0-review architecture allowed spine emitters to never raise -- appropriate for telemetry, but unsafe for regulatory evidence. The 5-class model (verbatim from the security reviewer) draws the security/telemetry boundary clearly.
 
 Owns:
 
 - `AuditClass` enum: `TELEMETRY / SECURITY_EVENT / REGULATORY_AUDIT / PII_ACCESS / FINANCIAL_ACTION`
-- `AuditEntry` — typed audit record with class + spine + payload
-- `AuditStore` — Postgres append-only `audit_event` table; class-aware durability
-- `AuditFacade` (consumed by `agent-platform/facade/`) — the API surface for audit writes
-- `WormAnchor` — daily Merkle root + RFC 3161 timestamp anchoring
-- `AuditQueryService` — read-only read path (used by inspector role; integrates with PII dual-approval)
+- `AuditEntry` -- typed audit record with class + spine + payload
+- `AuditStore` -- Postgres append-only `audit_event` table; class-aware durability
+- `AuditFacade` (consumed by `agent-platform/facade/`) -- the API surface for audit writes
+- `WormAnchor` -- daily Merkle root + RFC 3161 timestamp anchoring
+- `AuditQueryService` -- read-only read path (used by inspector role; integrates with PII dual-approval)
 
 Does NOT own:
 
 - Telemetry log/metric emit (delegated to `../observability/`)
 - PII detection itself (delegated to `Presidio` integration in `../audit/PiiRedactor.java`)
-- Tokenization service (delegated to `../audit/TokenizationService.java` — also hosted here)
+- Tokenization service (delegated to `../audit/TokenizationService.java` -- also hosted here)
 
 ---
 
@@ -101,7 +101,7 @@ public record AuditEntry(
 }
 ```
 
-### hashChainPrev — tamper-evidence
+### hashChainPrev -- tamper-evidence
 
 Every audit row carries `hashChainPrev = SHA-256(prev_row_canonical_json)`. This:
 
@@ -165,12 +165,12 @@ Failure to anchor blocks release.
 
 Regulatory inspector role uses read-only routes:
 
-- `GET /v1/audit/{recordId}` — fetch single audit entry (with cross-tenant authorization)
-- `GET /v1/audit/range?from=...&to=...&class=...` — range query
-- `POST /v1/audit/decode` — request PII decode (dual-approval workflow)
-- `POST /v1/audit/decode/{requestId}/approve` — second approver
+- `GET /v1/audit/{recordId}` -- fetch single audit entry (with cross-tenant authorization)
+- `GET /v1/audit/range?from=...&to=...&class=...` -- range query
+- `POST /v1/audit/decode` -- request PII decode (dual-approval workflow)
+- `POST /v1/audit/decode/{requestId}/approve` -- second approver
 
-Inspector queries themselves emit `AuditClass.SECURITY_EVENT` records (recursive auditing — inspector access is itself audited).
+Inspector queries themselves emit `AuditClass.SECURITY_EVENT` records (recursive auditing -- inspector access is itself audited).
 
 ---
 
@@ -182,7 +182,7 @@ Inspector queries themselves emit `AuditClass.SECURITY_EVENT` records (recursive
 | **AD-2: Class-aware failure semantics** | Each class has explicit failure behaviour | addresses P0-8 (status: design_accepted); "PII decode cannot return plaintext if audit write fails" |
 | **AD-3: Audit-before-action for PII/financial** | Synchronous write before reveal/commit | Prevents unprovable actions |
 | **AD-4: Hash chain per row** | hashChainPrev links rows in chain | Tamper-evidence at row level |
-| **AD-5: Daily Merkle root + RFC 3161 anchor** | Per-tenant per-day Merkle root → public timestamp | Compliance-defensible immutability |
+| **AD-5: Daily Merkle root + RFC 3161 anchor** | Per-tenant per-day Merkle root -> public timestamp | Compliance-defensible immutability |
 | **AD-6: Safe read-only mode on REGULATORY_AUDIT failure** | Platform enters degraded state | Failure to record evidence = cannot continue regulated operation |
 | **AD-7: Postgres append-only role** | `runtime_role` has only INSERT, SELECT on `audit_event` | UPDATE/DELETE forbidden by DB role |
 | **AD-8: Inspector access is itself audited** | Recursive SECURITY_EVENT | Closes "who watches the watchers" |
@@ -204,7 +204,7 @@ Inspector queries themselves emit `AuditClass.SECURITY_EVENT` records (recursive
 
 | Attribute | Target | Verification |
 |---|---|---|
-| Audit write latency p95 | ≤ 5ms (TELEMETRY); ≤ 20ms (SECURITY/REGULATORY); ≤ 50ms (PII_ACCESS sync); within saga (FINANCIAL) | `tests/integration/AuditWriteLatencyIT` |
+| Audit write latency p95 | <= 5ms (TELEMETRY); <= 20ms (SECURITY/REGULATORY); <= 50ms (PII_ACCESS sync); within saga (FINANCIAL) | `tests/integration/AuditWriteLatencyIT` |
 | PII reveal blocked on audit failure | yes | `tests/integration/AuditBeforeRevealIT` |
 | Financial commit blocked on audit failure | yes | `tests/integration/AuditInTxnIT` |
 | WORM anchor daily | yes; alarm if missing | `WormSnapshotFreshnessTest` |
@@ -213,10 +213,10 @@ Inspector queries themselves emit `AuditClass.SECURITY_EVENT` records (recursive
 
 ### Reviewer's acceptance tests (all adopted)
 
-- "PII decode cannot return plaintext if audit write fails" → `AuditBeforeRevealIT`
-- "Non-idempotent financial action cannot proceed without evidence record" → `AuditInTxnIT`
-- "WORM snapshot failure creates explicit compliance alarm and blocks release gate" → `WormSnapshotFreshnessTest`
-- "Audit rows cannot be updated/deleted by runtime role" → `AuditRoleIT`
+- "PII decode cannot return plaintext if audit write fails" -> `AuditBeforeRevealIT`
+- "Non-idempotent financial action cannot proceed without evidence record" -> `AuditInTxnIT`
+- "WORM snapshot failure creates explicit compliance alarm and blocks release gate" -> `WormSnapshotFreshnessTest`
+- "Audit rows cannot be updated/deleted by runtime role" -> `AuditRoleIT`
 
 ---
 
@@ -235,6 +235,6 @@ Inspector queries themselves emit `AuditClass.SECURITY_EVENT` records (recursive
 - L1: [`../ARCHITECTURE.md`](../ARCHITECTURE.md)
 - ActionGuard (consumer): [`../action-guard/ARCHITECTURE.md`](../action-guard/ARCHITECTURE.md)
 - Outbox financial write classes: [`../outbox/ARCHITECTURE.md`](../outbox/ARCHITECTURE.md)
-- Security review: [`../../docs/deep-architecture-security-assessment-2026-05-07.en.md`](../../docs/deep-architecture-security-assessment-2026-05-07.en.md) §P0-8
-- Response: [`../../docs/security-response-2026-05-08.md`](../../docs/security-response-2026-05-08.md) §P0-8
+- Security review: [`../../docs/deep-architecture-security-assessment-2026-05-07.en.md`](../../docs/deep-architecture-security-assessment-2026-05-07.en.md) sec-P0-8
+- Response: [`../../docs/security-response-2026-05-08.md`](../../docs/security-response-2026-05-08.md) sec-P0-8
 - RFC 3161: https://datatracker.ietf.org/doc/html/rfc3161

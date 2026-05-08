@@ -65,7 +65,20 @@ The eventual real Rule 8 smoke flow must:
 
 ## Status (per `docs/governance/architecture-status.yaml`)
 
-- **`architecture_sync_gate` capability**: `implemented_unverified`. Both `check_architecture_sync.ps1` and `check_architecture_sync.sh` exist; latest delivery-valid PASS recorded by the manifest in `docs/governance/evidence-manifest.yaml`.
-- **`operator_shape_smoke_gate` capability**: `design_accepted`. Both `run_operator_shape_smoke.ps1` and `run_operator_shape_smoke.sh` **exist in `cycle-4-fail-closed` form** (exit 1 with structured `FAIL_ARTIFACT_MISSING` JSON to `gate/log/local/operator-shape-<sha>-{posix,windows}.json`). They are NOT Rule 8 PASS evidence -- only honest absence-evidence. W0 will replace fail-closed with the real Rule 8 flow once a runnable artifact exists.
+Cycle-8 sec-E1: maturity is the primary readiness language. Status / evidence_state is the lifecycle field.
+
+- **`architecture_sync_gate` capability**: maturity `L0`; evidence_state `implemented_unverified`. Both `check_architecture_sync.ps1` and `check_architecture_sync.sh` exist; latest delivery-valid PASS recorded by the manifest in `docs/governance/evidence-manifest.yaml`.
+- **`operator_shape_smoke_gate` capability**: maturity `L0`; evidence_state `design_accepted`. Both `run_operator_shape_smoke.ps1` and `run_operator_shape_smoke.sh` **exist in `cycle-4-fail-closed` form** (exit 1 with structured `FAIL_ARTIFACT_MISSING` JSON to `gate/log/local/operator-shape-<sha>-{posix,windows}.json`). They are NOT Rule 8 PASS evidence -- only honest absence-evidence. W0 will replace fail-closed with the real Rule 8 flow once a runnable artifact exists.
 
 No reader should mistake an architecture-sync PASS for Rule 8 evidence. No reader should mistake `FAIL_ARTIFACT_MISSING` for "the script does not exist."
+
+## Cycle-8 evidence contract
+
+Per `docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md` and `docs/systemic-remediation-operating-plan-2026-05-08.en.md` Phases 0-4:
+
+1. `gate/test_architecture_sync_gate.sh` MUST PASS at the evidence commit SHA before any delivery file is committed (cycle-8 sec-A2). The self-test result is recorded in `gate/log/local/self-test-<sha>.json` and copied by the audit-trail commit when authoritative.
+2. The current authoritative `manifest.delivery_file` MUST have a matching `gate/log/<sha>-{posix,windows}.json` whose `sha` field equals the manifest's `reviewed_content_sha` or HEAD (cycle-8 sec-B1, sec-B2).
+3. `architecture_sync_logs.{posix,windows}.state` is from the closed enum: `pass | fail | missing_blocker | not_applicable | historical_only | pre_audit_trail`. `null` and `TBD` are forbidden in delivery-valid manifest fields (cycle-8 sec-B3).
+4. `*.sh` scripts are LF (CRLF disallowed by `.gitattributes` and the `eol_policy` gate rule; cycle-8 sec-A1).
+5. Active corpus files are ASCII only, scoped via `docs/governance/active-corpus.yaml` (cycle-8 sec-D1, Phase 3).
+6. While `manifest.rule_8.state == fail_closed_artifact_missing`, no capability has maturity `L3`/`L4` or `evidence_state: operator_gated` / `released`, and no delivery file claims Rule 8 PASS (cycle-8 sec-C2).

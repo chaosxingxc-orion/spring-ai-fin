@@ -1,0 +1,44 @@
+# spring-ai-fin line-ending and text policy.
+#
+# Per docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
+# sec-A1 (CRLF on gate/check_architecture_sync.sh broke POSIX execution) and
+# docs/systemic-remediation-operating-plan-2026-05-08.en.md Phase 0 (LF for
+# shell scripts is part of the stop-the-line stabilization).
+#
+# Without this file, Windows checkouts produce CRLF in *.sh files, which
+# breaks the bash shebang and `set -o pipefail`. POSIX checkouts then cannot
+# execute the gates from a Windows-checked-out tree.
+
+# Default: treat as text and normalize line endings on commit.
+* text=auto eol=lf
+
+# Shell scripts MUST be LF (CRLF breaks shebang + pipefail).
+*.sh text eol=lf
+gate/*.sh text eol=lf
+
+# PowerShell stays CRLF on Windows (the dominant host), but the index is LF
+# so a POSIX checkout reads valid UTF-8 with Unix line endings. Both PS5+ and
+# pwsh accept LF, so this is safe.
+*.ps1 text eol=lf
+
+# Markdown / YAML / JSON: LF everywhere. Avoids CRLF bytes contaminating
+# evidence logs (the architecture-sync gate parses log JSON byte-for-byte).
+*.md text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
+
+# Java / Kotlin / Maven: LF.
+*.java text eol=lf
+*.kt text eol=lf
+*.xml text eol=lf
+
+# Binary types: never normalize.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.tar binary

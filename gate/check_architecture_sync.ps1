@@ -1,24 +1,26 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-  spring-ai-fin architecture-sync gate (cycle-7 expanded).
+  spring-ai-fin architecture-sync gate (cycle-8 evidence graph v3).
 
 .DESCRIPTION
-  Cycle-7 changes:
-    - Variable initialization moved to top of rule body (was crashing
-      because cycle-6 readme_to_files used $gateReadme before the
-      original gate_log_extension_drift assigned it).
-    - Whole rule body wrapped so a runtime error emits structured
-      gate_runtime_error JSON instead of crashing.
-    - delivery_log_parity rule extended to match POSIX semantics
-      (sha + semantic_pass + evidence_valid_for_delivery).
-    - audit_trail_shape rule: enforces evidence-manifest/v2 two-SHA model
-      via git rev-parse and git diff --name-only.
-    - manifest_edge_consistency rule: validates manifest <-> delivery <->
-      log <-> status <-> index edges.
-    - ascii_only_governance rule: active governance files must be ASCII.
-    - capability_legacy_bucket rule: forbids new findings using
-      capability: operator_shape_gate.
+  Cycle-8 changes (this version: "cycle-8-evidence-graph-v3"):
+    - eol_policy rule (A1): tracked *.sh must be LF in working tree.
+    - delivery_log_exact_binding rule (B1): authoritative delivery files
+      MUST name a log path that exists and whose sha equals
+      reviewed_content_sha or evidence_commit_sha.
+    - delivery_log_parity (B2): no skip on missing log for current
+      authoritative delivery; legacy exemptions are explicit in manifest.
+    - manifest_no_tbd / manifest_no_null_log_slots rules (B3).
+    - ascii_only_active_corpus rule (D1): replaces ascii_only_governance;
+      scan list derived from docs/governance/active-corpus.yaml.
+    - rule_8_state_consistency rule (C2).
+
+  Cycle-7 baseline (unchanged):
+    - audit_trail_shape rule (B1): two-SHA evidence model.
+    - manifest_edge_consistency rule (B2).
+    - capability_legacy_bucket rule (D2).
+    - Variable initialization above all rules; rule body try-wrapped.
 
 .NOTES
   Architecture-sync gate, NOT Rule 8 operator-shape gate.
@@ -484,7 +486,8 @@ if (Test-Path $gateReadme) {
   }
 }
 
-# 16. Delivery-log parity (cycle-7 A2 extended to match POSIX semantics).
+# 16. Delivery-log parity (cycle-7 A2; cycle-8 B2 no-skip-on-missing for
+# current authoritative delivery; legacy_exemptions explicit in manifest).
 $deliveryFiles = Get-ChildItem -Path 'docs/delivery' -Filter '2026-05-08-*.md' -File -ErrorAction SilentlyContinue
 foreach ($df in $deliveryFiles) {
   $base = [System.IO.Path]::GetFileNameWithoutExtension($df.Name)
@@ -494,7 +497,29 @@ foreach ($df in $deliveryFiles) {
   foreach ($candidate in @("gate/log/$sha-posix.json", "gate/log/$sha-windows.json", "gate/log/$sha.json")) {
     if (Test-Path $candidate) { $logFile = $candidate; break }
   }
-  if (-not $logFile) { continue }
+  if (-not $logFile) {
+    # Cycle-8 B2: do not silently skip.
+    $legacyExempt = $false
+    if (Test-Path $manifestPath) {
+      $mfText = Get-Content -Raw -LiteralPath $manifestPath
+      $relDf = (Rel $df.FullName)
+      if ($mfText -match [regex]::Escape($relDf)) {
+        $idx = $mfText.IndexOf($relDf)
+        $window = $mfText.Substring($idx, [Math]::Min(400, $mfText.Length - $idx))
+        if ($window -match 'pre_platform_suffix_legacy') { $legacyExempt = $true }
+      }
+    }
+    $isCurrent = $false
+    if ($manifestDelivery) {
+      $relDfNorm = (Rel $df.FullName) -replace '\\','/'
+      $manDelNorm = $manifestDelivery -replace '\\','/'
+      if ($relDfNorm -eq $manDelNorm) { $isCurrent = $true }
+    }
+    if ($isCurrent -and -not $legacyExempt) {
+      Fail 'delivery_log_parity' "current authoritative delivery $($df.Name) has no matching gate/log/$sha-*.json" (Rel $df.FullName) 0
+    }
+    continue
+  }
   $logContent = Get-Content -Raw -LiteralPath $logFile
   $logSha = if ($logContent -match '"sha":"([^"]+)"') { $matches[1] } else { '' }
   $logSemPass = if ($logContent -match '"semantic_pass":(true|false)') { $matches[1] } else { '' }
@@ -517,17 +542,35 @@ foreach ($df in $deliveryFiles) {
   }
 }
 
-# 17. ASCII-only governance (cycle-7 D3).
-$asciiFiles = @(
-  $manifestPath,
-  $indexPath,
-  $statusPath,
-  'docs/governance/closure-taxonomy.md',
-  'docs/governance/decision-sync-matrix.md',
-  'docs/governance/maturity-glossary.md',
-  $delReadme,
-  $gateReadme
-)
+# 17. ASCII-only active corpus (cycle-8 D1; replaces cycle-7 ascii_only_governance).
+# Scan list derived from docs/governance/active-corpus.yaml so the registry
+# is the single source of truth (Phase 3).
+$activeCorpusPath = 'docs/governance/active-corpus.yaml'
+$asciiFiles = @()
+if (Test-Path $activeCorpusPath) {
+  $inActive = $false
+  foreach ($yLine in (Get-Content -LiteralPath $activeCorpusPath)) {
+    if ($yLine -match '^active_documents:') { $inActive = $true; continue }
+    if ($yLine -match '^historical_documents:') { $inActive = $false; continue }
+    if (-not $inActive) { continue }
+    if ($yLine -match '^\s+-\s+path:\s+(\S+)\s*$') {
+      $asciiFiles += $matches[1]
+    }
+  }
+}
+if ($asciiFiles.Count -eq 0) {
+  $asciiFiles = @(
+    $manifestPath,
+    $indexPath,
+    $statusPath,
+    'docs/governance/closure-taxonomy.md',
+    'docs/governance/decision-sync-matrix.md',
+    'docs/governance/maturity-glossary.md',
+    $delReadme,
+    $gateReadme
+  )
+  Fail 'active_corpus_registry_missing' "active-corpus.yaml not parseable; falling back to cycle-7 minimal scan list" $activeCorpusPath 0
+}
 foreach ($f in $asciiFiles) {
   if (-not (Test-Path $f)) { continue }
   $bytes = [System.IO.File]::ReadAllBytes($f)
@@ -538,8 +581,108 @@ foreach ($f in $asciiFiles) {
     if ($b -eq 13) { continue }
     if ($b -eq 9) { continue }
     if ($b -lt 32 -or $b -gt 126) {
-      Fail 'ascii_only_governance' ("non-ASCII byte 0x{0:X2} found" -f $b) (Rel $f) $lineNum
+      Fail 'ascii_only_active_corpus' ("non-ASCII byte 0x{0:X2} found" -f $b) (Rel $f) $lineNum
       break
+    }
+  }
+}
+
+# 19. EOL policy (cycle-8 A1): tracked *.sh files must be LF in working tree.
+$shellFiles = @()
+try { $shellFiles = & git ls-files '*.sh' 2>$null } catch { $shellFiles = @() }
+foreach ($shf in $shellFiles) {
+  if ([string]::IsNullOrWhiteSpace($shf)) { continue }
+  if (-not (Test-Path -LiteralPath $shf)) { continue }
+  $bytes = [System.IO.File]::ReadAllBytes($shf)
+  $hasCr = $false
+  foreach ($b in $bytes) {
+    if ($b -eq 13) { $hasCr = $true; break }
+  }
+  if ($hasCr) {
+    Fail 'eol_policy' "shell script contains CRLF; must be LF (see .gitattributes)" $shf 0
+  }
+}
+if (-not (Test-Path '.gitattributes')) {
+  Fail 'eol_policy' ".gitattributes does not exist; LF policy is unenforced" '.gitattributes' 0
+}
+
+# 20. Manifest no TBD / no null log slots (cycle-8 B3).
+if (Test-Path $manifestPath) {
+  $manifestRaw = Get-Content -LiteralPath $manifestPath
+  for ($i = 0; $i -lt $manifestRaw.Count; $i++) {
+    $line = $manifestRaw[$i]
+    $hashIdx = $line.IndexOf('#')
+    $stripped = if ($hashIdx -ge 0) { $line.Substring(0, $hashIdx).TrimEnd() } else { $line }
+    if ($stripped -match ':\s*TBD\s*$') {
+      Fail 'manifest_no_tbd' "manifest has 'TBD' value; replace with explicit value or state" $manifestPath ($i + 1)
+    }
+    if ($stripped -match '^\s+state:\s*null\s*$') {
+      Fail 'manifest_no_null_log_slots' "manifest has 'state: null'; use the closed state enum" $manifestPath ($i + 1)
+    }
+  }
+}
+
+# 21. Delivery-log exact binding (cycle-8 B1).
+if ($manifestDelivery -and (Test-Path $manifestDelivery) -and $reviewedContentSha) {
+  $deliveryBase = [System.IO.Path]::GetFileNameWithoutExtension((Split-Path -Leaf $manifestDelivery))
+  $deliverySha = $deliveryBase -replace '^2026-05-08-', ''
+  $foundLog = $null
+  foreach ($candidate in @("gate/log/$deliverySha-posix.json", "gate/log/$deliverySha-windows.json", "gate/log/$deliverySha.json")) {
+    if (Test-Path $candidate) { $foundLog = $candidate; break }
+  }
+  $legacyExempt = $false
+  if (Test-Path $manifestPath) {
+    $mfText = Get-Content -Raw -LiteralPath $manifestPath
+    if ($mfText -match [regex]::Escape($manifestDelivery)) {
+      $idx = $mfText.IndexOf($manifestDelivery)
+      $window = $mfText.Substring($idx, [Math]::Min(400, $mfText.Length - $idx))
+      if ($window -match 'pre_platform_suffix_legacy') { $legacyExempt = $true }
+    }
+  }
+  if (-not $foundLog -and -not $legacyExempt) {
+    Fail 'delivery_log_exact_binding' "manifest.delivery_file=$manifestDelivery has no matching gate/log/$deliverySha-*.json (and no legacy exemption)" $manifestPath 0
+  }
+  if ($foundLog) {
+    $logRaw = Get-Content -Raw -LiteralPath $foundLog
+    $logSha = if ($logRaw -match '"sha":"([^"]+)"') { $matches[1] } else { '' }
+    if ($logSha -and $logSha -ne $reviewedContentSha -and $logSha -ne $shaCandidate) {
+      Fail 'delivery_log_exact_binding' "log $foundLog reports sha='$logSha' which is neither reviewed_content_sha=$reviewedContentSha nor HEAD=$shaCandidate" $foundLog 0
+    }
+  }
+}
+
+# 22. Rule 8 state consistency (cycle-8 C2).
+$rule8State = ''
+if (Test-Path $manifestPath) {
+  $manifestText = Get-Content -Raw -LiteralPath $manifestPath
+  if ($manifestText -match '(?ms)^rule_8:\s*\r?\n\s+state:\s*([A-Za-z_]+)') {
+    $rule8State = $matches[1]
+  }
+}
+if ($rule8State -eq 'fail_closed_artifact_missing' -and (Test-Path $statusPath)) {
+  $statusLines = Get-Content -LiteralPath $statusPath
+  for ($i = 0; $i -lt $statusLines.Count; $i++) {
+    $line = $statusLines[$i]
+    if ($line -match '^\s+maturity:\s*L3\b') {
+      Fail 'rule_8_state_consistency' "capability declares maturity: L3 while manifest.rule_8.state=fail_closed_artifact_missing" $statusPath ($i + 1)
+    }
+    if ($line -match '^\s+maturity:\s*L4\b') {
+      Fail 'rule_8_state_consistency' "capability declares maturity: L4 while manifest.rule_8.state=fail_closed_artifact_missing" $statusPath ($i + 1)
+    }
+    if ($line -match '^\s+(status|evidence_state):\s*operator_gated\b') {
+      Fail 'rule_8_state_consistency' "capability declares operator_gated while manifest.rule_8.state=fail_closed_artifact_missing" $statusPath ($i + 1)
+    }
+    if ($line -match '^\s+(status|evidence_state):\s*released\b') {
+      Fail 'rule_8_state_consistency' "capability declares released while manifest.rule_8.state=fail_closed_artifact_missing" $statusPath ($i + 1)
+    }
+  }
+  $deliveryFiles2 = Get-ChildItem -Path 'docs/delivery' -Filter '2026-05-08-*.md' -File -ErrorAction SilentlyContinue
+  foreach ($df in $deliveryFiles2) {
+    $dRaw = Get-Content -Raw -LiteralPath $df.FullName
+    if ($dRaw -match 'Rule\s*8\s*PASS') {
+      if (-not ($dRaw -match '(NOT Rule 8 PASS|not Rule 8 PASS|fails closed|fail-closed|fail_closed_artifact_missing|FAIL_ARTIFACT_MISSING)')) {
+        Fail 'rule_8_state_consistency' "delivery file claims Rule 8 PASS while manifest.rule_8.state=fail_closed_artifact_missing" (Rel $df.FullName) 0
+      }
     }
   }
 }
@@ -585,7 +728,7 @@ if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Forc
 
 $result = [pscustomobject]@{
   script                       = 'check_architecture_sync.ps1'
-  version                      = 'cycle-7-expanded'
+  version                      = 'cycle-8-evidence-graph-v3'
   platform                     = 'windows'
   sha                          = $shaCandidate
   generated                    = (Get-Date -Format 'o')

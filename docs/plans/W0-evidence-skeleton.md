@@ -1,6 +1,6 @@
-# W0 — Evidence Skeleton
+# W0 -- Evidence Skeleton
 
-> Per `docs/systematic-architecture-improvement-plan-2026-05-07.en.md` §4.8 and §5.
+> Per `docs/systematic-architecture-improvement-plan-2026-05-07.en.md` sec-4.8 and sec-5.
 
 ## Goal
 
@@ -13,7 +13,7 @@ Convert the corpus from "document-only" into a runnable, gateable skeleton. The 
 - `AppPosture` + `DeploymentShape` + `PostureBootGuard` wired and read once at boot.
 - `ContractError` (record) and `ContractException` (RuntimeException) compiled and exercised by the controller advice.
 - `RunRecord` with `tenant_id` persisted to a real local Postgres (no in-memory backend on `research`).
-- `gate/run_operator_shape_smoke.{sh,ps1}` script that drives steps 1–6 of Rule 8.
+- `gate/run_operator_shape_smoke.{sh,ps1}` script that drives steps 1-6 of Rule 8.
 - `docs/delivery/<date>-<sha>.md` recorded for the W0 SHA.
 
 ## Out of scope (deferred to later waves)
@@ -62,7 +62,7 @@ docs/delivery/<date>-<W0-sha>.md
 
 - `mvn -q -pl agent-platform,agent-runtime test` exits 0.
 - `gate/run_operator_shape_smoke.{sh,ps1}` exits 0 against a long-lived `java -jar` process and a real local Postgres (per posture matrix; `dev` posture loopback only).
-- `gate/check_architecture_sync.{sh,ps1}` exits 0 — every L0 decision in `decision-sync-matrix.md` is reflected in its claimed L2 document and `architecture-status.yaml`.
+- `gate/check_architecture_sync.{sh,ps1}` exits 0 -- every L0 decision in `decision-sync-matrix.md` is reflected in its claimed L2 document and `architecture-status.yaml`.
 - `architecture-status.yaml` reports no capability above L1 and no status above `operator_gated`.
 - `docs/delivery/<date>-<W0-sha>.md` records: SHA, posture, deployment shape, three sequential `POST /v1/runs` runs reusing the same JVM resources, two cancellation tests (200 / 404), zero fallback events.
 

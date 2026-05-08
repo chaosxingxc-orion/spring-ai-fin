@@ -1,6 +1,6 @@
-# posture — AppPosture + PostureBootGuard (L2)
+# posture -- AppPosture + PostureBootGuard (L2)
 
-> **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) · L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
+> **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) . L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
 
 ---
 
@@ -10,11 +10,11 @@
 
 Owns:
 
-- `AppPosture` — enum `DEV / RESEARCH / PROD`
-- `DeploymentShape` — enum `LOCAL_LOOPBACK / BYOC_SINGLE_TENANT / SAAS_MULTI_TENANT`
-- `PostureGate` — consumer-facing helpers (`requiresStrict`, `requiresRealLLM`, `requiresJwt`, `requiresWorm`, `permitsInMemoryStore`, `permitsHmac`, `permitsAnonymous`, etc.)
-- `Posture.fromEnv()` — single boot-time read
-- `PostureBootGuard` — hard boot gate that refuses to start the JVM when the requested posture/shape combination violates the safety matrix in §4
+- `AppPosture` -- enum `DEV / RESEARCH / PROD`
+- `DeploymentShape` -- enum `LOCAL_LOOPBACK / BYOC_SINGLE_TENANT / SAAS_MULTI_TENANT`
+- `PostureGate` -- consumer-facing helpers (`requiresStrict`, `requiresRealLLM`, `requiresJwt`, `requiresWorm`, `permitsInMemoryStore`, `permitsHmac`, `permitsAnonymous`, etc.)
+- `Posture.fromEnv()` -- single boot-time read
+- `PostureBootGuard` -- hard boot gate that refuses to start the JVM when the requested posture/shape combination violates the safety matrix in sec-4
 
 Does NOT own:
 
@@ -32,7 +32,7 @@ DEV:
   permits:
     - in-memory backends OK
     - missing tenant_id warns (not rejects)
-    - JWT optional (anonymous claims accepted) — loopback bind only
+    - JWT optional (anonymous claims accepted) -- loopback bind only
     - mock LLM provider permitted
     - WORM audit storage optional
   recommended_for:
@@ -83,7 +83,7 @@ Consumers ask `posture.requires*()` rather than branch on posture name:
 if (posture.requiresJwt()) { /* validate JWT */ }
 if (posture.requiresStrict()) { throw new SpineCompletenessException(...); }
 
-// WRONG — couples consumer to posture name
+// WRONG -- couples consumer to posture name
 if (posture == AppPosture.PROD) { /* ... */ }
 ```
 
@@ -93,7 +93,7 @@ This decouples consumers from posture taxonomy. Adding a new posture (e.g., `STA
 
 ## 4. PostureBootGuard (hard boot gate)
 
-`PostureBootGuard` runs as a Spring `ApplicationListener<ApplicationEnvironmentPreparedEvent>` and refuses to start the JVM when the requested posture / deployment shape / opt-in flag combination violates the L0 D-block §A3 safety matrix. It is the architectural answer to the largest practical failure mode the security review identified: **a pilot deployment accidentally running permissive dev posture with real data, real sidecars, or real LLM credentials**.
+`PostureBootGuard` runs as a Spring `ApplicationListener<ApplicationEnvironmentPreparedEvent>` and refuses to start the JVM when the requested posture / deployment shape / opt-in flag combination violates the L0 D-block sec-A3 safety matrix. It is the architectural answer to the largest practical failure mode the security review identified: **a pilot deployment accidentally running permissive dev posture with real data, real sidecars, or real LLM credentials**.
 
 ### Boot-time decision matrix
 
@@ -184,9 +184,9 @@ public class PostureBootGuard implements ApplicationListener<ApplicationEnvironm
 }
 ```
 
-`PostureBootGuardException` is **terminal** — there is no fallback. The JVM exits non-zero with a structured error pointing at every failed check and the env var that would correct it.
+`PostureBootGuardException` is **terminal** -- there is no fallback. The JVM exits non-zero with a structured error pointing at every failed check and the env var that would correct it.
 
-### Identity policy table (verbatim from L0 D-block §A3)
+### Identity policy table (verbatim from L0 D-block sec-A3)
 
 | Context | Permitted JWT algorithms |
 |---|---|
@@ -234,7 +234,7 @@ Reflected in `posture.permitsHmac(deploymentShape)`; `auth/JwtValidator` dispatc
 | Boot guard rejects dev-with-real-DB-without-opt-in | JVM exits non-zero | `tests/integration/PostureBootGuardIT` (matrix permutations) |
 | Boot guard rejects prod-with-HmacValidator-active | JVM exits non-zero | `tests/integration/PostureBootGuardIT` |
 | Boot guard rejects research-SAAS-multi-tenant without JWKS issuer | JVM exits non-zero | `tests/integration/PostureBootGuardIT` |
-| Identity policy matrix matches `auth/` dispatch | every posture×shape pair returns the same algorithm decision in `posture` and `auth/JwtValidator` | `tests/integration/IdentityPolicyConsistencyIT` |
+| Identity policy matrix matches `auth/` dispatch | every posturexshape pair returns the same algorithm decision in `posture` and `auth/JwtValidator` | `tests/integration/IdentityPolicyConsistencyIT` |
 
 ---
 
@@ -243,7 +243,7 @@ Reflected in `posture.permitsHmac(deploymentShape)`; `auth/JwtValidator` dispatc
 - **Adding a 4th posture (e.g., `STAGING`)**: low risk if consumers use `requires*()` pattern; high risk if they branch on name
 - **Posture-aware default-on enforcement**: requires reviewer audit on each capability claiming L3
 - **Opt-in flag drift**: every `ALLOW_DEV_*` flag needs a documented expiry / review cadence; tracked in `docs/governance/allowlists.yaml`
-- **Boot guard false negative if env var typo**: mitigation — boot guard logs the resolved posture, shape, and active opt-ins at INFO; CI smoke test asserts the expected resolved values
+- **Boot guard false negative if env var typo**: mitigation -- boot guard logs the resolved posture, shape, and active opt-ins at INFO; CI smoke test asserts the expected resolved values
 
 ---
 
@@ -253,4 +253,4 @@ Reflected in `posture.permitsHmac(deploymentShape)`; `auth/JwtValidator` dispatc
 - L1: [`../ARCHITECTURE.md`](../ARCHITECTURE.md)
 - L0 D-6: [`../../ARCHITECTURE.md#d-6-three-posture-model-rule-11`](../../ARCHITECTURE.md)
 - Auth: [`../auth/ARCHITECTURE.md`](../auth/ARCHITECTURE.md)
-- Systematic-architecture-improvement-plan: [`../../docs/systematic-architecture-improvement-plan-2026-05-07.en.md`](../../docs/systematic-architecture-improvement-plan-2026-05-07.en.md) §4.4
+- Systematic-architecture-improvement-plan: [`../../docs/systematic-architecture-improvement-plan-2026-05-07.en.md`](../../docs/systematic-architecture-improvement-plan-2026-05-07.en.md) sec-4.4

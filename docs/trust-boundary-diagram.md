@@ -1,10 +1,10 @@
 # Trust Boundary Diagram
 
-**Status**: v1 — created 2026-05-08 in response to security review §6.1
+**Status**: v1 -- created 2026-05-08 in response to security review sec-6.1
 **Owner**: Platform team (GOV track)
 **Companion**: [`security-control-matrix.md`](security-control-matrix.md)
 
-This diagram is the canonical map of trust boundaries in spring-ai-fin. Every line crossing a boundary names: **authentication · authorization · tenant propagation · data classification · audit · allowed protocols · failure behaviour**.
+This diagram is the canonical map of trust boundaries in spring-ai-fin. Every line crossing a boundary names: **authentication . authorization . tenant propagation . data classification . audit . allowed protocols . failure behaviour**.
 
 ---
 
@@ -20,7 +20,7 @@ flowchart TB
     classDef storage fill:#fce7f3,stroke:#be185d
     classDef sidecar fill:#f3e8ff,stroke:#7e22ce
 
-    subgraph EXT["Zone X — Untrusted external"]
+    subgraph EXT["Zone X -- Untrusted external"]
         BROWSER[Browser / Customer Web SDK]:::external
         APP[Customer Spring Boot App]:::external
         SDK[Customer Server SDK]:::external
@@ -29,17 +29,17 @@ flowchart TB
         OPER[Operator / Release Captain]:::external
     end
 
-    subgraph DMZ["Zone D — Gateway DMZ"]
+    subgraph DMZ["Zone D -- Gateway DMZ"]
         HG[Higress / substitute gateway]:::gateway
     end
 
-    subgraph PLATFORM["Zone P — Platform application boundary"]
+    subgraph PLATFORM["Zone P -- Platform application boundary"]
         subgraph TIERA["Tier-A Northbound facade"]
-            FILTERS[Filter chain<br/>JWTAuth → TenantContext → Idempotency]:::tier_a
+            FILTERS[Filter chain<br/>JWTAuth -> TenantContext -> Idempotency]:::tier_a
             ROUTES[REST controllers + SSE]:::tier_a
             FACADES[5 facades + AuditFacade]:::tier_a
             CLI_LOCAL[Operator CLI<br/>local process]:::tier_a
-            BIND[runtime/ — SAS-1 seam #2]:::tier_a
+            BIND[runtime/ -- SAS-1 seam #2]:::tier_a
         end
         subgraph TIERB["Tier-B Cognitive runtime"]
             ACTIONGUARD[ActionGuard<br/>11-stage pipeline]:::tier_b
@@ -52,28 +52,28 @@ flowchart TB
         end
     end
 
-    subgraph SIDECAR["Zone S — Out-of-process sidecars"]
+    subgraph SIDECAR["Zone S -- Out-of-process sidecars"]
         PYSC[Python sidecar<br/>LangGraph/CrewAI/AutoGen]:::sidecar
     end
 
-    subgraph LLM_PROV["Zone L — Outbound LLM providers"]
+    subgraph LLM_PROV["Zone L -- Outbound LLM providers"]
         ANT[Anthropic]:::external
         DS[DeepSeek]:::external
         OAI[OpenAI-compat]:::external
     end
 
-    subgraph DATA["Zone N — Network-internal data plane"]
+    subgraph DATA["Zone N -- Network-internal data plane"]
         PG[(PostgreSQL<br/>System of Record)]:::storage
         VAL[(Valkey<br/>session cache)]:::storage
         WORM[(SeaweedFS / S3 Object Lock<br/>WORM audit)]:::storage
     end
 
-    subgraph MCP_TOOLS["Zone M — MCP tool servers"]
+    subgraph MCP_TOOLS["Zone M -- MCP tool servers"]
         MCP1[MCP server: KYC tools]:::external
         MCP2[MCP server: AML tools]:::external
     end
 
-    %% Boundaries — labeled with their controls
+    %% Boundaries -- labeled with their controls
     BROWSER -.->|"#1 customer JWT (RS256/JWKS)"| HG
     APP -.->|"#1 customer JWT (RS256/JWKS)"| HG
     SDK -.->|"#1 customer JWT (RS256/JWKS)"| HG
@@ -125,7 +125,7 @@ flowchart TB
 
 The 13 numbered boundaries above; each row specifies the 7 control concerns:
 
-### Boundary #1 — Customer browser/app/SDK → Higress
+### Boundary #1 -- Customer browser/app/SDK -> Higress
 
 | Concern | Specification |
 |---|---|
@@ -137,7 +137,7 @@ The 13 numbered boundaries above; each row specifies the 7 control concerns:
 | **Allowed protocols** | HTTPS (TLS 1.3); SSE for streaming; HTTP/2 |
 | **Failure behaviour** | 401 missing/invalid JWT; 429 rate limit; 413 body too large |
 
-### Boundary #2 — External A2A agent → Higress
+### Boundary #2 -- External A2A agent -> Higress
 
 | Concern | Specification |
 |---|---|
@@ -149,7 +149,7 @@ The 13 numbered boundaries above; each row specifies the 7 control concerns:
 | **Allowed protocols** | HTTPS + JSON; OpenAPI strict schema |
 | **Failure behaviour** | 401 mTLS failure; 403 unknown agent; 429 rate limit |
 
-### Boundary #3 — Regulator inspector → Higress
+### Boundary #3 -- Regulator inspector -> Higress
 
 | Concern | Specification |
 |---|---|
@@ -161,7 +161,7 @@ The 13 numbered boundaries above; each row specifies the 7 control concerns:
 | **Allowed protocols** | HTTPS |
 | **Failure behaviour** | 401 / 403 / 429; PII decode without dual-approval = 403 |
 
-### Boundary #4 — Higress → Tier-A facade
+### Boundary #4 -- Higress -> Tier-A facade
 
 | Concern | Specification |
 |---|---|
@@ -173,7 +173,7 @@ The 13 numbered boundaries above; each row specifies the 7 control concerns:
 | **Allowed protocols** | HTTP/2 (mTLS optional in BYOC) |
 | **Failure behaviour** | 401 if `X-Internal-Trust` missing or invalid (would mean direct connection bypassing gateway) |
 
-### Boundary #5 — Operator → Operator CLI
+### Boundary #5 -- Operator -> Operator CLI
 
 | Concern | Specification |
 |---|---|
@@ -185,7 +185,7 @@ The 13 numbered boundaries above; each row specifies the 7 control concerns:
 | **Allowed protocols** | Local stdio for serve; HTTPS stdlib HttpClient for run/cancel/tail-events |
 | **Failure behaviour** | Reject; deterministic exit codes |
 
-### Boundary #6 — Tier-A facade → Tier-B runtime (SAS-1 seam)
+### Boundary #6 -- Tier-A facade -> Tier-B runtime (SAS-1 seam)
 
 | Concern | Specification |
 |---|---|
@@ -197,19 +197,19 @@ The 13 numbered boundaries above; each row specifies the 7 control concerns:
 | **Allowed protocols** | In-JVM method call |
 | **Failure behaviour** | Exception propagation; ContractError envelope at controller layer |
 
-### Boundary #7 — RunExecutor / FrameworkAdapter / Tools → ActionGuard
+### Boundary #7 -- RunExecutor / FrameworkAdapter / Tools -> ActionGuard
 
 | Concern | Specification |
 |---|---|
 | **Authentication** | In-process; ActionGuardCoverageTest enforces every side-effect site routes through ActionGuard |
-| **Authorization** | ActionGuard 11-stage pipeline (with PreAction + PostAction evidence writers) — THE central control |
+| **Authorization** | ActionGuard 11-stage pipeline (with PreAction + PostAction evidence writers) -- THE central control |
 | **Tenant propagation** | `ActionEnvelope.tenantId` mandatory + matched against `RunContext.tenantContext` |
 | **Data classification** | `ActionEnvelope.dataAccessClass` required (PUBLIC/TENANT_INTERNAL/PII/FINANCIAL_LEDGER) |
 | **Audit** | Pre-action audit per AuditClass; post-action evidence record |
 | **Allowed protocols** | In-JVM method call to `ActionGuard.authorize(envelope)` |
 | **Failure behaviour** | Reject + structured error + audit `SECURITY_EVENT` |
 
-### Boundary #8 — LLMGateway → External LLM provider
+### Boundary #8 -- LLMGateway -> External LLM provider
 
 | Concern | Specification |
 |---|---|
@@ -221,7 +221,7 @@ The 13 numbered boundaries above; each row specifies the 7 control concerns:
 | **Allowed protocols** | HTTPS (TLS 1.3); HTTP/2 |
 | **Failure behaviour** | FailoverChain to next provider; emit `springaifin_llm_fallback_total` |
 
-### Boundary #9 — FrameworkAdapter → Python sidecar
+### Boundary #9 -- FrameworkAdapter -> Python sidecar
 
 | Concern | Specification |
 |---|---|
@@ -233,7 +233,7 @@ The 13 numbered boundaries above; each row specifies the 7 control concerns:
 | **Allowed protocols** | gRPC over Unix socket (preferred for local) or TLS-protected TCP |
 | **Failure behaviour** | DEADLINE_EXCEEDED; RESOURCE_EXHAUSTED on oversized payload; UNAUTHENTICATED on identity failure |
 
-### Boundary #10 — Tier-B runtime → PostgreSQL
+### Boundary #10 -- Tier-B runtime -> PostgreSQL
 
 | Concern | Specification |
 |---|---|
@@ -245,7 +245,7 @@ The 13 numbered boundaries above; each row specifies the 7 control concerns:
 | **Allowed protocols** | TLS-encrypted JDBC |
 | **Failure behaviour** | Connection failure = circuit breaker; tenant context missing = TenantContextMissingException |
 
-### Boundary #11 — Tier-B runtime → Valkey
+### Boundary #11 -- Tier-B runtime -> Valkey
 
 | Concern | Specification |
 |---|---|
@@ -255,9 +255,9 @@ The 13 numbered boundaries above; each row specifies the 7 control concerns:
 | **Data classification** | Session cache + idempotency replay snapshots; sensitive contexts: encryption optional |
 | **Audit** | TELEMETRY only |
 | **Allowed protocols** | Redis protocol over TLS |
-| **Failure behaviour** | Cache miss → recompute from PG; cache write failure → log + skip (never blocks) |
+| **Failure behaviour** | Cache miss -> recompute from PG; cache write failure -> log + skip (never blocks) |
 
-### Boundary #12 — AuditFacade → WORM storage
+### Boundary #12 -- AuditFacade -> WORM storage
 
 | Concern | Specification |
 |---|---|
@@ -267,9 +267,9 @@ The 13 numbered boundaries above; each row specifies the 7 control concerns:
 | **Data classification** | All REGULATORY_AUDIT class; per-day Merkle root + RFC 3161 timestamp |
 | **Audit** | Self-audit: WORM write success/failure recorded in audit_event |
 | **Allowed protocols** | HTTPS; S3 API or SeaweedFS S3-compatible |
-| **Failure behaviour** | WORM anchor failure → safe read-only mode; compliance alarm |
+| **Failure behaviour** | WORM anchor failure -> safe read-only mode; compliance alarm |
 
-### Boundary #13 — HarnessExecutor → MCP tool servers
+### Boundary #13 -- HarnessExecutor -> MCP tool servers
 
 | Concern | Specification |
 |---|---|
@@ -279,7 +279,7 @@ The 13 numbered boundaries above; each row specifies the 7 control concerns:
 | **Data classification** | Per-skill metadata (data_access_class) |
 | **Audit** | Per-call SECURITY_EVENT (tool invocation); evidence record post-call |
 | **Allowed protocols** | stdio (local subprocess) or HTTPS (v1.1) |
-| **Failure behaviour** | Tool failure → typed error to agent; circuit breaker; egress violation = block |
+| **Failure behaviour** | Tool failure -> typed error to agent; circuit breaker; egress violation = block |
 
 ---
 
@@ -298,7 +298,7 @@ The 13 numbered boundaries above; each row specifies the 7 control concerns:
   -> result returned
   -> #10 (JDBC + tenant SET LOCAL) -> [Zone N: PG audit_event INSERT]
   -> #12 (WORM later daily) -> [Zone N: WORM]
-  -> response back to customer through #4 → #1
+  -> response back to customer through #4 -> #1
 ```
 
 ### Example 2: PII decode dual-approval
@@ -390,6 +390,6 @@ This diagram is owned by the GOV track. Adding a new external dependency (new pr
 6. Linked control matrix entries
 
 `TrustBoundaryDiagramLinter` runs in CI to assert:
-- Every boundary in the diagram has a row in §2
+- Every boundary in the diagram has a row in sec-2
 - Every boundary referenced in `security-control-matrix.md` is in this diagram
 - No untraceable cross-zone arrow exists

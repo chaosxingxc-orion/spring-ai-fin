@@ -1,8 +1,8 @@
 # Gateway Security Conformance Profile
 
-**Status**: v1 — created 2026-05-08 in response to security review §P0-9
+**Status**: v1 -- created 2026-05-08 in response to security review sec-P0-9
 **Owner**: Platform team (GOV) + Customer infrastructure team
-**Companion**: [`security-control-matrix.md`](security-control-matrix.md) §10
+**Companion**: [`security-control-matrix.md`](security-control-matrix.md) sec-10
 
 This profile defines the **deployment-time security requirements** that the north-south gateway must implement. spring-ai-fin is gateway-agnostic by design (Higress recommended, but customers may substitute), so the security guarantee is enforced at deployment via this profile.
 
@@ -35,7 +35,7 @@ The platform's `/ready` endpoint refuses `prod` readiness unless either:
 ### 2.2 Header normalization
 
 - **Strip client-supplied** `X-Tenant-Id`, `X-Internal-Trust`, `X-Auth-*` from incoming requests
-- **Re-inject** `X-Tenant-Id` from validated JWT claim only (closes spoofing — Attack Path C variant)
+- **Re-inject** `X-Tenant-Id` from validated JWT claim only (closes spoofing -- Attack Path C variant)
 - **Sign** internal trust header `X-Internal-Trust: <gateway-id>:<HMAC>` so the platform can verify the request originated from the gateway, not via direct connection
 
 ### 2.3 Rate limiting
@@ -191,7 +191,7 @@ Higress conformance attestation generator script: `tools/gateway-conformance/gen
 |---|---|
 | `GatewayConformanceIT.testReadyWithAttestation` | `/ready` returns 200 + `gateway_conformance: PASS` |
 | `GatewayConformanceIT.testReadyWithoutAttestationInProd` | `/ready` returns 503 unless built-in fallback enabled |
-| `GatewayConformanceIT.testSpoofedTenantHeader` | External client cannot override verified claim — header stripped + re-injected |
+| `GatewayConformanceIT.testSpoofedTenantHeader` | External client cannot override verified claim -- header stripped + re-injected |
 | `GatewayConformanceIT.testMissingRateLimit` | If attestation lacks rate-limit fields, deployment check fails |
 | `GatewayConformanceIT.testBuiltInFallback` | Built-in filters enabled when no attestation; `/ready` returns `gateway_conformance: BUILTIN_FALLBACK` |
 

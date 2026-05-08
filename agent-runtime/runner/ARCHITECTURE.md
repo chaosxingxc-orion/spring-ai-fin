@@ -1,20 +1,20 @@
-# runner — TRACE Run Executor (L2)
+# runner -- TRACE Run Executor (L2)
 
-> **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) · L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
+> **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) . L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
 
 ---
 
 ## 1. Purpose & Boundary
 
-`runner/` owns the **TRACE 5-stage durable execution model** — the heart of agent run lifecycle. It implements `RunExecutor` which drives a `TaskContract` through 5 stages (Task → Route → Act → Capture → Evolve) with restart-survival, cancellation, observability, and stage-directive support.
+`runner/` owns the **TRACE 5-stage durable execution model** -- the heart of agent run lifecycle. It implements `RunExecutor` which drives a `TaskContract` through 5 stages (Task -> Route -> Act -> Capture -> Evolve) with restart-survival, cancellation, observability, and stage-directive support.
 
 Owns:
 
-- `RunExecutor` — async stage driver
-- `StageExecutor` — single-stage execution (5 implementations: TaskStage, RouteStage, ActStage, CaptureStage, EvolveStage)
-- `TraceState` — 6 durable states + 5 span types
-- `StageDirective` — runtime instruction (`skipTo`, `insertStage`, `replan`)
-- `SpineValidator` — runtime spine-record validation entry point
+- `RunExecutor` -- async stage driver
+- `StageExecutor` -- single-stage execution (5 implementations: TaskStage, RouteStage, ActStage, CaptureStage, EvolveStage)
+- `TraceState` -- 6 durable states + 5 span types
+- `StageDirective` -- runtime instruction (`skipTo`, `insertStage`, `replan`)
+- `SpineValidator` -- runtime spine-record validation entry point
 
 Does NOT own:
 
@@ -33,24 +33,24 @@ v5.0 proposed an 11-state cognitive workflow graph. The v6.0 review (M1) found t
 - **Lifecycle states** (need persistence + recovery semantics): 6 of v5.0's 11 actually require durability.
 - **Cognitive activities** (intent, retrieve, think, reflect): these are span types in trace context, not states with persistence.
 
-v6.0 separates: 5 TRACE stages (S1–S5) drive the run; cognitive activities are recorded as spans within stages.
+v6.0 separates: 5 TRACE stages (S1-S5) drive the run; cognitive activities are recorded as spans within stages.
 
 ### TRACE stages
 
 | Stage | Purpose | Typical duration | Cognitive activities (as spans) |
 |---|---|---|---|
-| **S1 — Task** | Parse goal; build TaskView; validate inputs | sub-second | intent_understanding, validate |
-| **S2 — Route** | Decide capability + framework + tier | sub-second | retrieving (knowledge), thinking (route decision) |
-| **S3 — Act** | Execute via FrameworkAdapter; LLM calls; tool invocations | majority of run time | thinking, tool_call, retrieving |
-| **S4 — Capture** | Persist artifacts; outbox events; spine emit | sub-second | reflecting (self-eval) |
-| **S5 — Evolve** | Recurrence-ledger update; postmortem trigger; A/B feedback | sub-second | reflecting |
+| **S1 -- Task** | Parse goal; build TaskView; validate inputs | sub-second | intent_understanding, validate |
+| **S2 -- Route** | Decide capability + framework + tier | sub-second | retrieving (knowledge), thinking (route decision) |
+| **S3 -- Act** | Execute via FrameworkAdapter; LLM calls; tool invocations | majority of run time | thinking, tool_call, retrieving |
+| **S4 -- Capture** | Persist artifacts; outbox events; spine emit | sub-second | reflecting (self-eval) |
+| **S5 -- Evolve** | Recurrence-ledger update; postmortem trigger; A/B feedback | sub-second | reflecting |
 
 ### 6 durable run states
 
 | State | Persisted | Notes |
 |---|---|---|
 | `INITIALIZED` | yes | RunManager.createRun returns this |
-| `WORKING` | yes | rolled-up state for S1–S5 in progress |
+| `WORKING` | yes | rolled-up state for S1-S5 in progress |
 | `AWAITING_TOOL` | yes | external tool/MCP invocation in flight |
 | `AWAITING_HITL` | yes | human gate paused; PauseToken issued |
 | `FINALIZING` | yes | terminal but cleanup in progress |
@@ -153,9 +153,9 @@ public record StageEvent(
 
 | Attribute | Target | Verification |
 |---|---|---|
-| Stage transition latency | p95 ≤ 50ms (excluding LLM) | OperatorShapeGate |
+| Stage transition latency | p95 <= 50ms (excluding LLM) | OperatorShapeGate |
 | Restart-survival | every persisted state recoverable | `tests/integration/RunCrashRecoveryIT` |
-| Cancellation propagation | cancel mid-stage drives terminal in ≤ 30s | `gate/check_cancel.sh` |
+| Cancellation propagation | cancel mid-stage drives terminal in <= 30s | `gate/check_cancel.sh` |
 | StageDirective compliance | all 5 directives produce correct next-stage | `tests/unit/StageDirectiveTest` |
 | Cross-loop stability (Rule 8) | adapter/gateway shared across runs in JVM | `gate/check_cross_loop.sh` |
 

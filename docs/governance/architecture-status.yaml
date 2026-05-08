@@ -26,8 +26,9 @@ supersedes: version 1 (2026-05-08 morning)
 capabilities:
 
   l0_architecture:
-    status: design_accepted
     maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md
     l2_documents: []
     implementation: null
@@ -36,8 +37,9 @@ capabilities:
     open_findings: []
 
   agent_platform_facade:
-    status: design_accepted
     maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md
     l2_documents:
       - agent-platform/contracts/ARCHITECTURE.md
@@ -49,8 +51,9 @@ capabilities:
     allowed_claim: "Proposed contract"
 
   agent_runtime_kernel:
-    status: design_accepted
     maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md
     l2_documents:
       - agent-runtime/server/ARCHITECTURE.md
@@ -61,8 +64,9 @@ capabilities:
     allowed_claim: "Proposed runtime"
 
   action_guard:
-    status: design_accepted
     maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md#d-block
     l2_documents:
       - agent-runtime/action-guard/ARCHITECTURE.md
@@ -73,8 +77,9 @@ capabilities:
     allowed_claim: "Accepted security design"
 
   audit_class_model:
-    status: design_accepted
     maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md#d-block
     l2_documents:
       - agent-runtime/audit/ARCHITECTURE.md
@@ -85,8 +90,9 @@ capabilities:
     allowed_claim: "Accepted security design"
 
   posture_model:
-    status: design_accepted
     maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md#d-6-three-posture-model-rule-11
     l2_documents:
       - agent-runtime/posture/ARCHITECTURE.md
@@ -97,8 +103,9 @@ capabilities:
     allowed_claim: "Accepted design with PostureBootGuard codified; no implementation evidence yet"
 
   tenant_context_spine:
-    status: design_accepted
     maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md#contract-spine
     l2_documents:
       - agent-runtime/server/ARCHITECTURE.md
@@ -110,8 +117,9 @@ capabilities:
     allowed_claim: "Accepted design with TenantBinder + transaction-scoped SET LOCAL + GUC-empty validation at transaction start codified; no implementation evidence yet"
 
   identity_jwt_validation:
-    status: design_accepted
     maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md#d-block-a3
     l2_documents:
       - agent-runtime/auth/ARCHITECTURE.md
@@ -123,8 +131,9 @@ capabilities:
     allowed_claim: "Accepted design (RS256/JWKS for research SaaS + prod; HS256 carve-outs documented). No implementation evidence."
 
   llm_gateway:
-    status: design_accepted
     maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md
     l2_documents:
       - agent-runtime/llm/ARCHITECTURE.md
@@ -135,8 +144,9 @@ capabilities:
     allowed_claim: "Proposed design with prompt-section taxonomy + taint propagation codified"
 
   llm_prompt_security:
-    status: design_accepted
     maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md#d-block
     l2_documents:
       - agent-runtime/llm/ARCHITECTURE.md
@@ -148,8 +158,9 @@ capabilities:
     allowed_claim: "Accepted prompt-section + taint propagation; no implementation evidence"
 
   skill_runtime_authz:
-    status: design_accepted
     maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md#d-block
     l2_documents:
       - agent-runtime/skill/ARCHITECTURE.md
@@ -162,8 +173,9 @@ capabilities:
     allowed_claim: "Accepted load-time-vs-runtime split; load-time is registry hygiene, runtime authorization is ActionGuard"
 
   outbox_saga_directdb:
-    status: design_accepted
     maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md
     l2_documents:
       - agent-runtime/outbox/ARCHITECTURE.md
@@ -174,8 +186,9 @@ capabilities:
     allowed_claim: "Proposed design with FinancialWriteClass + saga-not-ACID semantics codified"
 
   multi_framework_dispatch:
-    status: design_accepted
     maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md
     l2_documents:
       - agent-runtime/adapters/ARCHITECTURE.md
@@ -186,8 +199,9 @@ capabilities:
     allowed_claim: "Proposed design with sidecar security binding codified"
 
   sidecar_runtime_security:
-    status: design_accepted
     maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
     l0_decision: docs/sidecar-security-profile.md
     l2_documents:
       - agent-runtime/adapters/ARCHITECTURE.md
@@ -198,8 +212,9 @@ capabilities:
     allowed_claim: "Accepted UDS default + SPIFFE workload identity + tenant metadata untrusted policy"
 
   server_rls_protocol:
-    status: design_accepted
     maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md#contract-spine
     l2_documents:
       - agent-runtime/server/ARCHITECTURE.md
@@ -210,8 +225,9 @@ capabilities:
     allowed_claim: "Accepted SET LOCAL transaction-scoped GUC (auto-discarded by Postgres on COMMIT/ROLLBACK) + RlsConnectionInterceptor protocol; no implementation evidence"
 
   observability_emitter_health:
-    status: design_accepted
     maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md
     l2_documents:
       - agent-runtime/observability/ARCHITECTURE.md
@@ -223,8 +239,9 @@ capabilities:
 
   # Cycle-6 A4: split into two distinct sub-capabilities with independent tracking.
   architecture_sync_gate:
-    status: implemented_unverified
     maturity: L0
+    status: implemented_unverified
+    evidence_state: implemented_unverified
     l0_decision: CLAUDE.md (Rule 8)
     l2_documents:
       - docs/plans/W0-evidence-skeleton.md
@@ -242,8 +259,9 @@ capabilities:
     allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml."
 
   operator_shape_smoke_gate:
-    status: design_accepted
     maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
     l0_decision: CLAUDE.md (Rule 8)
     l2_documents:
       - docs/plans/W0-evidence-skeleton.md
@@ -738,3 +756,155 @@ findings:
     status: design_accepted
     target_wave: W0
     capability: architecture_sync_gate
+
+  # Findings introduced by the 2026-05-08 cycle-8 remediation review and the
+  # systemic-remediation-operating-plan (Phases 0-4 + W0.1-W0.5). Cycle-8 is
+  # an evidence-hardening cycle: every finding has a structural rule, not a
+  # prose edit.
+  REM-2026-05-08-C8-1:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
+    description: "POSIX architecture-sync gate broken by CRLF line endings in gate/check_architecture_sync.sh on Windows checkouts. Cycle-8 added .gitattributes (LF for *.sh / *.md / *.yaml / *.json; LF in index for *.ps1) and a new eol_policy gate rule that fails when any tracked *.sh contains CR bytes. Working tree renormalized."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: architecture_sync_gate
+  REM-2026-05-08-C8-2:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
+    description: "Gate self-test existed (cycle-7 sec-E1) but was not a delivery gate. Cycle-8 made test_architecture_sync_gate.sh emit a structured self-test result JSON with mode (local-smoke / delivery-required), and the manifest carries self_test.{state, pass_sha, log_path}. Delivery is invalid if self-test was not run at the evidence commit SHA."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: architecture_sync_gate
+  REM-2026-05-08-C8-3:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
+    description: "PowerShell parity was optional in the self-test. Cycle-8 introduced --mode=delivery-required: missing pwsh produces an explicit missing_blocker state. The manifest's architecture_sync_logs.windows.state encodes the closed enum: pass / fail / missing_blocker / not_applicable / historical_only / pre_audit_trail."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0/W1
+    capability: architecture_sync_gate
+    notes: "Full CI matrix that runs both platforms is W1 (Phase 2.4)."
+  REM-2026-05-08-C8-4:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
+    description: "Cycle-7 delivery file 2026-05-08-ba4bcd5.md named gate/log/ba4bcd5-posix.json but the audit-trail commit actually contained gate/log/868dc85-posix.json. Cycle-8 added delivery_log_exact_binding rule: the manifest's delivery_file MUST have an existing matching log AND that log's sha field MUST equal reviewed_content_sha or evidence_commit_sha (HEAD). The stale 868dc85 log is removed by the cycle-8 architectural commit."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: architecture_sync_gate
+  REM-2026-05-08-C8-5:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
+    description: "delivery_log_parity skipped missing per-SHA logs silently. Cycle-8 made it FAIL when the delivery file is the current authoritative one (manifest.delivery_file). Pre-platform-suffix legacy deliveries (cycles 1-3) get explicit legacy_exemption entries in the manifest's architecture_sync_logs.legacy_exemptions[]."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: architecture_sync_gate
+  REM-2026-05-08-C8-6:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
+    description: "Manifest v2 still permitted TBD and null in authoritative evidence fields. Cycle-8 bumped schema to evidence-manifest/v3, removed evidence_commit_sha and authoritative_index_sha (HEAD-derived; not stored), replaced null log slots with explicit states from a closed enum, and added manifest_no_tbd + manifest_no_null_log_slots gate rules."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: architecture_sync_gate
+  REM-2026-05-08-C8-7:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
+    description: "Manifest claimed gate stdout PASS as canonical evidence. Cycle-8 demoted stdout to a human convenience; the canonical evidence is the committed gate/log/<sha>-posix.json (and -windows.json when produced). The manifest no longer contains stdout-canonical comments."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: architecture_sync_gate
+  REM-2026-05-08-C8-8:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
+    description: "Rule 8 state parity was unenforced (manifest carried rule_8_state_parity: false). Cycle-8 added rule_8_state_consistency rule: when manifest.rule_8.state == fail_closed_artifact_missing, no capability has maturity L3/L4 or evidence_state operator_gated/released, and no delivery file claims Rule 8 PASS. Architecture-sync evidence cannot be misread as runtime readiness."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: architecture_sync_gate
+  REM-2026-05-08-C8-9:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
+    description: "Active L1/L2/cross-cutting docs still contained encoding corruption (mojibake from cycle-2 onward). Cycle-8 created docs/governance/active-corpus.yaml as the registry of active vs historical documents, replaced ascii_only_governance with ascii_only_active_corpus (registry-driven scan list), and converted ~35 active docs to ASCII (2611 characters replaced)."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: l0_architecture
+    notes: "Implements Phase 3 of docs/systemic-remediation-operating-plan-2026-05-08.en.md."
+  REM-2026-05-08-C8-10:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
+    description: "Status ledger and README still led with status (design_accepted/implemented_unverified) rather than maturity (L0..L4). Cycle-8 reordered every capability row to put maturity first and added evidence_state alias mirroring status. The gate accepts either field name when applying rule_8_state_consistency."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0/W1
+    capability: l0_architecture
+    notes: "Full rename of status -> evidence_state and capability-registry.yaml separation are W1 (Phase 4.1)."
+
+  # ---- Findings introduced by the 2026-05-08 systemic-remediation-operating-plan ----
+  # Phase 0..4 are accepted and landed in cycle-8 architectural commit.
+  # Phase 5 (W0 runtime) and Phase 6 (security implementation waves) are
+  # explicitly deferred per the systemic plan's own sequencing.
+  REM-2026-05-08-SYS-1:
+    source: docs/systemic-remediation-operating-plan-2026-05-08.en.md
+    description: "Phase 0 stop-the-line stabilization. Cycle-8 lands .gitattributes, LF normalization, gate self-test as delivery requirement, and explicit pre_audit_trail/missing_blocker manifest states. The temporary 'no L2+ promotion during stabilization' rule is enforced via rule_8_state_consistency."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: architecture_sync_gate
+  REM-2026-05-08-SYS-2:
+    source: docs/systemic-remediation-operating-plan-2026-05-08.en.md
+    description: "Phase 1 evidence graph v3. Manifest schema bumped to evidence-manifest/v3 with reviewed_content_sha, evidence_commit_parent_sha, evidence_commit_classification, delivery_file, per-platform architecture_sync_logs and operator_shape_logs with state from a closed enum, self_test block, rule_8 block, active_corpus_path, capability_registry_path, current_index_path."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: architecture_sync_gate
+  REM-2026-05-08-SYS-3:
+    source: docs/systemic-remediation-operating-plan-2026-05-08.en.md
+    description: "Phase 2 gate productization PARTIAL. Cycle-8 lands the delivery contract that requires the self-test PASS at the evidence commit SHA. CI matrix (Phase 2.4) and fixture test suite (Phase 2.3) are W1 because they require a CI runner not present in the cycle-8 author's environment; the manifest records gate_ci_matrix and fixture_test_suite as schema_capabilities=false to make the gap explicit."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0/W1
+    capability: architecture_sync_gate
+    notes: "schema_capabilities.cross_platform_ci_matrix and fixture_test_suite remain false until W1."
+  REM-2026-05-08-SYS-4:
+    source: docs/systemic-remediation-operating-plan-2026-05-08.en.md
+    description: "Phase 3 active corpus registry. docs/governance/active-corpus.yaml is the single source of truth for active vs historical documents. The ascii_only_active_corpus gate rule derives its scan list from this registry. Filename-pattern skips remain in the gate as a defensive second line until W1 removes them."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: l0_architecture
+  REM-2026-05-08-SYS-5:
+    source: docs/systemic-remediation-operating-plan-2026-05-08.en.md
+    description: "Phase 4 capability registry + maturity reset PARTIAL. Cycle-8 reorders the existing status ledger (maturity first; evidence_state alias). The full separation into capability-registry.yaml is W1: introducing it now would require also migrating every consumer (matrix, READMEs, gate). Roadmap-W0-W4.md documents the W1 migration."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0/W1
+    capability: l0_architecture
+  REM-2026-05-08-SYS-6:
+    source: docs/systemic-remediation-operating-plan-2026-05-08.en.md
+    description: "Phase 5 minimal W0 runtime vertical slice DEFERRED. Both the systemic plan and the cycle-8 review explicitly sequence W0 runtime AFTER control-plane stabilization (Phases 0-4). Cycle-8 keeps rule_8.state = fail_closed_artifact_missing and the rule_8_state_consistency gate rule. The W0 runtime sprint is the next deliverable after cycle-8."
+    maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: operator_shape_smoke_gate
+    notes: "Explicit deferral; not a rejection. The deferral aligns with the systemic plan's own ordering."
+  REM-2026-05-08-SYS-7:
+    source: docs/systemic-remediation-operating-plan-2026-05-08.en.md
+    description: "Phase 6 security control implementation waves DEFERRED. Each wave depends on a runnable artifact (Phase 5). Cycle-8 keeps every security capability at L0/L1 so no wave can falsely claim closure. Each wave will land as a separate vertical slice after W0."
+    maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W2+
+    capability: l0_architecture
+    notes: "Tracks the wave order: tenant identity/RLS, auth posture/JWT, run lifecycle/cancellation, ActionGuard, audit/evidence chain, prompt-security taint, sidecar trust profile, observability failure signals."

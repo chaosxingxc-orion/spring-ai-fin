@@ -1,6 +1,6 @@
-# contracts — Frozen v1 Schema (L2)
+# contracts -- Frozen v1 Schema (L2)
 
-> **L2 sub-architecture of `agent-platform/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) · L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
+> **L2 sub-architecture of `agent-platform/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) . L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
 
 ---
 
@@ -12,12 +12,12 @@ Three responsibilities:
 
 1. **Single source of public schema truth** (freeze-digested at first stable release SHA).
 2. **Spine validator carrier** (every spine-bearing record validates at canonical-constructor time per Rule 11).
-3. **Layering boundary** (`java.*` + Jackson + Bean Validation only — NO `agent-runtime.*` imports; NO environment reads).
+3. **Layering boundary** (`java.*` + Jackson + Bean Validation only -- NO `agent-runtime.*` imports; NO environment reads).
 
 Out of scope:
 
 - Schema evolution (breaking changes go to `agent-platform/contracts/v2/`).
-- Domain-specific record content (loan applications, KYC schemas, transaction shapes — these belong in customer code or `fin-domain-pack/`).
+- Domain-specific record content (loan applications, KYC schemas, transaction shapes -- these belong in customer code or `fin-domain-pack/`).
 - Protocol negotiation (the contract IS the protocol).
 - Data adaptation to/from kernel types (lives in `agent-platform/facade/`).
 - **Posture-conditional validation** (records enforce shape only; posture-aware checks live in `agent-platform/facade/PostureAwareValidator`, which receives an injected `AppPosture`).
@@ -28,60 +28,60 @@ Out of scope:
 
 ```
 agent-platform/contracts/
-├── v1/                                        # frozen at first stable release SHA
-│   ├── run/
-│   │   ├── RunRequest.java                   # @Spine(tenant_id, user_id?, project_id?)
-│   │   ├── RunResponse.java                  # @Spine(tenant_id, run_id)
-│   │   ├── RunStatus.java                    # enum
-│   │   └── RunStream.java                    # SSE wrapper
-│   ├── tenancy/
-│   │   ├── TenantContext.java                # @Spine(tenant_id) — process-internal
-│   │   ├── TenantQuota.java                  # @Spine(tenant_id)
-│   │   └── CostEnvelope.java                 # @Spine(tenant_id, run_id?)
-│   ├── streaming/
-│   │   ├── Event.java                        # @Spine(tenant_id, run_id)
-│   │   ├── EventCursor.java                  # @Spine(tenant_id, run_id)
-│   │   └── EventFilter.java                  # // scope: process-internal
-│   ├── gate/
-│   │   ├── PauseToken.java                   # @Spine(tenant_id, run_id)
-│   │   ├── ResumeRequest.java                # @Spine(tenant_id, run_id)
-│   │   ├── GateEvent.java                    # @Spine(tenant_id, run_id, gate_id)
-│   │   └── GateDecisionRequest.java          # @Spine(tenant_id, run_id, gate_id, decided_by)
-│   ├── memory/
-│   │   ├── MemoryTier.java                   # enum L0..L3
-│   │   ├── MemoryReadKey.java                # @Spine(tenant_id, project_id?, session_id?)
-│   │   └── MemoryWriteRequest.java           # @Spine(tenant_id, project_id, session_id, run_id?)
-│   ├── skill/
-│   │   ├── SkillRegistration.java            # @Spine(tenant_id, project_id, capability_name)
-│   │   ├── SkillVersion.java                 # @Spine(tenant_id, capability_name)
-│   │   └── SkillResolution.java              # @Spine(tenant_id)
-│   ├── llm_proxy/
-│   │   ├── LLMRequest.java                   # @Spine(tenant_id, run_id?)
-│   │   └── LLMResponse.java                  # @Spine(tenant_id, run_id?)
-│   ├── workspace/
-│   │   ├── ContentHash.java                  # // scope: process-internal
-│   │   ├── BlobRef.java                      # @Spine(tenant_id, project_id?)
-│   │   └── WorkspaceObject.java              # @Spine(tenant_id, project_id)
-│   ├── audit/
-│   │   ├── AuditEntry.java                   # @Spine(tenant_id, actor_user_id, target_kind, target_id)
-│   │   └── RegulatoryEvent.java              # @Spine(tenant_id, regulator, jurisdiction)
-│   ├── manifest/
-│   │   ├── ManifestSnapshot.java             # @Spine(tenant_id?)
-│   │   └── CapabilityDescriptor.java         # // scope: process-internal
-│   ├── idempotency/
-│   │   ├── IdempotencyResult.java            # @Spine(tenant_id, idempotency_key)
-│   │   └── IdempotencyConflict.java          # @Spine(tenant_id, idempotency_key)
-│   └── errors/
-│       ├── ContractError.java                # wire envelope record (DTO; never thrown)
-│       ├── ContractException.java            # base RuntimeException carrying ContractError; thrown
-│       ├── AuthException.java                # extends ContractException; mapped to 401
-│       ├── TenantScopeException.java         # extends ContractException; mapped to 400
-│       ├── SpineCompletenessException.java   # extends ContractException; mapped to 400
-│       ├── IdempotencyConflictException.java # extends ContractException; mapped to 409
-│       ├── NotFoundException.java            # extends ContractException; mapped to 404
-│       ├── QuotaException.java               # extends ContractException; mapped to 429
-│       └── RuntimeContractException.java     # extends ContractException; mapped to 500
-└── v2/                                        # parallel namespace; empty until v2 released
++-- v1/                                        # frozen at first stable release SHA
+|   +-- run/
+|   |   +-- RunRequest.java                   # @Spine(tenant_id, user_id?, project_id?)
+|   |   +-- RunResponse.java                  # @Spine(tenant_id, run_id)
+|   |   +-- RunStatus.java                    # enum
+|   |   +-- RunStream.java                    # SSE wrapper
+|   +-- tenancy/
+|   |   +-- TenantContext.java                # @Spine(tenant_id) -- process-internal
+|   |   +-- TenantQuota.java                  # @Spine(tenant_id)
+|   |   +-- CostEnvelope.java                 # @Spine(tenant_id, run_id?)
+|   +-- streaming/
+|   |   +-- Event.java                        # @Spine(tenant_id, run_id)
+|   |   +-- EventCursor.java                  # @Spine(tenant_id, run_id)
+|   |   +-- EventFilter.java                  # // scope: process-internal
+|   +-- gate/
+|   |   +-- PauseToken.java                   # @Spine(tenant_id, run_id)
+|   |   +-- ResumeRequest.java                # @Spine(tenant_id, run_id)
+|   |   +-- GateEvent.java                    # @Spine(tenant_id, run_id, gate_id)
+|   |   +-- GateDecisionRequest.java          # @Spine(tenant_id, run_id, gate_id, decided_by)
+|   +-- memory/
+|   |   +-- MemoryTier.java                   # enum L0..L3
+|   |   +-- MemoryReadKey.java                # @Spine(tenant_id, project_id?, session_id?)
+|   |   +-- MemoryWriteRequest.java           # @Spine(tenant_id, project_id, session_id, run_id?)
+|   +-- skill/
+|   |   +-- SkillRegistration.java            # @Spine(tenant_id, project_id, capability_name)
+|   |   +-- SkillVersion.java                 # @Spine(tenant_id, capability_name)
+|   |   +-- SkillResolution.java              # @Spine(tenant_id)
+|   +-- llm_proxy/
+|   |   +-- LLMRequest.java                   # @Spine(tenant_id, run_id?)
+|   |   +-- LLMResponse.java                  # @Spine(tenant_id, run_id?)
+|   +-- workspace/
+|   |   +-- ContentHash.java                  # // scope: process-internal
+|   |   +-- BlobRef.java                      # @Spine(tenant_id, project_id?)
+|   |   +-- WorkspaceObject.java              # @Spine(tenant_id, project_id)
+|   +-- audit/
+|   |   +-- AuditEntry.java                   # @Spine(tenant_id, actor_user_id, target_kind, target_id)
+|   |   +-- RegulatoryEvent.java              # @Spine(tenant_id, regulator, jurisdiction)
+|   +-- manifest/
+|   |   +-- ManifestSnapshot.java             # @Spine(tenant_id?)
+|   |   +-- CapabilityDescriptor.java         # // scope: process-internal
+|   +-- idempotency/
+|   |   +-- IdempotencyResult.java            # @Spine(tenant_id, idempotency_key)
+|   |   +-- IdempotencyConflict.java          # @Spine(tenant_id, idempotency_key)
+|   +-- errors/
+|       +-- ContractError.java                # wire envelope record (DTO; never thrown)
+|       +-- ContractException.java            # base RuntimeException carrying ContractError; thrown
+|       +-- AuthException.java                # extends ContractException; mapped to 401
+|       +-- TenantScopeException.java         # extends ContractException; mapped to 400
+|       +-- SpineCompletenessException.java   # extends ContractException; mapped to 400
+|       +-- IdempotencyConflictException.java # extends ContractException; mapped to 409
+|       +-- NotFoundException.java            # extends ContractException; mapped to 404
+|       +-- QuotaException.java               # extends ContractException; mapped to 429
+|       +-- RuntimeContractException.java     # extends ContractException; mapped to 500
++-- v2/                                        # parallel namespace; empty until v2 released
 ```
 
 ---
@@ -90,11 +90,11 @@ agent-platform/contracts/
 
 | ADR | Decision | Why |
 |---|---|---|
-| **AD-1: Freeze + parallel v2 (SAS-3)** | Once v1 RELEASED, all bytes of `v1/` are digest-locked; breaking changes go to `v2/` | Customers in finance plan release cycles 6–12 months ahead; byte-for-byte stability required |
+| **AD-1: Freeze + parallel v2 (SAS-3)** | Once v1 RELEASED, all bytes of `v1/` are digest-locked; breaking changes go to `v2/` | Customers in finance plan release cycles 6-12 months ahead; byte-for-byte stability required |
 | **AD-2: Stdlib-only purity** | No `agent-runtime.*` imports; no environment reads from inside records | SDKs and OpenAPI generators depend on this surface; must not transitively pull runtime; must not leak boot-time config into wire types |
 | **AD-3: Spine validation in canonical constructor** | Java records' canonical constructor is the validation seam (analogous to `__post_init__` in Python) | Construction-time fail-fast; no record without valid spine ever exists |
 | **AD-4: Process-internal value objects marked** | `// scope: process-internal` with rationale comment | Some records (`ContentHash`, `EventFilter`, `CapabilityDescriptor`) are transient value objects, not persistent records; exempt from `tenantId` |
-| **AD-5: Error envelope is a `record`; thrown type is a class** | `ContractError` is a Java record (the wire envelope, JSON-serializable, never thrown). `ContractException` is a `RuntimeException` subclass that carries a `ContractError` and is the type actually thrown. | Java records may implement interfaces but cannot extend classes — `Throwable` is a class — so a record cannot itself be thrown. The split keeps the wire envelope serialization-friendly while staying valid Java. |
+| **AD-5: Error envelope is a `record`; thrown type is a class** | `ContractError` is a Java record (the wire envelope, JSON-serializable, never thrown). `ContractException` is a `RuntimeException` subclass that carries a `ContractError` and is the type actually thrown. | Java records may implement interfaces but cannot extend classes -- `Throwable` is a class -- so a record cannot itself be thrown. The split keeps the wire envelope serialization-friendly while staying valid Java. |
 | **AD-6: Contract version pin** | `ContractVersion.V1_FROZEN_HEAD` String constant containing the freeze SHA; cross-checked by `ContractFreezeTest` | Pinning the freeze digest is a single point of truth |
 | **AD-7: Records enforce shape only; posture-conditional validation lives outside contracts** | Canonical constructors check non-null, non-blank where required, size limits, type-level constraints. Posture-conditional behaviour (e.g., reject vs warn on blank `tenantId`) lives in `agent-platform/facade/PostureAwareValidator`, which receives an injected `AppPosture`. | Per Rule 6 single-construction-path and Rule 11 boot-time posture read; records must not call `System.getenv` or branch on environment state. |
 
@@ -102,7 +102,7 @@ agent-platform/contracts/
 
 ## 4. Spine validation pattern
 
-Records validate **shape** at construction time — non-null, non-blank where required, size limits, typed constraints:
+Records validate **shape** at construction time -- non-null, non-blank where required, size limits, typed constraints:
 
 ```java
 public record RunRequest(
@@ -280,8 +280,8 @@ public class GlobalExceptionHandler {
 
 | Risk | Plan |
 |---|---|
-| v1 freeze too rigid | If a customer-blocking bug requires v1 shape change → escalate to GOV; emergency patch is a v1.0.1 with same SHA digest if shape unchanged, OR v2 if shape changes |
-| Spine over-validation slowness | Profiled at construction; <1µs per validation; should not be hot-path concern |
+| v1 freeze too rigid | If a customer-blocking bug requires v1 shape change -> escalate to GOV; emergency patch is a v1.0.1 with same SHA digest if shape unchanged, OR v2 if shape changes |
+| Spine over-validation slowness | Profiled at construction; <1us per validation; should not be hot-path concern |
 | Process-internal records misclassified | Reviewer audit; PR comment "why is this `// scope: process-internal`?" |
 | Java records vs Jackson | Jackson 2.12+ supports records natively; ensure Spring Boot 3.x version |
 
@@ -292,7 +292,7 @@ public class GlobalExceptionHandler {
 - L1: [`../ARCHITECTURE.md`](../ARCHITECTURE.md)
 - Spine validation in `agent-runtime/runner/SpineValidator.java`
 - Posture: [`../../agent-runtime/posture/ARCHITECTURE.md`](../../agent-runtime/posture/ARCHITECTURE.md)
-- Hi-agent prior art: `D:/chao_workspace/hi-agent/agent_server/contracts/ARCHITECTURE.md` — same pattern, Python `__post_init__` instead of Java canonical constructor
+- Hi-agent prior art: `D:/chao_workspace/hi-agent/agent_server/contracts/ARCHITECTURE.md` -- same pattern, Python `__post_init__` instead of Java canonical constructor
 - Java records: https://docs.oracle.com/en/java/javase/21/language/records.html
 - Jackson record support: https://github.com/FasterXML/jackson-modules-java8
-- Systematic-architecture-improvement-plan: [`../../docs/systematic-architecture-improvement-plan-2026-05-07.en.md`](../../docs/systematic-architecture-improvement-plan-2026-05-07.en.md) §4.3
+- Systematic-architecture-improvement-plan: [`../../docs/systematic-architecture-improvement-plan-2026-05-07.en.md`](../../docs/systematic-architecture-improvement-plan-2026-05-07.en.md) sec-4.3

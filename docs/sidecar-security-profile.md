@@ -1,8 +1,8 @@
 # Python Sidecar Security Profile
 
-**Status**: v1 — created 2026-05-08 in response to security review §P0-7
+**Status**: v1 -- created 2026-05-08 in response to security review sec-P0-7
 **Owner**: Platform team (RO) + Customer infrastructure team
-**Companion**: [`security-control-matrix.md`](security-control-matrix.md) §9 · [`agent-runtime/adapters/ARCHITECTURE.md`](../agent-runtime/adapters/ARCHITECTURE.md)
+**Companion**: [`security-control-matrix.md`](security-control-matrix.md) sec-9 . [`agent-runtime/adapters/ARCHITECTURE.md`](../agent-runtime/adapters/ARCHITECTURE.md)
 
 This profile defines the security controls for the out-of-process Python sidecar that hosts mainstream Python agent frameworks (LangGraph, CrewAI, AutoGen, Pydantic-AI, OpenAI Agents SDK). The sidecar is opt-in at customer discretion; this profile is binding when adopted.
 
@@ -44,7 +44,7 @@ Failure modes:
 - **Static service account fallback**:
   - Sidecar runs as `springaifin-sidecar` user (non-root)
   - JVM verifies process identity via Unix socket peer-cred check
-  - Single shared sidecar across tenants requires payload-level tenant validation (§2.4)
+  - Single shared sidecar across tenants requires payload-level tenant validation (sec-2.4)
 
 ### 2.3 Tenant isolation models
 
@@ -88,7 +88,7 @@ Both modes MUST validate `tenantId` in payload, not just metadata (Attack Path B
 - **SBOM**: CycloneDX SBOM generated at build; published with image
 - **Signature**: image signed with cosign; signature verified at deployment via `cosign verify-blob`
 - **Pinned base image**: `python:3.12-slim-bookworm@sha256:...` (specific digest, not tag)
-- **Vulnerability scan**: Trivy at CI; CVSS ≥ 7.0 blocks release; CVSS ≥ 4.0 + exploit-available blocks release
+- **Vulnerability scan**: Trivy at CI; CVSS >= 7.0 blocks release; CVSS >= 4.0 + exploit-available blocks release
 - **Provenance attestation**: SLSA Level 2 build provenance signed and stored
 
 ### 2.8 Sidecar process lifecycle
@@ -96,7 +96,7 @@ Both modes MUST validate `tenantId` in payload, not just metadata (Attack Path B
 - **Health check**: `Health` gRPC method returns `SERVING` or `NOT_SERVING`
 - **Crash isolation**: sidecar crash does not affect JVM; container restart by orchestrator (Kubernetes / Docker)
 - **No partial-result leak**: sidecar crash mid-stream causes `RST_STREAM`; JVM marks run as `FAILED_AWAITING_RECOVERY`; in-flight events for the run discarded; never propagated to other runs
-- **Graceful shutdown**: SIGTERM → drain in-flight calls (60s); reject new calls; SIGKILL after timeout
+- **Graceful shutdown**: SIGTERM -> drain in-flight calls (60s); reject new calls; SIGKILL after timeout
 
 ---
 
@@ -144,11 +144,11 @@ public Flux<StageEvent> events(AdapterRunHandle handle) {
 
 | Test | Expected |
 |---|---|
-| `SidecarSecurityIT.testUnauthenticatedSidecarCannotCallBack` | Rogue process opens UDS but lacks identity → JVM rejects |
+| `SidecarSecurityIT.testUnauthenticatedSidecarCannotCallBack` | Rogue process opens UDS but lacks identity -> JVM rejects |
 | `SidecarSecurityIT.testIdentityVerificationRequired` | JVM cannot dispatch without SPIFFE/peer-cred verification |
-| `SidecarSecurityIT.testEgressToInternalNetwork` | Sidecar attempts curl to internal RFC 1918 IP → blocked by netpol |
-| `SidecarSecurityIT.testOversizedGrpcPayload` | 100MB request → REJECTED with RESOURCE_EXHAUSTED |
-| `SidecarSecurityIT.testMissingTenantIdInPayload` | gRPC request without tenantId → REJECTED |
+| `SidecarSecurityIT.testEgressToInternalNetwork` | Sidecar attempts curl to internal RFC 1918 IP -> blocked by netpol |
+| `SidecarSecurityIT.testOversizedGrpcPayload` | 100MB request -> REJECTED with RESOURCE_EXHAUSTED |
+| `SidecarSecurityIT.testMissingTenantIdInPayload` | gRPC request without tenantId -> REJECTED |
 | `SidecarSecurityIT.testCrashDoesNotLeakBetweenRuns` | Sidecar SIGKILL mid-stream; in-flight events discarded; next run starts clean |
 
 ---
@@ -164,7 +164,7 @@ For BYOC customers adopting Python sidecar:
 - [ ] Apply Kubernetes NetworkPolicy with egress allowlist
 - [ ] Configure read-only filesystem with explicit mounts only
 - [ ] Verify image signature with cosign
-- [ ] Run vulnerability scan (Trivy) — pass at deploy time
+- [ ] Run vulnerability scan (Trivy) -- pass at deploy time
 - [ ] Set sidecar's `MAX_TENANT_PER_INSTANCE` (per-tenant=1 OR shared with payload validation)
 - [ ] Verify SBOM matches published platform SBOM
 - [ ] Configure `/health` endpoint accessible to orchestrator only
@@ -176,11 +176,11 @@ For BYOC customers adopting Python sidecar:
 
 This profile is owned by platform team (RO) + customer infrastructure team. Updates:
 
-- New Python framework added to sidecar → image version bump + SBOM update + customer notification
-- gRPC schema change → new minor version of sidecar; backward-compatible only
-- AppArmor/seccomp profile change → reviewed by security team
+- New Python framework added to sidecar -> image version bump + SBOM update + customer notification
+- gRPC schema change -> new minor version of sidecar; backward-compatible only
+- AppArmor/seccomp profile change -> reviewed by security team
 
 `SidecarSecurityProfileLinter` runs in CI to assert:
-- All controls in §2 have corresponding test in `SidecarSecurityIT`
+- All controls in sec-2 have corresponding test in `SidecarSecurityIT`
 - Image build pipeline produces signed SBOM
 - Customer attestation schema is valid

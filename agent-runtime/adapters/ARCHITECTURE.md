@@ -1,12 +1,12 @@
-# adapters — Multi-framework Dispatch + Sidecar Security Binding (L2)
+# adapters -- Multi-framework Dispatch + Sidecar Security Binding (L2)
 
-> **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) · L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
+> **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) . L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
 
 ---
 
 ## 1. Purpose & Boundary
 
-`adapters/` owns **multi-framework dispatch** — the single most distinctive feature of spring-ai-fin relative to hi-agent. It implements the user's brief that "the platform should run mainstream agent frameworks" without trapping customers in one choice. It also owns the **runtime binding to `docs/sidecar-security-profile.md`**: the rules that govern transport, identity, payload, cancellation, and supply-chain evidence for the Python sidecar path.
+`adapters/` owns **multi-framework dispatch** -- the single most distinctive feature of spring-ai-fin relative to hi-agent. It implements the user's brief that "the platform should run mainstream agent frameworks" without trapping customers in one choice. It also owns the **runtime binding to `docs/sidecar-security-profile.md`**: the rules that govern transport, identity, payload, cancellation, and supply-chain evidence for the Python sidecar path.
 
 The package owns one abstraction (`FrameworkAdapter`) and three concrete implementations:
 
@@ -20,7 +20,7 @@ It does NOT own:
 - Run lifecycle persistence (delegated to `../server/`).
 - Skill registry / tool registration (delegated to `../skill/`).
 - Capability registry (delegated to `../capability/`).
-- The agent frameworks themselves — Spring AI 1.1+ is an upstream dependency; LangChain4j is a customer-opt-in dependency; Python frameworks are customer-chosen sidecar containers.
+- The agent frameworks themselves -- Spring AI 1.1+ is an upstream dependency; LangChain4j is a customer-opt-in dependency; Python frameworks are customer-chosen sidecar containers.
 
 ---
 
@@ -28,19 +28,19 @@ It does NOT own:
 
 ### The user's requirement
 
-The user's original brief: the platform should support running mainstream agent frameworks. As of 2026, the mainstream Java agent frameworks are Spring AI and LangChain4j. The Python ecosystem has LangGraph, CrewAI, AutoGen, Pydantic-AI, OpenAI Agents SDK, and LlamaIndex Agents — all Python-native.
+The user's original brief: the platform should support running mainstream agent frameworks. As of 2026, the mainstream Java agent frameworks are Spring AI and LangChain4j. The Python ecosystem has LangGraph, CrewAI, AutoGen, Pydantic-AI, OpenAI Agents SDK, and LlamaIndex Agents -- all Python-native.
 
 ### Three options considered
 
-- **A1** — JVM-only. Reject Python frameworks; tell customers to port to Java. Loses 70%+ of mainstream agent ecosystem.
-- **A2** — Polyglot in-process. Run Python in JVM via GraalVM polyglot or Jython. Fails Rule 5 catastrophically: shared event loops between Python's asyncio and Java's Reactor produce "Event loop closed" defects on every recovery cycle. This is the same failure class as hi-agent's 04-22 prod incident.
-- **A3** — Polyglot out-of-process. Run Python frameworks in their own container; communicate via gRPC. **Selected.**
+- **A1** -- JVM-only. Reject Python frameworks; tell customers to port to Java. Loses 70%+ of mainstream agent ecosystem.
+- **A2** -- Polyglot in-process. Run Python in JVM via GraalVM polyglot or Jython. Fails Rule 5 catastrophically: shared event loops between Python's asyncio and Java's Reactor produce "Event loop closed" defects on every recovery cycle. This is the same failure class as hi-agent's 04-22 prod incident.
+- **A3** -- Polyglot out-of-process. Run Python frameworks in their own container; communicate via gRPC. **Selected.**
 
 ### Why A3 wins
 
 - **Rule 5 honoured by construction.** Each framework runs in its own process with its own event loop. The JVM never shares an asyncio resource with Python. Crash isolation between JVM and Python sidecar is automatic.
-- **Customer flexibility.** Customer chooses which Python framework they want; we provide a reference Docker image that hosts LangGraph + CrewAI + AutoGen via a thin Python service shim that translates gRPC → framework-native API.
-- **Operational latency cost is acceptable.** Cross-process gRPC over Unix domain socket adds ≤30ms p95 in our prototyping. For interactive agent runs (p95 ≤ 5s budget), this is <1% overhead.
+- **Customer flexibility.** Customer chooses which Python framework they want; we provide a reference Docker image that hosts LangGraph + CrewAI + AutoGen via a thin Python service shim that translates gRPC -> framework-native API.
+- **Operational latency cost is acceptable.** Cross-process gRPC over Unix domain socket adds <=30ms p95 in our prototyping. For interactive agent runs (p95 <= 5s budget), this is <1% overhead.
 
 ### What we forfeit
 
@@ -73,7 +73,7 @@ public interface FrameworkAdapter {
 }
 ```
 
-`AdapterRunHandle` is opaque — adapters carry their own runtime state. For `SpringAiAdapter` it wraps a `ChatClient.CallResponseSpec`; for `PySidecarAdapter` it wraps a gRPC bidirectional stream.
+`AdapterRunHandle` is opaque -- adapters carry their own runtime state. For `SpringAiAdapter` it wraps a `ChatClient.CallResponseSpec`; for `PySidecarAdapter` it wraps a gRPC bidirectional stream.
 
 ---
 
@@ -108,14 +108,14 @@ public class SpringAiAdapter implements FrameworkAdapter {
 }
 ```
 
-**Key design decision**: SpringAiAdapter calls Spring AI's `ChatClient` directly. Advisors are composed from `agent-runtime/skill/SkillRegistry` via a builder. We do not wrap Spring AI; we use it as it ships. Tool calls produced by Advisors flow through `agent-runtime/skill/SkillInvocationEntryPoint` which routes through `ActionGuard.authorize` (per `../skill/` §5).
+**Key design decision**: SpringAiAdapter calls Spring AI's `ChatClient` directly. Advisors are composed from `agent-runtime/skill/SkillRegistry` via a builder. We do not wrap Spring AI; we use it as it ships. Tool calls produced by Advisors flow through `agent-runtime/skill/SkillInvocationEntryPoint` which routes through `ActionGuard.authorize` (per `../skill/` sec-5).
 
 ### 4.2 LangChain4jAdapter (opt-in, in-process)
 
 ```java
 public class LangChain4jAdapter implements FrameworkAdapter {
     private final dev.langchain4j.service.AiServices.Builder<?> builder;
-    // ... bridges TaskContract → LangChain4j ChatLanguageModel + tools
+    // ... bridges TaskContract -> LangChain4j ChatLanguageModel + tools
 }
 ```
 
@@ -125,10 +125,10 @@ Customer adds `langchain4j-core` to their build; we discover the adapter via Spr
 
 ```java
 public class PySidecarAdapter implements FrameworkAdapter {
-    private final ManagedChannel channel;       // gRPC channel; @Bean singleton (Rule 6); UDS by default (see §5)
+    private final ManagedChannel channel;       // gRPC channel; @Bean singleton (Rule 6); UDS by default (see sec-5)
     private final AgentDispatchGrpc.AgentDispatchStub stub;
-    private final SidecarMetadataValidator metadataValidator;  // §5.3 — tenant metadata is untrusted
-    private final SpiffeIdentityVerifier identityVerifier;      // §5.2
+    private final SidecarMetadataValidator metadataValidator;  // sec-5.3 -- tenant metadata is untrusted
+    private final SpiffeIdentityVerifier identityVerifier;      // sec-5.2
 
     @Override public AdapterRunHandle start(TaskContract task, RunContext ctx) {
         var request = StartRunRequest.newBuilder()
@@ -179,7 +179,7 @@ The Python sidecar Docker image (published as `springaifin/py-sidecar:1.0.0`) co
 
 ## 5. Python sidecar security binding
 
-The sidecar is a separate process whose JVM-side caller cannot independently verify. Without explicit binding, sidecar metadata could spoof tenant identity, payload could be unbounded, cancellation could leak, and the image's supply-chain provenance could be unknown. This section binds dispatch to `docs/sidecar-security-profile.md` and makes the trust boundary explicit. Addresses security review §P0-7 and remediation §7.5 (status: design_accepted; tracked in `../../docs/governance/architecture-status.yaml`).
+The sidecar is a separate process whose JVM-side caller cannot independently verify. Without explicit binding, sidecar metadata could spoof tenant identity, payload could be unbounded, cancellation could leak, and the image's supply-chain provenance could be unknown. This section binds dispatch to `docs/sidecar-security-profile.md` and makes the trust boundary explicit. Addresses security review sec-P0-7 and remediation sec-7.5 (status: design_accepted; tracked in `../../docs/governance/architecture-status.yaml`).
 
 ### 5.1 Default transport
 
@@ -189,7 +189,7 @@ The default sidecar transport is **Unix Domain Socket (UDS)** at `/var/run/sprin
 - It tightly binds the sidecar to its co-located JVM (one JVM per UDS path).
 - It avoids loopback TCP's port-collision and listen-on-all-interfaces footguns.
 
-When the sidecar must run on a different host (e.g., GPU node), the platform falls back to **mTLS over TCP** with workload identity (§5.2). Plain loopback TCP is permitted only under DEV posture with `ALLOW_DEV_NON_LOOPBACK=false` (i.e., genuine loopback) AND `APP_DEPLOYMENT_SHAPE=LOCAL_LOOPBACK`. All other configurations require mTLS.
+When the sidecar must run on a different host (e.g., GPU node), the platform falls back to **mTLS over TCP** with workload identity (sec-5.2). Plain loopback TCP is permitted only under DEV posture with `ALLOW_DEV_NON_LOOPBACK=false` (i.e., genuine loopback) AND `APP_DEPLOYMENT_SHAPE=LOCAL_LOOPBACK`. All other configurations require mTLS.
 
 ### 5.2 Workload identity (SPIFFE)
 
@@ -197,7 +197,7 @@ When the sidecar runs on a non-loopback transport, **SPIFFE workload identity** 
 
 - The sidecar presents a SPIFFE SVID (e.g., `spiffe://springaifin/py-sidecar/<tenant-class>`).
 - The JVM-side `SpiffeIdentityVerifier` validates the SVID against a trust bundle at every gRPC call (cached for 5 minutes, refreshed on TTL or on validation failure).
-- Mismatch → connection refused; counter `springaifin_sidecar_identity_mismatch_total{reason}` + WARN.
+- Mismatch -> connection refused; counter `springaifin_sidecar_identity_mismatch_total{reason}` + WARN.
 
 Under `APP_POSTURE=prod`, SPIFFE is mandatory regardless of transport. Under `research`, SPIFFE is mandatory for non-loopback transport. Under `dev` loopback UDS, SPIFFE is optional.
 
@@ -241,7 +241,7 @@ The sidecar dispatch enforces the following bounds (configurable per deployment,
 | Single message size | 1 MiB | dev (raise) / research (raise with allowlist) / prod (lower only) |
 | Cumulative message size per stream | 16 MiB | same |
 | Stream lifetime (deadline) | 60s | dev / research / prod (stricter at prod) |
-| Cancellation propagation latency | ≤ 1s after JVM cancel signal | always |
+| Cancellation propagation latency | <= 1s after JVM cancel signal | always |
 | Stream-close on JVM-side error | mandatory; gRPC `cancel()` issued | always |
 
 Violations produce `springaifin_sidecar_bound_violation_total{bound, action}` and abort the stream. The JVM does not retry an aborted stream by default; retry is `framework-controlled` (the framework decides whether the partial work is salvageable).
@@ -252,13 +252,13 @@ The sidecar Docker image is referenced by **digest** (`sha256:...`), not by tag,
 
 - Reads the configured digest at boot.
 - Calls the sidecar's `/health` endpoint, which returns the running image digest.
-- Compares; mismatch → fail closed; counter + alarm.
+- Compares; mismatch -> fail closed; counter + alarm.
 
 Image digests are SBOM-tagged and the SBOM is stored alongside the Docker image manifest under `docs/supply-chain-controls.md`. A digest without a published SBOM cannot be referenced under prod.
 
 ### 5.6 Sidecar fallback is not a success path
 
-Adapter failover (`PySidecar → SpringAi`) is recorded with the Rule 7 four-prong (counter, log, runMetadata, gate-asserted). The operator-shape gate at W2/W4 asserts `springaifin_adapter_fallback_total{from=PYSIDECAR, ...} == 0` over N≥3 sequential runs. A non-zero fallback count blocks ship for the wave that introduced it.
+Adapter failover (`PySidecar -> SpringAi`) is recorded with the Rule 7 four-prong (counter, log, runMetadata, gate-asserted). The operator-shape gate at W2/W4 asserts `springaifin_adapter_fallback_total{from=PYSIDECAR, ...} == 0` over N>=3 sequential runs. A non-zero fallback count blocks ship for the wave that introduced it.
 
 ---
 
@@ -295,16 +295,16 @@ flowchart TD
 
 **Failover semantics**:
 
-- An adapter failing (e.g., LangChain4j ClassNotFoundException, PySidecar gRPC unavailable, SPIFFE mismatch, image-digest mismatch) → emit `springaifin_adapter_fallback_total{from, to, reason}` and try the next adapter.
-- All adapters failed → fail the run with `RunResult.failed(NoHealthyAdapter)` and emit `springaifin_run_failed_total{reason=no_healthy_adapter}`.
+- An adapter failing (e.g., LangChain4j ClassNotFoundException, PySidecar gRPC unavailable, SPIFFE mismatch, image-digest mismatch) -> emit `springaifin_adapter_fallback_total{from, to, reason}` and try the next adapter.
+- All adapters failed -> fail the run with `RunResult.failed(NoHealthyAdapter)` and emit `springaifin_run_failed_total{reason=no_healthy_adapter}`.
 - Sidecar security failures (SPIFFE mismatch, image digest mismatch, tenant metadata mismatch under research/prod) emit a `SECURITY_EVENT` audit row and a structured alarm.
 
 **Rule 7 four-prong** for adapter fallback:
 
-- ✅ Countable: `springaifin_adapter_fallback_total{from, to, reason}` Micrometer counter.
-- ✅ Attributable: structured `WARNING+` log with `runId`, `tenantId`, `from`, `to`, `reason`.
-- ✅ Inspectable: `runMetadata.fallbackEvents` list carries `{at: ts, from: ..., to: ..., reason: ...}` per fallback.
-- ✅ Gate-asserted: operator-shape gate asserts `springaifin_adapter_fallback_total == 0` over N≥3 sequential real-LLM runs.
+- [x] Countable: `springaifin_adapter_fallback_total{from, to, reason}` Micrometer counter.
+- [x] Attributable: structured `WARNING+` log with `runId`, `tenantId`, `from`, `to`, `reason`.
+- [x] Inspectable: `runMetadata.fallbackEvents` list carries `{at: ts, from: ..., to: ..., reason: ...}` per fallback.
+- [x] Gate-asserted: operator-shape gate asserts `springaifin_adapter_fallback_total == 0` over N>=3 sequential real-LLM runs.
 
 ---
 
@@ -314,10 +314,10 @@ Measured at operator-shape gate (W2/W4 deliverable). Bars:
 
 | Path | Overhead added by adapter | Total stage budget |
 |---|---|---|
-| Spring AI in-process | ≤ 5ms p95 | governed by ChatClient + LLM provider latency |
-| LangChain4j in-process | ≤ 5ms p95 | same as Spring AI |
-| Python sidecar via gRPC over Unix socket | ≤ 30ms p95 | governed by sidecar Python framework + LLM latency |
-| Python sidecar via mTLS gRPC over TCP | ≤ 50ms p95 | same |
+| Spring AI in-process | <= 5ms p95 | governed by ChatClient + LLM provider latency |
+| LangChain4j in-process | <= 5ms p95 | same as Spring AI |
+| Python sidecar via gRPC over Unix socket | <= 30ms p95 | governed by sidecar Python framework + LLM latency |
+| Python sidecar via mTLS gRPC over TCP | <= 50ms p95 | same |
 
 If the Python sidecar overhead exceeds 100ms p95, we defer Python-sidecar GA to v1.1 and ship v1 with Spring AI + LangChain4j only.
 
@@ -347,8 +347,8 @@ If the Python sidecar overhead exceeds 100ms p95, we defer Python-sidecar GA to 
 
 | Attribute | Target | Verification |
 |---|---|---|
-| **Adapter dispatch latency** | ≤ 30ms p95 for in-process; ≤ 50ms p95 for sidecar | Operator-shape gate |
-| **Adapter failover** | Total fallback time ≤ 100ms p95; gate-asserted to zero on happy path | Operator-shape gate |
+| **Adapter dispatch latency** | <= 30ms p95 for in-process; <= 50ms p95 for sidecar | Operator-shape gate |
+| **Adapter failover** | Total fallback time <= 100ms p95; gate-asserted to zero on happy path | Operator-shape gate |
 | **Multi-framework run** | Same `TaskContract` produces equivalent result across at least Spring AI + one other | `tests/integration/CrossFrameworkEquivalenceIT` |
 | **Sidecar isolation** | JVM crash does not crash sidecar; sidecar crash does not crash JVM | `tests/chaos/SidecarChaosIT` |
 | **Capability matching** | Tasks requiring tools-mode never dispatched to adapters without tools support | `AdapterCapabilityTest` |
@@ -378,7 +378,7 @@ If the Python sidecar overhead exceeds 100ms p95, we defer Python-sidecar GA to 
 
 ## 11. References
 
-- L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md) §5.3
+- L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md) sec-5.3
 - L1: [`../ARCHITECTURE.md`](../ARCHITECTURE.md)
 - LLM gateway: [`../llm/ARCHITECTURE.md`](../llm/ARCHITECTURE.md)
 - Skill registry: [`../skill/ARCHITECTURE.md`](../skill/ARCHITECTURE.md)
@@ -389,4 +389,4 @@ If the Python sidecar overhead exceeds 100ms p95, we defer Python-sidecar GA to 
 - LangChain4j: https://github.com/langchain4j/langchain4j
 - Python sidecar reference: planned at `tools/py-sidecar/` (Dockerfile + Python service)
 - SPIFFE: https://spiffe.io/
-- Systematic-architecture-remediation-plan: [`../../docs/systematic-architecture-remediation-plan-2026-05-08.en.md`](../../docs/systematic-architecture-remediation-plan-2026-05-08.en.md) §7.5
+- Systematic-architecture-remediation-plan: [`../../docs/systematic-architecture-remediation-plan-2026-05-08.en.md`](../../docs/systematic-architecture-remediation-plan-2026-05-08.en.md) sec-7.5

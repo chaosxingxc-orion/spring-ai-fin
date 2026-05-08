@@ -1,9 +1,9 @@
-# Roadmap — W0 through W4
+# Roadmap -- W0 through W4
 
-> Per `docs/systematic-architecture-improvement-plan-2026-05-07.en.md` §5.
+> Per `docs/systematic-architecture-improvement-plan-2026-05-07.en.md` sec-5.
 > Each wave defines deliverables and exit criteria. No wave starts until the prior wave's exit criteria are met and `docs/delivery/<date>-<sha>.md` is committed for the prior wave's HEAD.
 
-## W0 — Evidence Skeleton
+## W0 -- Evidence Skeleton
 
 See `W0-evidence-skeleton.md`.
 
@@ -21,7 +21,7 @@ Exit criteria:
 - `gate/run_operator_shape_smoke.*` passes.
 - No capability is reported above L1.
 
-## W1 — v1 Contract and Run Happy Path
+## W1 -- v1 Contract and Run Happy Path
 
 Goal: make `POST /v1/runs` real under dev and research posture.
 
@@ -29,7 +29,7 @@ Deliverables:
 - Route inventory tests (every controller path is enumerated and asserted).
 - TenantContext filter (`X-Tenant-Id` validated against JWT claim).
 - Idempotency reserve/replay (`IdempotencyStore` per-tenant).
-- Run state machine (PENDING → RUNNING → DONE/FAILED/CANCELLED).
+- Run state machine (PENDING -> RUNNING -> DONE/FAILED/CANCELLED).
 - SSE event stream minimal path (`GET /v1/runs/{id}/events`).
 - Contract freeze digest scaffold (ContractFreezeTest skeleton).
 
@@ -39,7 +39,7 @@ Exit criteria:
 - Cross-tenant event read returns 404.
 - W1 SHA recorded in `docs/delivery/`.
 
-## W2 — Security Gate
+## W2 -- Security Gate
 
 Goal: close the accepted P0 security findings with implementation evidence.
 
@@ -57,12 +57,12 @@ Deliverables:
 - ObservabilityPrivacyPolicy CI gate.
 
 Exit criteria:
-- All P0 acceptance tests pass (per finding response §P0-1 through §P0-10).
+- All P0 acceptance tests pass (per finding response sec-P0-1 through sec-P0-10).
 - Security control matrix rows reference real tests with green CI runs.
 - No P0 row in `architecture-status.yaml#findings` remains `design_accepted`; all are at least `test_verified`.
 - Operator-shape gate green under `prod` posture against real LLM + real Postgres + real WORM target.
 
-## W3 — Financial Write and Outbox Hardening
+## W3 -- Financial Write and Outbox Hardening
 
 Goal: make write consistency explicit and enforceable.
 
@@ -83,7 +83,7 @@ Exit criteria:
 - Saga compensation failure opens an operational gate (`RECONCILIATION_REQUIRED` state).
 - Operator-shape gate green for fund-transfer happy path + compensation path + compensation-failure path.
 
-## W4 — Multi-Framework Dispatch
+## W4 -- Multi-Framework Dispatch
 
 Goal: support Spring AI as default; LangChain4j and Python sidecar gated behind W2.
 

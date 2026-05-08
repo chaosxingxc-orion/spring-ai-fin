@@ -1,20 +1,29 @@
 #!/usr/bin/env bash
-# spring-ai-fin architecture-sync gate (cycle-7 expanded; POSIX bash).
-# Catches drift classes from cycles 1-7.
+# spring-ai-fin architecture-sync gate (cycle-8 evidence graph v3; POSIX bash).
+# Catches drift classes from cycles 1-8.
 #
-# Cycle-7 changes:
-#   - Variable initialization moved to top of rule body (parity with PS).
-#   - Whole rule body wrapped so a runtime error emits structured
-#     gate_runtime_error JSON instead of crashing.
-#   - audit_trail_shape rule (B1): two-SHA evidence model. If HEAD ==
-#     reviewed_content_sha, accept directly; if HEAD == evidence_commit_sha,
-#     verify parent and changed-paths-subset constraint.
-#   - manifest_edge_consistency rule (B2): manifest <-> status <-> index.
-#   - ascii_only_governance rule (D3): active governance must be ASCII.
-#   - capability_legacy_bucket rule (D2): forbid new findings using
-#     capability: operator_shape_gate (legacy_capability migration).
-#   - delivery_log_parity now extracts deliverySem and deliveryEv from
-#     table cells with bold/code wrappers stripped.
+# Cycle-8 changes (this version: "cycle-8-evidence-graph-v3"):
+#   - eol_policy rule (A1): tracked *.sh must be LF in working tree.
+#   - delivery_log_exact_binding rule (B1): authoritative delivery files
+#     MUST name a log path that exists and whose sha equals
+#     reviewed_content_sha or evidence_commit_sha.
+#   - delivery_log_parity (B2): no skip on missing log for current
+#     authoritative delivery; legacy exemptions are explicit in manifest.
+#   - manifest_no_tbd rule (B3): "TBD" forbidden in delivery-valid manifest
+#     identity fields.
+#   - manifest_no_null_log_slots rule (B3): log state slots use the closed
+#     enum, not null.
+#   - ascii_only_active_corpus rule (D1): replaces ascii_only_governance;
+#     scan list derived from docs/governance/active-corpus.yaml.
+#   - rule_8_state_consistency rule (C2): when rule_8.state ==
+#     fail_closed_artifact_missing, no capability has maturity L3 or
+#     evidence_state operator_gated; no delivery file claims Rule 8 PASS.
+#
+# Cycle-7 baseline (unchanged):
+#   - audit_trail_shape rule (B1): two-SHA evidence model.
+#   - manifest_edge_consistency rule (B2).
+#   - capability_legacy_bucket rule (D2).
+#   - Variable initialization above all rules; rule body try-wrapped.
 
 set -euo pipefail
 export LC_ALL=C
@@ -517,7 +526,8 @@ runtime_error_message=""
     unset buf
   fi
 
-  # 15. Delivery-log parity (cycle-7 A2 extended).
+  # 15. Delivery-log parity (cycle-7 A2; cycle-8 B2 no-skip-on-missing for
+  # current authoritative delivery; legacy_exemptions explicit in manifest).
   while IFS= read -r dfile; do
     [[ -z "$dfile" ]] && continue
     base=$(basename "$dfile" .md)
@@ -527,7 +537,23 @@ runtime_error_message=""
     for candidate in "gate/log/${sha}-posix.json" "gate/log/${sha}-windows.json" "gate/log/${sha}.json"; do
       if [[ -f "$candidate" ]]; then log_file="$candidate"; break; fi
     done
-    [[ -z "$log_file" ]] && continue
+    if [[ -z "$log_file" ]]; then
+      # Cycle-8 B2: do not silently skip. Either the delivery is the current
+      # authoritative one (manifest.delivery_file) -> FAIL; or it's listed
+      # under manifest.architecture_sync_logs.legacy_exemptions -> OK; or
+      # it's an older delivery whose platform-suffix log was archived ->
+      # treat as historical_only and emit a NOTE-level non-failing record.
+      legacy_exempt=0
+      if grep -F -q "$dfile" "$manifest_path" 2>/dev/null; then
+        if grep -F -A5 "$dfile" "$manifest_path" 2>/dev/null | grep -F -q "pre_platform_suffix_legacy"; then
+          legacy_exempt=1
+        fi
+      fi
+      if [[ "$dfile" == "$manifest_delivery" && $legacy_exempt -eq 0 ]]; then
+        fail "delivery_log_parity" "current authoritative delivery $dfile has no matching gate/log/${sha}-*.json" "$dfile" 0
+      fi
+      continue
+    fi
     log_sha=$(grep -oE '"sha":"[^"]*"' "$log_file" | head -1 | sed -E 's/.*"sha":"([^"]*)".*/\1/')
     log_sem=$(grep -oE '"semantic_pass":(true|false)' "$log_file" | head -1 | sed -E 's/.*:(.*)/\1/')
     log_ev=$(grep -oE '"evidence_valid_for_delivery":(true|false)' "$log_file" | head -1 | sed -E 's/.*:(.*)/\1/')
@@ -548,20 +574,137 @@ runtime_error_message=""
     fi
   done < <(find docs/delivery -maxdepth 1 -type f -name '2026-05-08-*.md' 2>/dev/null || true)
 
-  # 16. ASCII-only governance (cycle-7 D3).
-  declare -a ascii_files=(
-    "$manifest_path" "$index_path" "$status_path"
-    "docs/governance/closure-taxonomy.md" "docs/governance/decision-sync-matrix.md"
-    "docs/governance/maturity-glossary.md" "$del_readme" "$gate_readme"
-  )
+  # 16. ASCII-only active corpus (cycle-8 D1; replaces cycle-7 ascii_only_governance).
+  # Scan list is derived from docs/governance/active-corpus.yaml so the
+  # registry is the single source of truth (Phase 3).
+  active_corpus_path="docs/governance/active-corpus.yaml"
+  declare -a ascii_files=()
+  if [[ -f "$active_corpus_path" ]]; then
+    in_active=0
+    while IFS= read -r yline || [[ -n "$yline" ]]; do
+      if [[ "$yline" == "active_documents:" ]]; then in_active=1; continue; fi
+      if [[ "$yline" == "historical_documents:" ]]; then in_active=0; continue; fi
+      [[ $in_active -eq 0 ]] && continue
+      if [[ "$yline" =~ ^[[:space:]]+-[[:space:]]+path:[[:space:]]+(.+)$ ]]; then
+        ap="${BASH_REMATCH[1]}"
+        ap="${ap%%[[:space:]]*}"
+        ascii_files+=("$ap")
+      fi
+    done < "$active_corpus_path"
+  fi
+  if [[ ${#ascii_files[@]} -eq 0 ]]; then
+    # Fallback: cycle-7 minimal set so a malformed registry never silently
+    # disables encoding enforcement.
+    ascii_files=(
+      "$manifest_path" "$index_path" "$status_path"
+      "docs/governance/closure-taxonomy.md" "docs/governance/decision-sync-matrix.md"
+      "docs/governance/maturity-glossary.md" "$del_readme" "$gate_readme"
+    )
+    fail "active_corpus_registry_missing" "active-corpus.yaml not parseable; falling back to cycle-7 minimal scan list" "$active_corpus_path" 0
+  fi
   for f in "${ascii_files[@]}"; do
     [[ ! -f "$f" ]] && continue
-    # Find first non-ASCII byte. Use od to check.
     if LC_ALL=C grep -q '[^[:print:][:space:]]' "$f" 2>/dev/null; then
       lineno=$(LC_ALL=C grep -n '[^[:print:][:space:]]' "$f" 2>/dev/null | head -1 | cut -d: -f1)
-      fail "ascii_only_governance" "non-ASCII byte found" "$f" "${lineno:-0}"
+      fail "ascii_only_active_corpus" "non-ASCII byte found" "$f" "${lineno:-0}"
     fi
   done
+
+  # 18. EOL policy (cycle-8 A1): tracked *.sh files must be LF in working tree.
+  while IFS= read -r shf; do
+    [[ -z "$shf" ]] && continue
+    [[ ! -f "$shf" ]] && continue
+    if grep -q $'\r' "$shf" 2>/dev/null; then
+      fail "eol_policy" "shell script contains CRLF; must be LF (see .gitattributes)" "$shf" 0
+    fi
+  done < <(git ls-files '*.sh' 2>/dev/null || true)
+  if [[ ! -f .gitattributes ]]; then
+    fail "eol_policy" ".gitattributes does not exist; LF policy is unenforced" ".gitattributes" 0
+  fi
+
+  # 19. Manifest no TBD / no null log slots (cycle-8 B3).
+  if [[ -f "$manifest_path" ]]; then
+    lineno=0
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      lineno=$((lineno + 1))
+      stripped="${line%%#*}"
+      # Forbid bare TBD as a value.
+      if [[ "$stripped" =~ :[[:space:]]*TBD[[:space:]]*$ ]]; then
+        fail "manifest_no_tbd" "manifest has 'TBD' value; replace with explicit value or state" "$manifest_path" "$lineno"
+      fi
+      # Forbid bare null in 'state:' fields (other null is allowed during
+      # pre_audit_trail). The state field is the contract per Phase 1.
+      if [[ "$stripped" =~ ^[[:space:]]+state:[[:space:]]*null[[:space:]]*$ ]]; then
+        fail "manifest_no_null_log_slots" "manifest has 'state: null'; use the closed state enum" "$manifest_path" "$lineno"
+      fi
+    done < "$manifest_path"
+  fi
+
+  # 20. Delivery-log exact binding (cycle-8 B1).
+  # For the current authoritative delivery file (manifest.delivery_file),
+  # require: a log path declared (in architecture_sync_logs.<platform>.path
+  # OR derivable from <delivery-sha>-{posix,windows,legacy}.json), the log
+  # exists, and the log's sha equals reviewed_content_sha or HEAD (the
+  # evidence_commit_sha).
+  if [[ -n "$manifest_delivery" && -f "$manifest_delivery" && -n "$reviewed_content_sha" ]]; then
+    delivery_base=$(basename "$manifest_delivery" .md)
+    delivery_sha=${delivery_base##2026-05-08-}
+    found_log=""
+    for candidate in "gate/log/${delivery_sha}-posix.json" "gate/log/${delivery_sha}-windows.json" "gate/log/${delivery_sha}.json"; do
+      if [[ -f "$candidate" ]]; then found_log="$candidate"; break; fi
+    done
+    # Legacy exemption check: scan manifest for legacy_exemptions block.
+    legacy_exempt=0
+    if grep -F -q "$manifest_delivery" "$manifest_path" 2>/dev/null; then
+      if grep -F -A5 "$manifest_delivery" "$manifest_path" 2>/dev/null | grep -F -q "pre_platform_suffix_legacy"; then
+        legacy_exempt=1
+      fi
+    fi
+    if [[ -z "$found_log" && $legacy_exempt -eq 0 ]]; then
+      fail "delivery_log_exact_binding" "manifest.delivery_file=$manifest_delivery has no matching gate/log/${delivery_sha}-*.json (and no legacy exemption)" "$manifest_path" 0
+    fi
+    if [[ -n "$found_log" ]]; then
+      log_sha_field=$(grep -oE '"sha":"[^"]*"' "$found_log" | head -1 | sed -E 's/.*"sha":"([^"]*)".*/\1/')
+      head_short="$sha_candidate"
+      if [[ -n "$log_sha_field" && "$log_sha_field" != "$reviewed_content_sha" && "$log_sha_field" != "$head_short" ]]; then
+        fail "delivery_log_exact_binding" "log $found_log reports sha='$log_sha_field' which is neither reviewed_content_sha=$reviewed_content_sha nor HEAD=$head_short" "$found_log" 0
+      fi
+    fi
+  fi
+
+  # 21. Rule 8 state consistency (cycle-8 C2).
+  rule_8_state=""
+  if [[ -f "$manifest_path" ]]; then
+    rule_8_state=$(awk '/^rule_8:/{flag=1; next} flag && /^[[:space:]]+state:/ {gsub(/^[[:space:]]+state:[[:space:]]*/,""); print; exit}' "$manifest_path" 2>/dev/null || true)
+    rule_8_state="${rule_8_state%% #*}"
+    rule_8_state="${rule_8_state%"${rule_8_state##*[![:space:]]}"}"
+  fi
+  if [[ "$rule_8_state" == "fail_closed_artifact_missing" && -f "$status_path" ]]; then
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      if [[ "$line" =~ ^[[:space:]]+maturity:[[:space:]]*L3 ]]; then
+        fail "rule_8_state_consistency" "capability declares maturity: L3 while manifest.rule_8.state=fail_closed_artifact_missing" "$status_path" 0
+      fi
+      if [[ "$line" =~ ^[[:space:]]+maturity:[[:space:]]*L4 ]]; then
+        fail "rule_8_state_consistency" "capability declares maturity: L4 while manifest.rule_8.state=fail_closed_artifact_missing" "$status_path" 0
+      fi
+      if [[ "$line" =~ ^[[:space:]]+(status|evidence_state):[[:space:]]*operator_gated ]]; then
+        fail "rule_8_state_consistency" "capability declares operator_gated while manifest.rule_8.state=fail_closed_artifact_missing" "$status_path" 0
+      fi
+      if [[ "$line" =~ ^[[:space:]]+(status|evidence_state):[[:space:]]*released ]]; then
+        fail "rule_8_state_consistency" "capability declares released while manifest.rule_8.state=fail_closed_artifact_missing" "$status_path" 0
+      fi
+    done < "$status_path"
+    # Scan delivery files for Rule 8 PASS claims.
+    while IFS= read -r dfile; do
+      [[ -z "$dfile" ]] && continue
+      if grep -E -q '(Rule 8 PASS|Rule[[:space:]]*8[[:space:]]*PASS)' "$dfile" 2>/dev/null; then
+        # Allow phrases that explicitly negate Rule 8 PASS.
+        if ! grep -E -q '(NOT Rule 8 PASS|not Rule 8 PASS|fails closed|fail-closed|fail_closed_artifact_missing|FAIL_ARTIFACT_MISSING)' "$dfile" 2>/dev/null; then
+          fail "rule_8_state_consistency" "delivery file claims Rule 8 PASS while manifest.rule_8.state=fail_closed_artifact_missing" "$dfile" 0
+        fi
+      fi
+    done < <(find docs/delivery -maxdepth 1 -type f -name '2026-05-08-*.md' 2>/dev/null || true)
+  fi
 
   # 17. Capability legacy-bucket (cycle-7 D2).
   if [[ -f "$status_path" ]]; then
@@ -619,7 +762,7 @@ porcelain_escaped="$(json_escape "${porcelain:-}")"
 {
   printf '{'
   printf '"script":"check_architecture_sync.sh",'
-  printf '"version":"cycle-7-expanded",'
+  printf '"version":"cycle-8-evidence-graph-v3",'
   printf '"platform":"posix",'
   printf '"sha":"%s",' "$sha_candidate"
   printf '"generated":"%s",' "$(date -Iseconds 2>/dev/null || date -u +%Y-%m-%dT%H:%M:%SZ)"
