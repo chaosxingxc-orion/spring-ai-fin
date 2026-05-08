@@ -52,6 +52,7 @@
 - [`docs/governance/closure-taxonomy.md`](closure-taxonomy.md) -- status enum and forbidden-shortcut taxonomy.
 - [`docs/governance/maturity-glossary.md`](maturity-glossary.md) -- Rule 12 L0..L4 ladder.
 - [`docs/governance/allowlists.yaml`](allowlists.yaml) -- HMAC carve-outs, dev opt-ins, expiry waves.
+- [`docs/governance/active-corpus.yaml`](active-corpus.yaml) -- active vs historical document registry (cycle-8 sec-D1 + Phase 3); ascii_only_active_corpus and other gate rules derive scope from this.
 - [`docs/governance/current-architecture-index.md`](current-architecture-index.md) -- this file.
 
 ## Cross-cutting current docs
@@ -83,7 +84,8 @@
 - [`docs/delivery/2026-05-08-a070a77.md`](../delivery/2026-05-08-a070a77.md) -- cycle-4 architecture-sync evidence at SHA `a070a77`.
 - [`docs/delivery/2026-05-08-302337f.md`](../delivery/2026-05-08-302337f.md) -- cycle-5 architecture-sync evidence at SHA `302337f`.
 - [`docs/delivery/2026-05-08-81ff802.md`](../delivery/2026-05-08-81ff802.md) -- cycle-6 architecture-sync evidence at SHA `81ff802`.
-- [`docs/delivery/2026-05-08-ba4bcd5.md`](../delivery/2026-05-08-ba4bcd5.md) -- cycle-7 architecture-sync evidence at SHA `ba4bcd5` (current authoritative delivery; gate parity + two-SHA model + ASCII governance + self-test).
+- [`docs/delivery/2026-05-08-ba4bcd5.md`](../delivery/2026-05-08-ba4bcd5.md) -- cycle-7 architecture-sync evidence at SHA `ba4bcd5` (gate parity + two-SHA model + ASCII governance + self-test).
+- [`docs/delivery/2026-05-08-cc2e1e3.md`](../delivery/2026-05-08-cc2e1e3.md) -- cycle-8 architecture-sync evidence at SHA `cc2e1e3` (current authoritative delivery; evidence graph v3 + eol policy + delivery_log_exact_binding + ASCII active corpus + rule_8_state_consistency).
 - Per cycle-3 SHA-current rule, a delivery file is evidence for its named SHA only -- not for any later SHA, even doc-only commits. The cycle-6 + cycle-7 manifest-enforced two-SHA model (REM-2026-05-08-C7-3) accepts an audit-trail-shaped descendant of the reviewed content SHA.
 - The authoritative current-evidence pointer is `docs/governance/evidence-manifest.yaml#reviewed_sha` (cycle-5 F1 + cycle-6 A2). When the manifest's `reviewed_sha` differs from the latest delivery file listed above, the manifest wins and this list is regenerated in the next cycle.
 
