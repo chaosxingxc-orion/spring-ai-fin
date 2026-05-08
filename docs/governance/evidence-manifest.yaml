@@ -25,24 +25,30 @@ schema_version: cycle-5-skeleton
 # The manifest currently describes the latest delivery-valid SHA, NOT the
 # current HEAD. The W1 gate will extend this to enforce HEAD coverage.
 
-reviewed_sha: a070a77
+reviewed_sha: 302337f
 reviewed_sha_classification: architecture_sync_evidence_only
+notes: |
+  This manifest is updated in the audit-trail commit that produces the
+  delivery file + log for the most-recent architectural commit. By design
+  it lags HEAD by exactly one commit (the audit-trail commit itself). The
+  manifest's `reviewed_sha` is the SHA of the last delivery-valid log, NOT
+  HEAD. See cycle-6 §A1 trade-off discussion.
 
-delivery_file: docs/delivery/2026-05-08-a070a77.md
+delivery_file: docs/delivery/2026-05-08-302337f.md
 
 architecture_sync_logs:
-  posix: gate/log/a070a77.json                          # cycle-4 log; pre-platform-suffix
-  windows: null                                          # cycle-4 ran POSIX only at this SHA
-  cycle_5_platform_suffix_in_effect_starting: TBD       # set to first SHA where new naming applies
+  posix: gate/log/302337f-posix.json                    # cycle-5 first log under platform-suffix scheme
+  windows: null                                          # PowerShell unavailable in cycle-6 author's environment; documented gap
+  legacy_unsuffixed: gate/log/a070a77.json              # cycle-4 evidence (pre-suffix naming); preserved for audit
+  cycle_5_platform_suffix_in_effect_starting: 302337f
 
 operator_shape_logs:
-  posix: null    # gate/log/local/operator-shape-a070a77-posix.json (gitignored fail-closed)
-  windows: null  # gate/log/local/operator-shape-a070a77-windows.json (gitignored fail-closed)
+  posix: null    # gate/log/local/operator-shape-302337f-posix.json (gitignored fail-closed)
+  windows: null  # gate/log/local/operator-shape-302337f-windows.json (gitignored fail-closed)
   notes: |
-    Operator-shape smoke at a070a77 produced FAIL_ARTIFACT_MISSING on both
-    platforms. Logs are under gate/log/local/ (gitignored) and are NOT
-    delivery evidence. They are recorded here only to make the absence
-    auditable.
+    Operator-shape smoke produces FAIL_ARTIFACT_MISSING. Logs are under
+    gate/log/local/ (gitignored) and are NOT delivery evidence. Recorded
+    here only to make the absence auditable.
 
 status_findings_addressed:
   cycle_1:
@@ -87,6 +93,16 @@ status_findings_addressed:
     - REM-2026-05-08-C5-7
     - REM-2026-05-08-C5-8
     - REM-2026-05-08-C5-9
+  cycle_6:
+    - REM-2026-05-08-C6-1   # A1: HEAD-vs-delivery (audit-trail pattern documented)
+    - REM-2026-05-08-C6-2   # A2: manifest freshness rule + manifest itself updated
+    - REM-2026-05-08-C6-3   # A3: current-architecture-index updated
+    - REM-2026-05-08-C6-4   # A4: status YAML split into sync/smoke sub-capabilities
+    - REM-2026-05-08-C6-5   # B1: cross-platform evidence (POSIX-only env documented)
+    - REM-2026-05-08-C6-6   # B2: README-to-files rule + gate/README.md fix
+    - REM-2026-05-08-C6-7   # B3: delivery_log_parity rule (basic)
+    - REM-2026-05-08-C6-8   # C1: auth L2 weak-HMAC test row rewritten + HS256/prod scan extended
+    - REM-2026-05-08-C6-9   # D1: manifest enforcement (basic; full graph validation = W1)
 
 authoritative_index: docs/governance/current-architecture-index.md
 authoritative_index_last_updated_in_cycle: cycle-5

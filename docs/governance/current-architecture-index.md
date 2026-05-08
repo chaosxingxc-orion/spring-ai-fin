@@ -81,8 +81,9 @@
 - [`docs/delivery/2026-05-08-7025ac9.md`](../delivery/2026-05-08-7025ac9.md) — cycle-1+2 first delivery-valid architecture-sync evidence at SHA `7025ac9`.
 - [`docs/delivery/2026-05-08-003ed6f.md`](../delivery/2026-05-08-003ed6f.md) — cycle-3 architecture-sync evidence at SHA `003ed6f`.
 - [`docs/delivery/2026-05-08-a070a77.md`](../delivery/2026-05-08-a070a77.md) — cycle-4 architecture-sync evidence at SHA `a070a77`.
-- The latest delivery file at the most recent reviewed SHA supersedes earlier ones for that SHA. Per cycle-3 SHA-current rule, a delivery file is evidence for its named SHA only — not for any later SHA, even doc-only commits.
-- The cycle-5 delivery file will be added at the cycle-5 final SHA after this PR lands. Until then, no delivery-valid evidence exists for the cycle-5 final SHA.
+- [`docs/delivery/2026-05-08-302337f.md`](../delivery/2026-05-08-302337f.md) — cycle-5 architecture-sync evidence at SHA `302337f`.
+- The cycle-6 delivery file (`docs/delivery/2026-05-08-<cycle-6-final-sha>.md`) is added in the cycle-6 audit-trail commit and supersedes earlier files for the cycle-6 final SHA only. Per cycle-3 SHA-current rule, a delivery file is evidence for its named SHA only — not for any later SHA, even doc-only commits.
+- The authoritative current-evidence pointer is `docs/governance/evidence-manifest.yaml#reviewed_sha` (cycle-5 F1 + cycle-6 A2). When the manifest's `reviewed_sha` differs from the latest delivery file listed above, the manifest wins and this list is regenerated in the next cycle.
 
 ## Historical / superseded (NOT authoritative)
 

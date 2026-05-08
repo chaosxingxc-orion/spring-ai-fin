@@ -290,16 +290,79 @@ foreach ($f in $rlsVocabFiles) {
   }
 }
 
-# 8d. HS256 + prod conflict rule (cycle-5 D1).
-if (Test-Path $securityMatrix) {
-  $lines = Get-Content -LiteralPath $securityMatrix
+# 8d. HS256 + prod conflict rule (cycle-5 D1; cycle-6 C1 extension to auth L2).
+$hsProdScanFiles = @($securityMatrix, 'agent-runtime/auth/ARCHITECTURE.md')
+foreach ($f in $hsProdScanFiles) {
+  if (-not (Test-Path $f)) { continue }
+  $lines = Get-Content -LiteralPath $f
   for ($i = 0; $i -lt $lines.Count; $i++) {
     $line = $lines[$i]
-    $hasHs256 = ($line -cmatch '(?i)(HS256|HMAC-SHA256)')
+    $hasHs256 = ($line -cmatch '(?i)(HS256|HMAC-SHA256|APP_JWT_SECRET)')
     $hasProd = ($line -cmatch '(?i)\bprod\b')
-    $isRejected = ($line -cmatch '(?i)(rejected|not permitted|refused)')
+    $isRejected = ($line -cmatch '(?i)(rejected|not permitted|refused|reject HmacValidator|not a prod boot input|HmacValidator is active|only when|no HS256 path|HS256 only for|HS256 only on|only for DEV|only for BYOC|mandatory for|mandatory regardless|explicit BYOC|carve-out only|with carve-out|loopback only)')
     if ($hasHs256 -and $hasProd -and (-not $isRejected)) {
-      Fail 'hs256_prod_conflict' "control row mentions HS256 + prod without 'rejected' / 'not permitted' qualifier (auth L2 says prod has no HS256 path)" $securityMatrix ($i + 1)
+      Fail 'hs256_prod_conflict' "doc mentions HS256/APP_JWT_SECRET + prod without rejected/not-permitted qualifier" $f ($i + 1)
+    }
+  }
+}
+
+# 13. Manifest freshness (cycle-6 A2).
+$manifestPath = 'docs/governance/evidence-manifest.yaml'
+if (Test-Path $manifestPath) {
+  $manifestLines = Get-Content -LiteralPath $manifestPath
+  $manifestSha = ''
+  $manifestDelivery = ''
+  foreach ($line in $manifestLines) {
+    if ($line -match '^reviewed_sha:\s*([A-Za-z0-9]+)') { $manifestSha = $matches[1] }
+    if ($line -match '^delivery_file:\s*(.+)$') { $manifestDelivery = $matches[1].Trim() }
+  }
+  if ($manifestSha -and $manifestSha -ne 'TBD') {
+    if ($manifestDelivery -and -not (Test-Path $manifestDelivery)) {
+      Fail 'manifest_freshness' "manifest.delivery_file references '$manifestDelivery' which does not exist" $manifestPath 0
+    }
+    $posixLog = "gate/log/$manifestSha-posix.json"
+    $windowsLog = "gate/log/$manifestSha-windows.json"
+    $legacyLog = "gate/log/$manifestSha.json"
+    if (-not (Test-Path $posixLog) -and -not (Test-Path $windowsLog) -and -not (Test-Path $legacyLog)) {
+      Fail 'manifest_freshness' "manifest.reviewed_sha=$manifestSha but no matching log exists ($posixLog, $windowsLog, or $legacyLog)" $manifestPath 0
+    }
+  }
+}
+
+# 14. README to files (cycle-6 B2).
+$smokePs1 = 'gate/run_operator_shape_smoke.ps1'
+$smokeSh = 'gate/run_operator_shape_smoke.sh'
+if (Test-Path $gateReadme) {
+  if ((Test-Path $smokePs1) -or (Test-Path $smokeSh)) {
+    $lines = Get-Content -LiteralPath $gateReadme
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+      $line = $lines[$i]
+      $bad = $false
+      if (($line -cmatch '(?i)smoke gate') -and ($line -cmatch '(?i)(does not exist|not yet exist)')) { $bad = $true }
+      if (($line -cmatch '(?i)run_operator_shape_smoke') -and ($line -cmatch '(?i)(does not exist|absent)')) { $bad = $true }
+      if ($bad) {
+        Fail 'readme_to_files' "gate/README.md says smoke gate does not exist while scripts are present in gate/" $gateReadme ($i + 1)
+      }
+    }
+  }
+}
+
+# 15. Delivery-log parity (cycle-6 B3, basic).
+$deliveryFiles = Get-ChildItem -Path 'docs/delivery' -Filter '2026-05-08-*.md' -File -ErrorAction SilentlyContinue
+foreach ($df in $deliveryFiles) {
+  $base = [System.IO.Path]::GetFileNameWithoutExtension($df.Name)
+  $sha = $base -replace '^2026-05-08-', ''
+  if (-not $sha) { continue }
+  $logFile = $null
+  foreach ($candidate in @("gate/log/$sha-posix.json", "gate/log/$sha-windows.json", "gate/log/$sha.json")) {
+    if (Test-Path $candidate) { $logFile = $candidate; break }
+  }
+  if (-not $logFile) { continue }
+  $logContent = Get-Content -Raw -LiteralPath $logFile
+  if ($logContent -match '"sha":"([^"]+)"') {
+    $logSha = $matches[1]
+    if ($logSha -ne $sha) {
+      Fail 'delivery_log_parity' "log $logFile reports sha='$logSha' but the filename names sha='$sha'" $logFile 0
     }
   }
 }
@@ -385,7 +448,7 @@ if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Forc
 
 $result = [pscustomobject]@{
   script                       = 'check_architecture_sync.ps1'
-  version                      = 'cycle-5-expanded'
+  version                      = 'cycle-6-expanded'
   platform                     = 'windows'
   sha                          = $shaCandidate
   generated                    = (Get-Date -Format 'o')

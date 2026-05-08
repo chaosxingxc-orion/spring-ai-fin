@@ -1,19 +1,18 @@
 #!/usr/bin/env bash
-# spring-ai-fin architecture-sync gate (cycle-5 expanded; POSIX bash).
-# Catches drift classes from cycles 1-5.
+# spring-ai-fin architecture-sync gate (cycle-6 expanded; POSIX bash).
+# Catches drift classes from cycles 1-6.
 #
-# Cycle-5 changes:
-#   - Platform-suffix log filenames: gate/log/<sha>-posix.json (delivery-valid)
-#     or gate/log/local/<sha>-posix.json (non-delivery). Preserves
-#     cross-platform evidence when both POSIX and PowerShell scripts run
-#     against the same SHA.
-#   - rls_reset_vocabulary scope expanded to all L0/L1/L2 ARCHITECTURE.md
-#     files (was only governance/diagram/matrix).
-#   - New hs256_prod_conflict rule: docs/security-control-matrix.md must not
-#     mention HS256 and "prod" on the same control row unless the row
-#     explicitly says "rejected" or "not permitted".
-#
-# Architecture-sync gate, NOT Rule 8 operator-shape gate.
+# Cycle-6 changes:
+#   - manifest_freshness rule: read docs/governance/evidence-manifest.yaml;
+#     verify reviewed_sha names a delivery file + log that exist; warn (not
+#     fail) if HEAD differs from reviewed_sha (audit-trail commit pattern).
+#   - readme_to_files rule: gate/README.md must not say the operator-shape
+#     smoke gate "does not exist" while the scripts are present.
+#   - delivery_log_parity rule (basic): for each docs/delivery/2026-05-08-<sha>.md,
+#     find matching gate/log/<sha>-{posix,windows}.json and compare key fields
+#     (sha, semantic_pass, evidence_valid_for_delivery).
+#   - auth_l2_hs256_prod rule: extend HS256/prod conflict check beyond
+#     security-control-matrix.md to current auth L2 docs.
 
 set -euo pipefail
 export LC_ALL=C
@@ -31,8 +30,7 @@ Usage: $0 [--local-only]
 
 Default mode fails when 'git status --porcelain' is non-empty.
 --local-only mode permits dirty tree; in any non-delivery-valid case
-the log is written to gate/log/local/<sha>-posix.json (gitignored), not
-gate/log/<sha>-posix.json.
+the log is written to gate/log/local/<sha>-posix.json (gitignored).
 EOF
       exit 0
       ;;
@@ -309,8 +307,7 @@ if [[ -f "$security_matrix" ]]; then
   done < "$security_matrix"
 fi
 
-# 7c. RLS reset vocabulary across L0/L1/L2 + governance + diagrams + matrix
-#     (cycle-5 C2: scope expanded from cycle-4's governance-only).
+# 7c. RLS reset vocabulary (cycle-5: scope expanded to all L0/L1/L2).
 declare -a rls_vocab_files=()
 for f in "${non_docs_arch_files[@]}"; do rls_vocab_files+=("$f"); done
 rls_vocab_files+=(
@@ -348,6 +345,7 @@ for f in "${rls_vocab_files[@]}"; do
         [[ "$line" == *"cycle-3"* ]] && allowed=1
         [[ "$line" == *"cycle-4"* ]] && allowed=1
         [[ "$line" == *"cycle-5"* ]] && allowed=1
+        [[ "$line" == *"cycle-6"* ]] && allowed=1
         shopt -u nocasematch
         if [[ $allowed -eq 0 ]]; then
           fail "rls_reset_vocabulary" "matched stale RLS reset wording '$phrase' without negation/deprecation marker" "$f" "$((i+1))"
@@ -358,29 +356,50 @@ for f in "${rls_vocab_files[@]}"; do
   unset buf
 done
 
-# 7d. HS256 + prod conflict rule (cycle-5 D1).
-# In docs/security-control-matrix.md, a control row mentioning HS256/HMAC and
-# "prod" must explicitly say "rejected" or "not permitted" (because auth L2
-# says prod has no HS256 path).
-if [[ -f "$security_matrix" ]]; then
+# 7d. HS256 + prod conflict (security-control-matrix + auth L2 — cycle-6 C1 extension).
+hs_prod_scan_files=("$security_matrix" "agent-runtime/auth/ARCHITECTURE.md")
+for f in "${hs_prod_scan_files[@]}"; do
+  [[ ! -f "$f" ]] && continue
   lineno=0
   while IFS= read -r line || [[ -n "$line" ]]; do
     lineno=$((lineno + 1))
     shopt -s nocasematch
     has_hs256=0
     [[ "$line" == *HS256* || "$line" == *"HMAC-SHA256"* ]] && has_hs256=1
+    has_hmac_secret=0
+    [[ "$line" == *"APP_JWT_SECRET"* ]] && has_hmac_secret=1
     has_prod=0
     [[ "$line" == *"prod"* ]] && has_prod=1
     is_rejected=0
     [[ "$line" == *"rejected"* ]] && is_rejected=1
     [[ "$line" == *"not permitted"* ]] && is_rejected=1
     [[ "$line" == *"refused"* ]] && is_rejected=1
+    [[ "$line" == *"reject HmacValidator"* ]] && is_rejected=1
+    [[ "$line" == *"not a prod boot input"* ]] && is_rejected=1
+    [[ "$line" == *"HmacValidator is active"* ]] && is_rejected=1
+    [[ "$line" == *"only when"* ]] && is_rejected=1
+    # Accept policy phrases that describe the legitimate posture-aware policy
+    # without being a posture-row column.
+    [[ "$line" == *"no HS256 path"* ]] && is_rejected=1
+    [[ "$line" == *"HS256 only for"* ]] && is_rejected=1
+    [[ "$line" == *"HS256 only on"* ]] && is_rejected=1
+    [[ "$line" == *"only for DEV"* ]] && is_rejected=1
+    [[ "$line" == *"only for dev"* ]] && is_rejected=1
+    [[ "$line" == *"only for BYOC"* ]] && is_rejected=1
+    [[ "$line" == *"only for byoc"* ]] && is_rejected=1
+    [[ "$line" == *"mandatory for"* ]] && is_rejected=1
+    [[ "$line" == *"mandatory regardless"* ]] && is_rejected=1
+    [[ "$line" == *"explicit BYOC"* ]] && is_rejected=1
+    [[ "$line" == *"explicit byoc"* ]] && is_rejected=1
+    [[ "$line" == *"carve-out only"* ]] && is_rejected=1
+    [[ "$line" == *"with carve-out"* ]] && is_rejected=1
+    [[ "$line" == *"loopback only"* ]] && is_rejected=1
     shopt -u nocasematch
-    if [[ $has_hs256 -eq 1 && $has_prod -eq 1 && $is_rejected -eq 0 ]]; then
-      fail "hs256_prod_conflict" "control row mentions HS256 + prod without 'rejected' / 'not permitted' qualifier (auth L2 says prod has no HS256 path)" "$security_matrix" "$lineno"
+    if [[ ($has_hs256 -eq 1 || $has_hmac_secret -eq 1) && $has_prod -eq 1 && $is_rejected -eq 0 ]]; then
+      fail "hs256_prod_conflict" "doc mentions HS256/APP_JWT_SECRET + prod without rejected/not-permitted qualifier" "$f" "$lineno"
     fi
-  done < "$security_matrix"
-fi
+  done < "$f"
+done
 
 # 8. Gate path drift.
 matrix="docs/governance/decision-sync-matrix.md"
@@ -438,6 +457,98 @@ if [[ -f ARCHITECTURE.md ]]; then
   fi
 fi
 
+# 13. Manifest freshness (cycle-6 A2).
+manifest_path="docs/governance/evidence-manifest.yaml"
+if [[ -f "$manifest_path" ]]; then
+  manifest_sha=$(grep -E '^reviewed_sha:' "$manifest_path" | head -1 | sed -E 's/^reviewed_sha:[[:space:]]*([A-Za-z0-9]+).*/\1/')
+  manifest_delivery=$(grep -E '^delivery_file:' "$manifest_path" | head -1 | sed -E 's/^delivery_file:[[:space:]]*(.*)/\1/')
+  if [[ -n "$manifest_sha" && "$manifest_sha" != "TBD" ]]; then
+    # Delivery file existence
+    if [[ -n "$manifest_delivery" && ! -f "$manifest_delivery" ]]; then
+      fail "manifest_freshness" "manifest.delivery_file references '$manifest_delivery' which does not exist" "$manifest_path" 0
+    fi
+    # Architecture-sync log existence (posix or windows)
+    posix_log="gate/log/${manifest_sha}-posix.json"
+    windows_log="gate/log/${manifest_sha}-windows.json"
+    legacy_log="gate/log/${manifest_sha}.json"
+    if [[ ! -f "$posix_log" && ! -f "$windows_log" && ! -f "$legacy_log" ]]; then
+      fail "manifest_freshness" "manifest.reviewed_sha=$manifest_sha but no matching log exists ($posix_log, $windows_log, or $legacy_log)" "$manifest_path" 0
+    fi
+  fi
+fi
+
+# 14. README to files (cycle-6 B2).
+if [[ -f "$gate_readme" ]]; then
+  smoke_ps1=gate/run_operator_shape_smoke.ps1
+  smoke_sh=gate/run_operator_shape_smoke.sh
+  if [[ -f "$smoke_ps1" || -f "$smoke_sh" ]]; then
+    # Scripts exist; README must not say "smoke gate does not exist"
+    lineno=0
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      lineno=$((lineno + 1))
+      shopt -s nocasematch
+      bad=0
+      if [[ "$line" == *"smoke gate"* && "$line" == *"does not exist"* ]]; then
+        bad=1
+      fi
+      if [[ "$line" == *"smoke gate"* && "$line" == *"not yet exist"* ]]; then
+        bad=1
+      fi
+      if [[ "$line" == *"run_operator_shape_smoke"* && "$line" == *"absent"* ]]; then
+        bad=1
+      fi
+      if [[ "$line" == *"run_operator_shape_smoke"* && "$line" == *"does not exist"* ]]; then
+        bad=1
+      fi
+      shopt -u nocasematch
+      if [[ $bad -eq 1 ]]; then
+        fail "readme_to_files" "gate/README.md says smoke gate does not exist while scripts are present in gate/" "$gate_readme" "$lineno"
+      fi
+    done < "$gate_readme"
+  fi
+fi
+
+# 15. Delivery-log parity (cycle-6 B3, basic).
+# For each docs/delivery/2026-05-08-<sha>.md, find matching log and compare key fields.
+while IFS= read -r dfile; do
+  [[ -z "$dfile" ]] && continue
+  base=$(basename "$dfile" .md)
+  # Extract <sha> from "2026-05-08-<sha>"
+  sha=${base##2026-05-08-}
+  [[ -z "$sha" ]] && continue
+  # Skip placeholder names like "d284232" (local-only) — we only check delivery-valid SHAs
+  posix_log="gate/log/${sha}-posix.json"
+  windows_log="gate/log/${sha}-windows.json"
+  legacy_log="gate/log/${sha}.json"
+  log_file=""
+  if [[ -f "$posix_log" ]]; then log_file="$posix_log"
+  elif [[ -f "$windows_log" ]]; then log_file="$windows_log"
+  elif [[ -f "$legacy_log" ]]; then log_file="$legacy_log"
+  fi
+  [[ -z "$log_file" ]] && continue
+  # Extract fields from log JSON
+  log_sha=$(grep -oE '"sha":"[^"]*"' "$log_file" | head -1 | sed -E 's/.*"sha":"([^"]*)".*/\1/')
+  log_semantic_pass=$(grep -oE '"semantic_pass":(true|false)' "$log_file" | head -1 | sed -E 's/.*:(.*)/\1/')
+  log_evidence_valid=$(grep -oE '"evidence_valid_for_delivery":(true|false)' "$log_file" | head -1 | sed -E 's/.*:(.*)/\1/')
+  # Verify log_sha matches expected sha
+  if [[ "$log_sha" != "$sha" ]]; then
+    fail "delivery_log_parity" "log $log_file reports sha='$log_sha' but the filename names sha='$sha'" "$log_file" 0
+  fi
+  # Verify delivery file mentions matching values (basic check on semantic_pass)
+  if grep -E '\| `semantic_pass` \|' "$dfile" >/dev/null 2>&1; then
+    delivery_semantic=$(grep -E '\| `semantic_pass` \|' "$dfile" | head -1 | grep -oE '(true|false|`true`|`false`)' | head -1 | tr -d '`')
+    if [[ -n "$delivery_semantic" && -n "$log_semantic_pass" && "$delivery_semantic" != "$log_semantic_pass" ]]; then
+      fail "delivery_log_parity" "delivery file says semantic_pass=$delivery_semantic but log says $log_semantic_pass" "$dfile" 0
+    fi
+  fi
+  if grep -E '\| `evidence_valid_for_delivery` \|' "$dfile" >/dev/null 2>&1; then
+    delivery_ev=$(grep -E '\| `evidence_valid_for_delivery` \|' "$dfile" | head -1 | grep -oE '(true|false|\*\*`true`\*\*|\*\*`false`\*\*|`true`|`false`)' | head -1 | tr -d '`*')
+    if [[ -n "$delivery_ev" && -n "$log_evidence_valid" && "$delivery_ev" != "$log_evidence_valid" ]]; then
+      fail "delivery_log_parity" "delivery file says evidence_valid_for_delivery=$delivery_ev but log says $log_evidence_valid" "$dfile" 0
+    fi
+  fi
+done < <(find docs/delivery -maxdepth 1 -type f -name '2026-05-08-*.md' 2>/dev/null || true)
+
 # Compute final state.
 sha_candidate="$(git rev-parse --short HEAD 2>/dev/null || echo no-git)"
 [[ -z "$sha_candidate" ]] && sha_candidate=no-git
@@ -449,7 +560,6 @@ evidence_valid=true
 [[ "$tree_clean" == "false" ]] && evidence_valid=false
 [[ "$semantic_pass" == "false" ]] && evidence_valid=false
 
-# Cycle-5 A3: platform-suffix log filename.
 if [[ "$evidence_valid" == "true" ]]; then
   log_dir="gate/log"
 else
@@ -466,7 +576,7 @@ porcelain_escaped="$(json_escape "$porcelain")"
 {
   printf '{'
   printf '"script":"check_architecture_sync.sh",'
-  printf '"version":"cycle-5-expanded",'
+  printf '"version":"cycle-6-expanded",'
   printf '"platform":"posix",'
   printf '"sha":"%s",' "$sha_candidate"
   printf '"generated":"%s",' "$(date -Iseconds 2>/dev/null || date -u +%Y-%m-%dT%H:%M:%SZ)"

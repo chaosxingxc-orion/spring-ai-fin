@@ -212,22 +212,41 @@ capabilities:
     open_findings: [REM-2026-05-08-7]
     allowed_claim: "Accepted emitter-failure-counter + readiness-degraded rule + cardinality budget"
 
-  operator_shape_gate:
+  # Cycle-6 A4: split into two distinct sub-capabilities with independent tracking.
+  architecture_sync_gate:
+    status: implemented_unverified
+    maturity: L0
+    l0_decision: CLAUDE.md (Rule 8)
+    l2_documents:
+      - docs/plans/W0-evidence-skeleton.md
+      - docs/governance/evidence-manifest.yaml
+    implementation:
+      - gate/check_architecture_sync.ps1   # cycle-6-expanded
+      - gate/check_architecture_sync.sh
+    tests: []
+    operator_gate: null
+    open_findings: []
+    latest_semantic_pass_sha: 302337f       # cycle-5 last delivery-valid SHA before cycle-6 audit-trail
+    latest_delivery_valid_sha: 302337f
+    latest_delivery_file: docs/delivery/2026-05-08-302337f.md
+    notes: "Updated by the cycle-6 audit-trail commit to point to the cycle-6 architectural SHA after evidence is produced. The manifest in docs/governance/evidence-manifest.yaml is the authoritative record; this ledger summarizes."
+    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml."
+
+  operator_shape_smoke_gate:
     status: design_accepted
     maturity: L0
     l0_decision: CLAUDE.md (Rule 8)
     l2_documents:
       - docs/plans/W0-evidence-skeleton.md
     implementation:
-      - gate/check_architecture_sync.ps1     # architecture-sync; cycle-4-expanded with cycle-5 platform-suffix logs
-      - gate/check_architecture_sync.sh
-      - gate/run_operator_shape_smoke.ps1    # operator-shape smoke; cycle-4-fail-closed (FAIL_ARTIFACT_MISSING until W0)
+      - gate/run_operator_shape_smoke.ps1  # cycle-4-fail-closed
       - gate/run_operator_shape_smoke.sh
     tests: []
-    operator_gate: null   # remains null until a real Rule 8 PASS log exists; fail-closed FAIL_ARTIFACT_MISSING is not a PASS
+    operator_gate: null
     open_findings: []
-    last_validated_sha: a070a77
-    allowed_claim: "Architecture-sync scripts: implemented and last delivery-valid at SHA a070a77 (per gate/log/a070a77.json). Operator-shape smoke scripts: exist in fail-closed form; not Rule 8 PASS evidence; W0 produces the runnable artifact and replaces fail-closed with real flow."
+    rule_8_pass_sha: null
+    notes: "Scripts exist in fail-closed form; produce FAIL_ARTIFACT_MISSING until W0 lands a runnable artifact (Maven multi-module + minimal Spring Boot). Fail-closed output is honest absence-evidence, not Rule 8 PASS evidence. rule_8_pass_sha advances only when real-flow PASS exists."
+    allowed_claim: "Operator-shape smoke scripts exist in fail-closed form; not Rule 8 PASS evidence."
 
 # ---- finding ledger ----
 findings:
@@ -558,7 +577,72 @@ findings:
 
   REM-2026-05-08-C5-9:
     source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md
-    description: "Architecture-sync gate is pattern-driven. Reviewer recommends machine-readable evidence-manifest.yaml binding reviewed_sha + delivery_file + per-platform logs + status findings + index version + Rule 8 state. Cycle-5 delivers manifest skeleton; full manifest-driven gate rules (delivery_log_parity, manifest_freshness, ledger_coverage, README_to_files) are W1 deliverables."
+    description: "Architecture-sync gate is pattern-driven. Reviewer recommends machine-readable evidence-manifest.yaml binding reviewed_sha + delivery_file + per-platform logs + status findings + index version + Rule 8 state. Cycle-5 delivers manifest skeleton; cycle-6 adds basic manifest_freshness + readme_to_files + delivery_log_parity rules; full graph validation (ledger_coverage, current_architecture_index_freshness, rule_8_state_consistency) remains W1."
     status: design_accepted
     target_wave: W1
-    capability: operator_shape_gate
+    capability: architecture_sync_gate
+
+  # Findings introduced by the 2026-05-08 cycle-6 remediation review.
+  REM-2026-05-08-C6-1:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-6.en.md
+    description: "HEAD lacked committed delivery evidence after cycle-5 audit-trail commits. Cycle-6 documents the audit-trail commit pattern: manifest's reviewed_sha tracks the last delivery-valid log (the architectural commit), HEAD is one commit ahead (the audit-trail commit). Strict HEAD==reviewed_sha requires content-addressable amend which contradicts post-hoc gate generation."
+    status: design_accepted
+    target_wave: W0
+    capability: architecture_sync_gate
+
+  REM-2026-05-08-C6-2:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-6.en.md
+    description: "Evidence manifest pointed to a070a77 instead of current. Cycle-6 updated manifest to 302337f, added basic manifest_freshness gate rule (verifies reviewed_sha names a delivery file + log that exist; warns if HEAD differs)."
+    status: design_accepted
+    target_wave: W0
+    capability: architecture_sync_gate
+    last_validated_sha: TBD-cycle-6
+
+  REM-2026-05-08-C6-3:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-6.en.md
+    description: "current-architecture-index.md still said cycle-5 delivery file would be added. Cycle-6 added 302337f delivery + manifest pointer note; cycle-6 final SHA delivery file added in audit-trail commit."
+    status: design_accepted
+    target_wave: W0
+    capability: l0_architecture
+
+  REM-2026-05-08-C6-4:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-6.en.md
+    description: "operator_shape_gate single capability conflated architecture-sync vs operator-shape smoke. Cycle-6 split into architecture_sync_gate (implemented_unverified; latest_delivery_valid_sha tracks current) and operator_shape_smoke_gate (design_accepted; rule_8_pass_sha=null until W0)."
+    status: design_accepted
+    target_wave: W0
+    capability: architecture_sync_gate
+
+  REM-2026-05-08-C6-5:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-6.en.md
+    description: "Cross-platform evidence at 302337f recorded POSIX only (Windows PowerShell not available in cycle-6 author's environment). Cycle-6 documents this explicitly in manifest and delivery file rather than implying both platforms ran. W1 will add a cross-platform parity rule."
+    status: design_accepted
+    target_wave: W0/W1
+    capability: architecture_sync_gate
+
+  REM-2026-05-08-C6-6:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-6.en.md
+    description: "gate/README.md status section said operator-shape smoke 'does not exist' while line 35-40 said scripts exist. Cycle-6 rewrote status section truthfully and added readme_to_files gate rule."
+    status: design_accepted
+    target_wave: W0
+    capability: architecture_sync_gate
+
+  REM-2026-05-08-C6-7:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-6.en.md
+    description: "Delivery-log parity remained deferred to W1 while drift kept recurring. Cycle-6 implemented basic parity rule: extract sha + semantic_pass + evidence_valid_for_delivery from each delivery file's table and compare to the matching gate/log/<sha>-{posix,windows}.json or legacy <sha>.json. Full structural validation = W1."
+    status: design_accepted
+    target_wave: W0/W1
+    capability: architecture_sync_gate
+
+  REM-2026-05-08-C6-8:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-6.en.md
+    description: "auth L2 line 234 weak-HMAC test row implied APP_JWT_SECRET is a prod boot input. Cycle-6 rewrote: weak HMAC secret rejected only when HmacValidator is active (DEV loopback or research BYOC carve-out); prod rejects HmacValidator activation entirely. Extended hs256_prod_conflict gate to scan auth L2 docs."
+    status: design_accepted
+    target_wave: W0/W2
+    capability: identity_jwt_validation
+
+  REM-2026-05-08-C6-9:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-6.en.md
+    description: "Architecture-sync remains regex-heavy. Cycle-6 added 3 manifest-aware rules (manifest_freshness, readme_to_files, delivery_log_parity) and split status YAML capabilities. Full manifest-driven graph validation (ledger_coverage, index_freshness, rule_8_state_consistency) remains W1."
+    status: design_accepted
+    target_wave: W1
+    capability: architecture_sync_gate

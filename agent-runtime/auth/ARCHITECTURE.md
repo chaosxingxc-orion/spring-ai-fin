@@ -231,7 +231,7 @@ public class HmacValidator {
 | Reject malformed | 401 returned with reason | `tests/unit/JwtMalformedTest` |
 | Reject `alg=none` | 401 always | `tests/unit/AlgNoneRejectedTest` |
 | Reject HS/RS confusion | 401; `reason="alg_confusion"` | `tests/integration/AlgConfusionRejectedIT` |
-| Reject weak HMAC secret at boot | research/prod boot fails if `APP_JWT_SECRET` < 32 bytes | `tests/integration/SecretAssertionIT` |
+| Reject weak HMAC secret when HmacValidator is active | boot fails if `APP_JWT_SECRET` < 32 bytes AND `HmacValidator` is on the active validator path (DEV loopback or research BYOC single-tenant carve-out per allowlist). Prod and research SaaS multi-tenant reject HmacValidator activation entirely regardless of secret length, so `APP_JWT_SECRET` is not a prod boot input. | `tests/integration/SecretAssertionIT`, `tests/integration/PostureBootGuardIT` |
 | Anonymous in dev loopback only | passthrough on loopback; rejected on non-loopback | `tests/integration/DevPostureAuthIT` |
 | JWKS rotation tolerated | rotated `kid` resolves after ≤1 refresh | `tests/integration/JwksRotationIT` |
 | Per-issuer trust isolation | issuer A's key cannot validate issuer B's token | `tests/integration/IssuerTrustIsolationIT` |

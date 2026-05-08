@@ -65,8 +65,7 @@ The eventual real Rule 8 smoke flow must:
 
 ## Status (per `docs/governance/architecture-status.yaml`)
 
-- `operator_shape_gate` capability — split:
-  - architecture-sync portion: `implemented_unverified` (the two scripts exist and pass on a clean tree at HEAD)
-  - operator-shape smoke portion: `design_accepted` (the smoke gate does not exist; W0 deliverable)
+- **`architecture_sync_gate` capability**: `implemented_unverified`. Both `check_architecture_sync.ps1` and `check_architecture_sync.sh` exist; latest delivery-valid PASS recorded by the manifest in `docs/governance/evidence-manifest.yaml`.
+- **`operator_shape_smoke_gate` capability**: `design_accepted`. Both `run_operator_shape_smoke.ps1` and `run_operator_shape_smoke.sh` **exist in `cycle-4-fail-closed` form** (exit 1 with structured `FAIL_ARTIFACT_MISSING` JSON to `gate/log/local/operator-shape-<sha>-{posix,windows}.json`). They are NOT Rule 8 PASS evidence — only honest absence-evidence. W0 will replace fail-closed with the real Rule 8 flow once a runnable artifact exists.
 
-No reader should mistake an architecture-sync PASS for Rule 8 evidence.
+No reader should mistake an architecture-sync PASS for Rule 8 evidence. No reader should mistake `FAIL_ARTIFACT_MISSING` for "the script does not exist."
