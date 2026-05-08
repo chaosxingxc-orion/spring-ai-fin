@@ -67,3 +67,7 @@ docs/delivery/*.json
 docs/verification/*.json
 !docs/delivery/.gitkeep
 !docs/verification/.gitkeep
+
+# Gate logs — SHA-named, regenerated on every gate run
+gate/log/
+!gate/log/.gitkeep

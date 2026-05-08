@@ -1,6 +1,8 @@
 # auth — JWT Validation Primitives (L2)
 
 > **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) · L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)
+>
+> **Origin**: posture-aware identity policy (RS256/ES256 + JWKS for research/SaaS-multi-tenant + prod; HS256 only for dev/loopback or explicit BYOC single-tenant carve-out) per L0 D-block §A3 and security review §P0-2.
 
 ---
 
@@ -10,8 +12,12 @@
 
 Owns:
 
-- `JwtValidator` — HMAC-SHA256 validation; reads `APP_JWT_SECRET`
-- `AuthClaims` — record carrying `userId`, `tenantId`, `projectId`, `roles`, `expiry`
+- `JwtValidator` — posture-aware façade dispatching to HS256 or RS256/ES256 validators
+- `HmacValidator` — HMAC-SHA256 validation (HS256), reads `APP_JWT_SECRET`; permitted only under DEV (loopback) or explicit BYOC single-tenant carve-out
+- `JwksValidator` — RS256 / ES256 validation against the issuer's published JWKS; mandatory for research SaaS multi-tenant + prod
+- `IssuerRegistry` — maps `iss` claim → JWKS URL → cached JWK set with TTL + jitter; per-issuer trust isolation
+- `JwksCache` — in-process JWK cache with TTL, ETag-aware refresh, and rotation-tolerant lookup by `kid`
+- `AuthClaims` — record carrying `userId`, `tenantId`, `projectId`, `roles`, `expiry`, `issuer`, `audience`, `keyId`
 - `ValidationOutcome` — sealed type: `Valid(claims)` / `Invalid(reason)`
 - `RoleSet` — typed role enum (operator / sre / compliance / inspector / agent)
 
@@ -34,34 +40,104 @@ Single trust origin: customer's IdP signs the JWT. The platform validates. This:
 
 What we require from the JWT:
 
-- Algorithm: HMAC-SHA256 (HS256) — symmetric secret shared via secure channel
-- Required claims: `sub` (userId), `tenantId`, `exp`
-- Optional claims: `projectId`, `roles`, `iss` (issuer)
-
-Future v1.1+ may add RS256 (asymmetric) for IdP integration; v1 keeps it minimal.
+- Algorithm (per posture, see §3): RS256 / ES256 (mandatory for research SaaS multi-tenant + prod) or HS256 (only for DEV loopback or explicit BYOC single-tenant carve-out)
+- Required claims: `iss` (issuer), `sub` (userId), `tenantId`, `aud` (audience), `exp`, `nbf`, `iat`, `jti`, `kid` (header — required for asymmetric)
+- Optional claims: `projectId`, `roles`
 
 ---
 
-## 3. JwtValidator
+## 3. Posture-aware algorithm policy (D-block §A3 alignment)
+
+This package implements the L0 D-block §A3 identity policy verbatim. The algorithm permitted at validation time is a function of `(posture, deployment_shape, bind_address)`:
+
+| Posture | Deployment shape | Bind | Permitted algorithms | Notes |
+|---|---|---|---|---|
+| `dev` | local single-developer | loopback | HS256, anonymous | Fast iteration |
+| `dev` | any | non-loopback | none unless `ALLOW_DEV_NON_LOOPBACK_HS256=true` AND `ALLOW_DEV_NON_LOOPBACK=true` | Fail boot otherwise (closes P0-4 + P0-2 jointly) |
+| `research` | BYOC, single tenant, customer's existing HS256 IdP | any | HS256 with explicit BYOC carve-out + audit alarm | Q-S1 carve-out; documented per-tenant in `docs/governance/allowlists.yaml` |
+| `research` | SaaS, multi-tenant | any | RS256 / ES256 with JWKS (mandatory) | Per-issuer trust isolation enforced by `IssuerRegistry` |
+| `prod` | any deployment shape | any | RS256 / ES256 with JWKS (mandatory) | No HS256 path under prod, period |
+
+Hard rules (enforced by `JwtValidator` and `PostureBootGuard` in `../posture/`):
+
+- `alg=none` is rejected at every posture and every deployment shape, always.
+- HS / RS confusion is rejected: a JWT header advertising `alg=HS256` against an `IssuerRegistry` entry that publishes RSA keys is an automatic INVALID with `reason="alg_confusion"`.
+- `kid` header is required for asymmetric algorithms; absent `kid` → INVALID.
+- `iss`, `aud`, `exp`, `nbf`, `iat`, `jti` are validated for asymmetric algorithms; HS256 short paths allowed in dev/BYOC carve-out only.
+
+---
+
+## 4. JwtValidator (façade)
 
 ```java
 public class JwtValidator {
-    private final byte[] hmacSecret;       // 32-byte minimum; from APP_JWT_SECRET
+    private final HmacValidator hmacValidator;          // active under DEV / BYOC carve-out
+    private final JwksValidator jwksValidator;          // active under research SaaS + prod
+    private final AppPosture posture;                   // injected; read once at boot
+    private final DeploymentShape deploymentShape;      // injected; read once at boot
     private final Clock clock;
-    private final AppPosture posture;
-    
+
     public ValidationOutcome validate(String authorizationHeader) {
         if (!authorizationHeader.startsWith("Bearer ")) {
-            if (posture == DEV) {
+            if (posture.permitsAnonymous() && deploymentShape.isLoopback()) {
                 return ValidationOutcome.valid(AuthClaims.anonymous());
             }
             return ValidationOutcome.invalid("missing Bearer prefix");
         }
         var token = authorizationHeader.substring("Bearer ".length());
+        var header = JwsHeader.peek(token);
+
+        if ("none".equalsIgnoreCase(header.alg())) {
+            return ValidationOutcome.invalid("alg=none rejected");
+        }
+
+        // Posture-aware algorithm dispatch.
+        if (header.isAsymmetric()) {
+            return jwksValidator.validate(token, header);   // RS256 / ES256
+        }
+        if (header.isSymmetric()) {                          // HS256
+            if (!posture.permitsHmac(deploymentShape)) {
+                return ValidationOutcome.invalid("HS256 not permitted under current posture/shape");
+            }
+            return hmacValidator.validate(token, header);
+        }
+        return ValidationOutcome.invalid("unsupported alg: " + header.alg());
+    }
+}
+```
+
+---
+
+## 5. JwksValidator + IssuerRegistry (research SaaS + prod default)
+
+```java
+public class JwksValidator {
+    private final IssuerRegistry issuerRegistry;
+    private final JwksCache jwksCache;
+    private final Clock clock;
+
+    public ValidationOutcome validate(String token, JwsHeader header) {
+        var unverified = parseUnverifiedClaims(token);
+        var issuer = unverified.iss();
+        if (issuer == null) return ValidationOutcome.invalid("missing iss claim");
+
+        var trustEntry = issuerRegistry.lookup(issuer);
+        if (trustEntry == null) return ValidationOutcome.invalid("issuer not trusted: " + issuer);
+
+        // HS / RS confusion check: an asymmetric-key issuer must not accept an HS256 token.
+        if (!trustEntry.permitsAlg(header.alg())) {
+            return ValidationOutcome.invalid("alg_confusion: " + header.alg() + " for issuer " + issuer);
+        }
+
+        var jwk = jwksCache.lookup(issuer, header.kid());
+        if (jwk == null) return ValidationOutcome.invalid("kid not found in JWKS: " + header.kid());
+
         try {
-            var claims = parseAndVerify(token, hmacSecret);
-            if (claims.expiry().isBefore(clock.instant())) {
-                return ValidationOutcome.invalid("expired");
+            var claims = verifyAndParse(token, jwk);
+            if (claims.expiry().isBefore(clock.instant())) return ValidationOutcome.invalid("expired");
+            if (claims.notBefore().isAfter(clock.instant())) return ValidationOutcome.invalid("nbf in future");
+            if (!trustEntry.audiences().contains(claims.audience())) {
+                return ValidationOutcome.invalid("audience mismatch");
             }
             return ValidationOutcome.valid(claims);
         } catch (Exception e) {
@@ -71,51 +147,110 @@ public class JwtValidator {
 }
 ```
 
-`parseAndVerify` uses `java.util.Base64` + `javax.crypto.Mac` — stdlib only. No third-party JWT library at v1 (review later if needed).
+`IssuerRegistry` is configured per deployment via `application-{posture}.yaml`:
+
+```yaml
+auth:
+  issuers:
+    - iss: https://idp.bank-a.example.com/
+      jwks_url: https://idp.bank-a.example.com/.well-known/jwks.json
+      audiences: [springaifin-prod]
+      permitted_algs: [RS256, ES256]
+    - iss: https://idp.bank-b.example.com/
+      jwks_url: https://idp.bank-b.example.com/.well-known/jwks.json
+      audiences: [springaifin-prod]
+      permitted_algs: [RS256]
+```
+
+`JwksCache` refresh policy:
+
+- TTL: 10 minutes baseline
+- ETag-aware: if upstream returns `304 Not Modified`, extend TTL by 10 min
+- Rotation-tolerant: a `kid` not in cache triggers a refresh once per minute (rate-limited) before INVALID is returned
 
 ---
 
-## 4. Architecture decisions
+## 6. HmacValidator (DEV loopback + BYOC carve-out only)
+
+```java
+public class HmacValidator {
+    private final byte[] hmacSecret;       // 32-byte minimum; from APP_JWT_SECRET
+    private final Clock clock;
+
+    public ValidationOutcome validate(String token, JwsHeader header) {
+        // Stdlib HS256 validation: java.util.Base64 + javax.crypto.Mac
+        try {
+            var claims = parseAndVerify(token, hmacSecret);
+            if (claims.expiry().isBefore(clock.instant())) return ValidationOutcome.invalid("expired");
+            return ValidationOutcome.valid(claims);
+        } catch (Exception e) {
+            return ValidationOutcome.invalid(e.getMessage());
+        }
+    }
+}
+```
+
+`HmacValidator` is constructed only when `posture.permitsHmac(deploymentShape) == true`. `APP_JWT_SECRET` is asserted ≥ 32 bytes at boot (Rule 8 boot invariant).
+
+---
+
+## 7. Architecture decisions
 
 | ADR | Decision | Why |
 |---|---|---|
-| **AD-1: HMAC-SHA256 only at v1** | Symmetric secret | Simpler than asymmetric; sufficient for v1 |
+| **AD-1: Posture-aware algorithm policy** | RS256/ES256 + JWKS mandatory for research SaaS + prod; HS256 only for DEV loopback or BYOC single-tenant carve-out | L0 D-block §A3; closes P0-2 |
 | **AD-2: Validate, don't issue** | Customer's IdP issues | Decouples auth lifecycle; uses existing infrastructure |
-| **AD-3: Stdlib JWT parsing** | `java.util.Base64` + `javax.crypto.Mac` | Avoids JJWT or Auth0 lib dependencies; minimal attack surface |
-| **AD-4: Anonymous claims permitted in dev** | Posture-aware passthrough | Accelerates dev work; refused under research/prod |
-| **AD-5: Hard 32-byte minimum secret length** | `validateSecret(secret)` at boot | Mirrors hi-agent's secret-length assertion; prevents weak keys |
+| **AD-3: Stdlib JWT parsing for HS256, signature library for RS/ES** | `java.util.Base64` + `javax.crypto.Mac` for HS256; `nimbus-jose-jwt` (or equivalent) for RS256/ES256 | RS256/ES256 require ASN.1 + algorithm-aware verification that stdlib does not provide; HS256 stays minimal |
+| **AD-4: Anonymous claims permitted only in DEV + loopback** | Posture-aware passthrough scoped to loopback bind | Refused under research/prod and under non-loopback DEV unless explicitly opted in via `PostureBootGuard` flags |
+| **AD-5: 32-byte minimum HMAC secret** | `validateSecret(secret)` at boot | Mirrors hi-agent's secret-length assertion; prevents weak keys |
 | **AD-6: Clock injectable** | Test-friendly time control | Common Java pattern |
-| **AD-7: ValidationOutcome sealed** | type-safe success/failure | Java 17 sealed types; compile-time exhaustive switch |
+| **AD-7: ValidationOutcome sealed** | Type-safe success/failure | Java 17 sealed types; compile-time exhaustive switch |
+| **AD-8: Per-issuer trust isolation via IssuerRegistry** | Each `iss` value maps to its own JWKS URL + permitted algs + audiences | Prevents cross-issuer key reuse; SaaS multi-tenant requirement |
+| **AD-9: JWKS cache TTL + ETag + rate-limited refresh on miss** | 10-min TTL, ETag-aware extension, ≤1/min rotation-driven refresh | Tolerates IdP key rotation without blasting the IdP on every request |
+| **AD-10: alg=none and alg-confusion always rejected** | Hard boot rule | Closes well-known JWT pitfalls; never overridable |
 
 ---
 
-## 5. Cross-cutting hooks
+## 8. Cross-cutting hooks
 
-- **Posture (Rule 11)**: `dev` accepts missing/anonymous; `research`/`prod` fail-closed
-- **Rule 7**: validation failures emit `springaifin_jwt_validation_errors_total{reason}` + WARNING (no body of token logged for security)
-- **Rule 8**: `APP_JWT_SECRET` 32-byte minimum asserted at boot under research/prod
-- **Audit**: every successful auth emits `springaifin_jwt_validations_total{tenant_id, role}` for visibility
+- **Posture (Rule 11)**: dev permits HS256 + anonymous on loopback only; research SaaS / prod require JWKS validation; research BYOC single-tenant HS256 only with carve-out entry in `docs/governance/allowlists.yaml`
+- **Boot guard (`PostureBootGuard` in `../posture/`)**: asserts `APP_JWT_SECRET` ≥ 32 bytes when HmacValidator is active; asserts at least one `IssuerRegistry` entry when JwksValidator is active
+- **Rule 7**: validation failures emit `springaifin_jwt_validation_errors_total{reason}` + WARNING (no body of token logged for security); JWKS refresh failures emit `springaifin_jwks_refresh_errors_total{issuer, reason}`
+- **Rule 8**: ActionGuard does not allow side-effects when `AuthClaims.anonymous()`; the operator-shape gate exercises both HS256 and JWKS paths
+- **Audit**: every successful auth emits `springaifin_jwt_validations_total{tenant_id, role, alg, issuer}` for visibility
 
 ---
 
-## 6. Quality
+## 9. Quality
 
 | Attribute | Target | Verification |
 |---|---|---|
-| Validation latency | ≤ 5ms p95 | `tests/integration/JwtValidationLatencyIT` |
+| HS256 validation latency | ≤ 5ms p95 | `tests/integration/JwtValidationLatencyIT` |
+| RS256/ES256 validation latency (JWKS cache hit) | ≤ 8ms p95 | `tests/integration/JwksValidationLatencyIT` |
 | Reject expired token | 401 returned | `tests/unit/JwtExpiryTest` |
 | Reject malformed | 401 returned with reason | `tests/unit/JwtMalformedTest` |
-| Reject weak secret at boot | research/prod boot fails if `APP_JWT_SECRET` < 32 bytes | `tests/integration/SecretAssertionIT` |
-| Anonymous in dev | passthrough | `tests/integration/DevPostureAuthIT` |
+| Reject `alg=none` | 401 always | `tests/unit/AlgNoneRejectedTest` |
+| Reject HS/RS confusion | 401; `reason="alg_confusion"` | `tests/integration/AlgConfusionRejectedIT` |
+| Reject weak HMAC secret at boot | research/prod boot fails if `APP_JWT_SECRET` < 32 bytes | `tests/integration/SecretAssertionIT` |
+| Anonymous in dev loopback only | passthrough on loopback; rejected on non-loopback | `tests/integration/DevPostureAuthIT` |
+| JWKS rotation tolerated | rotated `kid` resolves after ≤1 refresh | `tests/integration/JwksRotationIT` |
+| Per-issuer trust isolation | issuer A's key cannot validate issuer B's token | `tests/integration/IssuerTrustIsolationIT` |
 
-## 7. Risks
+## 10. Risks
 
-- **HS256 vs RS256**: customers using keypair-based IdP may need RS256; tracked as v1.1 enhancement
-- **Token replay**: JWT is short-lived (recommended ≤ 1h); replay window bounded by expiry
-- **Secret rotation**: 90-day cadence; rotation requires customer + platform coordinated swap
+- **JWKS endpoint outage**: cached JWK still validates; on extended outage (>2 × TTL), boot-warning + counter; fail-closed behaviour configurable per issuer
+- **Token replay**: JWT is short-lived (recommended ≤ 1h); replay window bounded by expiry; `jti` registered in short-TTL replay cache (research/prod)
+- **HMAC secret rotation**: 90-day cadence; rotation requires customer + platform coordinated swap; only relevant for BYOC carve-out or DEV
+- **HS / RS confusion in misconfigured customer IdP**: hard reject prevents downgrade; PR-time review on `IssuerRegistry` entries
 
-## 8. References
+## 11. References
 
+- L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md) §D-block A3 (identity policy)
 - L1: [`../ARCHITECTURE.md`](../ARCHITECTURE.md)
 - AuthSeam (consumer): [`../../agent-platform/runtime/ARCHITECTURE.md`](../../agent-platform/runtime/ARCHITECTURE.md)
+- Posture boot guard: [`../posture/ARCHITECTURE.md`](../posture/ARCHITECTURE.md)
+- Security review §P0-2: [`../../docs/deep-architecture-security-assessment-2026-05-07.en.md`](../../docs/deep-architecture-security-assessment-2026-05-07.en.md)
+- Response §P0-2: [`../../docs/security-response-2026-05-08.md`](../../docs/security-response-2026-05-08.md)
+- Systematic-architecture-improvement-plan: [`../../docs/systematic-architecture-improvement-plan-2026-05-07.en.md`](../../docs/systematic-architecture-improvement-plan-2026-05-07.en.md) §4.2, §4.4
 - JWT RFC 7519: https://datatracker.ietf.org/doc/html/rfc7519
+- JWKS RFC 7517: https://datatracker.ietf.org/doc/html/rfc7517

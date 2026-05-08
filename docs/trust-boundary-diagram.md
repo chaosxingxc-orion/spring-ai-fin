@@ -42,7 +42,7 @@ flowchart TB
             BIND[runtime/ — SAS-1 seam #2]:::tier_a
         end
         subgraph TIERB["Tier-B Cognitive runtime"]
-            ACTIONGUARD[ActionGuard<br/>10-stage pipeline]:::tier_b
+            ACTIONGUARD[ActionGuard<br/>11-stage pipeline]:::tier_b
             RUNNER[RunExecutor TRACE]:::tier_b
             LLM_GW[LLMGateway]:::tier_b
             ADAPTERS[FrameworkAdapter dispatch]:::tier_b
@@ -202,7 +202,7 @@ The 13 numbered boundaries above; each row specifies the 7 control concerns:
 | Concern | Specification |
 |---|---|
 | **Authentication** | In-process; ActionGuardCoverageTest enforces every side-effect site routes through ActionGuard |
-| **Authorization** | ActionGuard 10-stage pipeline — THE central control |
+| **Authorization** | ActionGuard 11-stage pipeline (with PreAction + PostAction evidence writers) — THE central control |
 | **Tenant propagation** | `ActionEnvelope.tenantId` mandatory + matched against `RunContext.tenantContext` |
 | **Data classification** | `ActionEnvelope.dataAccessClass` required (PUBLIC/TENANT_INTERNAL/PII/FINANCIAL_LEDGER) |
 | **Audit** | Pre-action audit per AuditClass; post-action evidence record |
@@ -350,7 +350,7 @@ If sidecar drops tenantId or returns wrong tenantId: event rejected at runtime; 
 | #4 internal trust | Direct connection bypassing gateway | platform validates HMAC | 401 |
 | #5 operator | Wrong role for command | CapabilityPolicy | reject |
 | #6 SAS-1 seam | Layer violation in code | CI gate | reject build |
-| #7 ActionGuard | Reject from any of 10 stages | ActionGuard | structured error + audit |
+| #7 ActionGuard | Reject from any of 11 stages | ActionGuard | structured error + audit |
 | #8 LLM provider | Provider down, rate limit | FailoverChain | next provider |
 | #9 sidecar | Identity mismatch, oversized | gRPC interceptor | UNAUTHENTICATED / RESOURCE_EXHAUSTED |
 | #10 PG | Tenant context missing | RLS policy | fail-closed |

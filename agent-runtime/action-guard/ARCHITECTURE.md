@@ -18,7 +18,7 @@ Owns:
 - `ActionEnvelope` — the typed proposal record passed through the pipeline
 - `PolicyDecision` — outcome record (approve / deny / require-hitl + rationale)
 - `ActionGuardCoverageTest` — reflective CI gate ensuring no side-effect site bypasses
-- 10 pipeline stages (each pluggable via `@Bean`):
+- 11 pipeline stages (each pluggable via `@Bean`):
   1. `SchemaValidator`
   2. `TenantBindingChecker`
   3. `ActorAuthorizer` (consults CapabilityPolicy + TenantEntitlement)
@@ -27,8 +27,9 @@ Owns:
   6. `DataAccessClassifier`
   7. `OpaPolicyDecider` (OPA red-line)
   8. `HitlGate` (escalate to human if required)
-  9. `Executor` (delegates to CapabilityInvoker)
-  10. `EvidenceWriter` (audit per AuditClass)
+  9. `PreActionEvidenceWriter` (audit-before-action; class-aware durability)
+  10. `Executor` (delegates to CapabilityInvoker)
+  11. `PostActionEvidenceWriter` (terminal evidence; chains back to pre-action row)
 
 Does NOT own:
 
@@ -88,7 +89,8 @@ public record ActionEnvelope(
     @NonNull ProposalSource proposalSource,     // LLM_OUTPUT / FRAMEWORK_ADAPTER / DEVELOPER_DIRECT / OPERATOR_CLI
     @NonNull TaintLevel proposalTaint,          // TRUSTED / ATTRIBUTED_USER / UNTRUSTED / ADVERSARIAL_SUSPECTED
     @Nullable String policyDecisionId,          // populated by OpaPolicyDecider
-    @Nullable String approvalId                 // populated by HitlGate if approved
+    @Nullable String approvalId,                // populated by HitlGate if approved
+    @Nullable String preActionEvidenceId        // populated by PreActionEvidenceWriter; chained by PostActionEvidenceWriter
 ) {
     public ActionEnvelope {
         // Constructor canonical validation:
@@ -111,26 +113,28 @@ public enum TaintLevel { TRUSTED, ATTRIBUTED_USER, UNTRUSTED, ADVERSARIAL_SUSPEC
 
 ```mermaid
 flowchart LR
-    PROP[Proposal:<br/>ActionEnvelope] --> SV[SchemaValidator]
-    SV --> TBC[TenantBindingChecker]
-    TBC --> AA[ActorAuthorizer<br/>CapabilityPolicy + TenantEntitlement]
-    AA --> MC[MaturityChecker<br/>descriptor × posture]
-    MC --> EC[EffectClassifier]
-    EC --> DAC[DataAccessClassifier]
-    DAC --> OPA[OpaPolicyDecider<br/>red-line policies]
-    OPA --> HITL{HitlGate<br/>required?}
+    PROP[Proposal:<br/>ActionEnvelope] --> SV[1 SchemaValidator]
+    SV --> TBC[2 TenantBindingChecker]
+    TBC --> AA[3 ActorAuthorizer<br/>CapabilityPolicy + TenantEntitlement]
+    AA --> MC[4 MaturityChecker<br/>descriptor × posture]
+    MC --> EC[5 EffectClassifier]
+    EC --> DAC[6 DataAccessClassifier]
+    DAC --> OPA[7 OpaPolicyDecider<br/>red-line policies]
+    OPA --> HITL{8 HitlGate<br/>required?}
     HITL -->|yes| WAIT[Wait for human approval<br/>writes PauseToken]
-    HITL -->|no| EW[EvidenceWriter<br/>audit-before-action]
-    WAIT --> EW
-    EW --> EX[Executor<br/>CapabilityInvoker.invoke]
-    EX --> RESULT[Result + EvidenceRecord]
-    
+    HITL -->|no| PRE[9 PreActionEvidenceWriter<br/>audit-before-action]
+    WAIT --> PRE
+    PRE --> EX[10 Executor<br/>CapabilityInvoker.invoke]
+    EX --> POST[11 PostActionEvidenceWriter<br/>terminal evidence; chains to pre-action row]
+    POST --> RESULT[Result + EvidenceRecord]
+
     SV -.deny.-> DENY[DENY + structured error]
     TBC -.deny.-> DENY
     AA -.deny.-> DENY
     MC -.deny.-> DENY
     OPA -.deny.-> DENY
     HITL -.reject.-> DENY
+    PRE -.deny.-> DENY
 ```
 
 ### Stage 1: SchemaValidator
@@ -210,17 +214,36 @@ If `descriptor.requiresHumanGate || (effectClass == NON_IDEMPOTENT && posture ==
 - If decided=REJECT: deny with structured error; emit `SECURITY_EVENT` audit
 - If timeout: emit alarm; per posture, fail-closed or revert to safe default
 
-### Stage 9: EvidenceWriter (audit-before-action)
+### Stage 9: PreActionEvidenceWriter (audit-before-action)
 
-For `dataAccessClass == PII || effectClass == NON_IDEMPOTENT && financialClass != ADVISORY_ONLY`:
-- Write `AuditClass.PII_ACCESS` or `AuditClass.FINANCIAL_ACTION` to `agent-runtime/audit/AuditStore` BEFORE the action executes
-- If audit write fails → action fails closed (P0-8 closure)
+Decides what evidence MUST be persisted **before** the side-effect runs. Calls `AuditFacade.write(entry)` where `entry.auditClass` is computed from envelope:
 
-For other classes: write `AuditClass.SECURITY_EVENT` (action authorized) — failure does not block action but emits alarm.
+| Envelope condition | Audit class | Persistence requirement | On audit-write failure |
+|---|---|---|---|
+| `dataAccessClass == PII` | `PII_ACCESS` | MUST persist before reveal | Action denied; plaintext never returned (P0-8) |
+| `dataAccessClass == FINANCIAL_LEDGER` AND `effectClass != READ_ONLY` AND `financialClass != ADVISORY_ONLY` | `FINANCIAL_ACTION` | MUST persist in same DB transaction OR same saga journal as the action (see `../audit/` AD-3) | Rollback; commit blocked |
+| `dataAccessClass == FINANCIAL_LEDGER` AND `financialClass == ADVISORY_ONLY` | `SECURITY_EVENT` | MUST persist or block in research/prod | Alarm; in prod the action that triggered the event also blocks |
+| HitlGate produced an approval | `SECURITY_EVENT` | MUST persist or block in research/prod | Alarm; in prod block |
+| TELEMETRY-only path (no PII / no financial / no HITL) | `TELEMETRY` | Best effort | Log-only; action proceeds |
+
+The `preActionEvidenceId` is written into the envelope for chaining at Stage 11.
 
 ### Stage 10: Executor
 
-Delegates to `CapabilityInvoker.invoke(envelope, args)`. The invoker carries policy + circuit breaker + timeout + retry as before. Successful execution writes terminal `EvidenceRecord` linking back to the pre-action audit row.
+Delegates to `CapabilityInvoker.invoke(envelope, args)`. The invoker carries policy + circuit breaker + timeout + retry as before. Exceptions surface to the orchestrator with the original envelope; PostActionEvidenceWriter still runs to record the failure.
+
+### Stage 11: PostActionEvidenceWriter (terminal evidence)
+
+Records the **terminal** outcome: success, business-failure, or exception. Always chains the entry to `envelope.preActionEvidenceId` so the audit trail is contiguous.
+
+| Outcome | Audit class (terminal) | Notes |
+|---|---|---|
+| Success and pre-action class was PII_ACCESS | `PII_ACCESS` (terminal) | Records what was actually revealed (token / hash, not plaintext) and decode TTL |
+| Success and pre-action class was FINANCIAL_ACTION | `FINANCIAL_ACTION` (terminal) | Records ledger entry id + journal id; in same saga transaction as the action |
+| Success and pre-action class was SECURITY_EVENT | `SECURITY_EVENT` (terminal) | Records the executed effect summary |
+| Failure (any class) | original class (terminal failure) | Records exception class + redacted message; pre-action chain preserved so the failed authorization is permanently auditable |
+
+PostActionEvidenceWriter MUST NOT be skipped on Executor failure; the audit trail's value is precisely that failures are recorded with the same fidelity as successes.
 
 ---
 
@@ -243,8 +266,8 @@ Any side-effect site outside ActionGuard fails CI.
 | ADR | Decision | Why |
 |---|---|---|
 | **AD-1: Single mandatory pipeline** | Every action passes ActionGuard | P0-1 closure; minimum-of-gates not maximum |
-| **AD-2: 10 pluggable stages, ordered** | Each stage has a typed responsibility | Composability + audit clarity; reordering = explicit ADR |
-| **AD-3: Audit-before-action for PII/financial** | EvidenceWriter writes BEFORE Executor | P0-8 closure; "PII decode cannot return plaintext if audit fails" |
+| **AD-2: 11 pluggable stages, ordered, evidence split into pre/post** | Each stage has a typed responsibility; PreActionEvidenceWriter (9), Executor (10), PostActionEvidenceWriter (11) are explicit and separate stages | Composability + audit clarity; reordering = explicit ADR; audit-before-action is a structural property of the pipeline, not a stage-internal switch |
+| **AD-3: Audit-before-action for PII/financial** | PreActionEvidenceWriter writes BEFORE Executor; failure denies the action | P0-8 closure; "PII decode cannot return plaintext if audit fails" |
 | **AD-4: Default-deny at every stage** | Any stage reject = action denied | Fail-closed by construction |
 | **AD-5: OPA for red-line policies** | Externalized; versioned | Compliance team can author policies without platform code change |
 | **AD-6: ProposalSource carries taint** | LLM_OUTPUT default UNTRUSTED | Closes Attack Path A |
@@ -252,6 +275,7 @@ Any side-effect site outside ActionGuard fails CI.
 | **AD-8: HitlGate is composed not embedded** | Existing `gate/` primitive | Avoid duplicate HITL implementations |
 | **AD-9: ActionGuardCoverageTest is CI-blocking** | Reflective coverage check | Closes "one bypass = whole defence falls" |
 | **AD-10: Posture-dependent gate strictness** | dev permissive (warn); research/prod fail-closed | Mirrors Rule 11 |
+| **AD-11: PostActionEvidenceWriter runs on failure too** | Terminal evidence is unconditional | The audit trail's value is in capturing failures as faithfully as successes |
 
 ---
 
@@ -270,12 +294,14 @@ Any side-effect site outside ActionGuard fails CI.
 
 | Attribute | Target | Verification |
 |---|---|---|
-| Pipeline latency overhead | ≤ 10ms p95 | `tests/integration/ActionGuardLatencyIT` |
+| Pipeline latency overhead | ≤ 12ms p95 (11 stages incl. audit dual write) | `tests/integration/ActionGuardLatencyIT` |
 | Coverage of side-effect sites | 100% | `ActionGuardCoverageTest` (CI gate) |
 | Cross-tenant rejection | 100% under research/prod | `tests/integration/CrossTenantActionGuardIT` |
 | OPA decision latency | ≤ 5ms p95 | `tests/integration/OpaPolicyLatencyIT` |
 | Audit-before-action correctness | PII decode without successful audit = no plaintext | `tests/integration/AuditBeforeActionIT` |
 | Anti-tampering hash check | argument substitution = rejected | `tests/integration/ArgumentsHashTamperingIT` |
+| Pre/post evidence chaining | every terminal entry references its pre-action entry id | `tests/integration/EvidenceChainContiguityIT` |
+| Terminal evidence on failure | Executor exception still produces a PostActionEvidenceWriter entry | `tests/integration/PostEvidenceOnFailureIT` |
 
 ### Reviewer's acceptance tests (all adopted)
 
@@ -286,15 +312,18 @@ Any side-effect site outside ActionGuard fails CI.
 | Adapter-generated tool call without tenantId | rejected at stage 1 (SchemaValidator) or 2 (TenantBindingChecker) |
 | Tool call with valid schema but wrong tenant resource | rejected at stage 2 (TenantBindingChecker) |
 | Non-idempotent action without idempotency key | rejected at stage 7 (OpaPolicyDecider) |
+| PII decode whose audit write fails | denied at stage 9 (PreActionEvidenceWriter); plaintext never returned |
+| Financial action that succeeds | post-action entry chains to pre-action entry; both in same saga |
 
 ---
 
 ## 9. Risks & Technical Debt
 
-- **Pipeline latency**: 10 stages add overhead; profiled at <10ms p95; if measured higher in operator-shape gate, parallelize stages 1–6 (independent) or remove non-critical stages
+- **Pipeline latency**: 11 stages add overhead; profiled at <12ms p95; if measured higher in operator-shape gate, parallelize stages 1–6 (independent) or remove non-critical stages
 - **OPA dependency**: introduces external policy engine; pin OPA version; alternative is an in-process Rego runtime
 - **HitlGate timeout policy**: per-posture; default 24h research, 4h prod; configurable per capability
 - **Posture-aware gate strictness**: reviewer audit on every gate addition
+- **Audit dual-write cost**: pre + post evidence doubles audit volume; PII/financial paths require it; TELEMETRY-only paths skip pre-action and may merge post-action with terminal counter
 
 ---
 
@@ -305,7 +334,8 @@ Any side-effect site outside ActionGuard fails CI.
 - Skill: [`../skill/ARCHITECTURE.md`](../skill/ARCHITECTURE.md)
 - LLM gateway (proposal source): [`../llm/ARCHITECTURE.md`](../llm/ARCHITECTURE.md)
 - Audit (evidence writer): [`../audit/ARCHITECTURE.md`](../audit/ARCHITECTURE.md)
-- Outbox (financial write classes): [`../outbox/ARCHITECTURE.md`](../outbox/ARCHITECTURE.md)
+- Outbox financial write classes: [`../outbox/ARCHITECTURE.md`](../outbox/ARCHITECTURE.md)
 - Security review: [`../../docs/deep-architecture-security-assessment-2026-05-07.en.md`](../../docs/deep-architecture-security-assessment-2026-05-07.en.md) §P0-1
 - Response: [`../../docs/security-response-2026-05-08.md`](../../docs/security-response-2026-05-08.md) §P0-1
+- Systematic-architecture-improvement-plan: [`../../docs/systematic-architecture-improvement-plan-2026-05-07.en.md`](../../docs/systematic-architecture-improvement-plan-2026-05-07.en.md) §4.5
 - OPA: https://www.openpolicyagent.org/

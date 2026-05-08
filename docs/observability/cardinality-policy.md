@@ -1,0 +1,70 @@
+# Observability Cardinality Policy
+
+> Per `docs/systematic-architecture-remediation-plan-2026-05-08.en.md` §9.4 and `agent-runtime/observability/ARCHITECTURE.md` AD-5.
+> Defines what may appear as a metric label in spring-ai-fin and what cardinality budget the platform commits to.
+
+## Why this exists
+
+The prior observability AD-5 said "tenant_id raw label, not bucketed" and pushed cardinality control to "ops-side concern." That answer is acceptable for a small deployment but produces production failure modes at scale: Prometheus storage explodes; recording rules become a hidden dependency; alert evaluation latency rises; and a customer with a high-cardinality tenant identifier (e.g., subdomain-per-customer) can degrade the entire platform's monitoring.
+
+This policy makes the cardinality budget **explicit and reviewable** and forbids unbudgeted raw-tenant labels.
+
+## Default rule
+
+Metric labels are **low-cardinality by default**. A label may carry a raw `tenant_id` only when its definition is recorded below with:
+
+- the metric name;
+- the cardinality budget (target N distinct series at the deployment's tenant fan-out);
+- a retention policy (Prometheus / VictoriaMetrics retention);
+- a recording-rule plan (so high-volume queries collapse the cardinality);
+- an owner who reviews the budget at every wave's operator-shape gate.
+
+Where no such entry exists, the platform replaces the raw `tenant_id` label with one of:
+
+- `tenant_bucket` — an eight-bucket hash of `tenant_id` (`bucket_0..bucket_7`) for cardinality-bounded slicing;
+- `tenant_class` — a typed class (`internal`, `pilot`, `enterprise`) supplied at boot by the deployment operator;
+- omitted from the label set entirely; the value lives in the trace span attribute, not the metric label.
+
+The trace span attribute path is the **default carrier of tenant identity for diagnostics**, because trace storage is cardinality-agnostic and exemplars are typed.
+
+## Permitted raw-tenant labels (registry)
+
+```yaml
+version: 1
+generated_at: 2026-05-08
+permitted_raw_tenant_labels: []
+# Example (uncomment when used):
+# permitted_raw_tenant_labels:
+#   - metric: springaifin_run_completed_total
+#     budget_series: 1000
+#     retention: 30d
+#     recording_rule: springaifin:run_completed:rate5m_by_tenant
+#     owner: platform-ops
+#     reviewed_at_wave: W2
+```
+
+A metric not listed here MUST NOT carry a raw `tenant_id` label. CI gate `CardinalityBudgetIT` reflectively walks `MetricsRegistry.METRIC_DEFS` and asserts every `tenant_id`-labelled metric has an entry in this registry.
+
+## Other forbidden labels
+
+Independent of cardinality, the following labels are forbidden by `agent-runtime/observability/` `ObservabilityPrivacyPolicy` and apply to every metric:
+
+- raw prompt text;
+- raw retrieved-document text;
+- PII tokens before redaction;
+- tool arguments in full;
+- secrets, credentials, headers;
+- raw customer financial values without bucketing.
+
+See `agent-runtime/observability/ARCHITECTURE.md` §6.
+
+## How to request a raw-tenant label
+
+1. Open a PR adding the metric to `permitted_raw_tenant_labels` with all five fields populated.
+2. Ensure the metric also has a recording rule that collapses to a low-cardinality variant for dashboards and alerts.
+3. Get review from the platform-ops owner; the operator-shape gate at the next wave verifies the label cardinality stays within budget on a real-traffic run.
+4. If the budget is exceeded at gate time, the metric is downgraded to `tenant_bucket` and the entry is removed.
+
+## Review cadence
+
+Every wave (W0..W4) re-reviews this registry at gate time. An entry without a passing operator-shape gate at the most recent wave loses its raw-tenant label.

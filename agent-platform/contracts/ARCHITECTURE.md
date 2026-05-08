@@ -12,7 +12,7 @@ Three responsibilities:
 
 1. **Single source of public schema truth** (freeze-digested at first stable release SHA).
 2. **Spine validator carrier** (every spine-bearing record validates at canonical-constructor time per Rule 11).
-3. **Layering boundary** (`java.*` + Jackson + Bean Validation only — NO `agent-runtime.*` imports).
+3. **Layering boundary** (`java.*` + Jackson + Bean Validation only — NO `agent-runtime.*` imports; NO environment reads).
 
 Out of scope:
 
@@ -20,6 +20,7 @@ Out of scope:
 - Domain-specific record content (loan applications, KYC schemas, transaction shapes — these belong in customer code or `fin-domain-pack/`).
 - Protocol negotiation (the contract IS the protocol).
 - Data adaptation to/from kernel types (lives in `agent-platform/facade/`).
+- **Posture-conditional validation** (records enforce shape only; posture-aware checks live in `agent-platform/facade/PostureAwareValidator`, which receives an injected `AppPosture`).
 
 ---
 
@@ -71,14 +72,15 @@ agent-platform/contracts/
 │   │   ├── IdempotencyResult.java            # @Spine(tenant_id, idempotency_key)
 │   │   └── IdempotencyConflict.java          # @Spine(tenant_id, idempotency_key)
 │   └── errors/
-│       ├── ContractError.java                # base
-│       ├── AuthException.java                # 401
-│       ├── TenantScopeException.java         # 400
-│       ├── SpineCompletenessException.java   # 400
-│       ├── IdempotencyConflictException.java # 409
-│       ├── NotFoundException.java            # 404
-│       ├── QuotaException.java               # 429
-│       └── RuntimeContractException.java     # 500
+│       ├── ContractError.java                # wire envelope record (DTO; never thrown)
+│       ├── ContractException.java            # base RuntimeException carrying ContractError; thrown
+│       ├── AuthException.java                # extends ContractException; mapped to 401
+│       ├── TenantScopeException.java         # extends ContractException; mapped to 400
+│       ├── SpineCompletenessException.java   # extends ContractException; mapped to 400
+│       ├── IdempotencyConflictException.java # extends ContractException; mapped to 409
+│       ├── NotFoundException.java            # extends ContractException; mapped to 404
+│       ├── QuotaException.java               # extends ContractException; mapped to 429
+│       └── RuntimeContractException.java     # extends ContractException; mapped to 500
 └── v2/                                        # parallel namespace; empty until v2 released
 ```
 
@@ -89,15 +91,18 @@ agent-platform/contracts/
 | ADR | Decision | Why |
 |---|---|---|
 | **AD-1: Freeze + parallel v2 (SAS-3)** | Once v1 RELEASED, all bytes of `v1/` are digest-locked; breaking changes go to `v2/` | Customers in finance plan release cycles 6–12 months ahead; byte-for-byte stability required |
-| **AD-2: Stdlib-only purity** | No `agent-runtime.*` imports; posture read via `Environment.getProperty("APP_POSTURE")` directly | SDKs and OpenAPI generators depend on this surface; must not transitively pull runtime |
+| **AD-2: Stdlib-only purity** | No `agent-runtime.*` imports; no environment reads from inside records | SDKs and OpenAPI generators depend on this surface; must not transitively pull runtime; must not leak boot-time config into wire types |
 | **AD-3: Spine validation in canonical constructor** | Java records' canonical constructor is the validation seam (analogous to `__post_init__` in Python) | Construction-time fail-fast; no record without valid spine ever exists |
 | **AD-4: Process-internal value objects marked** | `// scope: process-internal` with rationale comment | Some records (`ContentHash`, `EventFilter`, `CapabilityDescriptor`) are transient value objects, not persistent records; exempt from `tenantId` |
-| **AD-5: Errors are records too** | All `Exception` subclasses are `record`s implementing `Throwable` | Allows error envelope serialization to be lossless; reviewers can grep error categories |
+| **AD-5: Error envelope is a `record`; thrown type is a class** | `ContractError` is a Java record (the wire envelope, JSON-serializable, never thrown). `ContractException` is a `RuntimeException` subclass that carries a `ContractError` and is the type actually thrown. | Java records may implement interfaces but cannot extend classes — `Throwable` is a class — so a record cannot itself be thrown. The split keeps the wire envelope serialization-friendly while staying valid Java. |
 | **AD-6: Contract version pin** | `ContractVersion.V1_FROZEN_HEAD` String constant containing the freeze SHA; cross-checked by `ContractFreezeTest` | Pinning the freeze digest is a single point of truth |
+| **AD-7: Records enforce shape only; posture-conditional validation lives outside contracts** | Canonical constructors check non-null, non-blank where required, size limits, type-level constraints. Posture-conditional behaviour (e.g., reject vs warn on blank `tenantId`) lives in `agent-platform/facade/PostureAwareValidator`, which receives an injected `AppPosture`. | Per Rule 6 single-construction-path and Rule 11 boot-time posture read; records must not call `System.getenv` or branch on environment state. |
 
 ---
 
 ## 4. Spine validation pattern
+
+Records validate **shape** at construction time — non-null, non-blank where required, size limits, typed constraints:
 
 ```java
 public record RunRequest(
@@ -113,65 +118,132 @@ public record RunRequest(
     public RunRequest {
         Objects.requireNonNull(tenantId, "tenantId");
         Objects.requireNonNull(goal, "goal");
-        if (tenantId.isBlank()) {
-            throw strictPosture()
-                ? new SpineCompletenessException("tenantId is blank")
-                : log("WARNING: tenantId blank in dev posture");
-        }
         if (goal.length() > 16384) {
-            throw new ContractError("goal exceeds 16384 chars");
+            throw new SpineCompletenessException(
+                ContractError.of("validation", "goal exceeds 16384 chars"));
         }
-    }
-    
-    private static boolean strictPosture() {
-        String p = System.getenv("APP_POSTURE");
-        return "research".equals(p) || "prod".equals(p);
+        // Note: blank-tenantId behaviour (reject vs warn) is posture-conditional
+        // and is NOT decided here. PostureAwareValidator owns that decision.
     }
 }
 ```
 
-The `strictPosture()` helper mirrors `agent-runtime.posture.AppPosture.isStrict()` semantics without importing it. This is the SAS-1 compliance trick: contracts read posture from environment directly.
+Posture-conditional behaviour is enforced **outside** the record by an injected validator at the facade boundary:
+
+```java
+// agent-platform/facade/PostureAwareValidator.java
+@Component
+public class PostureAwareValidator {
+    private final AppPosture posture;             // injected; read once at boot
+
+    public PostureAwareValidator(AppPosture posture) {
+        this.posture = posture;
+    }
+
+    public void validate(RunRequest req) {
+        if (req.tenantId().isBlank()) {
+            if (posture.requiresStrict()) {
+                throw new SpineCompletenessException(
+                    ContractError.of("spineCompleteness", "tenantId is blank"));
+            }
+            log.warn("tenantId blank in dev posture; accepting");
+        }
+        // future cross-field, cross-record posture-conditional checks live here.
+    }
+}
+```
+
+This is the SAS-1-compliant pattern: contracts stay stdlib-only and environment-free; posture is read **once** at boot via `AppPosture.fromEnv()` (per `agent-runtime/posture/`) and injected into validators that wrap record acceptance at the facade boundary.
 
 ---
 
-## 5. ContractError envelope
+## 5. ContractError envelope and ContractException
 
-All `/v1/*` responses with non-2xx status use the `ContractError` envelope:
+The wire envelope is a record (DTO); the thrown type is a class:
 
 ```java
+// Wire envelope: serialization-safe DTO. Never thrown.
 public record ContractError(
     @NonNull String code,                          // "auth" | "tenantScope" | "validation" | ...
     @NonNull String message,                       // human-readable
-    @Nullable String detail,                       // structured cause (JSON-serializable)
+    @Nullable Object detail,                       // structured cause (JSON-serializable)
     @Nullable String traceId,                      // OTel trace id for correlation
     @Nullable Instant occurredAt
-) implements Throwable {
+) {
     public ContractError {
         Objects.requireNonNull(code);
         Objects.requireNonNull(message);
         if (occurredAt == null) occurredAt = Instant.now();
     }
+
+    public static ContractError of(String code, String message) {
+        return new ContractError(code, message, null, null, Instant.now());
+    }
+}
+
+// Thrown type: conventional class. Carries a ContractError envelope.
+public class ContractException extends RuntimeException {
+    private final ContractError error;
+
+    public ContractException(ContractError error) {
+        super(error.message());
+        this.error = Objects.requireNonNull(error);
+    }
+
+    public ContractException(ContractError error, Throwable cause) {
+        super(error.message(), cause);
+        this.error = Objects.requireNonNull(error);
+    }
+
+    public ContractError error() { return error; }
 }
 ```
 
-Spring `@ControllerAdvice` maps every uncaught exception to `ContractError`:
+All exception subclasses (`AuthException`, `TenantScopeException`, `SpineCompletenessException`, `IdempotencyConflictException`, `NotFoundException`, `QuotaException`, `RuntimeContractException`) extend `ContractException` and supply a `ContractError` with the appropriate `code`. Each is mapped to an HTTP status by `GlobalExceptionHandler`:
 
 ```java
 @ControllerAdvice
 public class GlobalExceptionHandler {
     @ExceptionHandler(SpineCompletenessException.class)
-    ResponseEntity<ContractError> spine(...) { return badRequest("spineCompleteness", ex); }
-    
+    ResponseEntity<ContractError> spine(SpineCompletenessException ex) {
+        return ResponseEntity.badRequest().body(ex.error());
+    }
+
     @ExceptionHandler(TenantScopeException.class)
-    ResponseEntity<ContractError> tenantScope(...) { return badRequest("tenantScope", ex); }
-    
+    ResponseEntity<ContractError> tenantScope(TenantScopeException ex) {
+        return ResponseEntity.badRequest().body(ex.error());
+    }
+
     @ExceptionHandler(IdempotencyConflictException.class)
-    ResponseEntity<ContractError> idemConflict(...) { return conflict("idempotencyConflict", ex); }
-    
+    ResponseEntity<ContractError> idemConflict(IdempotencyConflictException ex) {
+        return ResponseEntity.status(409).body(ex.error());
+    }
+
+    @ExceptionHandler(NotFoundException.class)
+    ResponseEntity<ContractError> notFound(NotFoundException ex) {
+        return ResponseEntity.status(404).body(ex.error());
+    }
+
+    @ExceptionHandler(QuotaException.class)
+    ResponseEntity<ContractError> quota(QuotaException ex) {
+        return ResponseEntity.status(429).body(ex.error());
+    }
+
+    @ExceptionHandler(AuthException.class)
+    ResponseEntity<ContractError> auth(AuthException ex) {
+        return ResponseEntity.status(401).body(ex.error());
+    }
+
+    @ExceptionHandler(ContractException.class)
+    ResponseEntity<ContractError> contract(ContractException ex) {
+        return ResponseEntity.internalServerError().body(ex.error());
+    }
+
     @ExceptionHandler(Exception.class)
-    ResponseEntity<ContractError> internal(...) { 
+    ResponseEntity<ContractError> internal(Exception ex) {
         log.error("internal", ex);
-        return internalServerError("internal", "see traceId");
+        return ResponseEntity.internalServerError()
+            .body(ContractError.of("internal", "see traceId"));
     }
 }
 ```
@@ -183,8 +255,9 @@ public class GlobalExceptionHandler {
 | Concern | Implementation |
 |---|---|
 | **SAS-3 freeze** | `ContractFreezeTest` walks `v1/` and computes per-file SHA-256; compares to `docs/governance/contract_v1_freeze.json`; fails on drift |
-| **Spine completeness (Rule 11)** | `ContractSpineCompletenessTest` walks `v1/` and asserts every public record has a `@PostConstruct`-equivalent constructor validation OR `// scope: process-internal` comment |
-| **Posture (Rule 11)** | Strict-posture decision in records; mirror via `Environment.getProperty` to avoid SAS-1 violation |
+| **Spine completeness (Rule 11)** | `ContractSpineCompletenessTest` walks `v1/` and asserts every public record has a canonical-constructor validation OR `// scope: process-internal` comment |
+| **Posture (Rule 11)** | Records do **not** read posture; posture-conditional decisions live in `agent-platform/facade/PostureAwareValidator` with injected `AppPosture`. `ContractPosturePurityTest` greps `v1/` for `System.getenv`, `Environment.getProperty`, and `AppPosture.fromEnv` and fails the build if found in `contracts/v1/` |
+| **Throwable purity (AD-5)** | `ContractThrowablePurityTest` reflectively walks `errors/` and asserts every type either is a `record` (envelope, not thrown) or extends `ContractException` (thrown). Records implementing `Throwable` fail the build. |
 | **Allowlist (Rule 17)** | If a v1 contract MUST allow a temporary additive change post-freeze (e.g., adding a new optional field with default value), record in `docs/governance/allowlists.yaml` with expiry_wave |
 
 ---
@@ -196,8 +269,10 @@ public class GlobalExceptionHandler {
 | **Freeze integrity** | Zero byte drift in `v1/` post-release | `ContractFreezeTest` |
 | **Spine coverage** | 100% of records validated or marked process-internal | `ContractSpineCompletenessTest` |
 | **No `agent-runtime` imports** | Zero | `ArchitectureRulesTest::contractsStdLibOnly` |
+| **No environment reads from contracts** | Zero | `ContractPosturePurityTest` |
+| **No record implementing `Throwable`** | Zero | `ContractThrowablePurityTest` |
 | **OpenAPI generator-friendly** | All records map cleanly to Jackson + Bean Validation | `OpenApiGenerationTest` |
-| **Error envelope completeness** | Every exception type maps to a `ContractError` code | `ControllerAdviceCoverageTest` |
+| **Error envelope completeness** | Every `ContractException` subclass maps to a `ContractError` code | `ControllerAdviceCoverageTest` |
 
 ---
 
@@ -216,6 +291,8 @@ public class GlobalExceptionHandler {
 
 - L1: [`../ARCHITECTURE.md`](../ARCHITECTURE.md)
 - Spine validation in `agent-runtime/runner/SpineValidator.java`
+- Posture: [`../../agent-runtime/posture/ARCHITECTURE.md`](../../agent-runtime/posture/ARCHITECTURE.md)
 - Hi-agent prior art: `D:/chao_workspace/hi-agent/agent_server/contracts/ARCHITECTURE.md` — same pattern, Python `__post_init__` instead of Java canonical constructor
 - Java records: https://docs.oracle.com/en/java/javase/21/language/records.html
 - Jackson record support: https://github.com/FasterXML/jackson-modules-java8
+- Systematic-architecture-improvement-plan: [`../../docs/systematic-architecture-improvement-plan-2026-05-07.en.md`](../../docs/systematic-architecture-improvement-plan-2026-05-07.en.md) §4.3

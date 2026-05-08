@@ -1,0 +1,384 @@
+# spring-ai-fin architecture status ledger
+# Single machine-readable source of truth for capability status.
+# Loaded by docs/governance/decision-sync-matrix.md and gate/check_architecture_sync.*
+#
+# Status enum (see docs/governance/closure-taxonomy.md):
+#   proposed | design_accepted | implemented_unverified | test_verified | operator_gated | released
+# "closed" and the forbidden shortcuts in closure-taxonomy.md are NOT permitted.
+#
+# Maturity enum (Rule 12):
+#   L0 demo | L1 tested component | L2 public contract | L3 production default | L4 ecosystem ready
+
+version: 2
+generated_at: 2026-05-08
+generated_by: docs/systematic-architecture-remediation-plan-2026-05-08.en.md sec-4 + sec-12
+supersedes: version 1 (2026-05-08 morning)
+
+capabilities:
+
+  l0_architecture:
+    status: design_accepted
+    maturity: L1
+    l0_decision: ARCHITECTURE.md
+    l2_documents: []
+    implementation: null
+    tests: []
+    operator_gate: null
+    open_findings: []
+
+  agent_platform_facade:
+    status: design_accepted
+    maturity: L0
+    l0_decision: ARCHITECTURE.md
+    l2_documents:
+      - agent-platform/contracts/ARCHITECTURE.md
+      - agent-platform/api/ARCHITECTURE.md
+      - agent-platform/facade/ARCHITECTURE.md
+    implementation: null
+    tests: []
+    operator_gate: null
+    allowed_claim: "Proposed contract"
+
+  agent_runtime_kernel:
+    status: design_accepted
+    maturity: L0
+    l0_decision: ARCHITECTURE.md
+    l2_documents:
+      - agent-runtime/server/ARCHITECTURE.md
+      - agent-runtime/runner/ARCHITECTURE.md
+    implementation: null
+    tests: []
+    operator_gate: null
+    allowed_claim: "Proposed runtime"
+
+  action_guard:
+    status: design_accepted
+    maturity: L0
+    l0_decision: ARCHITECTURE.md#d-block
+    l2_documents:
+      - agent-runtime/action-guard/ARCHITECTURE.md
+    implementation: null
+    tests: []
+    operator_gate: null
+    open_findings: [P0-1, REM-2026-05-08-1, REM-2026-05-08-2]
+    allowed_claim: "Accepted security design"
+
+  audit_class_model:
+    status: design_accepted
+    maturity: L0
+    l0_decision: ARCHITECTURE.md#d-block
+    l2_documents:
+      - agent-runtime/audit/ARCHITECTURE.md
+    implementation: null
+    tests: []
+    operator_gate: null
+    open_findings: [P0-8]
+    allowed_claim: "Accepted security design"
+
+  posture_model:
+    status: design_accepted
+    maturity: L0
+    l0_decision: ARCHITECTURE.md#d-6-three-posture-model-rule-11
+    l2_documents:
+      - agent-runtime/posture/ARCHITECTURE.md
+    implementation: null
+    tests: []
+    operator_gate: null
+    open_findings: [P0-4]
+    allowed_claim: "Accepted design with PostureBootGuard codified; no implementation evidence yet"
+
+  tenant_context_spine:
+    status: design_accepted
+    maturity: L0
+    l0_decision: ARCHITECTURE.md#contract-spine
+    l2_documents:
+      - agent-runtime/server/ARCHITECTURE.md
+      - agent-platform/api/ARCHITECTURE.md
+    implementation: null
+    tests: []
+    operator_gate: null
+    open_findings: [P0-3, REM-2026-05-08-3]
+    allowed_claim: "Accepted design with TenantBinder + RlsConnectionInterceptor + HikariCP reset codified; no implementation evidence yet"
+
+  identity_jwt_validation:
+    status: design_accepted
+    maturity: L0
+    l0_decision: ARCHITECTURE.md#d-block-a3
+    l2_documents:
+      - agent-runtime/auth/ARCHITECTURE.md
+      - agent-runtime/posture/ARCHITECTURE.md
+    implementation: null
+    tests: []
+    operator_gate: null
+    open_findings: [P0-2]
+    allowed_claim: "Accepted design (RS256/JWKS for research SaaS + prod; HS256 carve-outs documented). No implementation evidence."
+
+  llm_gateway:
+    status: design_accepted
+    maturity: L0
+    l0_decision: ARCHITECTURE.md
+    l2_documents:
+      - agent-runtime/llm/ARCHITECTURE.md
+    implementation: null
+    tests: []
+    operator_gate: null
+    open_findings: [REM-2026-05-08-5]
+    allowed_claim: "Proposed design with prompt-section taxonomy + taint propagation codified"
+
+  llm_prompt_security:
+    status: design_accepted
+    maturity: L0
+    l0_decision: ARCHITECTURE.md#d-block
+    l2_documents:
+      - agent-runtime/llm/ARCHITECTURE.md
+      - agent-runtime/observability/ARCHITECTURE.md
+    implementation: null
+    tests: []
+    operator_gate: null
+    open_findings: [P0-5, REM-2026-05-08-5]
+    allowed_claim: "Accepted prompt-section + taint propagation; no implementation evidence"
+
+  skill_runtime_authz:
+    status: design_accepted
+    maturity: L0
+    l0_decision: ARCHITECTURE.md#d-block
+    l2_documents:
+      - agent-runtime/skill/ARCHITECTURE.md
+      - agent-runtime/capability/ARCHITECTURE.md
+      - agent-runtime/action-guard/ARCHITECTURE.md
+    implementation: null
+    tests: []
+    operator_gate: null
+    open_findings: [P0-6, REM-2026-05-08-4]
+    allowed_claim: "Accepted load-time-vs-runtime split; load-time is registry hygiene, runtime authorization is ActionGuard"
+
+  outbox_saga_directdb:
+    status: design_accepted
+    maturity: L0
+    l0_decision: ARCHITECTURE.md
+    l2_documents:
+      - agent-runtime/outbox/ARCHITECTURE.md
+    implementation: null
+    tests: []
+    operator_gate: null
+    open_findings: [P0-10]
+    allowed_claim: "Proposed design with FinancialWriteClass + saga-not-ACID semantics codified"
+
+  multi_framework_dispatch:
+    status: design_accepted
+    maturity: L0
+    l0_decision: ARCHITECTURE.md
+    l2_documents:
+      - agent-runtime/adapters/ARCHITECTURE.md
+    implementation: null
+    tests: []
+    operator_gate: null
+    open_findings: [REM-2026-05-08-6]
+    allowed_claim: "Proposed design with sidecar security binding codified"
+
+  sidecar_runtime_security:
+    status: design_accepted
+    maturity: L0
+    l0_decision: docs/sidecar-security-profile.md
+    l2_documents:
+      - agent-runtime/adapters/ARCHITECTURE.md
+    implementation: null
+    tests: []
+    operator_gate: null
+    open_findings: [P0-7, REM-2026-05-08-6]
+    allowed_claim: "Accepted UDS default + SPIFFE workload identity + tenant metadata untrusted policy"
+
+  server_rls_protocol:
+    status: design_accepted
+    maturity: L0
+    l0_decision: ARCHITECTURE.md#contract-spine
+    l2_documents:
+      - agent-runtime/server/ARCHITECTURE.md
+    implementation: null
+    tests: []
+    operator_gate: null
+    open_findings: [P0-3, REM-2026-05-08-3]
+    allowed_claim: "Accepted SET LOCAL + HikariCP reset + RlsConnectionInterceptor protocol; no implementation evidence"
+
+  observability_emitter_health:
+    status: design_accepted
+    maturity: L0
+    l0_decision: ARCHITECTURE.md
+    l2_documents:
+      - agent-runtime/observability/ARCHITECTURE.md
+    implementation: null
+    tests: []
+    operator_gate: null
+    open_findings: [REM-2026-05-08-7]
+    allowed_claim: "Accepted emitter-failure-counter + readiness-degraded rule + cardinality budget"
+
+  operator_shape_gate:
+    status: design_accepted
+    maturity: L0
+    l0_decision: CLAUDE.md (Rule 8)
+    l2_documents:
+      - docs/plans/W0-evidence-skeleton.md
+    implementation:
+      - gate/check_architecture_sync.ps1
+      - gate/check_architecture_sync.sh
+    tests: []
+    operator_gate: null
+    open_findings: []
+    allowed_claim: "Architecture-sync script implemented and runnable; operator-shape smoke remains W0 deliverable"
+
+# ---- finding ledger ----
+findings:
+  P0-1:
+    source: docs/deep-architecture-security-assessment-2026-05-07.en.md
+    status: design_accepted
+    target_wave: W2
+    capability: action_guard
+  P0-2:
+    source: docs/deep-architecture-security-assessment-2026-05-07.en.md
+    status: design_accepted
+    target_wave: W2
+    capability: identity_jwt_validation
+  P0-3:
+    source: docs/deep-architecture-security-assessment-2026-05-07.en.md
+    status: design_accepted
+    target_wave: W2
+    capability: server_rls_protocol
+  P0-4:
+    source: docs/deep-architecture-security-assessment-2026-05-07.en.md
+    status: design_accepted
+    target_wave: W2
+    capability: posture_model
+  P0-5:
+    source: docs/deep-architecture-security-assessment-2026-05-07.en.md
+    status: design_accepted
+    target_wave: W2
+    capability: llm_prompt_security
+  P0-6:
+    source: docs/deep-architecture-security-assessment-2026-05-07.en.md
+    status: design_accepted
+    target_wave: W2
+    capability: skill_runtime_authz
+  P0-7:
+    source: docs/deep-architecture-security-assessment-2026-05-07.en.md
+    status: design_accepted
+    target_wave: W2
+    capability: sidecar_runtime_security
+  P0-8:
+    source: docs/deep-architecture-security-assessment-2026-05-07.en.md
+    status: design_accepted
+    target_wave: W2
+    capability: audit_class_model
+  P0-9:
+    source: docs/deep-architecture-security-assessment-2026-05-07.en.md
+    status: design_accepted
+    target_wave: W2
+    capability: agent_platform_facade
+  P0-10:
+    source: docs/deep-architecture-security-assessment-2026-05-07.en.md
+    status: design_accepted
+    target_wave: W3
+    capability: outbox_saga_directdb
+
+  # Findings introduced by the 2026-05-08 systematic remediation review.
+  REM-2026-05-08-1:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08.en.md
+    description: "Closure claims conflict with evidence ledger; L0 must say 'addresses P0-N' (status: design_accepted), not 'closes P0-N'."
+    status: design_accepted
+    target_wave: W0
+    capability: action_guard
+
+  REM-2026-05-08-2:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08.en.md
+    description: "ActionGuard L0/L2 pipeline drift: 11 stages everywhere; PreActionEvidenceWriter before side effects; PostActionEvidenceWriter after success or failure."
+    status: design_accepted
+    target_wave: W0
+    capability: action_guard
+
+  REM-2026-05-08-3:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08.en.md
+    description: "Tenant RLS connection protocol must be specified in server L2: SET LOCAL, HikariCP reset, RlsConnectionInterceptor, fail-closed under research/prod."
+    status: design_accepted
+    target_wave: W2
+    capability: server_rls_protocol
+
+  REM-2026-05-08-4:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08.en.md
+    description: "Skill / capability authorization: load-time validation is registry hygiene; runtime authorization is ActionGuard. Every side-effectful invocation must construct an ActionEnvelope."
+    status: design_accepted
+    target_wave: W2
+    capability: skill_runtime_authz
+
+  REM-2026-05-08-5:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08.en.md
+    description: "LLM prompt-security control plane: PromptSection taxonomy, taint propagation, prompt-cache classification, raw-prompt leakage tests, tool-output-taint goes through ActionGuard."
+    status: design_accepted
+    target_wave: W2
+    capability: llm_prompt_security
+
+  REM-2026-05-08-6:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08.en.md
+    description: "Python sidecar security binding: bind dispatch to docs/sidecar-security-profile.md; tenant metadata from sidecar is untrusted; UDS default; SPIFFE for non-loopback; image digest required."
+    status: design_accepted
+    target_wave: W2
+    capability: sidecar_runtime_security
+
+  REM-2026-05-08-7:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08.en.md
+    description: "Observability emitter failure counter + readiness-degraded rule + tenant_id cardinality budget. Default labels are bucketed/hashed unless cardinality-policy permits raw."
+    status: design_accepted
+    target_wave: W2
+    capability: observability_emitter_health
+
+  REM-2026-05-08-8:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08.en.md
+    description: "Operator gate scripts must exist and align: gate/check_architecture_sync.{ps1,sh}; gate/run_operator_shape_smoke.{ps1,sh}; log extension .json across gate/README.md and docs/delivery/README.md."
+    status: implemented_unverified
+    target_wave: W0
+    capability: operator_shape_gate
+    notes: "Architecture-sync script created in remediation cycle 1; operator-shape smoke remains W0 deliverable."
+
+  # Findings introduced by the 2026-05-08 cycle-2 remediation review.
+  REM-2026-05-08-C2-1:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-2.en.md
+    description: "L0 ARCHITECTURE.md said ActionGuard is a 10-stage pipeline while the L2 + decision matrix require 11 stages (with PreActionEvidenceWriter and PostActionEvidenceWriter as separate stages). Fixed in cycle-2."
+    status: design_accepted
+    target_wave: W0/W2
+    capability: action_guard
+
+  REM-2026-05-08-C2-2:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-2.en.md
+    description: "agent-platform/ARCHITECTURE.md L1 carried the old auth/posture/cardinality model (Environment.getProperty in contracts; APP_JWT_SECRET as standard research/prod path; raw tenant_id labels). Fixed in cycle-2 to align with contracts/auth/posture/observability L2s."
+    status: design_accepted
+    target_wave: W0/W2
+    capability: agent_platform_facade
+
+  REM-2026-05-08-C2-3:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-2.en.md
+    description: "server/ARCHITECTURE.md claimed HikariCP connectionInitSql resets app.tenant_id on every checkout. That is incorrect: connectionInitSql runs only at connection creation. The actual safety property is that SET LOCAL is transaction-scoped and Postgres auto-discards on COMMIT/ROLLBACK. Server doc updated; PooledConnectionLeakageIT remains the proof."
+    status: design_accepted
+    target_wave: W0/W2
+    capability: server_rls_protocol
+
+  REM-2026-05-08-C2-4:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-2.en.md
+    description: "Architecture sync gate scope was too narrow (root L0 + docs/*.md only). Cycle-2 expanded scan to agent-platform/**/ARCHITECTURE.md and agent-runtime/**/ARCHITECTURE.md and added rule classes: actionguard_stage_drift, contract_posture_purity, auth_algorithm_policy, rls_pool_lifecycle, dirty_tree, plus line numbers in failure objects."
+    status: implemented_unverified
+    target_wave: W0
+    capability: operator_shape_gate
+    notes: "Architecture-sync portion only. Operator-shape smoke remains design_accepted (REM-2026-05-08-C2-6)."
+
+  REM-2026-05-08-C2-5:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-2.en.md
+    description: "Sync gate did not protect against dirty-tree evidence. Cycle-2 added git status --porcelain check; default mode fails on dirty tree; --local-only flag permits local runs but writes evidence_valid_for_delivery=false. Delivery README updated to forbid dirty-tree logs."
+    status: implemented_unverified
+    target_wave: W0
+    capability: operator_shape_gate
+    notes: "Architecture-sync portion only."
+
+  REM-2026-05-08-C2-6:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-2.en.md
+    description: "gate/run_operator_shape_smoke.{ps1,sh} does not exist. The Rule 8 operator-shape gate (long-lived process, real dependencies, sequential runs, cancellation, lifecycle, fallback-zero) is a W0 deliverable and remains explicitly pending. Architecture-sync PASS is not Rule 8 evidence."
+    status: design_accepted
+    target_wave: W0
+    capability: operator_shape_gate
+    notes: "Explicitly pending. Architecture-sync gate is documented as such, not as Rule 8 evidence."

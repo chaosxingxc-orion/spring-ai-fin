@@ -52,7 +52,7 @@ This matrix maps every named security control to: **owner module · enforcement 
 
 | Control | Owner | Enforcement | Posture | Test | Evidence | Failure mode |
 |---|---|---|---|---|---|---|
-| ActionGuard pipeline (10 stages) | `agent-runtime/action-guard/ActionGuard` | Mandatory side-effect boundary | all | `ActionGuardCoverageTest` | CI gate | reject + audit |
+| ActionGuard pipeline (11 stages, with PreAction + PostAction evidence writers) | `agent-runtime/action-guard/ActionGuard` | Mandatory side-effect boundary | all | `ActionGuardCoverageTest`, `EvidenceChainContiguityIT`, `PostEvidenceOnFailureIT` | CI gate | reject + audit |
 | ActionEnvelope spine validation | `ActionEnvelope.@PostConstruct` | Constructor | all | `ActionEnvelopeValidationIT` | test | reject |
 | argumentsHash anti-tampering | `SchemaValidator` | Re-hash check | all | `ArgumentsHashIT` | test | reject |
 | Source taint propagation | `agent-runtime/llm/PromptComposer` | Prompt section taxonomy | all | `PromptSecurityIT` | gate | reject untrusted instruction |

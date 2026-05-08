@@ -1,0 +1,30 @@
+# Documented allowlist entries for posture-conditional or contract-conditional carve-outs.
+# Per docs/systematic-architecture-improvement-plan-2026-05-07.en.md sec-6 + posture/ARCHITECTURE.md sec-4.
+#
+# Every entry MUST carry:
+#   - id              : opaque identifier
+#   - kind            : carve_out_kind enum (see below)
+#   - tenant_id       : if scoped to a tenant
+#   - reason          : human-readable rationale
+#   - acknowledged_by : human approver name
+#   - expiry_wave     : the wave by which the carve-out must be re-evaluated
+#
+# Carve-out kinds:
+#   - hmac_byoc_single_tenant : research-posture HS256 carve-out for a BYOC single-tenant deployment
+#   - dev_real_db             : ALLOW_DEV_WITH_REAL_DB usage for an integration test suite
+#   - dev_real_llm            : ALLOW_DEV_WITH_REAL_LLM usage for an integration test suite
+#   - dev_non_loopback        : ALLOW_DEV_NON_LOOPBACK bind for a remote demo environment
+#   - contract_v1_additive    : an additive change to v1 contract post-freeze (rare; v1.0.1 path)
+
+version: 1
+generated_at: 2026-05-08
+
+allowlist: []
+# Example (uncomment when used):
+# allowlist:
+#   - id: bank-a-byoc-hmac-2026
+#     kind: hmac_byoc_single_tenant
+#     tenant_id: bank-a
+#     reason: "Bank A IdP is HS256-only; RS256 migration scheduled W4. Carve-out audited."
+#     acknowledged_by: chao.xing
+#     expiry_wave: W4

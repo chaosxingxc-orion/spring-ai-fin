@@ -1,6 +1,6 @@
 # spring-ai-fin Platform — Architecture (v6.0)
 
-> **Last refreshed:** 2026-05-07. Pre-implementation; no commits yet. **Architecture Review Edition.**
+> **Last refreshed:** 2026-05-08. Pre-implementation; document-only corpus + governance scaffold. **Architecture Review Edition (post-remediation cycle 1).**
 > **Audience:** architecture review committee, platform engineers, downstream financial-services consumers, release captains, compliance reviewers, security reviewers.
 > **Status:** authoritative — supersedes `docs/architecture-v5.0.md`. v5.0 retained as historical input. Review findings recorded in `docs/architecture-v5.0-review-2026-05-07.md` and the corrections are applied throughout this document.
 > **Predecessor:** `D:/chao_workspace/hi-agent/ARCHITECTURE.md` — 32 release waves of operational learnings codified into 17 engineering rules. v6.0 inherits the philosophy and adapts it to Java / Spring AI / Spring Boot for the financial-services domain.
@@ -11,14 +11,14 @@
 > - **L2 per-subsystem** — every leaf module under each package owns its own ARCHITECTURE.md when it lands.
 >
 > **Existing docs:**
-> - **Security review baseline** (UPDATED 2026-05-08): [`docs/security-response-2026-05-08.md`](docs/security-response-2026-05-08.md) responds to the security committee review with all 10 P0 + 10 P1 findings accepted; new docs below
+> - **Security review baseline** (UPDATED 2026-05-08): [`docs/security-response-2026-05-08.md`](docs/security-response-2026-05-08.md) responds to the security committee review with all 10 P0 + 10 P1 findings at status `design_accepted`. Closure status of every finding is tracked in [`docs/governance/architecture-status.yaml`](docs/governance/architecture-status.yaml); a finding is not closed until at least `test_verified` per [`docs/governance/closure-taxonomy.md`](docs/governance/closure-taxonomy.md). New docs below.
 > - L1 northbound facade: [`agent-platform/ARCHITECTURE.md`](agent-platform/ARCHITECTURE.md)
 > - L1 cognitive runtime: [`agent-runtime/ARCHITECTURE.md`](agent-runtime/ARCHITECTURE.md)
 > - L2 contracts: [`agent-platform/contracts/ARCHITECTURE.md`](agent-platform/contracts/ARCHITECTURE.md)
 > - L2 transport: [`agent-platform/api/ARCHITECTURE.md`](agent-platform/api/ARCHITECTURE.md)
 > - L2 runtime binding: [`agent-platform/runtime/ARCHITECTURE.md`](agent-platform/runtime/ARCHITECTURE.md)
-> - **L2 ActionGuard (NEW 2026-05-08)**: [`agent-runtime/action-guard/ARCHITECTURE.md`](agent-runtime/action-guard/ARCHITECTURE.md) — closes security review P0-1 (unified action authorization)
-> - **L2 audit (NEW 2026-05-08)**: [`agent-runtime/audit/ARCHITECTURE.md`](agent-runtime/audit/ARCHITECTURE.md) — closes security review P0-8 (5-class audit model)
+> - **L2 ActionGuard (NEW 2026-05-08)**: [`agent-runtime/action-guard/ARCHITECTURE.md`](agent-runtime/action-guard/ARCHITECTURE.md) — addresses P0-1 (unified action authorization). Status: `design_accepted`. Tests + operator-shape gate are W2 deliverables.
+> - **L2 audit (NEW 2026-05-08)**: [`agent-runtime/audit/ARCHITECTURE.md`](agent-runtime/audit/ARCHITECTURE.md) — addresses P0-8 (5-class audit model). Status: `design_accepted`. Tests + operator-shape gate are W2 deliverables.
 > - L2 TRACE runner: [`agent-runtime/runner/ARCHITECTURE.md`](agent-runtime/runner/ARCHITECTURE.md)
 > - L2 LLM gateway: [`agent-runtime/llm/ARCHITECTURE.md`](agent-runtime/llm/ARCHITECTURE.md)
 > - L2 framework adapters: [`agent-runtime/adapters/ARCHITECTURE.md`](agent-runtime/adapters/ARCHITECTURE.md)
@@ -148,7 +148,7 @@ These are removed because the v5.0 review (`docs/architecture-v5.0-review-2026-0
 | 22 streams orchestration | **Replaced by 4 SLA tiers + per-flow tier annotation.** "22" was decorative enumeration; the real engineering distinction is the 4 SLA tiers (realtime / interactive / batch / async). | M2 |
 | 5 interaction modes for human-AI collaboration | **Reframed as 2 primitives × 4 side-effect levels.** Information flow + authority transfer; surface variants per side-effect class (L1–L4). | M3 |
 | Behaviour pinning "permanently retained" for regulated customers | **Default OFF; opt-in premium with hard 5-year cap.** Resolves v5.0's internal contradiction (Ch.13.5 vs App C-10). | H4 |
-| Outbox-as-universal-cross-store-transaction-model | **Split into Outbox-async (telemetry) / Sync-Saga (cross-entity strong consistency) / Direct-DB (read-your-write).** Every write site declares `consistency` annotation. | H6 |
+| Outbox-as-universal-cross-store-transaction-model | **Split into Outbox-async (telemetry; eventual within tenant) / Sync-Saga (cross-entity progress with explicit compensations and reconciliation; not ACID across entities) / Direct-DB (read-your-write; LEDGER_ATOMIC double-entry within one transaction).** Every write site declares `consistency` annotation; financial writes also declare `FinancialWriteClass` (see `agent-runtime/outbox/ARCHITECTURE.md` §6). | H6 |
 | 10-layer tenant propagation as narrative | **Replaced by single binding `TenantContext` contract spec.** MDC key, Reactor Context key, gRPC metadata key, Kafka header name; behaviour on missing tenant per posture; 4 shadow-path tests per layer. | H5 |
 | 80+ open-source components on day 0 | **Tier-1 = 11 components.** Tier-2 deferred until traffic justifies; Tier-3 rejected (license risk or premature). | H2 |
 | Four model tiers (Pro / Flash / Specialist / fine-tuned) | **One inference backend at MVP** (vLLM **or** OpenAI-compatible adapter — pick one). Multi-tier deferred until per-call cost data justifies. | M7 |
@@ -160,7 +160,7 @@ These are removed because the v5.0 review (`docs/architecture-v5.0-review-2026-0
 Falsifiable assertions reviewers should challenge:
 
 - **A1.1**: "Capability-layer only" — is FIBO+30 class glossary a capability primitive or a domain bake-in? (We argue: the glossary is supplied by the customer / fin-domain-pack; the platform only ingests it.)
-- **A1.5**: "Frameworks run polyglot via gRPC sidecars" — does this introduce unacceptable latency for sub-second SLA tiers? (We expect ≤30ms overhead p95; measurement is part of the W1 operator-shape gate.)
+- **A1.5**: "Frameworks run polyglot via gRPC sidecars" — does this introduce unacceptable latency for sub-second SLA tiers? (We expect ≤30ms overhead p95; measurement is part of the W2/W4 operator-shape gate against the sidecar security profile.)
 - **A1.4**: "Posture-aware defaults" — does same-code-different-defaults actually work, or does it produce two divergent code paths? (Hi-agent ran this for 32 waves with success; the rule is to let consumers ask `posture.requiresStrict()` rather than branch on posture name.)
 
 ---
@@ -348,7 +348,7 @@ spring-ai-fin/
 │   │   ├── FallbackRecorder.java           # Rule 7 four-prong
 │   │   ├── MetricsRegistry.java            # @Bean MeterRegistry
 │   │   └── ARCHITECTURE.md
-│   ├── outbox/                             # cross-store dual-write propagation
+│   ├── outbox/                             # outbox-async + sync-saga + direct-DB three-path write taxonomy
 │   │   ├── OutboxRelay.java                # poll outbox → publish to in-process subscribers
 │   │   ├── DebeziumFeed.java               # opt-in CDC source
 │   │   ├── SyncSagaOrchestrator.java       # cross-entity strong-consistency writes
@@ -717,7 +717,7 @@ For finance-critical synchronous writes (fund transfer, position update, balance
 | Path | Used for | Mechanism | Latency profile | Consistency |
 |---|---|---|---|---|
 | **A — Outbox-async** | Trace lake; agent run events; artifact metadata; cost telemetry; audit | `outbox` table in same Postgres txn; Debezium relay → in-process subscribers (no Kafka at MVP) | event visible in 200ms–2s | eventual within tenant |
-| **B — Sync-Saga** | Cross-business-entity strong consistency (A→B fund transfer; multi-account post; loan disbursement) | `SyncSagaOrchestrator` over typed steps with explicit compensations; per-step idempotency key | sub-second p95 | strong within saga, isolated across tenants |
+| **B — Sync-Saga** | Cross-business-entity progress (A→B fund transfer; multi-account post; loan disbursement); cross-entity claims are `SAGA_COMPENSATED`, not ACID | `SyncSagaOrchestrator` over typed steps with explicit compensations; per-step idempotency key; reversal-journal row produced by every compensation; `RECONCILIATION_REQUIRED` saga state on compensation failure | sub-second p95 | restartable, idempotent, journaled with explicit compensations and reconciliation; isolated across tenants. **Not ACID across entities** — see `agent-runtime/outbox/ARCHITECTURE.md` §4 |
 | **C — Direct-DB** | Read-your-write within one aggregate (single account read after write; balance lookup) | Single transaction; no relay | sub-100ms | strict serializable at row level |
 
 **Decision rule (binding)**: every write site declares `consistency: { OUTBOX_ASYNC | SYNC_SAGA | DIRECT_DB }` in code:
@@ -726,7 +726,7 @@ For finance-critical synchronous writes (fund transfer, position update, balance
 @WriteSite(consistency = OUTBOX_ASYNC, reason = "telemetry; eventual within tenant")
 public void recordRunCompleted(RunId id, Duration d) { ... }
 
-@WriteSite(consistency = SYNC_SAGA, reason = "fund transfer A→B; cross-entity strong consistency required")
+@WriteSite(consistency = SYNC_SAGA, financialClass = SAGA_COMPENSATED, reason = "fund transfer A→B; cross-entity progress with explicit compensations and reconciliation; not ACID")
 public TransferReceipt transfer(AccountId from, AccountId to, Money amount) { ... }
 
 @WriteSite(consistency = DIRECT_DB, reason = "single-row balance read after write")
@@ -884,7 +884,7 @@ This is the section the architecture review committee is most likely to challeng
 
 ### D-8: Outbox + Sync-Saga + Direct-DB (the H6 fix)
 
-- **Statement**: Three write paths, each declared via `@WriteSite(consistency=...)` annotation: `OUTBOX_ASYNC` for telemetry, `SYNC_SAGA` for cross-entity strong consistency, `DIRECT_DB` for read-your-write within one aggregate.
+- **Statement**: Three write paths, each declared via `@WriteSite(consistency=...)` annotation: `OUTBOX_ASYNC` for telemetry (eventual within tenant), `SYNC_SAGA` for cross-entity progress with explicit compensations and reconciliation (not ACID across entities; see `agent-runtime/outbox/ARCHITECTURE.md` §4), `DIRECT_DB` for read-your-write within one aggregate (and `LEDGER_ATOMIC` double-entry within one Postgres transaction).
 - **Alternatives**:
   - **A1** Outbox for everything (v5.0's position; H6 finding).
   - **A2** Sync-Saga for everything.
@@ -993,13 +993,13 @@ This is the section the architecture review committee is most likely to challeng
 
 ### D-18: ActionGuard — unified action authorization pipeline (added 2026-05-08 per security review P0-1)
 
-- **Statement**: Every model/tool/framework-proposed action passes through `ActionGuard.authorize(envelope)` — a 10-stage pipeline that is the unavoidable runtime path between proposal and side effect. `ActionGuardCoverageTest` is a CI gate that fails the build if any side-effect site bypasses ActionGuard.
+- **Statement**: Every model/tool/framework-proposed action passes through `ActionGuard.authorize(envelope)` — an 11-stage pipeline (split into 9 PreActionEvidenceWriter, 10 Executor, 11 PostActionEvidenceWriter so audit-before-action and terminal-evidence are structurally separate) that is the unavoidable runtime path between proposal and side effect. `ActionGuardCoverageTest` is a CI gate that fails the build if any side-effect site bypasses ActionGuard. See `agent-runtime/action-guard/ARCHITECTURE.md` §4 for the canonical stage list.
 - **Alternatives**:
   - **A1** Status-quo: separate gates (CapabilityPolicy + skill load-time gate + harness PermissionGate + HITL) without unification.
   - **A2** Single gate per capability instead of per-action.
   - **A3** ActionGuard as the central pipeline (current).
 - **Why this won (A3)**: A1 = the security reviewer's central P0-1 finding — an attacker exploiting prompt injection or retrieval poisoning needs only ONE bypass path (one adapter or one tool bridge missing the gate). A1's defence is the maximum-of-gates, not the minimum. A2 is too coarse; capability granularity misses runtime context (tenant, role, target resource, arguments). A3 makes the pipeline the minimum: every action passes every gate.
-- **Tradeoffs**: ~10ms p95 overhead per action; reviewer audit on the 10-stage definition; OPA dependency for stage 7. We accept the overhead; the alternative is unprovable security.
+- **Tradeoffs**: ≤12ms p95 overhead per action (11 stages incl. dual audit write); reviewer audit on the 11-stage definition; OPA dependency for stage 7. We accept the overhead; the alternative is unprovable security.
 - **Falsifiable**: If `ActionGuardCoverageTest` produces false negatives (real bypass found in production), the gate is incomplete. Tracked via recurrence-ledger.
 - **Detail**: [`agent-runtime/action-guard/ARCHITECTURE.md`](agent-runtime/action-guard/ARCHITECTURE.md)
 
@@ -1019,10 +1019,10 @@ This is the section the architecture review committee is most likely to challeng
 
 - **Statement**: Above the 3 mechanisms (OUTBOX_ASYNC / SYNC_SAGA / DIRECT_DB) we layer 4 financial write classes — `LEDGER_ATOMIC` / `SAGA_COMPENSATED` / `EXTERNAL_SETTLEMENT` / `ADVISORY_ONLY`. The `@WriteSite` annotation is extended with `financialClass`. CI enforces compatibility (e.g., `LEDGER_ATOMIC` only allowed on `DIRECT_DB`).
 - **Alternatives**:
-  - **A1** Use only consistency mechanism (status quo): saga = "strong within saga" without naming financial semantics.
+  - **A1** Use only the consistency mechanism axis (status quo, v5.0): saga is described with overstated consistency vocabulary that conflates it with ACID, without naming financial semantics.
   - **A2** Single financial flag (boolean isFinancial).
   - **A3** Four-class system (current).
-- **Why this won (A3)**: A1 confuses developers about saga vs ACID; "strong within saga" overstates per P0-10. A2 doesn't distinguish ledger-atomic (single-DB-txn double-entry) from saga-compensated (multi-step reversible). A3 names the financial semantics explicitly; reviewer audit can map each write to the right class.
+- **Why this won (A3)**: A1 confuses developers about saga vs ACID — saga overstatement is the exact failure pattern P0-10 named (compensating progress is not transactional rollback). A2 doesn't distinguish ledger-atomic (single-DB-txn double-entry) from saga-compensated (multi-step reversible with reversal-journal records). A3 names the financial semantics explicitly via `FinancialWriteClass`; reviewer audit can map each write to the right class via `FinancialWriteCompatibilityTest`.
 - **Tradeoffs**: Annotation surface grows; reviewer audit at every financial write site.
 - **Falsifiable**: If a saga compensation failure goes unnoticed (Attack Path D), A3's OperationalGate + LedgerDiscrepancyRecord didn't fire — A3 fails.
 - **Detail**: [`agent-runtime/outbox/ARCHITECTURE.md`](agent-runtime/outbox/ARCHITECTURE.md) §Financial Classes
@@ -1061,7 +1061,7 @@ If the answer is yes for any decision, the decision needs revision. Tracking dec
 | **Error envelope** | `agent-platform/contracts/v1/errors/ContractError.java` records — `validation`, `auth`, `tenantScope`, `idempotencyConflict`, `notFound`, `rateLimit`, `internal`, `spineCompleteness`, `tenantScopeException`. Spring `@ControllerAdvice` maps all exceptions to `ContractError` envelope. | AS-CO | `agent-platform/api/error/ControllerAdvice.java` |
 | **Contract spine (Rule 12)** | Every persistent + wire-crossing record carries `tenantId` plus relevant subset of `{userId, sessionId, teamSpaceId, projectId, profileId, runId, parentRunId, phaseId, attemptId, capabilityName}`. Each spine-bearing record annotated `@Spine` + validated by `SpineValidationTest` at compile time and runtime constructor. Process-internal value objects carry `// scope: process-internal` with rationale. | CO | `agent-runtime/contracts/SpineValidator.java`; `ContractSpineCompletenessTest` |
 | **Idempotency** | Per-tenant scope; cross-process replay; 24h TTL with background purge; 4 Micrometer metrics (`springaifin_idempotency_{reserve,replay,conflict,purge}_total{tenantId}`); boot-time invariant for MCP/skills routes. Snapshot strips `requestId`, `traceId` to prevent identity leakage. | RO | `agent-runtime/server/IdempotencyStore.java` |
-| **Auth** | `JwtAuthFilter` HMAC-validates Bearer tokens; `APP_JWT_SECRET` required under `research`/`prod`. Auth-authoritative `tenantId` cross-check in `RunManager`. JWT claims: `userId`, `tenantId`, `projectId`, `roles`, `expiry`. Anti-forgery: body's `tenantId` cross-checked against claim, mismatch → 400 under strict. | AS-RO + RO | `agent-platform/api/filter/JwtAuthFilter.java`; `agent-platform/runtime/AuthSeam.java` |
+| **Auth** | `JwtAuthFilter` validates Bearer tokens via posture-aware dispatch (per D-block §A3): RS256/ES256 + JWKS for research SaaS multi-tenant + prod (mandatory); HS256 only for DEV loopback or BYOC single-tenant carve-out (allowlist entry required). `alg=none` and HS/RS confusion are always rejected. Auth-authoritative `tenantId` cross-check in `RunManager`. JWT claims: `iss`, `sub` (userId), `tenantId`, `projectId`, `roles`, `aud`, `exp`, `nbf`, `iat`, `jti`, `kid` (asymmetric only). Anti-forgery: body's `tenantId` cross-checked against claim, mismatch → 400 under strict. | AS-RO + RO | `agent-platform/api/filter/JwtAuthFilter.java`; `agent-platform/runtime/AuthSeam.java`; `agent-runtime/auth/JwksValidator.java`; `agent-runtime/auth/IssuerRegistry.java` |
 | **Tenancy** | `TenantContextFilter` validates `X-Tenant-Id`; `request.attribute(TENANT_KEY)` carries `TenantContext`. Anti-forgery cross-check in `RunManager`. Per-tenant Postgres RLS policy enforced at the database. SQL queries with raw `tenantId =` filter audited by `RawSqlAuditTest`. | AS-RO | `agent-platform/api/filter/TenantContextFilter.java` |
 | **Resource lifetime (Rule 5)** | Spring WebFlux + Reactor; `Mono.block()` outside entry points (CLI, tests, `main`) is forbidden. `WebClient` instances are `@Bean` singletons; never per-request. JDBC connections pooled via HikariCP. One `Scheduler` per process for run dispatch. `ArchitectureRulesTest::noBlockOutsideEntryPoints`. | RO | `agent-runtime/runtime/ReactorScheduler.java` |
 | **Security boundary** | No `Runtime.exec` / `ProcessBuilder` outside the explicit MCP transport. Path traversal blocked at workspace adapters. SQL via JPA-or-jOOQ generated only; raw `PreparedStatement` requires `// raw-sql:` annotation with rationale. Spring Security configured **off** for v1 facade (filter chain owns auth) — Spring Security adds complexity without benefit for the frozen v1 surface. | RO + GOV | `ArchitectureRulesTest::noShellInvocation`, `::noRawSql`; `agent-runtime/auth/` |
@@ -1169,7 +1169,7 @@ The platform **does what** by:
 
 #### 8.3.2 Security review
 
-- **AuthN**: JWT HMAC-SHA256, `APP_JWT_SECRET` required under research/prod. JWT claims include `userId`, `tenantId`, `projectId`, `roles`. Anti-forgery cross-check between body and JWT.
+- **AuthN**: Posture-aware JWT validation per D-block §A3. Research SaaS multi-tenant + prod require RS256 / ES256 with JWKS; HS256 is permitted only on DEV loopback or as an explicit BYOC single-tenant carve-out documented in `docs/governance/allowlists.yaml`. `alg=none` and HS/RS confusion are always rejected. JWT claims include `iss`, `sub` (userId), `tenantId`, `projectId`, `roles`, `aud`, `exp`, `nbf`, `iat`, `jti`, `kid` (asymmetric only). Anti-forgery cross-check between body and JWT.
 - **AuthZ**: Role-based via JWT `roles` claim. Capability-level policy via `CapabilityPolicy.canInvoke(role, capability)`.
 - **Tenant isolation**: Auth-authoritative `tenantId`, Postgres RLS policies, idempotency key scope, audit query scope.
 - **Input validation**: All `@RequestBody` via Spring `@Valid` + JSON-schema in v1 contracts.
@@ -1426,14 +1426,21 @@ This section is exhaustive and structured by risk category. Each risk has a trac
 
 ### 12.1 Open at v1 — must address before v1 RELEASED
 
+**Wave discipline** (per `docs/plans/roadmap-W0-W4.md` and `docs/governance/closure-taxonomy.md`):
+
+- **W0 is the first wave.** It produces a runnable evidence skeleton (Maven multi-module, minimal Spring Boot, posture boot guard, ContractError record + ContractException class, durable run store with `tenant_id`, operator-shape gate scripts) per `docs/plans/W0-evidence-skeleton.md`.
+- **W1 begins only after W0 delivery evidence is committed** — i.e., `docs/delivery/<date>-<W0-sha>.md` exists and records a green operator-shape smoke gate run. No documentation edit can substitute for that evidence.
+- **No capability moves above L1 during W0.** The maturity ladder (`docs/governance/maturity-glossary.md`) is enforced by the manifest scorecard; capabilities promoted prematurely are downgraded.
+- **Status enum** (`docs/governance/closure-taxonomy.md`): `proposed → design_accepted → implemented_unverified → test_verified → operator_gated → released`. The taxonomy enumerates a list of forbidden status shortcuts (the words that collapse multiple states into one); `gate/check_architecture_sync.{ps1,sh}` greps for those shortcuts and fails the build when any appears outside the taxonomy file itself.
+
 | Risk | Description | Owner | Plan |
 |---|---|---|---|
-| **No code yet** | Every claim above is a target. First wave (W1) must produce working `POST /v1/runs` happy path against a real LLM under `dev` posture, then promote to `research` posture. | RO + AS-RO | W1 plan: `docs/plans/W1-mvp-happy-path.md` (to be written) |
-| **Operator-shape gate scripts not written** | Six PASS gate scripts named in §10.5 don't exist. | AS-RO + DX | W1 deliverable. |
-| **Spine-validation framework not coded** | `@Spine` annotation + `SpineValidationTest` reflective check don't exist. | CO | W1 deliverable. |
-| **TenantContext propagation across all layers not validated** | 4 shadow-path tests × 10 layers = 40 tests don't exist. | AS-RO + RO | W1–W2 deliverable. |
-| **WriteSite annotation reflective check not coded** | `WriteSiteAuditTest` doesn't exist. | RO | W1 deliverable. |
-| **License audit not run** | No automated check that runtime path is Apache 2.0 / MIT only. | GOV | W1 deliverable: `LicenseAuditTest`. |
+| **No code yet** | Every claim above is a target. **First wave (W0)** must produce a runnable evidence skeleton (Maven multi-module, minimal Spring Boot, posture boot guard, ContractError record + ContractException class, durable run store with tenant_id, operator-shape gate scripts) per `docs/plans/W0-evidence-skeleton.md`. W1 produces `POST /v1/runs` happy path; W2 closes P0 security findings; W3 hardens financial writes. | RO + AS-RO | `docs/plans/W0-evidence-skeleton.md`, `docs/plans/roadmap-W0-W4.md` |
+| **Operator-shape gate scripts** | `gate/check_architecture_sync.{ps1,sh}` (created 2026-05-08); `gate/run_operator_shape_smoke.{ps1,sh}` not written. | AS-RO + DX | W0 deliverable. |
+| **Spine-validation framework not coded** | `@Spine` annotation + `SpineValidationTest` reflective check don't exist. | CO | W0/W1 deliverable. |
+| **TenantContext propagation across all layers not validated** | 4 shadow-path tests × 10 layers = 40 tests don't exist. | AS-RO + RO | W2 deliverable (after RLS connection protocol from `agent-runtime/server/` §6 lands). |
+| **WriteSite annotation reflective check not coded** | `WriteSiteAuditTest` + `FinancialWriteCompatibilityTest` don't exist. | RO | W3 deliverable. |
+| **License audit not run** | No automated check that runtime path is Apache 2.0 / MIT only. | GOV | W0 deliverable: `LicenseAuditTest`. |
 
 ### 12.2 Tier-2 deferrals — adopted when traffic justifies
 
@@ -1502,14 +1509,14 @@ This section is exhaustive and structured by risk category. Each risk has a trac
   risk: low
   expiry_wave: W4
   replacement_test: tests/integration/RunFacadeRefactoredIT
-  added_at: 2026-05-W1
+  added_at: 2026-05-W0
 ```
 
 CI fails closed on expired entries. Increasing allowlist count reduces `allowlist_discipline` scorecard dimension.
 
 ### How to evaluate §12
 
-- **A12.1**: "All v1-blocking risks have named owners and W1 plans" — what's missing? (Reviewers should check whether any §1–§10 claim is unbacked by §12 risk tracking.)
+- **A12.1**: "All v1-blocking risks have named owners and W0/W1/W2/W3 plans" — what's missing? (Reviewers should check whether any §1–§10 claim is unbacked by §12 risk tracking; the wave plan is `docs/plans/roadmap-W0-W4.md`.)
 - **A12.2**: "Tier-2 deferrals have specific triggers, not 'someday'" — are the triggers measurable? (Yes — each is quantitative: latency p95, recall@10, volume, etc.)
 
 ---
@@ -1678,10 +1685,25 @@ The architecture committee should have access to the predecessor codebase for re
 # 1. Build (from repository root)
 mvn clean package -DskipTests=false
 
-# 2. Configure (research posture for deployment dry-run)
+# 2. Configure (research posture, SaaS multi-tenant deployment dry-run).
+#    Per D-block A3 + agent-runtime/auth/ARCHITECTURE.md, research SaaS multi-tenant
+#    requires RS256/ES256 + JWKS (mandatory). HS256 (APP_JWT_SECRET) is permitted only
+#    for DEV loopback or as an explicit BYOC single-tenant carve-out documented in
+#    docs/governance/allowlists.yaml.
 export APP_POSTURE=research
+export APP_DEPLOYMENT_SHAPE=SAAS_MULTI_TENANT
 export APP_LLM_MODE=real
-export APP_JWT_SECRET=<32-byte-hmac-secret>
+# Identity: configure at least one issuer in application-research.yaml
+#   auth:
+#     issuers:
+#       - iss: https://idp.example.com/
+#         jwks_url: https://idp.example.com/.well-known/jwks.json
+#         audiences: [springaifin-research]
+#         permitted_algs: [RS256, ES256]
+#
+# For DEV loopback only, OR for BYOC single-tenant carve-out (research posture only,
+# allowlist required), set APP_JWT_SECRET instead:
+#   export APP_JWT_SECRET=<32-byte-hmac-secret>
 export OPENAI_API_KEY=<key>          # or DEEPSEEK_API_KEY / ANTHROPIC_API_KEY
 export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/springaifin
 
