@@ -68,6 +68,8 @@ docs/verification/*.json
 !docs/delivery/.gitkeep
 !docs/verification/.gitkeep
 
-# Gate logs — SHA-named, regenerated on every gate run
-gate/log/
-!gate/log/.gitkeep
+# Gate logs — tracked as audit-trail evidence (see docs/delivery/README.md).
+# Maintainers should `git add gate/log/<new-sha>.json` after each gate run
+# whose evidence will be referenced from a delivery file.
+# (Was previously gitignored; reversed per user request to preserve all
+# process artifacts on GitHub for future decision-making.)
