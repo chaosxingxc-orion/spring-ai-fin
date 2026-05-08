@@ -151,7 +151,7 @@ Validates `envelope.tenantId == ctx.tenantContext.tenantId`. Rejects mismatch un
 
 ### Stage 3: ActorAuthorizer
 
-Two-tier check (P1-7 closure):
+Two-tier check (addresses P1-7; status: design_accepted):
 
 1. **RBAC**: `CapabilityPolicy.canRoleInvoke(actor.roles, capabilityName)` — does the actor's role permit this capability?
 2. **TenantEntitlement**: `TenantEntitlementStore.isGranted(tenantId, capabilityName)` — has the tenant been granted access?
@@ -265,9 +265,9 @@ Any side-effect site outside ActionGuard fails CI.
 
 | ADR | Decision | Why |
 |---|---|---|
-| **AD-1: Single mandatory pipeline** | Every action passes ActionGuard | P0-1 closure; minimum-of-gates not maximum |
+| **AD-1: Single mandatory pipeline** | Every action passes ActionGuard | addresses P0-1 (status: design_accepted); minimum-of-gates not maximum |
 | **AD-2: 11 pluggable stages, ordered, evidence split into pre/post** | Each stage has a typed responsibility; PreActionEvidenceWriter (9), Executor (10), PostActionEvidenceWriter (11) are explicit and separate stages | Composability + audit clarity; reordering = explicit ADR; audit-before-action is a structural property of the pipeline, not a stage-internal switch |
-| **AD-3: Audit-before-action for PII/financial** | PreActionEvidenceWriter writes BEFORE Executor; failure denies the action | P0-8 closure; "PII decode cannot return plaintext if audit fails" |
+| **AD-3: Audit-before-action for PII/financial** | PreActionEvidenceWriter writes BEFORE Executor; failure denies the action | addresses P0-8 (status: design_accepted); "PII decode cannot return plaintext if audit fails" |
 | **AD-4: Default-deny at every stage** | Any stage reject = action denied | Fail-closed by construction |
 | **AD-5: OPA for red-line policies** | Externalized; versioned | Compliance team can author policies without platform code change |
 | **AD-6: ProposalSource carries taint** | LLM_OUTPUT default UNTRUSTED | Closes Attack Path A |

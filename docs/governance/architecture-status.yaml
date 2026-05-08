@@ -282,7 +282,7 @@ findings:
   # Findings introduced by the 2026-05-08 systematic remediation review.
   REM-2026-05-08-1:
     source: docs/systematic-architecture-remediation-plan-2026-05-08.en.md
-    description: "Closure claims conflict with evidence ledger; L0 must say 'addresses P0-N' (status: design_accepted), not 'closes P0-N'."
+    description: "Closure-language drift: L0 must reference findings via the addresses-style wording defined in docs/governance/closure-taxonomy.md, never the closure-style wording forbidden by that taxonomy. Status remains the source of truth in this ledger."
     status: design_accepted
     target_wave: W0
     capability: action_guard
@@ -382,3 +382,41 @@ findings:
     target_wave: W0
     capability: operator_shape_gate
     notes: "Explicitly pending. Architecture-sync gate is documented as such, not as Rule 8 evidence."
+
+  # Findings introduced by the 2026-05-08 cycle-3 remediation review.
+  REM-2026-05-08-C3-1:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-3.en.md
+    description: "PowerShell architecture-sync gate threw on Windows because the scan-list mixed relative ('ARCHITECTURE.md') and absolute (Get-ChildItem FullName) paths. Cycle-3 normalizes via Resolve-Path into a single ArrayList and adds a self-check assertion."
+    status: design_accepted
+    target_wave: W0
+    capability: operator_shape_gate
+    notes: "Architecture-sync portion only. Operator-shape smoke remains design_accepted."
+
+  REM-2026-05-08-C3-2:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-3.en.md
+    description: "Current HEAD had no matching delivery evidence (latest delivery file was for an older SHA). Cycle-3 generates a fresh log + delivery file at the new HEAD after the cycle-3 commit lands and labels them architecture-sync evidence (not Rule 8)."
+    status: design_accepted
+    target_wave: W0
+    capability: operator_shape_gate
+
+  REM-2026-05-08-C3-3:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-3.en.md
+    description: "docs/security-control-matrix.md still listed HikariCP connectionInitSql as the connection check-in reset control. That row contradicted the cycle-2 server L2 fix. Cycle-3 replaces it with three rows aligned to server L2: TenantBinder SET LOCAL, transaction-scoped GUC auto-discard + PooledConnectionLeakageIT, RlsPolicyCoverageTest."
+    status: design_accepted
+    target_wave: W0/W2
+    capability: server_rls_protocol
+
+  REM-2026-05-08-C3-4:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-3.en.md
+    description: "Closure-language enforcement was too narrow (only literal 'closes security review P0-' substring). Cycle-3 replaces with case-insensitive regex covering the closure phrase family across all L0/L1/L2/docs and excludes only review/taxonomy/historical-response files by path."
+    status: implemented_unverified
+    target_wave: W0
+    capability: operator_shape_gate
+    notes: "Architecture-sync portion only."
+
+  REM-2026-05-08-C3-5:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-3.en.md
+    description: "gate/README.md described the directory as if Rule 8 operator-shape scripts existed. Cycle-3 splits the README into 'Implemented now' (architecture-sync only) and 'W0 deliverables' (operator-shape smoke) with explicit non-Rule-8 disclaimer."
+    status: design_accepted
+    target_wave: W0
+    capability: operator_shape_gate

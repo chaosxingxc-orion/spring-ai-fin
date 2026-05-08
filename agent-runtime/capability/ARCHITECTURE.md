@@ -136,8 +136,8 @@ sequenceDiagram
 | **AD-5: CapabilityBundle for registration** | Bundle groups (e.g., "kyc-bundle") for batch register | Customer Starters can register a bundle; cleaner than 5 separate registrations |
 | **AD-6: Heuristic fallback under non-prod** | If LLM gateway missing under dev, capability falls through to heuristic stub | Faster dev iteration; prod fail-closed |
 | **AD-7: MaturityLevel L0..L4 per capability** | Mirror Rule 12 ladder per capability | Manifest exposes per-capability maturity |
-| **AD-8: CapabilityInvoker is internal to ActionGuard** | Not a public entry point; called only from Stage 10 Executor | P0-1 + P0-6 closure; bypass paths fail CI |
-| **AD-9: TenantEntitlementStore is consulted at runtime, not at registration** | A capability's entitlement can be granted/revoked per-tenant without re-registering the capability | P1-7 closure; per-tenant entitlement is independent of platform-wide capability availability |
+| **AD-8: CapabilityInvoker is internal to ActionGuard** | Not a public entry point; called only from Stage 10 Executor | addresses P0-1 + P0-6 (status: design_accepted); bypass paths fail CI |
+| **AD-9: TenantEntitlementStore is consulted at runtime, not at registration** | A capability's entitlement can be granted/revoked per-tenant without re-registering the capability | addresses P1-7 (status: design_accepted); per-tenant entitlement is independent of platform-wide capability availability |
 
 ---
 

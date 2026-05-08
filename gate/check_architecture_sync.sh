@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
-# spring-ai-fin architecture-sync gate (cycle-2 expanded; POSIX bash).
+# spring-ai-fin architecture-sync gate (cycle-3 expanded; POSIX bash).
 # Catches drift classes from:
 #   docs/systematic-architecture-improvement-plan-2026-05-07.en.md sec-4-2
 #   docs/systematic-architecture-remediation-plan-2026-05-08.en.md sec-5 + sec-6 + sec-12
 #   docs/systematic-architecture-remediation-plan-2026-05-08-cycle-2.en.md sec-4 through sec-9
+#   docs/systematic-architecture-remediation-plan-2026-05-08-cycle-3.en.md sec-4 through sec-8
 #
 # Default mode: fails if working tree is dirty.
 # --local-only: permits dirty tree, writes evidence_valid_for_delivery=false.
+#
+# Cycle-3 changes:
+#   - Closure-language enforcement is case-insensitive and uses regex.
+#   - rls_pool_lifecycle_matrix rule for docs/security-control-matrix.md.
+#   - docs/security-response-2026-05-08.md is excluded as historical.
 #
 # Architecture-sync gate, NOT Rule 8 operator-shape gate.
 
@@ -84,18 +90,21 @@ while IFS= read -r f; do
     *systematic-architecture-improvement-plan*) continue ;;
     *systematic-architecture-remediation-plan*) continue ;;
     *closure-taxonomy.md*) continue ;;
+    *security-response-2026-05-08*) continue ;;   # cycle-3: historical
   esac
   all_scan_files+=("$f")
 done < <(find docs -type f -name '*.md' 2>/dev/null || true)
 
-# 1. Forbidden closure shortcuts (expanded scope).
-forbidden_phrases=(
-  "closes security review P0-"
-  "closes security review P1-"
-  "closed by design"
-  "fixed in docs"
+# Self-test invariants (cycle-3 sec-4).
+for f in "${all_scan_files[@]}"; do
+  if [[ ! -e "$f" ]]; then
+    fail "gate_self_test_failed" "scan list contains non-existent path: $f" "" 0
+  fi
+done
+
+# 1. Forbidden closure shortcuts: substring patterns (existing fixed phrases).
+forbidden_substrings=(
   "production-ready pending implementation"
-  "accepted, therefore closed"
   "operator-gated by intention"
   "verified by review only"
 )
@@ -103,12 +112,41 @@ for f in "${all_scan_files[@]}"; do
   lineno=0
   while IFS= read -r line || [[ -n "$line" ]]; do
     lineno=$((lineno + 1))
-    for phrase in "${forbidden_phrases[@]}"; do
+    for phrase in "${forbidden_substrings[@]}"; do
       if [[ "$line" == *"$phrase"* ]]; then
         fail "forbidden_closure_shortcut" "matched '$phrase'" "$f" "$lineno"
       fi
     done
   done < "$f"
+done
+
+# 1b. Forbidden closure shortcuts: case-insensitive regex (cycle-3 sec-7).
+declare -a closure_regex_names=(
+  "closes_pn_phrase"
+  "pn_closure_phrase"
+  "closure_rests_on_phrase"
+  "closed_by_design_phrase"
+  "fixed_in_docs_phrase"
+  "accepted_therefore_closed_phrase"
+)
+declare -a closure_regex_patterns=(
+  '\bcloses?\s+(security\s+review\s+)?(§)?P[0-9]+-[0-9]+\b'
+  '\bP[0-9]+-[0-9]+\s+closure\b'
+  '\bclosure\s+rests\s+on\b'
+  '\bclosed\s+by\s+design\b'
+  '\bfixed\s+in\s+docs\b'
+  '\baccepted,\s*therefore\s*closed\b'
+)
+for f in "${all_scan_files[@]}"; do
+  for idx in "${!closure_regex_patterns[@]}"; do
+    name="${closure_regex_names[$idx]}"
+    pat="${closure_regex_patterns[$idx]}"
+    while IFS= read -r m; do
+      [[ -z "$m" ]] && continue
+      lineno="${m%%:*}"
+      fail "forbidden_closure_shortcut" "matched '$name'" "$f" "$lineno"
+    done < <(grep -niP "$pat" "$f" 2>/dev/null || true)
+  done
 done
 
 # 2. Saga overpromised consistency.
@@ -213,7 +251,7 @@ if [[ -f "$ap_l1" ]]; then
   unset buf
 fi
 
-# 7. RLS pool lifecycle.
+# 7. RLS pool lifecycle (L1/L2 architecture docs).
 for f in "${non_docs_arch_files[@]}"; do
   declare -a buf=()
   while IFS= read -r line || [[ -n "$line" ]]; do buf+=("$line"); done < "$f"
@@ -226,7 +264,6 @@ for f in "${non_docs_arch_files[@]}"; do
         bad=1
       fi
       if [[ "$line" == *"every checkout"* ]]; then
-        # Allow if line says "not on every checkout" / "not.*every checkout"
         shopt -s nocasematch
         if [[ ! "$line" =~ not[[:space:]]+on[[:space:]]+every[[:space:]]+checkout ]] && [[ ! "$line" =~ not[[:space:]]+.*every[[:space:]]+checkout ]]; then
           bad=1
@@ -247,6 +284,18 @@ for f in "${non_docs_arch_files[@]}"; do
   done
   unset buf
 done
+
+# 7b. RLS pool lifecycle in security-control-matrix.md (cycle-3 sec-6).
+security_matrix="docs/security-control-matrix.md"
+if [[ -f "$security_matrix" ]]; then
+  lineno=0
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    lineno=$((lineno + 1))
+    if [[ "$line" == *connectionInitSql* ]]; then
+      fail "rls_pool_lifecycle_matrix" "security-control-matrix.md cites 'connectionInitSql' as a tenant reset control (cycle-2 server L2 corrected this; the matrix must use TenantBinder + transaction-scoped GUC + PooledConnectionLeakageIT)" "$security_matrix" "$lineno"
+    fi
+  done < "$security_matrix"
+fi
 
 # 8. Gate path drift.
 matrix="docs/governance/decision-sync-matrix.md"
@@ -326,7 +375,7 @@ porcelain_escaped="$(json_escape "$porcelain")"
 {
   printf '{'
   printf '"script":"check_architecture_sync.sh",'
-  printf '"version":"cycle-2-expanded",'
+  printf '"version":"cycle-3-expanded",'
   printf '"sha":"%s",' "$sha_candidate"
   printf '"generated":"%s",' "$(date -Iseconds 2>/dev/null || date -u +%Y-%m-%dT%H:%M:%SZ)"
   printf '"scan_files_count":%d,' "${#all_scan_files[@]}"

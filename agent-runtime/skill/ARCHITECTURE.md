@@ -156,7 +156,7 @@ Both gates are mandatory. Removing the load-time gate would let malformed regist
 |---|---|---|
 | **AD-1: JSON-backed registry per tenant** | Not a DB | Read-once-at-boot pattern; small working set; git-diff-friendly |
 | **AD-2: Lifecycle 5-stage** | Candidate → Provisional → Certified → Deprecated → Retired | Mirrors hi-agent's lifecycle; well-trodden |
-| **AD-3: Load-time gate is registry hygiene; runtime authorization is ActionGuard** | Both gates run; neither replaces the other | P0-1 + P0-6 closure; load-time alone leaves the runtime side-effect boundary undefended |
+| **AD-3: Load-time gate is registry hygiene; runtime authorization is ActionGuard** | Both gates run; neither replaces the other | addresses P0-1 + P0-6 (status: design_accepted); load-time alone leaves the runtime side-effect boundary undefended |
 | **AD-4: SkillUsageRecorder ≠ EventStore** | Two distinct stores | Recorder updates lifecycle counters; EventStore logs run events for replay |
 | **AD-5: Champion/Challenger via SkillVersionManager** | A/B versioning with explicit promotion | Evolution loop produces challengers; champion holds production traffic until challenger proves out |
 | **AD-6: Spine on every record** | tenant_id, project_id, run_id (where applicable) | Rule 11 strict-posture validation |

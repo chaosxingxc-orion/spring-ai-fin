@@ -59,3 +59,24 @@ A release without a delivery file at its SHA is unreleased.
 - `gate/run_operator_shape_smoke.*` (W0 deliverable) MUST never accept dirty-tree input under any flag — there is no local-only mode for the operator-shape gate.
 
 A delivery file's `Gate result` section must record the gate log path AND assert `evidence_valid_for_delivery: true`. Anything else is a draft, not a delivery file.
+
+## SHA-current rule (cycle-3)
+
+Per `docs/systematic-architecture-remediation-plan-2026-05-08-cycle-3.en.md` §5, every review or release decision must be evaluated against the **exact SHA being reviewed**, not an earlier SHA:
+
+- A delivery file at `docs/delivery/<date>-<X>.md` is evidence for SHA `X` only. It cannot be reused as evidence for any later SHA `Y`, even when `Y` differs from `X` only by documentation edits.
+- A reviewer evaluating SHA `Y` must confirm:
+  1. there is a `gate/log/<Y>.json` with `working_tree_clean: true`, `semantic_pass: true`, and `evidence_valid_for_delivery: true`;
+  2. there is a `docs/delivery/<date>-<Y>.md` referencing that log;
+  3. the delivery file states explicitly whether it is **architecture-sync evidence** or **Rule 8 operator-shape evidence**;
+  4. for Rule 8 claims, the log was produced by `gate/run_operator_shape_smoke.*` (not `gate/check_architecture_sync.*`).
+- If any condition fails, the SHA is unreviewed for that purpose. Older delivery files are retained as historical record only.
+
+## Architecture-sync evidence vs Rule 8 evidence
+
+Every delivery file MUST classify itself in its header:
+
+- **Architecture-sync evidence** — produced by `gate/check_architecture_sync.{ps1,sh}`. Proves the document corpus is internally consistent at a SHA. Does NOT prove the system runs. Cannot authorize ship.
+- **Rule 8 operator-shape evidence** — produced by `gate/run_operator_shape_smoke.{ps1,sh}` (W0 deliverable; does not exist yet). Proves a runnable artifact behaves correctly under deployment shape with real dependencies, sequential runs, cancellation, lifecycle, and fallback-zero. The only kind of evidence that can authorize ship.
+
+A delivery file that mixes the two classifications, or omits the classification entirely, is rejected by the next remediation gate.

@@ -361,7 +361,7 @@ Mapped to L0 §8's 7-dimension scorecard for the `agent-platform/` slice:
 
 Open items tracked at the package level:
 
-- **First implementation wave** — none of the above is coded yet. **W0 is the first wave** per `../docs/plans/W0-evidence-skeleton.md` (Maven multi-module + minimal Spring Boot + posture boot guard + ContractError record + ContractException class + durable run store with `tenant_id` + operator-shape gate scripts). W1 produces `POST /v1/runs` happy path and is gated on a green W0 delivery file. W2 closes P0 security findings; W3 hardens financial writes per `../docs/plans/roadmap-W0-W4.md`.
+- **First implementation wave** — none of the above is coded yet. **W0 is the first wave** per `../docs/plans/W0-evidence-skeleton.md` (Maven multi-module + minimal Spring Boot + posture boot guard + ContractError record + ContractException class + durable run store with `tenant_id` + operator-shape gate scripts). W1 produces `POST /v1/runs` happy path and is gated on a green W0 delivery file. W2 addresses P0 security findings; W3 hardens financial writes per `../docs/plans/roadmap-W0-W4.md`. Closure of any P0/P1 happens only after the corresponding ledger entry reaches `test_verified` per `../docs/governance/closure-taxonomy.md`.
 - **`agent-platform/contracts/v2/` authoring guide** — drafted only when a breaking change is approved; not yet needed.
 - **Streaming uploads via multipart** through `ArtifactFacade.register` — deferred to v1.1+.
 - **Per-error-category metrics roll-up** — deferred.

@@ -41,7 +41,9 @@ This matrix maps every named security control to: **owner module · enforcement 
 | `TenantContextFilter` validates `X-Tenant-Id` matches JWT claim | `agent-platform/api/filter/TenantContextFilter` | Filter chain | dev: warn; research/prod: 401 | `TenantBindingIT` | gate | 401 / 400 |
 | Postgres RLS (`current_setting('app.tenant_id')`) | `agent-runtime/server/TenantContextDataSource` | DB session-var per transaction | all postures | `RlsConnectionPoolIT` | DB-level test | query returns 0 rows / fail closed |
 | `SET LOCAL app.tenant_id` per transaction | `TenantContextDataSource` | JDBC interceptor | all postures | `RlsConnectionPoolIT.testSetLocal` | test log | fail-closed if missing |
-| Connection check-in reset | HikariCP `connectionInitSql` | Pool lifecycle | all | `RlsConnectionPoolIT.testReset` | test | fail closed on next use |
+| Tenant transaction binding | `agent-runtime/server/TenantBinder` `SET LOCAL app.tenant_id` | Transaction start | all | `TenantBindingIT` | test + gate | fail closed if missing |
+| Pooled connection leakage prevention | Transaction-scoped GUC auto-discard on `COMMIT`/`ROLLBACK` (per Postgres `SET LOCAL` semantics) + GUC-empty validation at next `TenantBinder` transaction start | Pool reuse | all | `PooledConnectionLeakageIT` | test | fail closed on stale GUC |
+| RLS policy coverage | Postgres `ENABLE ROW LEVEL SECURITY` + `tenant_isolation` policy on every tenant-scoped table | Migration | all | `RlsPolicyCoverageTest` | CI gate | reject migration |
 | No DB access outside tenant-scoped txn | AOP `TenantContextAspect` | research/prod | research/prod | `RlsConnectionPoolIT.testFailClosed` | gate | exception |
 | Outbox relay tenant scope | `agent-runtime/outbox/OutboxRelayTenantScope` | Per-batch tenant SET | all | `OutboxRelayTenantScopeIT` | metric | rejected event publish |
 | SSE tenant filter | `agent-platform/api/RunsExtendedController` | Query at `iterEvents` | all | `SseTenantIsolationIT` | test | 404 cross-tenant |

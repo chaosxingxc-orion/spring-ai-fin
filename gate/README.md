@@ -1,21 +1,68 @@
-# gate — Operator-shape gate scripts
+# gate — Architecture-sync gates and (planned) Rule 8 operator-shape gate
 
-Per CLAUDE.md Rule 8 and `docs/systematic-architecture-improvement-plan-2026-05-07.en.md` §4.8.
+Per CLAUDE.md Rule 8, `docs/systematic-architecture-improvement-plan-2026-05-07.en.md` §4.8, and `docs/systematic-architecture-remediation-plan-2026-05-08-cycle-3.en.md` §8.
 
-This directory holds the executable gate scripts. They run against a long-lived process with real dependencies and verify the six properties of Rule 8.
+This directory holds two distinct families of gate scripts. They are NOT interchangeable. The architecture-sync gate proves the document corpus is internally consistent; the Rule 8 operator-shape gate proves a runnable artifact behaves correctly under deployment shape.
 
-## Scripts (W0 deliverables)
+## Implemented now (architecture-sync gate)
 
-- `run_operator_shape_smoke.sh` — Linux/macOS entry point
-- `run_operator_shape_smoke.ps1` — Windows entry point
-- `check_architecture_sync.sh` / `.ps1` — verifies `docs/governance/decision-sync-matrix.md` against the L0/L2 corpus
+- `check_architecture_sync.ps1` — Windows PowerShell entry point
+- `check_architecture_sync.sh` — Linux / macOS / Git Bash entry point
 
-## Invariants
+These scan the architecture corpus (44–45 files: L0 + L1/L2 `ARCHITECTURE.md` + governance + delivery + gate metadata) and enforce the rules documented in `docs/governance/closure-taxonomy.md` and the cycle-1/2/3 remediation plans. They emit `gate/log/<sha>.json` with `working_tree_clean`, `semantic_pass`, `evidence_valid_for_delivery`, and a structured `failures` list with line numbers.
 
-- Scripts MUST exit non-zero on any FAIL.
-- Scripts MUST emit a structured JSON log to `gate/log/<sha>.json` so the delivery file at `docs/delivery/<date>-<sha>.md` can attach it.
-- Scripts MUST NOT mock providers or databases. If a real dependency is unavailable, the script exits with a "dependency missing" reason that the caller can react to (e.g., skip on developer laptop with `--allow-skip`); CI does not pass `--allow-skip`.
+**These architecture-sync gates do NOT satisfy Rule 8.** They:
 
-## Status
+- do NOT start the application;
+- do NOT use real dependencies;
+- do NOT execute three sequential public-entry runs;
+- do NOT prove resource reuse, lifecycle observability, cancellation round-trip, or fallback-zero;
+- are NOT release evidence.
 
-The scripts themselves are W0 deliverables; this directory is a placeholder until W0 lands.
+A PASS from these gates only means the document corpus is internally consistent. It does not authorize ship.
+
+### Modes
+
+| Invocation | Working tree | `evidence_valid_for_delivery` | Use |
+|---|---|---|---|
+| `bash check_architecture_sync.sh` (default) | must be clean | `true` on PASS | the only mode whose log a delivery file may reference |
+| `bash check_architecture_sync.sh --local-only` | may be dirty | `false` always | local development; cannot be referenced by delivery |
+| `pwsh check_architecture_sync.ps1` (default) | must be clean | `true` on PASS | Windows equivalent |
+| `pwsh check_architecture_sync.ps1 -LocalOnly` | may be dirty | `false` always | Windows local development |
+
+The two scripts emit equivalent semantic results.
+
+## W0 deliverables (Rule 8 operator-shape gate — DOES NOT EXIST YET)
+
+- `run_operator_shape_smoke.ps1` — Windows entry point (planned, not present)
+- `run_operator_shape_smoke.sh` — Linux / macOS entry point (planned, not present)
+
+These will be the FIRST Rule 8 operator-shape gates. Per `docs/plans/W0-evidence-skeleton.md`, the smoke gate must:
+
+1. build the runnable artifact;
+2. start a long-lived managed process (systemd / docker / pm2 / supervised JVM);
+3. use real local Postgres (no mock);
+4. use a real LLM provider (no mock under research/prod);
+5. hit `/health` and `/ready`;
+6. perform three sequential `POST /v1/runs` invocations against the same long-lived process;
+7. prove every run reaches a terminal state in ≤ `2 × observed_p95`;
+8. prove run lifecycle fields (`current_stage`, `finished_at`) populate within 30s and on terminal respectively;
+9. cancel a live run and drive it to a terminal state (`200`);
+10. cancel an unknown run id and return `404`;
+11. assert `*_fallback_total == 0` for the happy path;
+12. write `gate/log/<sha>.json` with `evidence_valid_for_delivery=true`;
+13. write `docs/delivery/<date>-<sha>.md` referencing the log.
+
+`run_operator_shape_smoke.*` is **absent until W0 produces it**. There is no `--local-only` mode for the operator-shape gate; dirty trees are never valid Rule 8 evidence.
+
+## Audit trail
+
+`gate/log/<sha>.json` files are kept on GitHub as audit artifacts (per the user's "all process artifacts on GitHub" policy committed in `f67719f`). Maintainers commit gate logs that delivery files reference.
+
+## Status (per `docs/governance/architecture-status.yaml`)
+
+- `operator_shape_gate` capability — split:
+  - architecture-sync portion: `implemented_unverified` (the two scripts exist and pass on a clean tree at HEAD)
+  - operator-shape smoke portion: `design_accepted` (the smoke gate does not exist; W0 deliverable)
+
+No reader should mistake an architecture-sync PASS for Rule 8 evidence.

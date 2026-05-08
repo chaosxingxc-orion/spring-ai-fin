@@ -142,7 +142,7 @@ public record FailoverReason(
 | **AD-6: Prompt cache namespace + classification** | Cache keys composed of `tenant_id`, `model`, `prompt_version`, `section_classification` | Cross-tenant cache leak prevented at construction (Rule 11); cross-classification leak (e.g., a tenant-policy hash also keying user-input output) prevented by classification (P0-5; P1-3) |
 | **AD-7: TierRouter is pluggable** | Default rolling-EMA-per-tier; customer can override via `@ConditionalOnMissingBean` | Cost-sensitive customers can swap to RouteLLM (deferred Tier-2) |
 | **AD-8: One inference engine at MVP** | vLLM **or** OpenAI-compat — pick one (review M7) | v5.0's 3-engine multi-tier was premature |
-| **AD-9: Typed PromptSegment, no raw String prompts** | `LLMRequest.segments: List<PromptSegment>`; raw String constructor forbidden | P0-5 closure; the dangerous moment is "raw user input → tool call"; making sections + taint mandatory makes the dangerous shape unconstructable |
+| **AD-9: Typed PromptSegment, no raw String prompts** | `LLMRequest.segments: List<PromptSegment>`; raw String constructor forbidden | addresses P0-5 (status: design_accepted); the dangerous moment is "raw user input → tool call"; making sections + taint mandatory makes the dangerous shape unconstructable |
 | **AD-10: Output taint = supremum of input taints** | `outputTaint = max(inputTaint)` per `TaintLevel` ordering | Conservatively propagate; tool calls produced from a UNTRUSTED retrieved-context segment carry UNTRUSTED through ActionGuard |
 
 ---
@@ -243,7 +243,7 @@ When the model produces a tool call, `LLMGateway` constructs the `ActionEnvelope
 - `proposalSource = LLM_OUTPUT`
 - `proposalTaint = output taint of the prompt that produced the model output`
 
-The ActionEnvelope flows into `ActionGuard.authorize` (`../action-guard/`). Because ActionGuard's Stage 7 (OpaPolicyDecider) reads `proposalTaint`, an attacker who plants a "call shell.exec" instruction in a RAG document gets a tool call envelope with `proposalTaint=UNTRUSTED`, and the OPA red-line policy denies the action. The taint travel from input segment to ActionGuard is the system-property guarantee P0-5 closure rests on.
+The ActionEnvelope flows into `ActionGuard.authorize` (`../action-guard/`). Because ActionGuard's Stage 7 (OpaPolicyDecider) reads `proposalTaint`, an attacker who plants a "call shell.exec" instruction in a RAG document gets a tool call envelope with `proposalTaint=UNTRUSTED`, and the OPA red-line policy denies the action. The taint travel from input segment to ActionGuard is the system-property guarantee that the design's response to P0-5 depends on (status: design_accepted; tracked in `../../docs/governance/architecture-status.yaml`).
 
 ---
 

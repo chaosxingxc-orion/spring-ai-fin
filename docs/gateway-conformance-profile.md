@@ -185,7 +185,7 @@ Higress conformance attestation generator script: `tools/gateway-conformance/gen
 
 ---
 
-## 5. Reviewer's acceptance tests (P0-9 closure)
+## 5. Reviewer's acceptance tests (addresses P0-9; status: design_accepted)
 
 | Test | Expected |
 |---|---|

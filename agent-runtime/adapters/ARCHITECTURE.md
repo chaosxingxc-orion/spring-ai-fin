@@ -179,7 +179,7 @@ The Python sidecar Docker image (published as `springaifin/py-sidecar:1.0.0`) co
 
 ## 5. Python sidecar security binding
 
-The sidecar is a separate process whose JVM-side caller cannot independently verify. Without explicit binding, sidecar metadata could spoof tenant identity, payload could be unbounded, cancellation could leak, and the image's supply-chain provenance could be unknown. This section binds dispatch to `docs/sidecar-security-profile.md` and makes the trust boundary explicit. Closes security review §P0-7 and remediation §7.5.
+The sidecar is a separate process whose JVM-side caller cannot independently verify. Without explicit binding, sidecar metadata could spoof tenant identity, payload could be unbounded, cancellation could leak, and the image's supply-chain provenance could be unknown. This section binds dispatch to `docs/sidecar-security-profile.md` and makes the trust boundary explicit. Addresses security review §P0-7 and remediation §7.5 (status: design_accepted; tracked in `../../docs/governance/architecture-status.yaml`).
 
 ### 5.1 Default transport
 
@@ -336,7 +336,7 @@ If the Python sidecar overhead exceeds 100ms p95, we defer Python-sidecar GA to 
 | **AD-7: AdapterRunHandle is opaque** | Adapters own their runtime state | Lets adapter implementations evolve without changing public interface |
 | **AD-8: TaskContract.frameworkPreference is hint, not contract** | RunExecutor may override (e.g., for capability mismatch) | Capability matching is a deeper invariant than user preference |
 | **AD-9: Sidecar default transport is UDS** | Unix Domain Socket; mTLS for non-loopback; loopback TCP only under DEV LOCAL_LOOPBACK | Reduces network attack surface; co-locates trust |
-| **AD-10: Sidecar metadata is untrusted; tenant rebinds from JVM RunContext** | `SidecarMetadataValidator` rejects mismatched tenant_id and emits SECURITY_EVENT | P0-7 closure; Attack Path B is sidecar metadata loss / tampering |
+| **AD-10: Sidecar metadata is untrusted; tenant rebinds from JVM RunContext** | `SidecarMetadataValidator` rejects mismatched tenant_id and emits SECURITY_EVENT | addresses P0-7 (status: design_accepted); Attack Path B is sidecar metadata loss / tampering |
 | **AD-11: SPIFFE workload identity mandatory for non-loopback** | `SpiffeIdentityVerifier` validates SVID per call (with caching) | Cross-host sidecar deployments need cryptographic identity |
 | **AD-12: Sidecar payload + timeout + cancellation bounds enforced** | Per-deployment defaults; allowlist for overrides | Prevents resource exhaustion + cancellation leak |
 | **AD-13: Sidecar fallback gate-asserted to zero** | W2/W4 operator-shape gate asserts `springaifin_adapter_fallback_total == 0` | Sidecar fallback is not a success path |

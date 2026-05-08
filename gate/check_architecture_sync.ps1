@@ -1,26 +1,23 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-  spring-ai-fin architecture-sync gate (cycle-2 expanded).
+  spring-ai-fin architecture-sync gate (cycle-3 expanded).
 
 .DESCRIPTION
   Catches drift classes from:
     docs/systematic-architecture-improvement-plan-2026-05-07.en.md sec-4-2
     docs/systematic-architecture-remediation-plan-2026-05-08.en.md sec-5 + sec-6 + sec-12
     docs/systematic-architecture-remediation-plan-2026-05-08-cycle-2.en.md sec-4 through sec-9
+    docs/systematic-architecture-remediation-plan-2026-05-08-cycle-3.en.md sec-4 through sec-8
 
   Default mode: fails if working tree is dirty.
   -LocalOnly: passes with dirty tree but writes evidence_valid_for_delivery=false.
 
-  Scan surfaces:
-    ARCHITECTURE.md
-    agent-platform/**/ARCHITECTURE.md
-    agent-runtime/**/ARCHITECTURE.md
-    docs/**/*.md (excluding review docs and closure-taxonomy.md)
-    docs/governance/architecture-status.yaml
-    docs/governance/decision-sync-matrix.md
-    gate/README.md
-    docs/delivery/README.md
+  Cycle-3 fixes:
+    - Path normalization via Resolve-Path + ArrayList (no relative/absolute mix).
+    - Closure-language enforcement is case-insensitive and uses regex.
+    - rls_pool_lifecycle_matrix rule for docs/security-control-matrix.md.
+    - docs/security-response-2026-05-08.md is excluded as historical.
 
 .NOTES
   Architecture-sync gate, NOT Rule 8 operator-shape gate.
@@ -33,7 +30,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..')
+$repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 Set-Location $repoRoot
 
 $failures = New-Object System.Collections.ArrayList
@@ -47,6 +44,14 @@ function Fail([string]$category, [string]$message, [string]$path, [int]$line = 0
   [void]$failures.Add($entry)
 }
 
+function Rel([string]$abs) {
+  if ([string]::IsNullOrEmpty($abs)) { return $abs }
+  if ($abs.StartsWith($repoRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+    return ($abs.Substring($repoRoot.Length).TrimStart('\','/') -replace '\\','/')
+  }
+  return ($abs -replace '\\','/')
+}
+
 # ---- 0. Working tree state (cycle-2 sec-8) ----
 $porcelain = ''
 try { $porcelain = ((& git status --porcelain 2>$null) -join "`n") } catch { $porcelain = '' }
@@ -55,45 +60,63 @@ if (-not $treeClean -and -not $LocalOnly) {
   Fail 'dirty_tree' 'working tree is dirty; pass -LocalOnly for non-delivery evidence' '' 0
 }
 
-# ---- 1. Build scan lists ----
-$L0 = if (Test-Path 'ARCHITECTURE.md') { @('ARCHITECTURE.md') } else { @() }
+# ---- 1. Build scan lists with path normalization (cycle-3 sec-4) ----
+$AllScanFiles = New-Object System.Collections.ArrayList
+$NonDocsArchFiles = New-Object System.Collections.ArrayList
 
-$L1L2 = @()
-foreach ($root in @('agent-platform', 'agent-runtime')) {
-  if (Test-Path $root) {
-    $found = Get-ChildItem -Path $root -Filter 'ARCHITECTURE.md' -Recurse -File | Select-Object -ExpandProperty FullName
-    if ($found) { $L1L2 += $found }
+function Add-ScanFile([System.Collections.ArrayList]$list, [string]$path) {
+  if ([string]::IsNullOrWhiteSpace($path)) { return }
+  try {
+    $resolved = Resolve-Path -LiteralPath $path -ErrorAction Stop
+    [void]$list.Add($resolved.Path)
+  } catch {
+    # Silently skip non-existent paths (used by optional repo files).
   }
 }
 
-$DocsAllowed = @()
+# L0
+if (Test-Path 'ARCHITECTURE.md') {
+  Add-ScanFile $AllScanFiles 'ARCHITECTURE.md'
+  Add-ScanFile $NonDocsArchFiles 'ARCHITECTURE.md'
+}
+
+# L1/L2 ARCHITECTURE.md files under agent-platform/ and agent-runtime/
+foreach ($root in @('agent-platform', 'agent-runtime')) {
+  if (Test-Path $root) {
+    Get-ChildItem -Path $root -Filter 'ARCHITECTURE.md' -Recurse -File -ErrorAction SilentlyContinue |
+      ForEach-Object {
+        Add-ScanFile $AllScanFiles $_.FullName
+        Add-ScanFile $NonDocsArchFiles $_.FullName
+      }
+  }
+}
+
+# docs/**/*.md (excluding review docs, taxonomy, and historical security-response)
 if (Test-Path 'docs') {
-  $DocsAllowed = Get-ChildItem -Path 'docs' -Filter '*.md' -Recurse -File | Where-Object {
-    $rel = (($_.FullName.Substring($repoRoot.Path.Length + 1)) -replace '\\','/').ToLower()
-    -not (
-      $rel.Contains('systematic-architecture-improvement-plan') -or
-      $rel.Contains('systematic-architecture-remediation-plan') -or
-      $rel.Contains('closure-taxonomy.md')
-    )
-  } | Select-Object -ExpandProperty FullName
+  Get-ChildItem -Path 'docs' -Filter '*.md' -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object {
+    $relLower = (Rel $_.FullName).ToLower()
+    $skip = $false
+    if ($relLower.Contains('systematic-architecture-improvement-plan')) { $skip = $true }
+    if ($relLower.Contains('systematic-architecture-remediation-plan')) { $skip = $true }
+    if ($relLower.Contains('closure-taxonomy.md')) { $skip = $true }
+    if ($relLower.Contains('security-response-2026-05-08')) { $skip = $true }   # cycle-3: historical
+    if (-not $skip) { Add-ScanFile $AllScanFiles $_.FullName }
+  }
 }
 
-$AllScanFiles = @($L0 + $L1L2 + $DocsAllowed)
-$NonDocsArchFiles = @($L0 + $L1L2)
-
-function Rel([string]$abs) {
-  if ([string]::IsNullOrEmpty($abs)) { return $abs }
-  return (($abs.Substring($repoRoot.Path.Length + 1)) -replace '\\','/')
+# ---- Self-test: scan list invariants (cycle-3 sec-4 exit criterion) ----
+foreach ($f in $AllScanFiles) {
+  if (-not [System.IO.Path]::IsPathRooted($f)) {
+    Fail 'gate_self_test_failed' "scan list contains non-absolute path: $f" '' 0
+  }
+  if (-not (Test-Path -LiteralPath $f)) {
+    Fail 'gate_self_test_failed' "scan list contains non-existent path: $(Rel $f)" '' 0
+  }
 }
 
-# ---- 2. Forbidden closure shortcuts (existing; expanded scope) ----
-$forbidden = @(
-  'closes security review P0-',
-  'closes security review P1-',
-  'closed by design',
-  'fixed in docs',
+# ---- 2. Forbidden closure shortcuts: substring patterns (existing) ----
+$forbiddenSubstrings = @(
   'production-ready pending implementation',
-  'accepted, therefore closed',
   'operator-gated by intention',
   'verified by review only'
 )
@@ -101,9 +124,30 @@ foreach ($f in $AllScanFiles) {
   $rel = Rel $f
   $lines = Get-Content -LiteralPath $f
   for ($i = 0; $i -lt $lines.Count; $i++) {
-    foreach ($phrase in $forbidden) {
-      if ($lines[$i] -clike "*$phrase*") {
+    foreach ($phrase in $forbiddenSubstrings) {
+      if ($lines[$i] -like "*$phrase*") {
         Fail 'forbidden_closure_shortcut' "matched '$phrase'" $rel ($i + 1)
+      }
+    }
+  }
+}
+
+# ---- 2b. Forbidden closure shortcuts: case-insensitive regex (cycle-3 sec-7) ----
+$closureRegexes = @(
+  @{ Name = 'closes_pn_phrase';        Pattern = '(?i)\bcloses?\s+(security\s+review\s+)?(?:§)?P[0-9]+-[0-9]+\b' },
+  @{ Name = 'pn_closure_phrase';       Pattern = '(?i)\bP[0-9]+-[0-9]+\s+closure\b' },
+  @{ Name = 'closure_rests_on_phrase'; Pattern = '(?i)\bclosure\s+rests\s+on\b' },
+  @{ Name = 'closed_by_design_phrase'; Pattern = '(?i)\bclosed\s+by\s+design\b' },
+  @{ Name = 'fixed_in_docs_phrase';    Pattern = '(?i)\bfixed\s+in\s+docs\b' },
+  @{ Name = 'accepted_therefore_closed_phrase'; Pattern = '(?i)\baccepted,\s*therefore\s*closed\b' }
+)
+foreach ($f in $AllScanFiles) {
+  $rel = Rel $f
+  $lines = Get-Content -LiteralPath $f
+  for ($i = 0; $i -lt $lines.Count; $i++) {
+    foreach ($r in $closureRegexes) {
+      if ($lines[$i] -match $r.Pattern) {
+        Fail 'forbidden_closure_shortcut' "matched '$($r.Name)'" $rel ($i + 1)
       }
     }
   }
@@ -123,7 +167,7 @@ foreach ($f in $NonDocsArchFiles) {
   }
 }
 
-# ---- 4. ActionGuard stage drift (cycle-2 sec-4) ----
+# ---- 4. ActionGuard stage drift ----
 $tenStagePatterns = @('10-stage', '10 stages', 'ten-stage', 'ten stages')
 foreach ($f in $AllScanFiles) {
   $rel = Rel $f
@@ -155,7 +199,7 @@ if (Test-Path $agL2) {
   }
 }
 
-# ---- 6. Contract posture purity (cycle-2 sec-5) ----
+# ---- 6. Contract posture purity ----
 $agentPlatformL1 = 'agent-platform/ARCHITECTURE.md'
 if (Test-Path $agentPlatformL1) {
   $lines = Get-Content -LiteralPath $agentPlatformL1
@@ -175,7 +219,7 @@ if (Test-Path $agentPlatformL1) {
   }
 }
 
-# ---- 7. Auth algorithm policy (cycle-2 sec-5) ----
+# ---- 7. Auth algorithm policy ----
 if (Test-Path $agentPlatformL1) {
   $lines = Get-Content -LiteralPath $agentPlatformL1
   for ($i = 0; $i -lt $lines.Count; $i++) {
@@ -190,7 +234,7 @@ if (Test-Path $agentPlatformL1) {
   }
 }
 
-# ---- 8. RLS pool lifecycle (cycle-2 sec-6) ----
+# ---- 8. RLS pool lifecycle (L1/L2 architecture docs) ----
 foreach ($f in $NonDocsArchFiles) {
   $rel = Rel $f
   $lines = Get-Content -LiteralPath $f
@@ -204,6 +248,18 @@ foreach ($f in $NonDocsArchFiles) {
       if ($bad) {
         Fail 'rls_pool_lifecycle' "doc claims 'connectionInitSql' is a per-checkout reset hook (HikariCP runs it only at connection creation)" $rel ($i + 1)
       }
+    }
+  }
+}
+
+# ---- 8b. RLS pool lifecycle in security-control-matrix.md (cycle-3 sec-6) ----
+$securityMatrix = 'docs/security-control-matrix.md'
+if (Test-Path $securityMatrix) {
+  $lines = Get-Content -LiteralPath $securityMatrix
+  for ($i = 0; $i -lt $lines.Count; $i++) {
+    $line = $lines[$i]
+    if ($line -clike '*connectionInitSql*') {
+      Fail 'rls_pool_lifecycle_matrix' "security-control-matrix.md cites 'connectionInitSql' as a tenant reset control (cycle-2 server L2 corrected this; the matrix must use TenantBinder + transaction-scoped GUC + PooledConnectionLeakageIT)" $securityMatrix ($i + 1)
     }
   }
 }
@@ -232,7 +288,7 @@ if ((Test-Path $gateReadme) -and (Test-Path $delReadme)) {
   }
 }
 
-# ---- 11. status enum sanity ----
+# ---- 11. Status enum sanity ----
 $statusPath = 'docs/governance/architecture-status.yaml'
 if (Test-Path $statusPath) {
   $allowed = @('proposed','design_accepted','implemented_unverified','test_verified','operator_gated','released')
@@ -283,7 +339,7 @@ $evidenceValidForDelivery = $treeClean -and $semanticPass
 
 $result = [pscustomobject]@{
   script                       = 'check_architecture_sync.ps1'
-  version                      = 'cycle-2-expanded'
+  version                      = 'cycle-3-expanded'
   sha                          = $shaCandidate
   generated                    = (Get-Date -Format 'o')
   scan_files_count             = $AllScanFiles.Count

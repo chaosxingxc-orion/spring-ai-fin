@@ -870,7 +870,7 @@ This is the section the architecture review committee is most likely to challeng
 - **JWT validation algorithm** (updated 2026-05-08):
   - **research/prod default**: RS256 or ES256 with JWKS endpoint per issuer; `iss`/`aud`/`kid`/`exp`/`nbf`/`iat`/`jti` enforced; `alg=none` rejected; HS/RS confusion rejected
   - **dev posture, loopback bind**: HS256 OR anonymous (fast iteration)
-  - **dev posture, non-loopback bind**: fail boot unless `ALLOW_DEV_NON_LOOPBACK_HS256=true` set explicitly (closes P0-4 + P0-2 jointly)
+  - **dev posture, non-loopback bind**: fail boot unless `ALLOW_DEV_NON_LOOPBACK_HS256=true` set explicitly (addresses P0-4 + P0-2 jointly; status: design_accepted — see `docs/governance/architecture-status.yaml`)
   - **research posture, BYOC small (single tenant, customer's existing HS256 IdP)**: HS256 PERMITTED with audit alarm + explicit BYOC contract acknowledgment (Q-S1 carve-out)
   - **research posture, SaaS multi-tenant**: RS256/JWKS REQUIRED for per-issuer trust isolation
   - **prod posture, any deployment**: RS256/JWKS REQUIRED
@@ -1435,7 +1435,7 @@ This section is exhaustive and structured by risk category. Each risk has a trac
 
 | Risk | Description | Owner | Plan |
 |---|---|---|---|
-| **No code yet** | Every claim above is a target. **First wave (W0)** must produce a runnable evidence skeleton (Maven multi-module, minimal Spring Boot, posture boot guard, ContractError record + ContractException class, durable run store with tenant_id, operator-shape gate scripts) per `docs/plans/W0-evidence-skeleton.md`. W1 produces `POST /v1/runs` happy path; W2 closes P0 security findings; W3 hardens financial writes. | RO + AS-RO | `docs/plans/W0-evidence-skeleton.md`, `docs/plans/roadmap-W0-W4.md` |
+| **No code yet** | Every claim above is a target. **First wave (W0)** must produce a runnable evidence skeleton (Maven multi-module, minimal Spring Boot, posture boot guard, ContractError record + ContractException class, durable run store with tenant_id, operator-shape gate scripts) per `docs/plans/W0-evidence-skeleton.md`. W1 produces `POST /v1/runs` happy path; W2 addresses P0 security findings; W3 hardens financial writes. Closure of any P0/P1 happens only when the corresponding ledger entry in `docs/governance/architecture-status.yaml` reaches `test_verified` per `docs/governance/closure-taxonomy.md`. | RO + AS-RO | `docs/plans/W0-evidence-skeleton.md`, `docs/plans/roadmap-W0-W4.md` |
 | **Operator-shape gate scripts** | `gate/check_architecture_sync.{ps1,sh}` (created 2026-05-08); `gate/run_operator_shape_smoke.{ps1,sh}` not written. | AS-RO + DX | W0 deliverable. |
 | **Spine-validation framework not coded** | `@Spine` annotation + `SpineValidationTest` reflective check don't exist. | CO | W0/W1 deliverable. |
 | **TenantContext propagation across all layers not validated** | 4 shadow-path tests × 10 layers = 40 tests don't exist. | AS-RO + RO | W2 deliverable (after RLS connection protocol from `agent-runtime/server/` §6 lands). |

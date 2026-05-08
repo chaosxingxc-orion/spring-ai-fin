@@ -183,7 +183,7 @@ public class TenantBinder {
     public <R> R inTenantTransaction(String tenantId, TransactionalWork<R> work) {
         Objects.requireNonNull(tenantId, "tenantId");
         if (tenantId.isBlank()) {
-            // P0-3 closure: research/prod fail closed; dev warns.
+            // addresses P0-3 (status: design_accepted): research/prod fail closed; dev warns.
             if (posture.requiresStrict()) {
                 throw new TenantContextMissingException(
                     ContractError.of("tenantScope", "tenantId is blank in tenant-scoped transaction"));
@@ -283,7 +283,7 @@ A tenant-scoped query that finds zero rows because the row belongs to another te
 | **AD-5: Tenant_id in every store** | Postgres RLS + application-level cross-check | Cross-tenant leak prevented at multiple layers |
 | **AD-6: 24h purge for IdempotencyStore** | `purgeExpired` + lifespan loop + `springaifin_idempotency_purged_total` | Mirrors hi-agent W35-T4; reference shape for all stores |
 | **AD-7: EventBus is in-process at MVP** | Spring `ApplicationEventPublisher` | Multi-replica federation deferred to v1.1 (Kafka adoption) |
-| **AD-8: TenantBinder is the only entry to tenant-scoped transactions** | Raw `JdbcTemplate.execute` against tenant-scoped tables forbidden by `RlsConnectionAuditTest` | P0-3 closure; tenant binding is structural, not caller-discipline |
+| **AD-8: TenantBinder is the only entry to tenant-scoped transactions** | Raw `JdbcTemplate.execute` against tenant-scoped tables forbidden by `RlsConnectionAuditTest` | addresses P0-3 (status: design_accepted); tenant binding is structural, not caller-discipline |
 | **AD-9: Transaction-scoped GUC, not `connectionInitSql`, is the per-lease safety mechanism** | `SET LOCAL app.tenant_id` is auto-discarded by Postgres on `COMMIT`/`ROLLBACK`; `TenantBinder` checks the GUC is empty at transaction start as defense-in-depth; `PooledConnectionLeakageIT` proves reuse does not leak | `connectionInitSql` runs only at connection creation (per HikariCP docs), not on every checkout, so it cannot be the reset hook. The transaction-scoped GUC is the property that actually holds. |
 | **AD-10: Cross-tenant reads return 404, not 200 empty** | NotFoundException mapped to 404 | Empty 200 is a side-channel signal of "you almost saw something"; 404 is indistinguishable from "does not exist" |
 

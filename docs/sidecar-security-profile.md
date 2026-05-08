@@ -140,7 +140,7 @@ public Flux<StageEvent> events(AdapterRunHandle handle) {
 
 ---
 
-## 4. Reviewer's acceptance tests (P0-7 closure)
+## 4. Reviewer's acceptance tests (addresses P0-7; status: design_accepted)
 
 | Test | Expected |
 |---|---|

@@ -179,7 +179,7 @@ Inspector queries themselves emit `AuditClass.SECURITY_EVENT` records (recursive
 | ADR | Decision | Why |
 |---|---|---|
 | **AD-1: 5 audit classes** | TELEMETRY / SECURITY_EVENT / REGULATORY_AUDIT / PII_ACCESS / FINANCIAL_ACTION | Reviewer-recommended; sharply distinguishes telemetry from evidence |
-| **AD-2: Class-aware failure semantics** | Each class has explicit failure behaviour | P0-8 closure; "PII decode cannot return plaintext if audit write fails" |
+| **AD-2: Class-aware failure semantics** | Each class has explicit failure behaviour | addresses P0-8 (status: design_accepted); "PII decode cannot return plaintext if audit write fails" |
 | **AD-3: Audit-before-action for PII/financial** | Synchronous write before reveal/commit | Prevents unprovable actions |
 | **AD-4: Hash chain per row** | hashChainPrev links rows in chain | Tamper-evidence at row level |
 | **AD-5: Daily Merkle root + RFC 3161 anchor** | Per-tenant per-day Merkle root → public timestamp | Compliance-defensible immutability |

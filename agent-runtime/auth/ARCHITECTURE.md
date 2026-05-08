@@ -53,7 +53,7 @@ This package implements the L0 D-block §A3 identity policy verbatim. The algori
 | Posture | Deployment shape | Bind | Permitted algorithms | Notes |
 |---|---|---|---|---|
 | `dev` | local single-developer | loopback | HS256, anonymous | Fast iteration |
-| `dev` | any | non-loopback | none unless `ALLOW_DEV_NON_LOOPBACK_HS256=true` AND `ALLOW_DEV_NON_LOOPBACK=true` | Fail boot otherwise (closes P0-4 + P0-2 jointly) |
+| `dev` | any | non-loopback | none unless `ALLOW_DEV_NON_LOOPBACK_HS256=true` AND `ALLOW_DEV_NON_LOOPBACK=true` | Fail boot otherwise (addresses P0-4 + P0-2 jointly; status: design_accepted) |
 | `research` | BYOC, single tenant, customer's existing HS256 IdP | any | HS256 with explicit BYOC carve-out + audit alarm | Q-S1 carve-out; documented per-tenant in `docs/governance/allowlists.yaml` |
 | `research` | SaaS, multi-tenant | any | RS256 / ES256 with JWKS (mandatory) | Per-issuer trust isolation enforced by `IssuerRegistry` |
 | `prod` | any deployment shape | any | RS256 / ES256 with JWKS (mandatory) | No HS256 path under prod, period |
@@ -198,7 +198,7 @@ public class HmacValidator {
 
 | ADR | Decision | Why |
 |---|---|---|
-| **AD-1: Posture-aware algorithm policy** | RS256/ES256 + JWKS mandatory for research SaaS + prod; HS256 only for DEV loopback or BYOC single-tenant carve-out | L0 D-block §A3; closes P0-2 |
+| **AD-1: Posture-aware algorithm policy** | RS256/ES256 + JWKS mandatory for research SaaS + prod; HS256 only for DEV loopback or BYOC single-tenant carve-out | L0 D-block §A3; addresses P0-2 (status: design_accepted) |
 | **AD-2: Validate, don't issue** | Customer's IdP issues | Decouples auth lifecycle; uses existing infrastructure |
 | **AD-3: Stdlib JWT parsing for HS256, signature library for RS/ES** | `java.util.Base64` + `javax.crypto.Mac` for HS256; `nimbus-jose-jwt` (or equivalent) for RS256/ES256 | RS256/ES256 require ASN.1 + algorithm-aware verification that stdlib does not provide; HS256 stays minimal |
 | **AD-4: Anonymous claims permitted only in DEV + loopback** | Posture-aware passthrough scoped to loopback bind | Refused under research/prod and under non-loopback DEV unless explicitly opted in via `PostureBootGuard` flags |

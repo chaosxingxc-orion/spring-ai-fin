@@ -353,7 +353,7 @@ Rules:
 | **AD-6: Compensation runs even if intermediate compensation fails; reconciliation queue catches the residue** | Continue compensating remaining steps; failed compensations enqueue reconciliation; saga enters `RECONCILIATION_REQUIRED` | Better to compensate as much as possible than fail-stop; failed compensations cannot be silently dropped |
 | **AD-7: OutboxRelay polls every 100ms** | Polling, not LISTEN/NOTIFY | LISTEN/NOTIFY drops messages on disconnect; polling is simpler and more resilient. CDC (Debezium) for high-volume customers |
 | **AD-8: Postgres RLS on outbox_event** | `tenant_id = current_setting('app.tenant_id')` | Cross-tenant outbox leak prevented at the database level |
-| **AD-9: FinancialWriteClass alongside consistency** | Each `@WriteSite` on a financial write declares both axes; compatibility matrix enforced by CI | P0-10 closure; prevents misuse such as `OUTBOX_ASYNC` for fund transfer |
+| **AD-9: FinancialWriteClass alongside consistency** | Each `@WriteSite` on a financial write declares both axes; compatibility matrix enforced by CI | addresses P0-10 (status: design_accepted); prevents misuse such as `OUTBOX_ASYNC` for fund transfer |
 | **AD-10: Saga is journaled progress with compensations, not ACID** | User-facing wording must not say "strong" or "all-or-nothing" for saga; reversal journal is the source of truth on compensation | Reviewer §4.6; prevents over-promised guarantees |
 
 ---
