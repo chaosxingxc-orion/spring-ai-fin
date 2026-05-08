@@ -78,25 +78,38 @@
 ## Delivery evidence (current)
 
 - [`docs/delivery/README.md`](../delivery/README.md) — delivery-file rules (clean tree, evidence_valid_for_delivery, SHA-current, architecture-sync vs Rule 8 classification).
-- [`docs/delivery/2026-05-08-003ed6f.md`](../delivery/2026-05-08-003ed6f.md) — first delivery-valid architecture-sync evidence (cycle-3).
-- Subsequent delivery files at later SHAs supersede earlier ones for those SHAs only.
+- [`docs/delivery/2026-05-08-7025ac9.md`](../delivery/2026-05-08-7025ac9.md) — cycle-1+2 first delivery-valid architecture-sync evidence at SHA `7025ac9`.
+- [`docs/delivery/2026-05-08-003ed6f.md`](../delivery/2026-05-08-003ed6f.md) — cycle-3 architecture-sync evidence at SHA `003ed6f`.
+- [`docs/delivery/2026-05-08-a070a77.md`](../delivery/2026-05-08-a070a77.md) — cycle-4 architecture-sync evidence at SHA `a070a77`.
+- The latest delivery file at the most recent reviewed SHA supersedes earlier ones for that SHA. Per cycle-3 SHA-current rule, a delivery file is evidence for its named SHA only — not for any later SHA, even doc-only commits.
+- The cycle-5 delivery file will be added at the cycle-5 final SHA after this PR lands. Until then, no delivery-valid evidence exists for the cycle-5 final SHA.
 
-## Historical / superseded (banner-marked, NOT authoritative)
+## Historical / superseded (NOT authoritative)
 
-These files describe earlier design positions and are kept for traceability:
+These files describe earlier design positions and are kept for traceability. They fall into two classes:
+
+### Banner-marked (cycle-4 §E1)
+
+These files carry a "HISTORICAL DOCUMENT — DO NOT IMPLEMENT" banner at the top:
 
 - `docs/architecture-v5.0.md`
 - `docs/architecture-v5.0-review-2026-05-07.md`
 - `docs/architecture-review-2026-05-07.md`
 - `docs/deep-architecture-security-assessment-2026-05-07.en.md`
 - `docs/security-response-2026-05-08.md`
+
+### Quarantined by gate path-skip (review/remediation cycle inputs)
+
+These files are quarantined by the architecture-sync gate's path-skip list (matching `*systematic-architecture-improvement-plan*` or `*systematic-architecture-remediation-plan*`); they are NOT banner-marked because they are reviewer inputs to specific remediation cycles rather than superseded design documents:
+
 - `docs/systematic-architecture-improvement-plan-2026-05-07.en.md`
 - `docs/systematic-architecture-remediation-plan-2026-05-08.en.md`
 - `docs/systematic-architecture-remediation-plan-2026-05-08-cycle-2.en.md`
 - `docs/systematic-architecture-remediation-plan-2026-05-08-cycle-3.en.md`
 - `docs/systematic-architecture-remediation-plan-2026-05-08-cycle-4.en.md`
+- `docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md`
 
-Each historical file carries a "HISTORICAL DOCUMENT — DO NOT IMPLEMENT" banner at the top per cycle-4 §E1.
+Both classes are excluded from the gate's closure-language and `rls_reset_vocabulary` checks because they legitimately discuss the forbidden phrases in the context of either historical record (banner-marked) or review prose (path-skipped).
 
 ## Rule for future updates
 

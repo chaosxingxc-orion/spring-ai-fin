@@ -1,0 +1,106 @@
+# spring-ai-fin evidence manifest (skeleton; cycle-5 §F1).
+#
+# Per docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md §F1.
+#
+# This file is the machine-readable binding between:
+#   - the reviewed SHA
+#   - the delivery file at that SHA
+#   - the architecture-sync logs by platform
+#   - the operator-shape logs by platform
+#   - the status-ledger findings the cycle addressed
+#   - the authoritative document index version
+#   - the Rule 8 state
+#
+# The full manifest-driven gate (delivery_log_parity, manifest_freshness,
+# ledger_coverage, readme_to_files, rule_8_state_consistency) is a W1
+# deliverable per REM-2026-05-08-C5-9. Cycle-5 delivers only the
+# manifest skeleton + a basic gate rule that warns on obvious mismatches.
+#
+# Maintainers update this file in the same commit that produces the
+# matching delivery + log.
+
+version: 1
+schema_version: cycle-5-skeleton
+
+# The manifest currently describes the latest delivery-valid SHA, NOT the
+# current HEAD. The W1 gate will extend this to enforce HEAD coverage.
+
+reviewed_sha: a070a77
+reviewed_sha_classification: architecture_sync_evidence_only
+
+delivery_file: docs/delivery/2026-05-08-a070a77.md
+
+architecture_sync_logs:
+  posix: gate/log/a070a77.json                          # cycle-4 log; pre-platform-suffix
+  windows: null                                          # cycle-4 ran POSIX only at this SHA
+  cycle_5_platform_suffix_in_effect_starting: TBD       # set to first SHA where new naming applies
+
+operator_shape_logs:
+  posix: null    # gate/log/local/operator-shape-a070a77-posix.json (gitignored fail-closed)
+  windows: null  # gate/log/local/operator-shape-a070a77-windows.json (gitignored fail-closed)
+  notes: |
+    Operator-shape smoke at a070a77 produced FAIL_ARTIFACT_MISSING on both
+    platforms. Logs are under gate/log/local/ (gitignored) and are NOT
+    delivery evidence. They are recorded here only to make the absence
+    auditable.
+
+status_findings_addressed:
+  cycle_1:
+    - REM-2026-05-08-1
+    - REM-2026-05-08-2
+    - REM-2026-05-08-3
+    - REM-2026-05-08-4
+    - REM-2026-05-08-5
+    - REM-2026-05-08-6
+    - REM-2026-05-08-7
+    - REM-2026-05-08-8
+  cycle_2:
+    - REM-2026-05-08-C2-1
+    - REM-2026-05-08-C2-2
+    - REM-2026-05-08-C2-3
+    - REM-2026-05-08-C2-4
+    - REM-2026-05-08-C2-5
+    - REM-2026-05-08-C2-6
+  cycle_3:
+    - REM-2026-05-08-C3-1
+    - REM-2026-05-08-C3-2
+    - REM-2026-05-08-C3-3
+    - REM-2026-05-08-C3-4
+    - REM-2026-05-08-C3-5
+  cycle_4:
+    - REM-2026-05-08-C4-1
+    - REM-2026-05-08-C4-2
+    - REM-2026-05-08-C4-3
+    - REM-2026-05-08-C4-4
+    - REM-2026-05-08-C4-5
+    - REM-2026-05-08-C4-6
+    - REM-2026-05-08-C4-7
+    - REM-2026-05-08-C4-8
+    - REM-2026-05-08-C4-9
+  cycle_5:
+    - REM-2026-05-08-C5-1
+    - REM-2026-05-08-C5-2
+    - REM-2026-05-08-C5-3
+    - REM-2026-05-08-C5-4
+    - REM-2026-05-08-C5-5
+    - REM-2026-05-08-C5-6
+    - REM-2026-05-08-C5-7
+    - REM-2026-05-08-C5-8
+    - REM-2026-05-08-C5-9
+
+authoritative_index: docs/governance/current-architecture-index.md
+authoritative_index_last_updated_in_cycle: cycle-5
+
+artifact_present: false
+rule_8_state: fail_closed_artifact_missing
+rule_8_blocking_findings:
+  - "No pom.xml at repo root"
+  - "No agent-platform/pom.xml"
+  - "No agent-runtime/pom.xml"
+  - "No agent-platform/src/main/java tree"
+  - "No agent-runtime/src/main/java tree"
+rule_8_unblocks_at: W0 (docs/plans/W0-evidence-skeleton.md)
+
+# When a future cycle produces delivery-valid evidence at a new SHA, that
+# cycle's PR updates this file and adds the new finding ledger entries
+# under status_findings_addressed.<next_cycle>.

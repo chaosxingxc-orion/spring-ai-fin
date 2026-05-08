@@ -77,6 +77,6 @@ Per `docs/systematic-architecture-remediation-plan-2026-05-08-cycle-3.en.md` §5
 Every delivery file MUST classify itself in its header:
 
 - **Architecture-sync evidence** — produced by `gate/check_architecture_sync.{ps1,sh}`. Proves the document corpus is internally consistent at a SHA. Does NOT prove the system runs. Cannot authorize ship.
-- **Rule 8 operator-shape evidence** — produced by `gate/run_operator_shape_smoke.{ps1,sh}` (W0 deliverable; does not exist yet). Proves a runnable artifact behaves correctly under deployment shape with real dependencies, sequential runs, cancellation, lifecycle, and fallback-zero. The only kind of evidence that can authorize ship.
+- **Rule 8 operator-shape evidence** — produced by `gate/run_operator_shape_smoke.{ps1,sh}`. The scripts exist in fail-closed form (cycle-4-fail-closed) and will produce only `FAIL_ARTIFACT_MISSING` until W0 lands a runnable artifact. Once W0 lands, the scripts run the real Rule 8 flow (long-lived process, real dependencies, sequential runs, cancellation, lifecycle, fallback-zero) and the resulting PASS log is the only kind of evidence that can authorize ship. A `FAIL_ARTIFACT_MISSING` log is NOT delivery evidence — it is honest absence-evidence.
 
 A delivery file that mixes the two classifications, or omits the classification entirely, is rejected by the next remediation gate.

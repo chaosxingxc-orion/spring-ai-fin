@@ -32,12 +32,16 @@ A PASS from these gates only means the document corpus is internally consistent.
 
 The two scripts emit equivalent semantic results.
 
-## W0 deliverables (Rule 8 operator-shape gate — DOES NOT EXIST YET)
+## Operator-shape smoke gate — fail-closed pre-W0; runnable-flow post-W0
 
-- `run_operator_shape_smoke.ps1` — Windows entry point (planned, not present)
-- `run_operator_shape_smoke.sh` — Linux / macOS entry point (planned, not present)
+- `run_operator_shape_smoke.ps1` — Windows entry point (exists; cycle-4-fail-closed)
+- `run_operator_shape_smoke.sh` — Linux / macOS entry point (exists; cycle-4-fail-closed)
 
-These will be the FIRST Rule 8 operator-shape gates. Per `docs/plans/W0-evidence-skeleton.md`, the smoke gate must:
+**Current state**: both scripts exist and **fail closed** (exit 1 with structured `FAIL_ARTIFACT_MISSING` JSON written to `gate/log/local/operator-shape-<sha>-{posix,windows}.json`) because no runnable artifact exists yet. They are NOT Rule 8 PASS evidence — only Rule 8 absence-evidence.
+
+When W0 produces the runnable artifact (Maven multi-module + minimal Spring Boot per `docs/plans/W0-evidence-skeleton.md`), these scripts will be replaced with the real Rule 8 flow. Until then the architecture's own Rule 8 says "no PASS exists at this SHA."
+
+The eventual real Rule 8 smoke flow must:
 
 1. build the runnable artifact;
 2. start a long-lived managed process (systemd / docker / pm2 / supervised JVM);
@@ -53,7 +57,7 @@ These will be the FIRST Rule 8 operator-shape gates. Per `docs/plans/W0-evidence
 12. write `gate/log/<sha>.json` with `evidence_valid_for_delivery=true`;
 13. write `docs/delivery/<date>-<sha>.md` referencing the log.
 
-`run_operator_shape_smoke.*` is **absent until W0 produces it**. There is no `--local-only` mode for the operator-shape gate; dirty trees are never valid Rule 8 evidence.
+`run_operator_shape_smoke.*` exists in fail-closed form **until W0 produces a runnable artifact**. Once the artifact exists, the scripts are replaced with the real flow. There is no `--local-only` mode for the operator-shape gate; dirty trees are never valid Rule 8 evidence.
 
 ## Audit trail
 

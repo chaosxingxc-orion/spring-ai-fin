@@ -17,7 +17,7 @@ Owns:
 - `EventBus` — in-process pub-sub for outbox subscribers and SSE event fan-out
 - `TenantBinder` — single seam that runs `SET LOCAL app.tenant_id = :tenantId` at the start of every tenant-scoped transaction
 - `RlsConnectionInterceptor` — AOP advice that asserts a tenant binding is active before any tenant-scoped store call runs
-- `HikariConnectionResetPolicy` — reset/validate pooled connections between checkouts so previous-tenant GUC state cannot leak
+- `TransactionStartGucValidator` — defense-in-depth invoked by `TenantBinder` at the start of every tenant-scoped transaction; asserts `current_setting('app.tenant_id', true)` is empty (i.e., no stale GUC survived from a prior lease) before the new `SET LOCAL` runs. NOT a HikariCP lifecycle hook — `connectionInitSql` runs only at connection creation, not at checkout (per HikariCP docs); the actual safety property is Postgres's transaction-scoped `SET LOCAL` auto-discard, validated by `PooledConnectionLeakageIT`.
 
 Does NOT own:
 

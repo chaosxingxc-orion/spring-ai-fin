@@ -219,12 +219,15 @@ capabilities:
     l2_documents:
       - docs/plans/W0-evidence-skeleton.md
     implementation:
-      - gate/check_architecture_sync.ps1
+      - gate/check_architecture_sync.ps1     # architecture-sync; cycle-4-expanded with cycle-5 platform-suffix logs
       - gate/check_architecture_sync.sh
+      - gate/run_operator_shape_smoke.ps1    # operator-shape smoke; cycle-4-fail-closed (FAIL_ARTIFACT_MISSING until W0)
+      - gate/run_operator_shape_smoke.sh
     tests: []
-    operator_gate: null
+    operator_gate: null   # remains null until a real Rule 8 PASS log exists; fail-closed FAIL_ARTIFACT_MISSING is not a PASS
     open_findings: []
-    allowed_claim: "Architecture-sync script implemented and runnable; operator-shape smoke remains W0 deliverable"
+    last_validated_sha: a070a77
+    allowed_claim: "Architecture-sync scripts: implemented and last delivery-valid at SHA a070a77 (per gate/log/a070a77.json). Operator-shape smoke scripts: exist in fail-closed form; not Rule 8 PASS evidence; W0 produces the runnable artifact and replaces fail-closed with real flow."
 
 # ---- finding ledger ----
 findings:
@@ -417,7 +420,145 @@ findings:
 
   REM-2026-05-08-C3-5:
     source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-3.en.md
-    description: "gate/README.md described the directory as if Rule 8 operator-shape scripts existed. Cycle-3 splits the README into 'Implemented now' (architecture-sync only) and 'W0 deliverables' (operator-shape smoke) with explicit non-Rule-8 disclaimer."
+    description: "gate/README.md described the directory as if Rule 8 operator-shape scripts existed. Cycle-3 splits the README into 'Implemented now' (architecture-sync only) and 'W0 deliverables' (operator-shape smoke) with explicit non-Rule-8 disclaimer. Cycle-5 corrected README wording after operator-shape scripts landed in fail-closed form."
     status: design_accepted
     target_wave: W0
+    capability: operator_shape_gate
+
+  # Findings introduced by the 2026-05-08 cycle-4 remediation review.
+  REM-2026-05-08-C4-1:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-4.en.md
+    description: "Cycle-3 delivery file embedded raw forbidden phrase examples that triggered the gate's own closure-language regex. Cycle-4 replaced examples with rule identifiers; cycle-4 also discovered the bash gate's grep -P silently failed in Windows GBK locale. Bash gate now exports LC_ALL=C."
+    status: design_accepted
+    target_wave: W0
+    capability: operator_shape_gate
+    last_validated_sha: a070a77
+
+  REM-2026-05-08-C4-2:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-4.en.md
+    description: "After cycle-3 commit chain, current HEAD lacked SHA-bound delivery evidence. Cycle-4 produced docs/delivery/2026-05-08-a070a77.md plus gate/log/a070a77.json."
+    status: design_accepted
+    target_wave: W0
+    capability: operator_shape_gate
+    last_validated_sha: a070a77
+
+  REM-2026-05-08-C4-3:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-4.en.md
+    description: "Failed gate runs wrote to gate/log/<sha>.json contaminating the next delivery-evidence run. Cycle-4 split: delivery-valid logs go to gate/log/<sha>.json (committed); non-delivery (local-only / dirty / failed) go to gate/log/local/<sha>.json (gitignored)."
+    status: design_accepted
+    target_wave: W0
+    capability: operator_shape_gate
+    last_validated_sha: a070a77
+
+  REM-2026-05-08-C4-4:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-4.en.md
+    description: "Status ledger overstated cycle-3 architecture-sync portion. Cycle-4 downgraded REM-C3-4 to design_accepted with last_validated_sha=null until current HEAD passed."
+    status: design_accepted
+    target_wave: W0
+    capability: operator_shape_gate
+    last_validated_sha: a070a77
+
+  REM-2026-05-08-C4-5:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-4.en.md
+    description: "Platform submodule L2 docs (bootstrap, cli, config) carried old auth/posture model (APP_JWT_SECRET as research/prod standard; posture mirrored via Environment.getProperty). Cycle-4 aligned all three with the JWKS-first identity posture from the auth L2."
+    status: design_accepted
+    target_wave: W2
+    capability: agent_platform_facade
+    last_validated_sha: a070a77
+
+  REM-2026-05-08-C4-6:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-4.en.md
+    description: "Gate auth/posture rules scoped to L1 only, missing submodule L2 drift. Cycle-4 expanded contract_posture_purity and auth_algorithm_policy rules to scan all agent-platform/**/ARCHITECTURE.md."
+    status: design_accepted
+    target_wave: W0
+    capability: operator_shape_gate
+    last_validated_sha: a070a77
+
+  REM-2026-05-08-C4-7:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-4.en.md
+    description: "Stale RLS reset vocabulary (HikariCP reset, HikariConnectionResetPolicy, reset on connection check-in) lingered in governance ledger, decision-sync-matrix, and trust-boundary-diagram. Cycle-4 rewrote those lines with transaction-scoped SET LOCAL discard semantics; new rls_reset_vocabulary gate rule enforces."
+    status: design_accepted
+    target_wave: W0/W2
+    capability: server_rls_protocol
+    last_validated_sha: a070a77
+
+  REM-2026-05-08-C4-8:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-4.en.md
+    description: "Rule 8 operator-shape gate did not exist. Cycle-4 added gate/run_operator_shape_smoke.{ps1,sh} that fail closed with structured FAIL_ARTIFACT_MISSING JSON (exit 1) until W0 lands a runnable artifact. Architecture-sync evidence does not substitute for Rule 8."
+    status: design_accepted
+    target_wave: W0
+    capability: operator_shape_gate
+    last_validated_sha: null
+    notes: "Operator-shape smoke remains design_accepted; fail-closed scripts are absence-evidence, not Rule 8 PASS."
+
+  REM-2026-05-08-C4-9:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-4.en.md
+    description: "Historical review/response docs were easy to confuse with current architecture. Cycle-4 added 'HISTORICAL DOCUMENT - DO NOT IMPLEMENT' banners to 5 docs and created docs/governance/current-architecture-index.md as the single index of authoritative files."
+    status: design_accepted
+    target_wave: W0
+    capability: l0_architecture
+    last_validated_sha: a070a77
+
+  # Findings introduced by the 2026-05-08 cycle-5 remediation review.
+  REM-2026-05-08-C5-1:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md
+    description: "Cycle-4 left HEAD 291c635 without a committed delivery file (delivery was for a070a77). Cycle-5 produces final-SHA delivery + log after all cycle-5 fixes land."
+    status: design_accepted
+    target_wave: W0
+    capability: operator_shape_gate
+
+  REM-2026-05-08-C5-2:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md
+    description: "Delivery file 2026-05-08-a070a77.md reported scan_files_count as 44 while gate/log/a070a77.json reported 42. Hand-copied values drifted from the JSON. Cycle-5 fix: new delivery file uses values that match the JSON; full delivery_log_parity gate rule deferred to W1."
+    status: design_accepted
+    target_wave: W0/W1
+    capability: operator_shape_gate
+
+  REM-2026-05-08-C5-3:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md
+    description: "Gate logs from PowerShell and POSIX runs overwrote each other (both wrote to gate/log/<sha>.json). Cycle-5 fix: bash writes <sha>-posix.json; PowerShell writes <sha>-windows.json. Both platforms' evidence is now durable for the same SHA."
+    status: design_accepted
+    target_wave: W0
+    capability: operator_shape_gate
+
+  REM-2026-05-08-C5-4:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md
+    description: "gate/README.md and docs/delivery/README.md still said operator-shape scripts did not exist after cycle-4 added them. Cycle-5 corrected both READMEs to say the scripts exist in fail-closed form and produce FAIL_ARTIFACT_MISSING until W0."
+    status: design_accepted
+    target_wave: W0
+    capability: operator_shape_gate
+
+  REM-2026-05-08-C5-5:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md
+    description: "Governance ledger omitted cycle-4 findings entirely (ended at REM-C3-5). Cycle-5 added REM-C4-1..C4-9 and REM-C5-1..C5-9 entries with last_validated_sha fields where applicable."
+    status: design_accepted
+    target_wave: W0
+    capability: l0_architecture
+
+  REM-2026-05-08-C5-6:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md
+    description: "Server L2 line 20 still listed HikariConnectionResetPolicy as an active component, contradicting the cycle-2 RLS protocol fix. Cycle-5 replaced with TransactionStartGucValidator (named without implying reset) and pointers to the actual safety property (transaction-scoped SET LOCAL auto-discard)."
+    status: design_accepted
+    target_wave: W0/W2
+    capability: server_rls_protocol
+
+  REM-2026-05-08-C5-7:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md
+    description: "rls_reset_vocabulary gate rule scoped to governance/diagram/matrix files only, missing server L2 line 20. Cycle-5 expanded scope to all L0/L1/L2 ARCHITECTURE.md files."
+    status: design_accepted
+    target_wave: W0
+    capability: operator_shape_gate
+
+  REM-2026-05-08-C5-8:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md
+    description: "docs/security-control-matrix.md HS256 row Posture column was ambiguous ('research/prod: required (BYOC HS256 carve-out)'). Could be read as requiring HS256 in prod. Cycle-5 rewrote per-posture explicit: dev loopback allowed; research BYOC single-tenant carve-out only; research SaaS multi-tenant + prod rejected. Matches auth L2 verbatim."
+    status: design_accepted
+    target_wave: W0/W2
+    capability: identity_jwt_validation
+
+  REM-2026-05-08-C5-9:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md
+    description: "Architecture-sync gate is pattern-driven. Reviewer recommends machine-readable evidence-manifest.yaml binding reviewed_sha + delivery_file + per-platform logs + status findings + index version + Rule 8 state. Cycle-5 delivers manifest skeleton; full manifest-driven gate rules (delivery_log_parity, manifest_freshness, ledger_coverage, README_to_files) are W1 deliverables."
+    status: design_accepted
+    target_wave: W1
     capability: operator_shape_gate

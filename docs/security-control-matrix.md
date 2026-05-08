@@ -12,7 +12,7 @@ This matrix maps every named security control to: **owner module · enforcement 
 
 | Control | Owner | Enforcement | Posture | Test | Evidence | Failure mode |
 |---|---|---|---|---|---|---|
-| JWT signature validation (HS256) | `agent-runtime/auth/JwtValidator` | Filter chain | dev: optional; research/prod: required (BYOC HS256 carve-out) | `JwtSecurityIT.testHs256Validation` | T3 evidence; gate run | invalid sig → 401 |
+| JWT signature validation (HS256) | `agent-runtime/auth/HmacValidator` | Filter chain | dev loopback: allowed; research BYOC single-tenant: allowed only with allowlist entry + audit alarm; research SaaS multi-tenant: rejected; prod: rejected | `JwtSecurityIT.testHs256OnLoopback`, `JwtSecurityIT.testHs256RejectedInProd`, `AlgConfusionRejectedIT` | T3 evidence; gate run | HS256 token under prod / SaaS multi-tenant → 401; valid HS256 under dev loopback → claims accepted |
 | JWT signature validation (RS256/ES256/JWKS) | `agent-runtime/auth/JwksValidator` | Filter chain | research/prod default (SaaS multi-tenant + enterprise BYOC) | `JwtSecurityIT.testRs256Validation` | T3 evidence | invalid sig / kid miss → 401 |
 | `alg=none` rejection | JwtAuthFilter | Filter chain | all | `JwtSecurityIT.testAlgNoneRejected` | gate | 401 |
 | HS/RS algorithm confusion | JwtAuthFilter | Filter chain | all | `JwtSecurityIT.testAlgConfusion` | gate | 401 |

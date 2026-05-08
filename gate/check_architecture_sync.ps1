@@ -1,17 +1,15 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-  spring-ai-fin architecture-sync gate (cycle-4 expanded).
+  spring-ai-fin architecture-sync gate (cycle-5 expanded).
 
 .DESCRIPTION
-  Cycle-4 changes:
-    - auth/contract-posture rules now scan ALL agent-platform/**/ARCHITECTURE.md.
-    - Failed/local runs write to gate/log/local/<sha>.json (gitignored);
-      gate/log/<sha>.json receives only delivery-valid evidence.
-    - rls_reset_vocabulary rule flags HikariCP reset / connection check-in
-      reset / HikariConnectionResetPolicy claims unless negated/deprecated.
-    - Excludes architecture-v5.0*, architecture-review-*, deep-architecture-*
-      historical docs from the scan.
+  Cycle-5 changes:
+    - Platform-suffix log filenames: gate/log/<sha>-windows.json
+      (delivery-valid) or gate/log/local/<sha>-windows.json (non-delivery).
+    - rls_reset_vocabulary scope expanded to all L0/L1/L2 ARCHITECTURE.md
+      files (was only governance/diagram/matrix).
+    - New hs256_prod_conflict rule for security-control-matrix.md.
 
 .NOTES
   Architecture-sync gate, NOT Rule 8 operator-shape gate.
@@ -183,7 +181,7 @@ foreach ($f in $AllScanFiles) {
   }
 }
 
-# 5. ActionGuard pre/post evidence stages required in L2.
+# 5. ActionGuard pre/post evidence stages.
 $agL2 = 'agent-runtime/action-guard/ARCHITECTURE.md'
 if (Test-Path $agL2) {
   $content = Get-Content -Raw -LiteralPath $agL2
@@ -261,8 +259,9 @@ if (Test-Path $securityMatrix) {
   }
 }
 
-# 8c. RLS reset vocabulary (cycle-4 C1).
-$rlsVocabFiles = @(
+# 8c. RLS reset vocabulary across L0/L1/L2 + governance + diagrams + matrix
+#     (cycle-5 C2: scope expanded from cycle-4's governance-only).
+$rlsVocabFiles = @($NonDocsArchFiles) + @(
   'docs/governance/architecture-status.yaml',
   'docs/governance/decision-sync-matrix.md',
   'docs/trust-boundary-diagram.md',
@@ -277,15 +276,30 @@ $rlsVocabPhrases = @(
 )
 foreach ($f in $rlsVocabFiles) {
   if (-not (Test-Path $f)) { continue }
+  $rel = Rel $f
   $lines = Get-Content -LiteralPath $f
   for ($i = 0; $i -lt $lines.Count; $i++) {
     $line = $lines[$i]
     foreach ($phrase in $rlsVocabPhrases) {
       if ($line -clike "*$phrase*") {
         if ($line -cnotmatch '(?i)(not\s|removed|deprecated|no longer|instead of|was wrong|cycle-[0-9])') {
-          Fail 'rls_reset_vocabulary' "matched stale RLS reset wording '$phrase' without negation/deprecation marker" $f ($i + 1)
+          Fail 'rls_reset_vocabulary' "matched stale RLS reset wording '$phrase' without negation/deprecation marker" $rel ($i + 1)
         }
       }
+    }
+  }
+}
+
+# 8d. HS256 + prod conflict rule (cycle-5 D1).
+if (Test-Path $securityMatrix) {
+  $lines = Get-Content -LiteralPath $securityMatrix
+  for ($i = 0; $i -lt $lines.Count; $i++) {
+    $line = $lines[$i]
+    $hasHs256 = ($line -cmatch '(?i)(HS256|HMAC-SHA256)')
+    $hasProd = ($line -cmatch '(?i)\bprod\b')
+    $isRejected = ($line -cmatch '(?i)(rejected|not permitted|refused)')
+    if ($hasHs256 -and $hasProd -and (-not $isRejected)) {
+      Fail 'hs256_prod_conflict' "control row mentions HS256 + prod without 'rejected' / 'not permitted' qualifier (auth L2 says prod has no HS256 path)" $securityMatrix ($i + 1)
     }
   }
 }
@@ -361,7 +375,7 @@ $semanticFailures = @($failures | Where-Object { $_.category -ne 'dirty_tree' })
 $semanticPass = $semanticFailures.Count -eq 0
 $evidenceValidForDelivery = $treeClean -and $semanticPass
 
-# Cycle-4 A3: split log path.
+# Cycle-5 A3: platform-suffix log filename.
 if ($evidenceValidForDelivery) {
   $logDir = Join-Path $PSScriptRoot 'log'
 } else {
@@ -371,7 +385,8 @@ if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Forc
 
 $result = [pscustomobject]@{
   script                       = 'check_architecture_sync.ps1'
-  version                      = 'cycle-4-expanded'
+  version                      = 'cycle-5-expanded'
+  platform                     = 'windows'
   sha                          = $shaCandidate
   generated                    = (Get-Date -Format 'o')
   scan_files_count             = $AllScanFiles.Count
@@ -382,7 +397,7 @@ $result = [pscustomobject]@{
   evidence_valid_for_delivery  = $evidenceValidForDelivery
   failures                     = $failures
 }
-$logPath = Join-Path $logDir "$shaCandidate.json"
+$logPath = Join-Path $logDir "$shaCandidate-windows.json"
 $result | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $logPath -Encoding UTF8
 
 if ($failures.Count -gt 0) {

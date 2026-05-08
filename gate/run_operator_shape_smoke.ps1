@@ -59,7 +59,7 @@ foreach ($probe in $artifactProbes) {
 
 $logDir = Join-Path $PSScriptRoot 'log/local'
 if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
-$logPath = Join-Path $logDir "operator-shape-$shaCandidate.json"
+$logPath = Join-Path $logDir "operator-shape-$shaCandidate-windows.json"
 
 $result = [pscustomobject]@{
   script                       = 'run_operator_shape_smoke.ps1'

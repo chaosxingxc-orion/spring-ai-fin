@@ -59,7 +59,7 @@ artifact_present=true
 
 log_dir="gate/log/local"
 mkdir -p "$log_dir"
-log_path="$log_dir/operator-shape-${sha_candidate}.json"
+log_path="$log_dir/operator-shape-${sha_candidate}-posix.json"
 
 {
   printf '{'

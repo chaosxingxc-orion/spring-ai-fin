@@ -1,25 +1,22 @@
 #!/usr/bin/env bash
-# spring-ai-fin architecture-sync gate (cycle-4 expanded; POSIX bash).
-# Catches drift classes from:
-#   docs/systematic-architecture-improvement-plan-2026-05-07.en.md sec-4-2
-#   docs/systematic-architecture-remediation-plan-2026-05-08.en.md sec-5 + sec-6 + sec-12
-#   docs/systematic-architecture-remediation-plan-2026-05-08-cycle-2.en.md sec-4 through sec-9
-#   docs/systematic-architecture-remediation-plan-2026-05-08-cycle-3.en.md sec-4 through sec-8
-#   docs/systematic-architecture-remediation-plan-2026-05-08-cycle-4.en.md A1..A4 + B1..B2 + C1 + D1 + E1
+# spring-ai-fin architecture-sync gate (cycle-5 expanded; POSIX bash).
+# Catches drift classes from cycles 1-5.
 #
-# Cycle-4 changes:
-#   - LC_ALL=C exported so grep -P works in non-UTF-8 locales (Windows GBK).
-#   - auth_algorithm_policy + contract_posture_purity rules now scan ALL
-#     agent-platform/**/ARCHITECTURE.md, not only the L1 file.
-#   - Failed/local runs write to gate/log/local/<sha>.json (gitignored);
-#     gate/log/<sha>.json receives only delivery-valid evidence.
-#   - rls_reset_vocabulary rule flags stale HikariCP reset / connection
-#     check-in reset / HikariConnectionResetPolicy claims.
+# Cycle-5 changes:
+#   - Platform-suffix log filenames: gate/log/<sha>-posix.json (delivery-valid)
+#     or gate/log/local/<sha>-posix.json (non-delivery). Preserves
+#     cross-platform evidence when both POSIX and PowerShell scripts run
+#     against the same SHA.
+#   - rls_reset_vocabulary scope expanded to all L0/L1/L2 ARCHITECTURE.md
+#     files (was only governance/diagram/matrix).
+#   - New hs256_prod_conflict rule: docs/security-control-matrix.md must not
+#     mention HS256 and "prod" on the same control row unless the row
+#     explicitly says "rejected" or "not permitted".
 #
 # Architecture-sync gate, NOT Rule 8 operator-shape gate.
 
 set -euo pipefail
-export LC_ALL=C   # cycle-4 A1: ensure grep -P works in non-UTF-8 locales
+export LC_ALL=C
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
@@ -34,8 +31,8 @@ Usage: $0 [--local-only]
 
 Default mode fails when 'git status --porcelain' is non-empty.
 --local-only mode permits dirty tree; in any non-delivery-valid case
-the log is written to gate/log/local/<sha>.json (gitignored), not
-gate/log/<sha>.json.
+the log is written to gate/log/local/<sha>-posix.json (gitignored), not
+gate/log/<sha>-posix.json.
 EOF
       exit 0
       ;;
@@ -79,7 +76,7 @@ fi
 # Build scan lists.
 declare -a all_scan_files=()
 declare -a non_docs_arch_files=()
-declare -a platform_arch_files=()    # cycle-4 B2: all agent-platform/**/ARCHITECTURE.md
+declare -a platform_arch_files=()
 
 [[ -f ARCHITECTURE.md ]] && { all_scan_files+=("ARCHITECTURE.md"); non_docs_arch_files+=("ARCHITECTURE.md"); }
 
@@ -101,9 +98,9 @@ while IFS= read -r f; do
     *systematic-architecture-remediation-plan*) continue ;;
     *closure-taxonomy.md*) continue ;;
     *security-response-2026-05-08*) continue ;;
-    *architecture-v5.0*) continue ;;                          # cycle-4 E1: historical
-    *architecture-review-2026-05-07*) continue ;;             # cycle-4 E1: historical
-    *deep-architecture-security-assessment*) continue ;;      # cycle-4 E1: historical
+    *architecture-v5.0*) continue ;;
+    *architecture-review-2026-05-07*) continue ;;
+    *deep-architecture-security-assessment*) continue ;;
   esac
   all_scan_files+=("$f")
 done < <(find docs -type f -name '*.md' 2>/dev/null || true)
@@ -132,7 +129,7 @@ for f in "${all_scan_files[@]}"; do
   done < "$f"
 done
 
-# 1b. Forbidden closure shortcuts: case-insensitive regex (cycle-3 sec-7).
+# 1b. Forbidden closure shortcuts: case-insensitive regex.
 declare -a closure_regex_names=(
   "closes_pn_phrase"
   "pn_closure_phrase"
@@ -217,7 +214,7 @@ if [[ -f "$ag_l2" ]]; then
   fi
 fi
 
-# 5. Contract posture purity (cycle-4 B2: all platform L2s).
+# 5. Contract posture purity (all platform L2s).
 bad_posture_patterns=(
   'contracts read .* `Environment\.getProperty'
   'contracts read posture from .Environment'
@@ -236,7 +233,7 @@ for f in "${platform_arch_files[@]}"; do
   done
 done
 
-# 6. Auth algorithm policy (cycle-4 B2: all platform L2s).
+# 6. Auth algorithm policy (all platform L2s).
 for f in "${platform_arch_files[@]}"; do
   declare -a buf=()
   while IFS= read -r line || [[ -n "$line" ]]; do buf+=("$line"); done < "$f"
@@ -312,8 +309,11 @@ if [[ -f "$security_matrix" ]]; then
   done < "$security_matrix"
 fi
 
-# 7c. RLS reset vocabulary across governance + diagrams + matrix (cycle-4 C1).
-declare -a rls_vocab_files=(
+# 7c. RLS reset vocabulary across L0/L1/L2 + governance + diagrams + matrix
+#     (cycle-5 C2: scope expanded from cycle-4's governance-only).
+declare -a rls_vocab_files=()
+for f in "${non_docs_arch_files[@]}"; do rls_vocab_files+=("$f"); done
+rls_vocab_files+=(
   "docs/governance/architecture-status.yaml"
   "docs/governance/decision-sync-matrix.md"
   "docs/trust-boundary-diagram.md"
@@ -335,7 +335,6 @@ for f in "${rls_vocab_files[@]}"; do
     line="${buf[i]}"
     for phrase in "${rls_vocab_phrases[@]}"; do
       if [[ "$line" == *"$phrase"* ]]; then
-        # Allowed if line carries a negation/deprecation marker.
         shopt -s nocasematch
         allowed=0
         [[ "$line" == *"not "* ]] && allowed=1
@@ -348,6 +347,7 @@ for f in "${rls_vocab_files[@]}"; do
         [[ "$line" == *"cycle-2"* ]] && allowed=1
         [[ "$line" == *"cycle-3"* ]] && allowed=1
         [[ "$line" == *"cycle-4"* ]] && allowed=1
+        [[ "$line" == *"cycle-5"* ]] && allowed=1
         shopt -u nocasematch
         if [[ $allowed -eq 0 ]]; then
           fail "rls_reset_vocabulary" "matched stale RLS reset wording '$phrase' without negation/deprecation marker" "$f" "$((i+1))"
@@ -357,6 +357,30 @@ for f in "${rls_vocab_files[@]}"; do
   done
   unset buf
 done
+
+# 7d. HS256 + prod conflict rule (cycle-5 D1).
+# In docs/security-control-matrix.md, a control row mentioning HS256/HMAC and
+# "prod" must explicitly say "rejected" or "not permitted" (because auth L2
+# says prod has no HS256 path).
+if [[ -f "$security_matrix" ]]; then
+  lineno=0
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    lineno=$((lineno + 1))
+    shopt -s nocasematch
+    has_hs256=0
+    [[ "$line" == *HS256* || "$line" == *"HMAC-SHA256"* ]] && has_hs256=1
+    has_prod=0
+    [[ "$line" == *"prod"* ]] && has_prod=1
+    is_rejected=0
+    [[ "$line" == *"rejected"* ]] && is_rejected=1
+    [[ "$line" == *"not permitted"* ]] && is_rejected=1
+    [[ "$line" == *"refused"* ]] && is_rejected=1
+    shopt -u nocasematch
+    if [[ $has_hs256 -eq 1 && $has_prod -eq 1 && $is_rejected -eq 0 ]]; then
+      fail "hs256_prod_conflict" "control row mentions HS256 + prod without 'rejected' / 'not permitted' qualifier (auth L2 says prod has no HS256 path)" "$security_matrix" "$lineno"
+    fi
+  done < "$security_matrix"
+fi
 
 # 8. Gate path drift.
 matrix="docs/governance/decision-sync-matrix.md"
@@ -425,15 +449,14 @@ evidence_valid=true
 [[ "$tree_clean" == "false" ]] && evidence_valid=false
 [[ "$semantic_pass" == "false" ]] && evidence_valid=false
 
-# Cycle-4 A3: split log path. Delivery-valid -> gate/log/<sha>.json.
-# Anything else -> gate/log/local/<sha>.json (gitignored).
+# Cycle-5 A3: platform-suffix log filename.
 if [[ "$evidence_valid" == "true" ]]; then
   log_dir="gate/log"
 else
   log_dir="gate/log/local"
 fi
 mkdir -p "$log_dir"
-log_path="$log_dir/${sha_candidate}.json"
+log_path="$log_dir/${sha_candidate}-posix.json"
 
 local_only_json=false
 [[ $local_only -eq 1 ]] && local_only_json=true
@@ -443,7 +466,8 @@ porcelain_escaped="$(json_escape "$porcelain")"
 {
   printf '{'
   printf '"script":"check_architecture_sync.sh",'
-  printf '"version":"cycle-4-expanded",'
+  printf '"version":"cycle-5-expanded",'
+  printf '"platform":"posix",'
   printf '"sha":"%s",' "$sha_candidate"
   printf '"generated":"%s",' "$(date -Iseconds 2>/dev/null || date -u +%Y-%m-%dT%H:%M:%SZ)"
   printf '"scan_files_count":%d,' "${#all_scan_files[@]}"
