@@ -28,13 +28,13 @@ schema_capabilities:
 
 # ---- Two-SHA evidence model (cycle-7 sec-B1) ----
 
-reviewed_content_sha: 81ff802                       # set to cycle-7 architectural SHA in audit-trail commit
+reviewed_content_sha: ba4bcd5                       # cycle-7 architectural SHA
 evidence_commit_sha: TBD                            # set to HEAD by gate; not stored authoritatively
-evidence_commit_parent_sha: 81ff802                 # MUST equal reviewed_content_sha (gate enforced)
+evidence_commit_parent_sha: ba4bcd5                 # MUST equal reviewed_content_sha (gate enforced)
 evidence_commit_classification: audit_trail_only    # one of: direct_reviewed_content | audit_trail_only
 
 # Backward compatibility with v1 readers (cycle-5/cycle-6).
-reviewed_sha: 81ff802
+reviewed_sha: ba4bcd5
 
 current_head_policy:
   accepted_shapes:
@@ -49,13 +49,20 @@ current_head_policy:
 
 # ---- Delivery and logs ----
 
-delivery_file: docs/delivery/2026-05-08-81ff802.md   # cycle-6 delivery; updated to cycle-7 in audit-trail commit
+delivery_file: docs/delivery/2026-05-08-ba4bcd5.md   # cycle-7 delivery
 
 architecture_sync_logs:
-  posix: gate/log/81ff802-posix.json
-  windows: null    # Cycle-7 author's environment lacks PowerShell. A future
-                   # Windows run produces gate/log/<sha>-windows.json.
+  # Cycle-7 sec-B1 bootstrap policy: the manifest does not name a log keyed
+  # to reviewed_content_sha because the gate cannot have run at that SHA with
+  # the audit-trail-current manifest (chicken-and-egg). delivery_log_parity
+  # iterates docs/delivery/2026-05-08-*.md filenames; if a matching
+  # gate/log/<sha>-{posix,windows,legacy}.json exists, it is checked. The
+  # canonical pass-evidence is the gate's stdout PASS line at the
+  # audit-trail SHA, captured in CI / dev terminal at run time.
+  posix: null
+  windows: null
   prior_delivery_valid_logs:
+    - gate/log/81ff802-posix.json     # cycle-6 architectural
     - gate/log/302337f-posix.json     # cycle-5 architectural
     - gate/log/a070a77.json           # cycle-4 (pre-suffix naming)
   cycle_5_platform_suffix_in_effect_starting: 302337f

@@ -82,7 +82,8 @@
 - [`docs/delivery/2026-05-08-003ed6f.md`](../delivery/2026-05-08-003ed6f.md) -- cycle-3 architecture-sync evidence at SHA `003ed6f`.
 - [`docs/delivery/2026-05-08-a070a77.md`](../delivery/2026-05-08-a070a77.md) -- cycle-4 architecture-sync evidence at SHA `a070a77`.
 - [`docs/delivery/2026-05-08-302337f.md`](../delivery/2026-05-08-302337f.md) -- cycle-5 architecture-sync evidence at SHA `302337f`.
-- [`docs/delivery/2026-05-08-81ff802.md`](../delivery/2026-05-08-81ff802.md) -- cycle-6 architecture-sync evidence at SHA `81ff802` (current authoritative delivery; cycle-7 audit-trail commit will add a successor delivery file).
+- [`docs/delivery/2026-05-08-81ff802.md`](../delivery/2026-05-08-81ff802.md) -- cycle-6 architecture-sync evidence at SHA `81ff802`.
+- [`docs/delivery/2026-05-08-ba4bcd5.md`](../delivery/2026-05-08-ba4bcd5.md) -- cycle-7 architecture-sync evidence at SHA `ba4bcd5` (current authoritative delivery; gate parity + two-SHA model + ASCII governance + self-test).
 - Per cycle-3 SHA-current rule, a delivery file is evidence for its named SHA only -- not for any later SHA, even doc-only commits. The cycle-6 + cycle-7 manifest-enforced two-SHA model (REM-2026-05-08-C7-3) accepts an audit-trail-shaped descendant of the reviewed content SHA.
 - The authoritative current-evidence pointer is `docs/governance/evidence-manifest.yaml#reviewed_sha` (cycle-5 F1 + cycle-6 A2). When the manifest's `reviewed_sha` differs from the latest delivery file listed above, the manifest wins and this list is regenerated in the next cycle.
 

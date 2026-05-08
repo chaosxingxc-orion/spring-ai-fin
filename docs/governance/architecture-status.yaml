@@ -235,10 +235,10 @@ capabilities:
     tests: []
     operator_gate: null
     open_findings: []
-    latest_semantic_pass_sha: 81ff802        # set to cycle-7 architectural SHA in audit-trail commit
-    latest_delivery_valid_sha: 81ff802
-    latest_delivery_file: docs/delivery/2026-05-08-81ff802.md
-    notes: "Updated by the cycle-6 audit-trail commit to point to the cycle-6 architectural SHA after evidence is produced. The manifest in docs/governance/evidence-manifest.yaml is the authoritative record; this ledger summarizes."
+    latest_semantic_pass_sha: ba4bcd5        # cycle-7 architectural commit (gate parity, two-SHA model, ASCII governance, self-test)
+    latest_delivery_valid_sha: ba4bcd5
+    latest_delivery_file: docs/delivery/2026-05-08-ba4bcd5.md
+    notes: "Updated by the cycle-7 audit-trail commit to point to the cycle-7 architectural SHA ba4bcd5 after evidence is produced. The manifest in docs/governance/evidence-manifest.yaml is the authoritative record; this ledger summarizes."
     allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml."
 
   operator_shape_smoke_gate:
