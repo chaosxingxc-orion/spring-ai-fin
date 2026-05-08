@@ -226,9 +226,9 @@ capabilities:
     tests: []
     operator_gate: null
     open_findings: []
-    latest_semantic_pass_sha: 302337f       # cycle-5 last delivery-valid SHA before cycle-6 audit-trail
-    latest_delivery_valid_sha: 302337f
-    latest_delivery_file: docs/delivery/2026-05-08-302337f.md
+    latest_semantic_pass_sha: 81ff802        # cycle-6 architectural commit; gate passes delivery-valid
+    latest_delivery_valid_sha: 81ff802
+    latest_delivery_file: docs/delivery/2026-05-08-81ff802.md
     notes: "Updated by the cycle-6 audit-trail commit to point to the cycle-6 architectural SHA after evidence is produced. The manifest in docs/governance/evidence-manifest.yaml is the authoritative record; this ledger summarizes."
     allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml."
 
@@ -596,7 +596,7 @@ findings:
     status: design_accepted
     target_wave: W0
     capability: architecture_sync_gate
-    last_validated_sha: TBD-cycle-6
+    last_validated_sha: 81ff802
 
   REM-2026-05-08-C6-3:
     source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-6.en.md
