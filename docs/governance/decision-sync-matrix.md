@@ -1,6 +1,6 @@
-# Decision Sync Matrix (L0 → L1 → L2)
+# Decision Sync Matrix (L0 -> L1 -> L2)
 
-> Per `docs/systematic-architecture-improvement-plan-2026-05-07.en.md` §4.2 and `docs/systematic-architecture-remediation-plan-2026-05-08.en.md` §6.
+> Per `docs/systematic-architecture-improvement-plan-2026-05-07.en.md` sec-4.2 and `docs/systematic-architecture-remediation-plan-2026-05-08.en.md` sec-6.
 > A hard L0 decision must be reflected in every affected L1 and L2 document. This file is the index. The cross-check is run by `gate/check_architecture_sync.{ps1,sh}`.
 
 For every hard L0 decision, this matrix records:
@@ -15,7 +15,7 @@ For every hard L0 decision, this matrix records:
 
 ---
 
-## D-block §A3 — Identity Policy (RS256/JWKS for research SaaS + prod; HS256 carve-outs)
+## D-block sec-A3 -- Identity Policy (RS256/JWKS for research SaaS + prod; HS256 carve-outs)
 
 | Field | Value |
 |---|---|
@@ -27,7 +27,7 @@ For every hard L0 decision, this matrix records:
 | Gate evidence | W2 operator-shape gate run under prod posture with JWKS path; recorded in `docs/delivery/<date>-<sha>.md` |
 | Status | design_accepted |
 
-## D-block — ActionGuard (P0-1, REM-2026-05-08-2)
+## D-block -- ActionGuard (P0-1, REM-2026-05-08-2)
 
 | Field | Value |
 |---|---|
@@ -39,7 +39,7 @@ For every hard L0 decision, this matrix records:
 | Gate evidence | W2 operator-shape gate; ActionGuardCoverageTest is a release gate |
 | Status | design_accepted |
 
-## D-block — Skill / Capability runtime authorization (P0-6, REM-2026-05-08-4)
+## D-block -- Skill / Capability runtime authorization (P0-6, REM-2026-05-08-4)
 
 | Field | Value |
 |---|---|
@@ -51,7 +51,7 @@ For every hard L0 decision, this matrix records:
 | Gate evidence | W2 operator-shape gate; ActionGuardCoverageTest passes against skill bridge + capability invoker |
 | Status | design_accepted |
 
-## D-block — Audit class model (P0-8)
+## D-block -- Audit class model (P0-8)
 
 | Field | Value |
 |---|---|
@@ -63,7 +63,7 @@ For every hard L0 decision, this matrix records:
 | Gate evidence | W2 operator-shape gate under prod posture; WORM snapshot for current SHA |
 | Status | design_accepted |
 
-## D-block — Posture boot guard (P0-4)
+## D-block -- Posture boot guard (P0-4)
 
 | Field | Value |
 |---|---|
@@ -75,19 +75,19 @@ For every hard L0 decision, this matrix records:
 | Gate evidence | W0 operator-shape gate confirms boot-fails-on-misconfiguration permutations |
 | Status | design_accepted |
 
-## D-block — Tenant spine + RLS connection protocol (P0-3, REM-2026-05-08-3)
+## D-block -- Tenant spine + RLS connection protocol (P0-3, REM-2026-05-08-3)
 
 | Field | Value |
 |---|---|
 | Decision id | TenantSpineRLS |
 | L1 documents | `agent-runtime/ARCHITECTURE.md`, `agent-platform/ARCHITECTURE.md` |
 | L2 documents | `agent-runtime/server/ARCHITECTURE.md`, `agent-runtime/outbox/ARCHITECTURE.md`, `agent-platform/api/ARCHITECTURE.md` |
-| Implementation paths | `agent-platform/api/filter/TenantContextFilter.java`, `agent-runtime/server/TenantBinder.java`, `RlsConnectionInterceptor.java`, `agent-runtime/server/migrations/V*__rls_policies.sql`. Note: `HikariConnectionResetPolicy.java` was removed in cycle-3 — `connectionInitSql` only runs at connection creation, not at checkout, so it cannot be the per-lease reset mechanism. Safety property is the transaction-scoped `SET LOCAL` GUC auto-discarded by Postgres on `COMMIT`/`ROLLBACK`, validated by `PooledConnectionLeakageIT`. |
+| Implementation paths | `agent-platform/api/filter/TenantContextFilter.java`, `agent-runtime/server/TenantBinder.java`, `RlsConnectionInterceptor.java`, `agent-runtime/server/migrations/V*__rls_policies.sql`. Note: `HikariConnectionResetPolicy.java` was removed in cycle-3 -- `connectionInitSql` only runs at connection creation, not at checkout, so it cannot be the per-lease reset mechanism. Safety property is the transaction-scoped `SET LOCAL` GUC auto-discarded by Postgres on `COMMIT`/`ROLLBACK`, validated by `PooledConnectionLeakageIT`. |
 | Tests | `TenantBindingIT`, `RlsConnectionIsolationIT`, `CrossTenantEventReadReturns404IT`, `PooledConnectionLeakageIT`, `MissingTenantFailsClosedIT`, `RlsPolicyCoverageTest`, `RlsConnectionAuditTest` |
 | Gate evidence | W2 operator-shape gate cross-tenant read returns 404 |
 | Status | design_accepted |
 
-## D-block — Financial write classes (P0-10)
+## D-block -- Financial write classes (P0-10)
 
 | Field | Value |
 |---|---|
@@ -111,7 +111,7 @@ For every hard L0 decision, this matrix records:
 | Gate evidence | W1 build verifies the corpus compiles |
 | Status | design_accepted |
 
-## Observability ↔ Audit boundary + Privacy + Cardinality (P0-8 follow-on, REM-2026-05-08-7)
+## Observability <-> Audit boundary + Privacy + Cardinality (P0-8 follow-on, REM-2026-05-08-7)
 
 | Field | Value |
 |---|---|

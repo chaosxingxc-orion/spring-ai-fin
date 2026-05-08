@@ -1,6 +1,6 @@
 # Closure Taxonomy
 
-> Per `docs/systematic-architecture-improvement-plan-2026-05-07.en.md` §4.1 + `docs/systematic-architecture-remediation-plan-2026-05-08.en.md` §12.
+> Per `docs/systematic-architecture-improvement-plan-2026-05-07.en.md` sec-4.1 + `docs/systematic-architecture-remediation-plan-2026-05-08.en.md` sec-12.
 > Defines the status enum used in `architecture-status.yaml` and forbids `closed` (and equivalent shortcuts) as a status.
 
 ## Status enum
@@ -37,9 +37,9 @@ The CI gate `gate/check_architecture_sync.{ps1,sh}` greps for these shortcuts in
 
 ## Status promotion rules
 
-A status can only move forward (`proposed → design_accepted → implemented_unverified → test_verified → operator_gated → released`). Regression (e.g., a test failure on a previously `test_verified` capability) downgrades the status to the highest level that still passes; the W0 gate refuses to release.
+A status can only move forward (`proposed -> design_accepted -> implemented_unverified -> test_verified -> operator_gated -> released`). Regression (e.g., a test failure on a previously `test_verified` capability) downgrades the status to the highest level that still passes; the W0 gate refuses to release.
 
-A finding from an external review (security, compliance, architecture committee) is not "closed" — it is `design_accepted` until at least `test_verified` for the capability that addresses it.
+A finding from an external review (security, compliance, architecture committee) is not "closed" -- it is `design_accepted` until at least `test_verified` for the capability that addresses it.
 
 ## "ACCEPT FULLY" language in security responses
 

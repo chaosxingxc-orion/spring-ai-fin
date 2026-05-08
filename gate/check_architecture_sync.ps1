@@ -1,15 +1,24 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-  spring-ai-fin architecture-sync gate (cycle-5 expanded).
+  spring-ai-fin architecture-sync gate (cycle-7 expanded).
 
 .DESCRIPTION
-  Cycle-5 changes:
-    - Platform-suffix log filenames: gate/log/<sha>-windows.json
-      (delivery-valid) or gate/log/local/<sha>-windows.json (non-delivery).
-    - rls_reset_vocabulary scope expanded to all L0/L1/L2 ARCHITECTURE.md
-      files (was only governance/diagram/matrix).
-    - New hs256_prod_conflict rule for security-control-matrix.md.
+  Cycle-7 changes:
+    - Variable initialization moved to top of rule body (was crashing
+      because cycle-6 readme_to_files used $gateReadme before the
+      original gate_log_extension_drift assigned it).
+    - Whole rule body wrapped so a runtime error emits structured
+      gate_runtime_error JSON instead of crashing.
+    - delivery_log_parity rule extended to match POSIX semantics
+      (sha + semantic_pass + evidence_valid_for_delivery).
+    - audit_trail_shape rule: enforces evidence-manifest/v2 two-SHA model
+      via git rev-parse and git diff --name-only.
+    - manifest_edge_consistency rule: validates manifest <-> delivery <->
+      log <-> status <-> index edges.
+    - ascii_only_governance rule: active governance files must be ASCII.
+    - capability_legacy_bucket rule: forbids new findings using
+      capability: operator_shape_gate.
 
 .NOTES
   Architecture-sync gate, NOT Rule 8 operator-shape gate.
@@ -43,6 +52,28 @@ function Rel([string]$abs) {
   return ($abs -replace '\\','/')
 }
 
+# ---- Shared variable initialization (cycle-7 A1: must precede any rule using these) ----
+$gateReadme = 'gate/README.md'
+$delReadme = 'docs/delivery/README.md'
+$securityMatrix = 'docs/security-control-matrix.md'
+$matrixPath = 'docs/governance/decision-sync-matrix.md'
+$statusPath = 'docs/governance/architecture-status.yaml'
+$manifestPath = 'docs/governance/evidence-manifest.yaml'
+$indexPath = 'docs/governance/current-architecture-index.md'
+$agL2 = 'agent-runtime/action-guard/ARCHITECTURE.md'
+$agentPlatformL1 = 'agent-platform/ARCHITECTURE.md'
+$l0 = 'ARCHITECTURE.md'
+
+# ---- Wrap whole rule body so runtime errors emit structured JSON ----
+$shaCandidate = ''
+try { $shaCandidate = ((& git rev-parse --short HEAD 2>$null) -join '').Trim() } catch { $shaCandidate = 'no-git' }
+if ([string]::IsNullOrEmpty($shaCandidate)) { $shaCandidate = 'no-git' }
+
+$ruleBodySucceeded = $true
+$runtimeErrorMessage = ''
+
+try {
+
 # 0. Working tree.
 $porcelain = ''
 try { $porcelain = ((& git status --porcelain 2>$null) -join "`n") } catch { $porcelain = '' }
@@ -64,9 +95,9 @@ function Add-ScanFile([System.Collections.ArrayList]$list, [string]$path) {
   } catch {}
 }
 
-if (Test-Path 'ARCHITECTURE.md') {
-  Add-ScanFile $AllScanFiles 'ARCHITECTURE.md'
-  Add-ScanFile $NonDocsArchFiles 'ARCHITECTURE.md'
+if (Test-Path $l0) {
+  Add-ScanFile $AllScanFiles $l0
+  Add-ScanFile $NonDocsArchFiles $l0
 }
 
 foreach ($root in @('agent-platform', 'agent-runtime')) {
@@ -128,7 +159,7 @@ foreach ($f in $AllScanFiles) {
 
 # 2b. Forbidden closure shortcuts: case-insensitive regex.
 $closureRegexes = @(
-  @{ Name = 'closes_pn_phrase';        Pattern = '(?i)\bcloses?\s+(security\s+review\s+)?(?:§)?P[0-9]+-[0-9]+\b' },
+  @{ Name = 'closes_pn_phrase';        Pattern = '(?i)\bcloses?\s+(security\s+review\s+)?(?:sec-)?P[0-9]+-[0-9]+\b' },
   @{ Name = 'pn_closure_phrase';       Pattern = '(?i)\bP[0-9]+-[0-9]+\s+closure\b' },
   @{ Name = 'closure_rests_on_phrase'; Pattern = '(?i)\bclosure\s+rests\s+on\b' },
   @{ Name = 'closed_by_design_phrase'; Pattern = '(?i)\bclosed\s+by\s+design\b' },
@@ -182,7 +213,6 @@ foreach ($f in $AllScanFiles) {
 }
 
 # 5. ActionGuard pre/post evidence stages.
-$agL2 = 'agent-runtime/action-guard/ARCHITECTURE.md'
 if (Test-Path $agL2) {
   $content = Get-Content -Raw -LiteralPath $agL2
   if ($content -cnotmatch 'PreActionEvidenceWriter') {
@@ -193,7 +223,7 @@ if (Test-Path $agL2) {
   }
 }
 
-# 6. Contract posture purity (all platform L2s).
+# 6. Contract posture purity.
 $badPostureRegex = @(
   'contracts read .* `Environment\.getProperty',
   'contracts read posture from .Environment',
@@ -214,7 +244,7 @@ foreach ($f in $PlatformArchFiles) {
   }
 }
 
-# 7. Auth algorithm policy (all platform L2s).
+# 7. Auth algorithm policy.
 foreach ($f in $PlatformArchFiles) {
   $rel = Rel $f
   $lines = Get-Content -LiteralPath $f
@@ -230,7 +260,7 @@ foreach ($f in $PlatformArchFiles) {
   }
 }
 
-# 8. RLS pool lifecycle (L1/L2 architecture docs).
+# 8. RLS pool lifecycle.
 foreach ($f in $NonDocsArchFiles) {
   $rel = Rel $f
   $lines = Get-Content -LiteralPath $f
@@ -249,7 +279,6 @@ foreach ($f in $NonDocsArchFiles) {
 }
 
 # 8b. RLS pool lifecycle in security-control-matrix.md.
-$securityMatrix = 'docs/security-control-matrix.md'
 if (Test-Path $securityMatrix) {
   $lines = Get-Content -LiteralPath $securityMatrix
   for ($i = 0; $i -lt $lines.Count; $i++) {
@@ -259,21 +288,9 @@ if (Test-Path $securityMatrix) {
   }
 }
 
-# 8c. RLS reset vocabulary across L0/L1/L2 + governance + diagrams + matrix
-#     (cycle-5 C2: scope expanded from cycle-4's governance-only).
-$rlsVocabFiles = @($NonDocsArchFiles) + @(
-  'docs/governance/architecture-status.yaml',
-  'docs/governance/decision-sync-matrix.md',
-  'docs/trust-boundary-diagram.md',
-  'docs/security-control-matrix.md'
-)
-$rlsVocabPhrases = @(
-  'HikariCP reset',
-  'HikariConnectionResetPolicy',
-  'reset on connection check-in',
-  'reset on check-in',
-  'connection check-in reset'
-)
+# 8c. RLS reset vocabulary.
+$rlsVocabFiles = @($NonDocsArchFiles) + @($statusPath, $matrixPath, 'docs/trust-boundary-diagram.md', $securityMatrix)
+$rlsVocabPhrases = @('HikariCP reset', 'HikariConnectionResetPolicy', 'reset on connection check-in', 'reset on check-in', 'connection check-in reset')
 foreach ($f in $rlsVocabFiles) {
   if (-not (Test-Path $f)) { continue }
   $rel = Rel $f
@@ -290,7 +307,7 @@ foreach ($f in $rlsVocabFiles) {
   }
 }
 
-# 8d. HS256 + prod conflict rule (cycle-5 D1; cycle-6 C1 extension to auth L2).
+# 8d. HS256 + prod conflict (cycle-6 C1 extension).
 $hsProdScanFiles = @($securityMatrix, 'agent-runtime/auth/ARCHITECTURE.md')
 foreach ($f in $hsProdScanFiles) {
   if (-not (Test-Path $f)) { continue }
@@ -306,69 +323,7 @@ foreach ($f in $hsProdScanFiles) {
   }
 }
 
-# 13. Manifest freshness (cycle-6 A2).
-$manifestPath = 'docs/governance/evidence-manifest.yaml'
-if (Test-Path $manifestPath) {
-  $manifestLines = Get-Content -LiteralPath $manifestPath
-  $manifestSha = ''
-  $manifestDelivery = ''
-  foreach ($line in $manifestLines) {
-    if ($line -match '^reviewed_sha:\s*([A-Za-z0-9]+)') { $manifestSha = $matches[1] }
-    if ($line -match '^delivery_file:\s*(.+)$') { $manifestDelivery = $matches[1].Trim() }
-  }
-  if ($manifestSha -and $manifestSha -ne 'TBD') {
-    if ($manifestDelivery -and -not (Test-Path $manifestDelivery)) {
-      Fail 'manifest_freshness' "manifest.delivery_file references '$manifestDelivery' which does not exist" $manifestPath 0
-    }
-    $posixLog = "gate/log/$manifestSha-posix.json"
-    $windowsLog = "gate/log/$manifestSha-windows.json"
-    $legacyLog = "gate/log/$manifestSha.json"
-    if (-not (Test-Path $posixLog) -and -not (Test-Path $windowsLog) -and -not (Test-Path $legacyLog)) {
-      Fail 'manifest_freshness' "manifest.reviewed_sha=$manifestSha but no matching log exists ($posixLog, $windowsLog, or $legacyLog)" $manifestPath 0
-    }
-  }
-}
-
-# 14. README to files (cycle-6 B2).
-$smokePs1 = 'gate/run_operator_shape_smoke.ps1'
-$smokeSh = 'gate/run_operator_shape_smoke.sh'
-if (Test-Path $gateReadme) {
-  if ((Test-Path $smokePs1) -or (Test-Path $smokeSh)) {
-    $lines = Get-Content -LiteralPath $gateReadme
-    for ($i = 0; $i -lt $lines.Count; $i++) {
-      $line = $lines[$i]
-      $bad = $false
-      if (($line -cmatch '(?i)smoke gate') -and ($line -cmatch '(?i)(does not exist|not yet exist)')) { $bad = $true }
-      if (($line -cmatch '(?i)run_operator_shape_smoke') -and ($line -cmatch '(?i)(does not exist|absent)')) { $bad = $true }
-      if ($bad) {
-        Fail 'readme_to_files' "gate/README.md says smoke gate does not exist while scripts are present in gate/" $gateReadme ($i + 1)
-      }
-    }
-  }
-}
-
-# 15. Delivery-log parity (cycle-6 B3, basic).
-$deliveryFiles = Get-ChildItem -Path 'docs/delivery' -Filter '2026-05-08-*.md' -File -ErrorAction SilentlyContinue
-foreach ($df in $deliveryFiles) {
-  $base = [System.IO.Path]::GetFileNameWithoutExtension($df.Name)
-  $sha = $base -replace '^2026-05-08-', ''
-  if (-not $sha) { continue }
-  $logFile = $null
-  foreach ($candidate in @("gate/log/$sha-posix.json", "gate/log/$sha-windows.json", "gate/log/$sha.json")) {
-    if (Test-Path $candidate) { $logFile = $candidate; break }
-  }
-  if (-not $logFile) { continue }
-  $logContent = Get-Content -Raw -LiteralPath $logFile
-  if ($logContent -match '"sha":"([^"]+)"') {
-    $logSha = $matches[1]
-    if ($logSha -ne $sha) {
-      Fail 'delivery_log_parity' "log $logFile reports sha='$logSha' but the filename names sha='$sha'" $logFile 0
-    }
-  }
-}
-
 # 9. Gate path drift.
-$matrixPath = 'docs/governance/decision-sync-matrix.md'
 if (Test-Path $matrixPath) {
   $lines = Get-Content -LiteralPath $matrixPath
   for ($i = 0; $i -lt $lines.Count; $i++) {
@@ -379,8 +334,6 @@ if (Test-Path $matrixPath) {
 }
 
 # 10. Gate log extension drift.
-$gateReadme = 'gate/README.md'
-$delReadme = 'docs/delivery/README.md'
 if ((Test-Path $gateReadme) -and (Test-Path $delReadme)) {
   $gate = Get-Content -Raw -LiteralPath $gateReadme
   $del = Get-Content -Raw -LiteralPath $delReadme
@@ -392,7 +345,6 @@ if ((Test-Path $gateReadme) -and (Test-Path $delReadme)) {
 }
 
 # 11. Status enum sanity.
-$statusPath = 'docs/governance/architecture-status.yaml'
 if (Test-Path $statusPath) {
   $allowed = @('proposed','design_accepted','implemented_unverified','test_verified','operator_gated','released')
   $lines = Get-Content -LiteralPath $statusPath
@@ -420,7 +372,6 @@ if (Test-Path $matrixPath) {
 }
 
 # 13. L0 'Last refreshed' date.
-$l0 = 'ARCHITECTURE.md'
 if (Test-Path $l0) {
   $head = Get-Content -LiteralPath $l0 -TotalCount 5
   $headLine = $head | Where-Object { $_ -match 'Last refreshed' } | Select-Object -First 1
@@ -429,16 +380,202 @@ if (Test-Path $l0) {
   }
 }
 
-# Compute final state.
-$shaCandidate = ''
-try { $shaCandidate = ((& git rev-parse --short HEAD 2>$null) -join '').Trim() } catch { $shaCandidate = 'no-git' }
-if ([string]::IsNullOrEmpty($shaCandidate)) { $shaCandidate = 'no-git' }
+# 14. Manifest freshness (cycle-6 A2; cycle-7 extended).
+$reviewedContentSha = ''
+$evidenceCommitSha = ''
+$evidenceClassification = ''
+$manifestDelivery = ''
+if (Test-Path $manifestPath) {
+  $manifestLines = Get-Content -LiteralPath $manifestPath
+  foreach ($rawLine in $manifestLines) {
+    $hashIdx = $rawLine.IndexOf('#')
+    $line = if ($hashIdx -ge 0) { $rawLine.Substring(0, $hashIdx).TrimEnd() } else { $rawLine }
+    if ($line -match '^reviewed_content_sha:\s*([A-Za-z0-9]+)') { $reviewedContentSha = $matches[1] }
+    if ($line -match '^evidence_commit_sha:\s*([A-Za-z0-9]+)') { $evidenceCommitSha = $matches[1] }
+    if ($line -match '^evidence_commit_classification:\s*([A-Za-z_]+)') { $evidenceClassification = $matches[1] }
+    if ($line -match '^delivery_file:\s*(.+)$') { $manifestDelivery = $matches[1].Trim() }
+    if ([string]::IsNullOrEmpty($reviewedContentSha) -and $line -match '^reviewed_sha:\s*([A-Za-z0-9]+)') {
+      $reviewedContentSha = $matches[1]
+    }
+  }
+  if ($reviewedContentSha -and $reviewedContentSha -ne 'TBD') {
+    if ($manifestDelivery -and -not (Test-Path $manifestDelivery)) {
+      Fail 'manifest_freshness' "manifest.delivery_file references '$manifestDelivery' which does not exist" $manifestPath 0
+    }
+    # Verify reviewed_content_sha is reachable from HEAD.
+    $isAncestor = $false
+    try {
+      & git merge-base --is-ancestor $reviewedContentSha HEAD 2>$null
+      if ($LASTEXITCODE -eq 0) { $isAncestor = $true }
+    } catch { }
+    if (-not $isAncestor -and ($shaCandidate -ne $reviewedContentSha)) {
+      Fail 'manifest_freshness' "manifest.reviewed_content_sha=$reviewedContentSha is not reachable from HEAD" $manifestPath 0
+    }
+  }
+}
 
+# 14b. Audit-trail shape (cycle-7 B1).
+# evidence_commit_sha is always HEAD by definition; structural constraints
+# are parent equality and allowed-paths subset.
+if ($reviewedContentSha -and ($shaCandidate -ne 'no-git')) {
+  if ($shaCandidate -eq $reviewedContentSha) {
+    # Direct: HEAD == reviewed content
+  } else {
+    $parentSha = ''
+    try { $parentSha = ((& git rev-parse --short HEAD^ 2>$null) -join '').Trim() } catch { $parentSha = '' }
+    if (-not $parentSha) {
+      Fail 'audit_trail_shape' "HEAD ($shaCandidate) != reviewed_content_sha ($reviewedContentSha) and HEAD has no parent" $manifestPath 0
+    } elseif ($parentSha -ne $reviewedContentSha) {
+      Fail 'audit_trail_shape' "HEAD ($shaCandidate) parent is $parentSha but manifest.reviewed_content_sha is $reviewedContentSha; expected one-parent audit-trail shape" $manifestPath 0
+    } else {
+      $changedPaths = @()
+      try { $changedPaths = (& git diff --name-only "$reviewedContentSha..HEAD" 2>$null) } catch { $changedPaths = @() }
+      $allowedPatterns = @(
+        '^docs/delivery/',
+        '^docs/governance/architecture-status\.yaml$',
+        '^docs/governance/current-architecture-index\.md$',
+        '^docs/governance/evidence-manifest\.yaml$',
+        '^gate/log/'
+      )
+      foreach ($cp in $changedPaths) {
+        if ([string]::IsNullOrWhiteSpace($cp)) { continue }
+        $allowed = $false
+        foreach ($pat in $allowedPatterns) {
+          if ($cp -match $pat) { $allowed = $true; break }
+        }
+        if (-not $allowed) {
+          Fail 'audit_trail_shape' "audit-trail commit changed disallowed path: $cp" $manifestPath 0
+        }
+      }
+    }
+  }
+}
+
+# 14c. Manifest-edge consistency (cycle-7 B2 partial).
+if ($reviewedContentSha -and (Test-Path $statusPath)) {
+  $statusContent = Get-Content -Raw -LiteralPath $statusPath
+  if ($statusContent -notmatch [regex]::Escape($reviewedContentSha)) {
+    Fail 'manifest_edge_consistency' "architecture-status.yaml does not reference manifest.reviewed_content_sha=$reviewedContentSha" $statusPath 0
+  }
+}
+if ($manifestDelivery -and (Test-Path $indexPath)) {
+  $indexContent = Get-Content -Raw -LiteralPath $indexPath
+  $deliveryBase = Split-Path -Leaf $manifestDelivery
+  if ($indexContent -notmatch [regex]::Escape($deliveryBase)) {
+    Fail 'manifest_edge_consistency' "current-architecture-index.md does not reference manifest.delivery_file=$deliveryBase" $indexPath 0
+  }
+}
+
+# 15. README to files.
+$smokePs1 = 'gate/run_operator_shape_smoke.ps1'
+$smokeSh = 'gate/run_operator_shape_smoke.sh'
+if (Test-Path $gateReadme) {
+  if ((Test-Path $smokePs1) -or (Test-Path $smokeSh)) {
+    $lines = Get-Content -LiteralPath $gateReadme
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+      $line = $lines[$i]
+      $bad = $false
+      if (($line -cmatch '(?i)smoke gate') -and ($line -cmatch '(?i)(does not exist|not yet exist)')) { $bad = $true }
+      if (($line -cmatch '(?i)run_operator_shape_smoke') -and ($line -cmatch '(?i)(does not exist|absent)')) { $bad = $true }
+      if ($bad) {
+        Fail 'readme_to_files' "gate/README.md says smoke gate does not exist while scripts are present in gate/" $gateReadme ($i + 1)
+      }
+    }
+  }
+}
+
+# 16. Delivery-log parity (cycle-7 A2 extended to match POSIX semantics).
+$deliveryFiles = Get-ChildItem -Path 'docs/delivery' -Filter '2026-05-08-*.md' -File -ErrorAction SilentlyContinue
+foreach ($df in $deliveryFiles) {
+  $base = [System.IO.Path]::GetFileNameWithoutExtension($df.Name)
+  $sha = $base -replace '^2026-05-08-', ''
+  if (-not $sha) { continue }
+  $logFile = $null
+  foreach ($candidate in @("gate/log/$sha-posix.json", "gate/log/$sha-windows.json", "gate/log/$sha.json")) {
+    if (Test-Path $candidate) { $logFile = $candidate; break }
+  }
+  if (-not $logFile) { continue }
+  $logContent = Get-Content -Raw -LiteralPath $logFile
+  $logSha = if ($logContent -match '"sha":"([^"]+)"') { $matches[1] } else { '' }
+  $logSemPass = if ($logContent -match '"semantic_pass":(true|false)') { $matches[1] } else { '' }
+  $logEvValid = if ($logContent -match '"evidence_valid_for_delivery":(true|false)') { $matches[1] } else { '' }
+  if ($logSha -and ($logSha -ne $sha)) {
+    Fail 'delivery_log_parity' "log $logFile reports sha='$logSha' but the filename names sha='$sha'" $logFile 0
+  }
+  $deliveryRaw = Get-Content -Raw -LiteralPath $df.FullName
+  if ($logSemPass -and ($deliveryRaw -match '\| `semantic_pass` \| ([^|]+)\|')) {
+    $deliverySem = ($matches[1] -replace '[`*\s]','').Trim()
+    if ($deliverySem -and ($deliverySem -ne $logSemPass)) {
+      Fail 'delivery_log_parity' "delivery says semantic_pass=$deliverySem but log says $logSemPass" (Rel $df.FullName) 0
+    }
+  }
+  if ($logEvValid -and ($deliveryRaw -match '\| `evidence_valid_for_delivery` \| ([^|]+)\|')) {
+    $deliveryEv = ($matches[1] -replace '[`*\s]','').Trim()
+    if ($deliveryEv -and ($deliveryEv -ne $logEvValid)) {
+      Fail 'delivery_log_parity' "delivery says evidence_valid_for_delivery=$deliveryEv but log says $logEvValid" (Rel $df.FullName) 0
+    }
+  }
+}
+
+# 17. ASCII-only governance (cycle-7 D3).
+$asciiFiles = @(
+  $manifestPath,
+  $indexPath,
+  $statusPath,
+  'docs/governance/closure-taxonomy.md',
+  'docs/governance/decision-sync-matrix.md',
+  'docs/governance/maturity-glossary.md',
+  $delReadme,
+  $gateReadme
+)
+foreach ($f in $asciiFiles) {
+  if (-not (Test-Path $f)) { continue }
+  $bytes = [System.IO.File]::ReadAllBytes($f)
+  $lineNum = 1
+  for ($i = 0; $i -lt $bytes.Count; $i++) {
+    $b = $bytes[$i]
+    if ($b -eq 10) { $lineNum++; continue }
+    if ($b -eq 13) { continue }
+    if ($b -eq 9) { continue }
+    if ($b -lt 32 -or $b -gt 126) {
+      Fail 'ascii_only_governance' ("non-ASCII byte 0x{0:X2} found" -f $b) (Rel $f) $lineNum
+      break
+    }
+  }
+}
+
+# 18. Capability legacy-bucket (cycle-7 D2).
+if (Test-Path $statusPath) {
+  $statusLines = Get-Content -LiteralPath $statusPath
+  $inFindingsSection = $false
+  for ($i = 0; $i -lt $statusLines.Count; $i++) {
+    $line = $statusLines[$i]
+    if ($line -match '^findings:') { $inFindingsSection = $true }
+    if (-not $inFindingsSection) { continue }
+    if ($line -match '^\s+capability:\s*operator_shape_gate\s*$') {
+      # Allow if the same finding has legacy_capability marker nearby (within 5 lines)
+      $hasLegacy = $false
+      for ($j = [Math]::Max(0, $i - 5); $j -le [Math]::Min($statusLines.Count - 1, $i + 5); $j++) {
+        if ($statusLines[$j] -match '^\s+legacy_capability:\s*operator_shape_gate') { $hasLegacy = $true; break }
+      }
+      if (-not $hasLegacy) {
+        Fail 'capability_legacy_bucket' "finding uses deprecated 'capability: operator_shape_gate' without legacy_capability marker; promote to architecture_sync_gate or operator_shape_smoke_gate" $statusPath ($i + 1)
+      }
+    }
+  }
+}
+
+} catch {
+  $ruleBodySucceeded = $false
+  $runtimeErrorMessage = $_.Exception.Message
+  Fail 'gate_runtime_error' "PowerShell rule body threw: $runtimeErrorMessage" '' 0
+}
+
+# Compute final state.
 $semanticFailures = @($failures | Where-Object { $_.category -ne 'dirty_tree' })
 $semanticPass = $semanticFailures.Count -eq 0
 $evidenceValidForDelivery = $treeClean -and $semanticPass
 
-# Cycle-5 A3: platform-suffix log filename.
 if ($evidenceValidForDelivery) {
   $logDir = Join-Path $PSScriptRoot 'log'
 } else {
@@ -448,7 +585,7 @@ if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Forc
 
 $result = [pscustomobject]@{
   script                       = 'check_architecture_sync.ps1'
-  version                      = 'cycle-6-expanded'
+  version                      = 'cycle-7-expanded'
   platform                     = 'windows'
   sha                          = $shaCandidate
   generated                    = (Get-Date -Format 'o')
@@ -458,6 +595,7 @@ $result = [pscustomobject]@{
   local_only                   = [bool]$LocalOnly
   semantic_pass                = $semanticPass
   evidence_valid_for_delivery  = $evidenceValidForDelivery
+  rule_body_succeeded          = $ruleBodySucceeded
   failures                     = $failures
 }
 $logPath = Join-Path $logDir "$shaCandidate-windows.json"

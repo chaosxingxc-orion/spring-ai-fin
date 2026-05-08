@@ -1,15 +1,15 @@
-# gate — Architecture-sync gates and (planned) Rule 8 operator-shape gate
+# gate -- Architecture-sync gates and (planned) Rule 8 operator-shape gate
 
-Per CLAUDE.md Rule 8, `docs/systematic-architecture-improvement-plan-2026-05-07.en.md` §4.8, and `docs/systematic-architecture-remediation-plan-2026-05-08-cycle-3.en.md` §8.
+Per CLAUDE.md Rule 8, `docs/systematic-architecture-improvement-plan-2026-05-07.en.md` sec-4.8, and `docs/systematic-architecture-remediation-plan-2026-05-08-cycle-3.en.md` sec-8.
 
 This directory holds two distinct families of gate scripts. They are NOT interchangeable. The architecture-sync gate proves the document corpus is internally consistent; the Rule 8 operator-shape gate proves a runnable artifact behaves correctly under deployment shape.
 
 ## Implemented now (architecture-sync gate)
 
-- `check_architecture_sync.ps1` — Windows PowerShell entry point
-- `check_architecture_sync.sh` — Linux / macOS / Git Bash entry point
+- `check_architecture_sync.ps1` -- Windows PowerShell entry point
+- `check_architecture_sync.sh` -- Linux / macOS / Git Bash entry point
 
-These scan the architecture corpus (44–45 files: L0 + L1/L2 `ARCHITECTURE.md` + governance + delivery + gate metadata) and enforce the rules documented in `docs/governance/closure-taxonomy.md` and the cycle-1/2/3 remediation plans. They emit `gate/log/<sha>.json` with `working_tree_clean`, `semantic_pass`, `evidence_valid_for_delivery`, and a structured `failures` list with line numbers.
+These scan the architecture corpus (44-45 files: L0 + L1/L2 `ARCHITECTURE.md` + governance + delivery + gate metadata) and enforce the rules documented in `docs/governance/closure-taxonomy.md` and the cycle-1/2/3 remediation plans. They emit `gate/log/<sha>.json` with `working_tree_clean`, `semantic_pass`, `evidence_valid_for_delivery`, and a structured `failures` list with line numbers.
 
 **These architecture-sync gates do NOT satisfy Rule 8.** They:
 
@@ -32,12 +32,12 @@ A PASS from these gates only means the document corpus is internally consistent.
 
 The two scripts emit equivalent semantic results.
 
-## Operator-shape smoke gate — fail-closed pre-W0; runnable-flow post-W0
+## Operator-shape smoke gate -- fail-closed pre-W0; runnable-flow post-W0
 
-- `run_operator_shape_smoke.ps1` — Windows entry point (exists; cycle-4-fail-closed)
-- `run_operator_shape_smoke.sh` — Linux / macOS entry point (exists; cycle-4-fail-closed)
+- `run_operator_shape_smoke.ps1` -- Windows entry point (exists; cycle-4-fail-closed)
+- `run_operator_shape_smoke.sh` -- Linux / macOS entry point (exists; cycle-4-fail-closed)
 
-**Current state**: both scripts exist and **fail closed** (exit 1 with structured `FAIL_ARTIFACT_MISSING` JSON written to `gate/log/local/operator-shape-<sha>-{posix,windows}.json`) because no runnable artifact exists yet. They are NOT Rule 8 PASS evidence — only Rule 8 absence-evidence.
+**Current state**: both scripts exist and **fail closed** (exit 1 with structured `FAIL_ARTIFACT_MISSING` JSON written to `gate/log/local/operator-shape-<sha>-{posix,windows}.json`) because no runnable artifact exists yet. They are NOT Rule 8 PASS evidence -- only Rule 8 absence-evidence.
 
 When W0 produces the runnable artifact (Maven multi-module + minimal Spring Boot per `docs/plans/W0-evidence-skeleton.md`), these scripts will be replaced with the real Rule 8 flow. Until then the architecture's own Rule 8 says "no PASS exists at this SHA."
 
@@ -49,7 +49,7 @@ The eventual real Rule 8 smoke flow must:
 4. use a real LLM provider (no mock under research/prod);
 5. hit `/health` and `/ready`;
 6. perform three sequential `POST /v1/runs` invocations against the same long-lived process;
-7. prove every run reaches a terminal state in ≤ `2 × observed_p95`;
+7. prove every run reaches a terminal state in <= `2 x observed_p95`;
 8. prove run lifecycle fields (`current_stage`, `finished_at`) populate within 30s and on terminal respectively;
 9. cancel a live run and drive it to a terminal state (`200`);
 10. cancel an unknown run id and return `404`;
@@ -66,6 +66,6 @@ The eventual real Rule 8 smoke flow must:
 ## Status (per `docs/governance/architecture-status.yaml`)
 
 - **`architecture_sync_gate` capability**: `implemented_unverified`. Both `check_architecture_sync.ps1` and `check_architecture_sync.sh` exist; latest delivery-valid PASS recorded by the manifest in `docs/governance/evidence-manifest.yaml`.
-- **`operator_shape_smoke_gate` capability**: `design_accepted`. Both `run_operator_shape_smoke.ps1` and `run_operator_shape_smoke.sh` **exist in `cycle-4-fail-closed` form** (exit 1 with structured `FAIL_ARTIFACT_MISSING` JSON to `gate/log/local/operator-shape-<sha>-{posix,windows}.json`). They are NOT Rule 8 PASS evidence — only honest absence-evidence. W0 will replace fail-closed with the real Rule 8 flow once a runnable artifact exists.
+- **`operator_shape_smoke_gate` capability**: `design_accepted`. Both `run_operator_shape_smoke.ps1` and `run_operator_shape_smoke.sh` **exist in `cycle-4-fail-closed` form** (exit 1 with structured `FAIL_ARTIFACT_MISSING` JSON to `gate/log/local/operator-shape-<sha>-{posix,windows}.json`). They are NOT Rule 8 PASS evidence -- only honest absence-evidence. W0 will replace fail-closed with the real Rule 8 flow once a runnable artifact exists.
 
 No reader should mistake an architecture-sync PASS for Rule 8 evidence. No reader should mistake `FAIL_ARTIFACT_MISSING` for "the script does not exist."

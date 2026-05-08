@@ -14,6 +14,15 @@ generated_at: 2026-05-08
 generated_by: docs/systematic-architecture-remediation-plan-2026-05-08.en.md sec-4 + sec-12
 supersedes: version 1 (2026-05-08 morning)
 
+# Cycle-7 sec-D1: maturity (L0..L4) is the primary status field for capabilities;
+# the lifecycle field below is `evidence_state` (formerly `status`). The two
+# track different things:
+#   - maturity: how far the capability has progressed toward L4 (Rule 12)
+#   - status / evidence_state: which evidence-stage gate it currently passes
+# Both are present during the cycle-7 -> W1 migration. W1 will fully rename
+# `status` to `evidence_state` and add `maturity` as a required first-class
+# field on every capability row.
+
 capabilities:
 
   l0_architecture:
@@ -226,7 +235,7 @@ capabilities:
     tests: []
     operator_gate: null
     open_findings: []
-    latest_semantic_pass_sha: 81ff802        # cycle-6 architectural commit; gate passes delivery-valid
+    latest_semantic_pass_sha: 81ff802        # set to cycle-7 architectural SHA in audit-trail commit
     latest_delivery_valid_sha: 81ff802
     latest_delivery_file: docs/delivery/2026-05-08-81ff802.md
     notes: "Updated by the cycle-6 audit-trail commit to point to the cycle-6 architectural SHA after evidence is produced. The manifest in docs/governance/evidence-manifest.yaml is the authoritative record; this ledger summarizes."
@@ -356,7 +365,8 @@ findings:
     description: "Operator gate scripts must exist and align: gate/check_architecture_sync.{ps1,sh}; gate/run_operator_shape_smoke.{ps1,sh}; log extension .json across gate/README.md and docs/delivery/README.md."
     status: implemented_unverified
     target_wave: W0
-    capability: operator_shape_gate
+    capability: architecture_sync_gate
+    legacy_capability: operator_shape_gate
     notes: "Architecture-sync script created in remediation cycle 1; operator-shape smoke remains W0 deliverable."
 
   # Findings introduced by the 2026-05-08 cycle-2 remediation review.
@@ -386,7 +396,8 @@ findings:
     description: "Architecture sync gate scope was too narrow (root L0 + docs/*.md only). Cycle-2 expanded scan to agent-platform/**/ARCHITECTURE.md and agent-runtime/**/ARCHITECTURE.md and added rule classes: actionguard_stage_drift, contract_posture_purity, auth_algorithm_policy, rls_pool_lifecycle, dirty_tree, plus line numbers in failure objects."
     status: implemented_unverified
     target_wave: W0
-    capability: operator_shape_gate
+    capability: architecture_sync_gate
+    legacy_capability: operator_shape_gate
     notes: "Architecture-sync portion only. Operator-shape smoke remains design_accepted (REM-2026-05-08-C2-6)."
 
   REM-2026-05-08-C2-5:
@@ -394,7 +405,8 @@ findings:
     description: "Sync gate did not protect against dirty-tree evidence. Cycle-2 added git status --porcelain check; default mode fails on dirty tree; --local-only flag permits local runs but writes evidence_valid_for_delivery=false. Delivery README updated to forbid dirty-tree logs."
     status: implemented_unverified
     target_wave: W0
-    capability: operator_shape_gate
+    capability: architecture_sync_gate
+    legacy_capability: operator_shape_gate
     notes: "Architecture-sync portion only."
 
   REM-2026-05-08-C2-6:
@@ -402,7 +414,8 @@ findings:
     description: "gate/run_operator_shape_smoke.{ps1,sh} does not exist. The Rule 8 operator-shape gate (long-lived process, real dependencies, sequential runs, cancellation, lifecycle, fallback-zero) is a W0 deliverable and remains explicitly pending. Architecture-sync PASS is not Rule 8 evidence."
     status: design_accepted
     target_wave: W0
-    capability: operator_shape_gate
+    capability: architecture_sync_gate
+    legacy_capability: operator_shape_gate
     notes: "Explicitly pending. Architecture-sync gate is documented as such, not as Rule 8 evidence."
 
   # Findings introduced by the 2026-05-08 cycle-3 remediation review.
@@ -411,7 +424,8 @@ findings:
     description: "PowerShell architecture-sync gate threw on Windows because the scan-list mixed relative ('ARCHITECTURE.md') and absolute (Get-ChildItem FullName) paths. Cycle-3 normalizes via Resolve-Path into a single ArrayList and adds a self-check assertion."
     status: design_accepted
     target_wave: W0
-    capability: operator_shape_gate
+    capability: architecture_sync_gate
+    legacy_capability: operator_shape_gate
     notes: "Architecture-sync portion only. Operator-shape smoke remains design_accepted."
 
   REM-2026-05-08-C3-2:
@@ -419,7 +433,8 @@ findings:
     description: "Current HEAD had no matching delivery evidence (latest delivery file was for an older SHA). Cycle-3 generates a fresh log + delivery file at the new HEAD after the cycle-3 commit lands and labels them architecture-sync evidence (not Rule 8)."
     status: design_accepted
     target_wave: W0
-    capability: operator_shape_gate
+    capability: architecture_sync_gate
+    legacy_capability: operator_shape_gate
 
   REM-2026-05-08-C3-3:
     source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-3.en.md
@@ -433,7 +448,8 @@ findings:
     description: "Closure-language enforcement was too narrow. Cycle-3 added a case-insensitive regex set; cycle-4 found the bash gate's grep -P silently failed in non-UTF-8 locales (Windows GBK), bypassing the regex check. Cycle-4 fix exports LC_ALL=C in bash so grep -P works."
     status: design_accepted
     target_wave: W0
-    capability: operator_shape_gate
+    capability: architecture_sync_gate
+    legacy_capability: operator_shape_gate
     notes: "Downgraded by cycle-4 finding A4 until current HEAD passes the gate cleanly with the locale fix applied. Architecture-sync portion only."
     last_validated_sha: null
 
@@ -442,7 +458,8 @@ findings:
     description: "gate/README.md described the directory as if Rule 8 operator-shape scripts existed. Cycle-3 splits the README into 'Implemented now' (architecture-sync only) and 'W0 deliverables' (operator-shape smoke) with explicit non-Rule-8 disclaimer. Cycle-5 corrected README wording after operator-shape scripts landed in fail-closed form."
     status: design_accepted
     target_wave: W0
-    capability: operator_shape_gate
+    capability: architecture_sync_gate
+    legacy_capability: operator_shape_gate
 
   # Findings introduced by the 2026-05-08 cycle-4 remediation review.
   REM-2026-05-08-C4-1:
@@ -450,7 +467,8 @@ findings:
     description: "Cycle-3 delivery file embedded raw forbidden phrase examples that triggered the gate's own closure-language regex. Cycle-4 replaced examples with rule identifiers; cycle-4 also discovered the bash gate's grep -P silently failed in Windows GBK locale. Bash gate now exports LC_ALL=C."
     status: design_accepted
     target_wave: W0
-    capability: operator_shape_gate
+    capability: architecture_sync_gate
+    legacy_capability: operator_shape_gate
     last_validated_sha: a070a77
 
   REM-2026-05-08-C4-2:
@@ -458,7 +476,8 @@ findings:
     description: "After cycle-3 commit chain, current HEAD lacked SHA-bound delivery evidence. Cycle-4 produced docs/delivery/2026-05-08-a070a77.md plus gate/log/a070a77.json."
     status: design_accepted
     target_wave: W0
-    capability: operator_shape_gate
+    capability: architecture_sync_gate
+    legacy_capability: operator_shape_gate
     last_validated_sha: a070a77
 
   REM-2026-05-08-C4-3:
@@ -466,7 +485,8 @@ findings:
     description: "Failed gate runs wrote to gate/log/<sha>.json contaminating the next delivery-evidence run. Cycle-4 split: delivery-valid logs go to gate/log/<sha>.json (committed); non-delivery (local-only / dirty / failed) go to gate/log/local/<sha>.json (gitignored)."
     status: design_accepted
     target_wave: W0
-    capability: operator_shape_gate
+    capability: architecture_sync_gate
+    legacy_capability: operator_shape_gate
     last_validated_sha: a070a77
 
   REM-2026-05-08-C4-4:
@@ -474,7 +494,8 @@ findings:
     description: "Status ledger overstated cycle-3 architecture-sync portion. Cycle-4 downgraded REM-C3-4 to design_accepted with last_validated_sha=null until current HEAD passed."
     status: design_accepted
     target_wave: W0
-    capability: operator_shape_gate
+    capability: architecture_sync_gate
+    legacy_capability: operator_shape_gate
     last_validated_sha: a070a77
 
   REM-2026-05-08-C4-5:
@@ -490,7 +511,8 @@ findings:
     description: "Gate auth/posture rules scoped to L1 only, missing submodule L2 drift. Cycle-4 expanded contract_posture_purity and auth_algorithm_policy rules to scan all agent-platform/**/ARCHITECTURE.md."
     status: design_accepted
     target_wave: W0
-    capability: operator_shape_gate
+    capability: architecture_sync_gate
+    legacy_capability: operator_shape_gate
     last_validated_sha: a070a77
 
   REM-2026-05-08-C4-7:
@@ -506,7 +528,8 @@ findings:
     description: "Rule 8 operator-shape gate did not exist. Cycle-4 added gate/run_operator_shape_smoke.{ps1,sh} that fail closed with structured FAIL_ARTIFACT_MISSING JSON (exit 1) until W0 lands a runnable artifact. Architecture-sync evidence does not substitute for Rule 8."
     status: design_accepted
     target_wave: W0
-    capability: operator_shape_gate
+    capability: architecture_sync_gate
+    legacy_capability: operator_shape_gate
     last_validated_sha: null
     notes: "Operator-shape smoke remains design_accepted; fail-closed scripts are absence-evidence, not Rule 8 PASS."
 
@@ -524,28 +547,32 @@ findings:
     description: "Cycle-4 left HEAD 291c635 without a committed delivery file (delivery was for a070a77). Cycle-5 produces final-SHA delivery + log after all cycle-5 fixes land."
     status: design_accepted
     target_wave: W0
-    capability: operator_shape_gate
+    capability: architecture_sync_gate
+    legacy_capability: operator_shape_gate
 
   REM-2026-05-08-C5-2:
     source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md
     description: "Delivery file 2026-05-08-a070a77.md reported scan_files_count as 44 while gate/log/a070a77.json reported 42. Hand-copied values drifted from the JSON. Cycle-5 fix: new delivery file uses values that match the JSON; full delivery_log_parity gate rule deferred to W1."
     status: design_accepted
     target_wave: W0/W1
-    capability: operator_shape_gate
+    capability: architecture_sync_gate
+    legacy_capability: operator_shape_gate
 
   REM-2026-05-08-C5-3:
     source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md
     description: "Gate logs from PowerShell and POSIX runs overwrote each other (both wrote to gate/log/<sha>.json). Cycle-5 fix: bash writes <sha>-posix.json; PowerShell writes <sha>-windows.json. Both platforms' evidence is now durable for the same SHA."
     status: design_accepted
     target_wave: W0
-    capability: operator_shape_gate
+    capability: architecture_sync_gate
+    legacy_capability: operator_shape_gate
 
   REM-2026-05-08-C5-4:
     source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md
     description: "gate/README.md and docs/delivery/README.md still said operator-shape scripts did not exist after cycle-4 added them. Cycle-5 corrected both READMEs to say the scripts exist in fail-closed form and produce FAIL_ARTIFACT_MISSING until W0."
     status: design_accepted
     target_wave: W0
-    capability: operator_shape_gate
+    capability: architecture_sync_gate
+    legacy_capability: operator_shape_gate
 
   REM-2026-05-08-C5-5:
     source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md
@@ -566,7 +593,8 @@ findings:
     description: "rls_reset_vocabulary gate rule scoped to governance/diagram/matrix files only, missing server L2 line 20. Cycle-5 expanded scope to all L0/L1/L2 ARCHITECTURE.md files."
     status: design_accepted
     target_wave: W0
-    capability: operator_shape_gate
+    capability: architecture_sync_gate
+    legacy_capability: operator_shape_gate
 
   REM-2026-05-08-C5-8:
     source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md
@@ -645,4 +673,68 @@ findings:
     description: "Architecture-sync remains regex-heavy. Cycle-6 added 3 manifest-aware rules (manifest_freshness, readme_to_files, delivery_log_parity) and split status YAML capabilities. Full manifest-driven graph validation (ledger_coverage, index_freshness, rule_8_state_consistency) remains W1."
     status: design_accepted
     target_wave: W1
+    capability: architecture_sync_gate
+
+  # Findings introduced by the 2026-05-08 cycle-7 remediation review.
+  REM-2026-05-08-C7-1:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-7.en.md
+    description: "PowerShell architecture-sync gate crashed before structured output: $gateReadme used at line 335 but assigned at line 382. Cycle-7 fix: shared variable initialization moved above all rules; rule body wrapped in try/catch emitting gate_runtime_error JSON; both scripts version-bumped to cycle-7-expanded."
+    status: design_accepted
+    target_wave: W0
+    capability: architecture_sync_gate
+
+  REM-2026-05-08-C7-2:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-7.en.md
+    description: "PowerShell delivery_log_parity rule only checked log SHA; POSIX checked sha + semantic_pass + evidence_valid_for_delivery. Cycle-7 extended PowerShell to match POSIX semantics and synchronized header comments."
+    status: design_accepted
+    target_wave: W0
+    capability: architecture_sync_gate
+
+  REM-2026-05-08-C7-3:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-7.en.md
+    description: "Evidence model accepted HEAD lag from manifest as a prose convention. Cycle-7 introduced two-SHA model: reviewed_content_sha + evidence_commit_sha + evidence_commit_parent_sha + evidence_commit_classification + allowed_audit_trail_paths. New audit_trail_shape gate rule enforces parent equality and changed-paths subset via git rev-parse and git diff --name-only."
+    status: design_accepted
+    target_wave: W0
+    capability: architecture_sync_gate
+
+  REM-2026-05-08-C7-4:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-7.en.md
+    description: "Manifest freshness was presence-based, not graph-complete. Cycle-7 added manifest_edge_consistency rule: architecture-status.yaml must reference manifest.reviewed_content_sha; current-architecture-index.md must reference manifest.delivery_file. Full graph (Rule 8 state, ledger_coverage, schema_capabilities) remains W1."
+    status: design_accepted
+    target_wave: W0
+    capability: architecture_sync_gate
+
+  REM-2026-05-08-C7-5:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-7.en.md
+    description: "Manifest schema_version still said cycle-5-skeleton even after cycle-6 added enforcement; authoritative_index_last_updated_in_cycle still said cycle-5. Cycle-7 bumped to evidence-manifest/v2 with schema_capabilities booleans (head_coverage, delivery_log_parity, status_ledger_parity, index_freshness, rule_8_state_parity, ledger_coverage_finding_to_capability)."
+    status: design_accepted
+    target_wave: W0
+    capability: architecture_sync_gate
+
+  REM-2026-05-08-C7-6:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-7.en.md
+    description: "Capability status language (design_accepted, implemented_unverified) competed with L0-L4 maturity. Cycle-7 added a header note that maturity is the primary status field; the lifecycle field is evidence_state. Full rename of status to evidence_state is W1 to avoid breaking existing tooling mid-cycle."
+    status: design_accepted
+    target_wave: W1
+    capability: architecture_sync_gate
+
+  REM-2026-05-08-C7-7:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-7.en.md
+    description: "Historical findings used the old operator_shape_gate capability bucket even after cycle-6 split into architecture_sync_gate and operator_shape_smoke_gate. Cycle-7 re-keyed all 19 historical findings: capability re-pointed; legacy_capability: operator_shape_gate preserved for traceability. New capability_legacy_bucket gate rule rejects new findings using the deprecated bucket without legacy_capability marker."
+    status: design_accepted
+    target_wave: W0
+    capability: architecture_sync_gate
+
+  REM-2026-05-08-C7-8:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-7.en.md
+    description: "Active governance files contained UTF-8 special characters (sec-, --, ->, <->, <=) that some reviewer tooling renders as mojibake. Cycle-7 replaced them with ASCII equivalents across 7 active governance files. New ascii_only_governance gate rule scans those files and fails on any non-ASCII byte."
+    status: design_accepted
+    target_wave: W0
+    capability: architecture_sync_gate
+
+  REM-2026-05-08-C7-9:
+    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-7.en.md
+    description: "Gate scripts had no self-tests; cycle-6 PowerShell crash shipped because no harness validated structured JSON output. Cycle-7 added gate/test_architecture_sync_gate.sh: runs the available platform script(s) on the current tree and asserts exit code semantics + parseable JSON output. PowerShell parity test runs only when pwsh is available."
+    status: design_accepted
+    target_wave: W0
     capability: architecture_sync_gate

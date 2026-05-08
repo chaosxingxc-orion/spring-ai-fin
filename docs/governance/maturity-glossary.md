@@ -1,7 +1,7 @@
 # Maturity Glossary (Rule 12)
 
-> Per `docs/systematic-architecture-improvement-plan-2026-05-07.en.md` §7 + CLAUDE.md Rule 12.
-> Defines the L0–L4 maturity ladder used in `architecture-status.yaml#capabilities[*].maturity`.
+> Per `docs/systematic-architecture-improvement-plan-2026-05-07.en.md` sec-7 + CLAUDE.md Rule 12.
+> Defines the L0-L4 maturity ladder used in `architecture-status.yaml#capabilities[*].maturity`.
 
 | Level | Name | Criterion |
 |---|---|---|
@@ -24,11 +24,11 @@ A capability cannot move to L3 without:
 
 ## Retired labels
 
-The following labels are retired in favour of L0–L4 + the status enum in `closure-taxonomy.md`:
+The following labels are retired in favour of L0-L4 + the status enum in `closure-taxonomy.md`:
 
-- `experimental` → use `maturity: L0` + `status: proposed` or `design_accepted`
-- `implemented_unstable` → use `maturity: L1` + `status: implemented`
-- `public_contract` → use `maturity: L2` + `status: test_verified`
-- `production_ready` → use `maturity: L3` + `status: operator_gated` or `released`
+- `experimental` -> use `maturity: L0` + `status: proposed` or `design_accepted`
+- `implemented_unstable` -> use `maturity: L1` + `status: implemented`
+- `public_contract` -> use `maturity: L2` + `status: test_verified`
+- `production_ready` -> use `maturity: L3` + `status: operator_gated` or `released`
 
 PRs introducing the retired labels are rejected.

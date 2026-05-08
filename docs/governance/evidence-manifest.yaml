@@ -1,56 +1,84 @@
-# spring-ai-fin evidence manifest (skeleton; cycle-5 §F1).
+# spring-ai-fin evidence manifest (v2; cycle-7 sec-B1).
 #
-# Per docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md §F1.
+# Per docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md sec-F1
+# and cycle-6 sec-A2, with cycle-7 sec-B1 two-SHA model upgrade.
 #
-# This file is the machine-readable binding between:
-#   - the reviewed SHA
-#   - the delivery file at that SHA
-#   - the architecture-sync logs by platform
-#   - the operator-shape logs by platform
-#   - the status-ledger findings the cycle addressed
-#   - the authoritative document index version
-#   - the Rule 8 state
+# Schema v2 distinguishes "reviewed content" from "evidence commit" so the
+# audit-trail commit pattern is machine-verifiable, not a prose convention.
 #
-# The full manifest-driven gate (delivery_log_parity, manifest_freshness,
-# ledger_coverage, readme_to_files, rule_8_state_consistency) is a W1
-# deliverable per REM-2026-05-08-C5-9. Cycle-5 delivers only the
-# manifest skeleton + a basic gate rule that warns on obvious mismatches.
-#
-# Maintainers update this file in the same commit that produces the
-# matching delivery + log.
+# Updated by the same commit that produces a delivery file + log.
+# The architecture-sync gate's audit_trail_shape rule enforces:
+#   - HEAD == reviewed_content_sha (direct), OR
+#   - HEAD == evidence_commit_sha AND HEAD's parent == reviewed_content_sha
+#     AND HEAD's diff vs reviewed_content_sha is a subset of
+#     allowed_audit_trail_paths.
 
-version: 1
-schema_version: cycle-5-skeleton
+version: 2
+schema_version: evidence-manifest/v2
 
-# The manifest currently describes the latest delivery-valid SHA, NOT the
-# current HEAD. The W1 gate will extend this to enforce HEAD coverage.
+# Cycle-7 sec-B3: schema_capabilities are machine-readable booleans for
+# manifest-driven gate rule completeness. true means the gate enforces it now.
+schema_capabilities:
+  head_coverage: true                      # cycle-7 audit_trail_shape rule
+  delivery_log_parity: true                # cycle-6 + cycle-7 (sha + semantic + evidence)
+  status_ledger_parity: true               # cycle-7 manifest_edge_consistency
+  index_freshness: true                    # cycle-7 manifest_edge_consistency
+  rule_8_state_parity: false               # W1 deliverable
+  ledger_coverage_finding_to_capability: false   # W1 deliverable
 
+# ---- Two-SHA evidence model (cycle-7 sec-B1) ----
+
+reviewed_content_sha: 81ff802                       # set to cycle-7 architectural SHA in audit-trail commit
+evidence_commit_sha: TBD                            # set to HEAD by gate; not stored authoritatively
+evidence_commit_parent_sha: 81ff802                 # MUST equal reviewed_content_sha (gate enforced)
+evidence_commit_classification: audit_trail_only    # one of: direct_reviewed_content | audit_trail_only
+
+# Backward compatibility with v1 readers (cycle-5/cycle-6).
 reviewed_sha: 81ff802
-reviewed_sha_classification: architecture_sync_evidence_only
-notes: |
-  This manifest is updated in the audit-trail commit that produces the
-  delivery file + log for the most-recent architectural commit. By design
-  it lags HEAD by exactly one commit (the audit-trail commit itself). The
-  manifest's `reviewed_sha` is the SHA of the last delivery-valid log, NOT
-  HEAD. See cycle-6 §A1 trade-off discussion.
 
-delivery_file: docs/delivery/2026-05-08-81ff802.md
+current_head_policy:
+  accepted_shapes:
+    - direct_reviewed_content
+    - one_parent_audit_trail_only
+  allowed_audit_trail_paths:
+    - docs/delivery/**
+    - docs/governance/architecture-status.yaml
+    - docs/governance/current-architecture-index.md
+    - docs/governance/evidence-manifest.yaml
+    - gate/log/**
+
+# ---- Delivery and logs ----
+
+delivery_file: docs/delivery/2026-05-08-81ff802.md   # cycle-6 delivery; updated to cycle-7 in audit-trail commit
 
 architecture_sync_logs:
-  posix: gate/log/81ff802-posix.json                    # cycle-6 architectural commit; cycle-6-expanded gate
-  windows: null                                          # PowerShell unavailable in cycle-6 author's environment; documented gap
+  posix: gate/log/81ff802-posix.json
+  windows: null    # Cycle-7 author's environment lacks PowerShell. A future
+                   # Windows run produces gate/log/<sha>-windows.json.
   prior_delivery_valid_logs:
-    - gate/log/302337f-posix.json                       # cycle-5 first log under platform-suffix scheme
-    - gate/log/a070a77.json                              # cycle-4 evidence (pre-suffix naming); preserved for audit
+    - gate/log/302337f-posix.json     # cycle-5 architectural
+    - gate/log/a070a77.json           # cycle-4 (pre-suffix naming)
   cycle_5_platform_suffix_in_effect_starting: 302337f
 
 operator_shape_logs:
-  posix: null    # gate/log/local/operator-shape-81ff802-posix.json (gitignored fail-closed)
-  windows: null  # gate/log/local/operator-shape-81ff802-windows.json (gitignored fail-closed)
+  posix: null    # gate/log/local/operator-shape-<sha>-posix.json (gitignored fail-closed)
+  windows: null  # gate/log/local/operator-shape-<sha>-windows.json (gitignored fail-closed)
   notes: |
-    Operator-shape smoke produces FAIL_ARTIFACT_MISSING. Logs are under
-    gate/log/local/ (gitignored) and are NOT delivery evidence. Recorded
-    here only to make the absence auditable.
+    Operator-shape smoke produces FAIL_ARTIFACT_MISSING. Logs go to
+    gate/log/local/ (gitignored) and are NOT delivery evidence.
+
+rule_8:
+  state: fail_closed_artifact_missing
+  pass_sha: null
+  blocking_findings:
+    - "No pom.xml at repo root"
+    - "No agent-platform/pom.xml"
+    - "No agent-runtime/pom.xml"
+    - "No agent-platform/src/main/java tree"
+    - "No agent-runtime/src/main/java tree"
+  unblocks_at: W0   # docs/plans/W0-evidence-skeleton.md
+
+# ---- Status findings addressed ----
 
 status_findings_addressed:
   cycle_1:
@@ -96,29 +124,29 @@ status_findings_addressed:
     - REM-2026-05-08-C5-8
     - REM-2026-05-08-C5-9
   cycle_6:
-    - REM-2026-05-08-C6-1   # A1: HEAD-vs-delivery (audit-trail pattern documented)
-    - REM-2026-05-08-C6-2   # A2: manifest freshness rule + manifest itself updated
-    - REM-2026-05-08-C6-3   # A3: current-architecture-index updated
-    - REM-2026-05-08-C6-4   # A4: status YAML split into sync/smoke sub-capabilities
-    - REM-2026-05-08-C6-5   # B1: cross-platform evidence (POSIX-only env documented)
-    - REM-2026-05-08-C6-6   # B2: README-to-files rule + gate/README.md fix
-    - REM-2026-05-08-C6-7   # B3: delivery_log_parity rule (basic)
-    - REM-2026-05-08-C6-8   # C1: auth L2 weak-HMAC test row rewritten + HS256/prod scan extended
-    - REM-2026-05-08-C6-9   # D1: manifest enforcement (basic; full graph validation = W1)
+    - REM-2026-05-08-C6-1
+    - REM-2026-05-08-C6-2
+    - REM-2026-05-08-C6-3
+    - REM-2026-05-08-C6-4
+    - REM-2026-05-08-C6-5
+    - REM-2026-05-08-C6-6
+    - REM-2026-05-08-C6-7
+    - REM-2026-05-08-C6-8
+    - REM-2026-05-08-C6-9
+  cycle_7:
+    - REM-2026-05-08-C7-1   # A1: PowerShell crash fix (variable-order)
+    - REM-2026-05-08-C7-2   # A2: PowerShell parity with POSIX delivery_log_parity
+    - REM-2026-05-08-C7-3   # B1: two-SHA evidence model (manifest v2)
+    - REM-2026-05-08-C7-4   # B2: manifest_edge_consistency rule
+    - REM-2026-05-08-C7-5   # B3: schema metadata refreshed
+    - REM-2026-05-08-C7-6   # D1: maturity-as-primary note
+    - REM-2026-05-08-C7-7   # D2: legacy_capability migration
+    - REM-2026-05-08-C7-8   # D3: ASCII-only active governance
+    - REM-2026-05-08-C7-9   # E1: gate self-test harness
 
 authoritative_index: docs/governance/current-architecture-index.md
-authoritative_index_last_updated_in_cycle: cycle-5
+authoritative_index_last_updated_in_cycle: cycle-7
+authoritative_index_sha: TBD   # set to evidence_commit_sha when committed
 
 artifact_present: false
-rule_8_state: fail_closed_artifact_missing
-rule_8_blocking_findings:
-  - "No pom.xml at repo root"
-  - "No agent-platform/pom.xml"
-  - "No agent-runtime/pom.xml"
-  - "No agent-platform/src/main/java tree"
-  - "No agent-runtime/src/main/java tree"
-rule_8_unblocks_at: W0 (docs/plans/W0-evidence-skeleton.md)
-
-# When a future cycle produces delivery-valid evidence at a new SHA, that
-# cycle's PR updates this file and adds the new finding ledger entries
-# under status_findings_addressed.<next_cycle>.
+test_reference_state_default: planned   # cycle-7 sec-C2: explicit field for test references
