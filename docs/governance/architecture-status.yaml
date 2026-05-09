@@ -252,9 +252,9 @@ capabilities:
     tests: []
     operator_gate: null
     open_findings: []
-    latest_semantic_pass_sha: ec8daca        # W0 SHA: Steps 9-12 finishing work (BoM starters + SPI freeze + milestone gate + dev docs)
-    latest_delivery_valid_sha: ec8daca
-    latest_delivery_file: docs/delivery/2026-05-10-ec8daca.md
+    latest_semantic_pass_sha: 68c07f1        # W0 SHA: milestone gate grep-P locale fix
+    latest_delivery_valid_sha: 68c07f1
+    latest_delivery_file: docs/delivery/2026-05-10-68c07f1.md
     notes: "Updated by the W0 audit-trail commit. W0 delivers: Java 21 + Maven Wrapper 3.9.15 + Boot 4.0.5 + AI 2.0.0-M5 + MCP 1.0.0 GA + Tika 3.3.0 + Flyway 11.19.1 + OSS BoM U2 at cd13612 + Tier C manifest (16 entries). build_verification.state: green (mvn verify LOCAL at 18d637e)."
     allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml."
 

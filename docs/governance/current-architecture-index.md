@@ -103,6 +103,7 @@
 ## Delivery evidence
 
 - [`docs/delivery/README.md`](../delivery/README.md) -- delivery rules.
+- [`docs/delivery/2026-05-10-68c07f1.md`](../delivery/2026-05-10-68c07f1.md) -- W0: milestone gate grep-P locale fix; build_verification.state: green.
 - [`docs/delivery/2026-05-10-ec8daca.md`](../delivery/2026-05-10-ec8daca.md) -- W0: Steps 9-12 finishing work (BoM starters + SPI freeze + milestone gate + dev docs); build_verification.state: green.
 - [`docs/delivery/2026-05-10-18d637e.md`](../delivery/2026-05-10-18d637e.md) -- W0: Maven Wrapper + Boot 4.0.5 / AI 2.0.0-M5 upgrade + OSS BoM U2 (verified at cd13612) + Tier C manifest (16 entries); build_verification.state: green.
 - [`docs/delivery/2026-05-09-c863c2b.md`](../delivery/2026-05-09-c863c2b.md) -- cycle-14 (A1+A2+B1+B2+C1+C2+D1+D2+E1; ASCII fix; two new gate rules; build_verification.state: pending_ci).
