@@ -55,12 +55,12 @@ schema_capabilities:
 # of cycle-8's remediation. The gate derives it from HEAD when verifying
 # audit_trail_shape.
 
-reviewed_content_sha: 4260a48                       # 2026-05-08 architecture refresh commit
-evidence_commit_parent_sha: 4260a48                 # MUST equal reviewed_content_sha (gate enforced)
+reviewed_content_sha: e9a692d                       # cycle-9 truth-cut commit
+evidence_commit_parent_sha: e9a692d                 # MUST equal reviewed_content_sha (gate enforced)
 evidence_commit_classification: audit_trail_only    # one of: direct_reviewed_content | audit_trail_only
 
 # Backward compatibility with v1/v2 readers (cycle-5/cycle-6/cycle-7).
-reviewed_sha: 4260a48
+reviewed_sha: e9a692d
 
 current_head_policy:
   accepted_shapes:
@@ -75,7 +75,7 @@ current_head_policy:
 
 # ---- Delivery and logs (cycle-8 sec-B1, sec-B2, sec-B3) ----
 
-delivery_file: docs/delivery/2026-05-08-4260a48.md   # 2026-05-08 refresh delivery
+delivery_file: docs/delivery/2026-05-08-e9a692d.md   # cycle-9 truth-cut delivery
 
 # Per cycle-8 sec-B3: log slots use the explicit state enum, never null.
 # Per cycle-8 sec-B1: when state == pass, path MUST exist and the log's
@@ -84,12 +84,12 @@ delivery_file: docs/delivery/2026-05-08-4260a48.md   # 2026-05-08 refresh delive
 architecture_sync_logs:
   posix:
     state: pass
-    path: gate/log/4260a48-posix.json
-    log_sha: 4260a48
+    path: gate/log/e9a692d-posix.json
+    log_sha: e9a692d
   windows:
     state: missing_blocker
     path: null
-    reason: "pwsh not available in 2026-05-08 refresh author's environment. Cycle-8 sec-A3 + Phase 2.4 W1 deliverable: a CI matrix with a Windows runner will produce gate/log/4260a48-windows.json. Until then this slot is an explicit blocker, not a null."
+    reason: "pwsh not available in cycle-9 author's environment. Cycle-8 sec-A3 + Phase 2.4 W1 deliverable: a CI matrix with a Windows runner will produce gate/log/e9a692d-windows.json. Until then this slot is an explicit blocker, not a null."
   prior_delivery_valid_logs:
     - gate/log/81ff802-posix.json     # cycle-6 architectural
     - gate/log/302337f-posix.json     # cycle-5 architectural
@@ -128,8 +128,8 @@ operator_shape_logs:
 # distinguishes a local-only run from a delivery-valid run.
 self_test:
   state: pass
-  pass_sha: 4260a48
-  log_path: gate/log/self-test-4260a48.json
+  pass_sha: e9a692d
+  log_path: gate/log/self-test-e9a692d.json
   blocking_for_delivery: true
   pass_type: delivery_valid_pass    # one of: local_semantic_pass | delivery_valid_pass
 

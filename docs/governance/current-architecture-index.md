@@ -93,7 +93,8 @@
 ## Delivery evidence
 
 - [`docs/delivery/README.md`](../delivery/README.md) -- delivery rules.
-- [`docs/delivery/2026-05-08-4260a48.md`](../delivery/2026-05-08-4260a48.md) -- 2026-05-08 architecture refresh evidence (current authoritative).
+- [`docs/delivery/2026-05-08-e9a692d.md`](../delivery/2026-05-08-e9a692d.md) -- cycle-9 truth-cut evidence (current authoritative).
+- [`docs/delivery/2026-05-08-4260a48.md`](../delivery/2026-05-08-4260a48.md) -- 2026-05-08 architecture refresh evidence.
 - [`docs/delivery/2026-05-08-cc2e1e3.md`](../delivery/2026-05-08-cc2e1e3.md) -- cycle-8 evidence-graph-v3 evidence.
 - (Earlier deliveries are listed under "Historical Rationale" below for traceability.)
 

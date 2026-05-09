@@ -252,10 +252,10 @@ capabilities:
     tests: []
     operator_gate: null
     open_findings: []
-    latest_semantic_pass_sha: 4260a48        # 2026-05-08 architecture refresh commit (OSS-first; L0/L1/L2 drill-down; 240-dim self-audit)
-    latest_delivery_valid_sha: 4260a48
-    latest_delivery_file: docs/delivery/2026-05-08-4260a48.md
-    notes: "Updated by the 2026-05-08 refresh audit-trail commit to point to the architectural SHA 4260a48 after evidence is produced. The manifest in docs/governance/evidence-manifest.yaml is the authoritative record; this ledger summarizes."
+    latest_semantic_pass_sha: e9a692d        # cycle-9 truth-cut commit (3-section corpus split; 5-stage ActionGuard; index subset; dependency_mode + rule_8_eligible)
+    latest_delivery_valid_sha: e9a692d
+    latest_delivery_file: docs/delivery/2026-05-08-e9a692d.md
+    notes: "Updated by the cycle-9 audit-trail commit to point to the cycle-9 architectural SHA e9a692d after evidence is produced. The manifest in docs/governance/evidence-manifest.yaml is the authoritative record; this ledger summarizes."
     allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml."
 
   # ---- 2026-05-08 refresh capability rows (per refresh L2 modules) ----
