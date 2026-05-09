@@ -1107,3 +1107,141 @@ findings:
     evidence_state: design_accepted
     target_wave: W0
     capability: l0_architecture
+
+  # ---- Cycle-10 self-driven systematic review (per docs/architecture-design-systematic-review-2026-05-09.md) ----
+  # 20 issues closed in this cycle; 25 carry-forward items also tracked
+  # under the same source for visibility.
+  REM-2026-05-09-C10-1:
+    source: docs/architecture-design-systematic-review-2026-05-09.md
+    description: "L0 lacked NFRs / SLOs (latency, throughput, availability, durability, cost, capacity per posture). Cycle-10 added docs/cross-cutting/non-functional-requirements.md with concrete numbers + L0 sec-6.6 summary."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0..W4
+    capability: l0_architecture
+  REM-2026-05-09-C10-2:
+    source: docs/architecture-design-systematic-review-2026-05-09.md
+    description: "First-principles (P1/P2/P3) lacked measurable proxies. Cycle-10 added L0 sec-5.4 with 9 measurable proxies (time-to-first-run, helm-install-to-health, default examples count, median run cost, prompt-cache hit rate, budget breach count, eval pass rate, feedback collection rate, prompt A/B rollout count)."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0..W4
+    capability: l0_architecture
+  REM-2026-05-09-C10-3:
+    source: docs/architecture-design-systematic-review-2026-05-09.md
+    description: "Module dependency graph was implicit. Cycle-10 added L0 sec-3.1 explicit graph + acyclic rule + ArchUnit CI test."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: l0_architecture
+  REM-2026-05-09-C10-4:
+    source: docs/architecture-design-systematic-review-2026-05-09.md
+    description: "Threat model missing as a coherent doc. Cycle-10 added docs/cross-cutting/threat-model.md with STRIDE per trust boundary (TB-1..TB-4) + cross-cutting threats."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W1+
+    capability: identity_jwt_validation
+  REM-2026-05-09-C10-5:
+    source: docs/architecture-design-systematic-review-2026-05-09.md
+    description: "API conventions missing. Cycle-10 added docs/cross-cutting/api-conventions.md (URL versioning, methods + idempotency, naming, status codes, RFC-7807 error body, error code taxonomy, pagination, headers, OpenAPI, deprecation)."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: agent_platform_facade
+  REM-2026-05-09-C10-6:
+    source: docs/architecture-design-systematic-review-2026-05-09.md
+    description: "Data model conventions missing. Cycle-10 added docs/cross-cutting/data-model-conventions.md (naming, UUIDv7 IDs, required columns, multi-tenant patterns, timestamps, soft vs hard delete, indexes, jsonb usage, migrations, schema spine, Java type ownership)."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0..W4
+    capability: server_rls_protocol
+  REM-2026-05-09-C10-7:
+    source: docs/architecture-design-systematic-review-2026-05-09.md
+    description: "Deployment topology missing. Cycle-10 added docs/cross-cutting/deployment-topology.md (dev compose, single-region K8s, multi-region option, replica counts, scaling assumptions, network policies, rollout strategy, DR, cost model)."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0..W4
+    capability: l0_architecture
+  REM-2026-05-09-C10-8:
+    source: docs/architecture-design-systematic-review-2026-05-09.md
+    description: "Failure modes catalog missing. Cycle-10 added docs/cross-cutting/failure-modes-catalog.md (per-module runtime failure modes + Detect / Mitigation / Outcome per row + cross-cutting failure modes)."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0..W4
+    capability: l0_architecture
+  REM-2026-05-09-C10-9:
+    source: docs/architecture-design-systematic-review-2026-05-09.md
+    description: "Tenant lifecycle (create / suspend / delete / export / impersonate) was not specified. Cycle-10 added agent-platform/tenant L2 sec-10 with state machine + per-action procedure + admin API."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W1+
+    capability: tenant_context_spine
+  REM-2026-05-09-C10-10:
+    source: docs/architecture-design-systematic-review-2026-05-09.md
+    description: "Memory eviction + per-tenant quota not specified. Cycle-10 added agent-runtime/memory L2 sec-10 with per-tier eviction + tenant quota table + PII tagging."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W2/W3
+    capability: l0_architecture
+  REM-2026-05-09-C10-11:
+    source: docs/architecture-design-systematic-review-2026-05-09.md
+    description: "Tool versioning + per-tenant quota + sandbox levels not specified. Cycle-10 added agent-runtime/tool L2 sec-10 with SemVer versioning + dual quota + 5-level sandbox table."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W3
+    capability: skill_runtime_authz
+  REM-2026-05-09-C10-12:
+    source: docs/architecture-design-systematic-review-2026-05-09.md
+    description: "Parallel run handling + timeout escalation not specified. Cycle-10 added agent-runtime/run L2 sec-10 with per-tenant cap + 6-level timeout table + cancellation across sync/Temporal boundary."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W2
+    capability: l0_architecture
+  REM-2026-05-09-C10-13:
+    source: docs/architecture-design-systematic-review-2026-05-09.md
+    description: "Workflow versioning + signal discipline + namespace strategy not specified. Cycle-10 added agent-runtime/temporal L2 sec-10 with getVersion pattern + signal contract + namespace pattern + activity catalog."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W4
+    capability: l0_architecture
+  REM-2026-05-09-C10-14:
+    source: docs/architecture-design-systematic-review-2026-05-09.md
+    description: "Outbox per-tenant ordering + DLQ procedure not specified. Cycle-10 added agent-runtime/outbox L2 sec-10 with per-tenant batch ordering + DLQ table + replay API + DLQ alerts."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W2/W3
+    capability: outbox_saga_directdb
+  REM-2026-05-09-C10-15:
+    source: docs/architecture-design-systematic-review-2026-05-09.md
+    description: "Cross-module Java type ownership unclear. Cycle-10 documented in data-model-conventions sec-13: agent-platform/contracts is the single shared-type module; no cycles."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: l0_architecture
+
+  # 25 carry-forward items tracked as design_accepted P1/P2 with target_wave > W0.
+  # See docs/architecture-design-systematic-review-2026-05-09.md sec-4.2 for the
+  # full table; not duplicated here. They will become individual REM rows when
+  # closed in their respective waves.
+  REM-2026-05-09-C10-CF:
+    source: docs/architecture-design-systematic-review-2026-05-09.md
+    description: "25 systematic-review carry-forward items tracked in sec-4.2 of the source doc. Categories: P-A (token-binding, alerting, cross-region tracing, sandboxing, audit chain validate, eval cost budget); P-B (token revocation, stepped-up auth, idempotency body storage, config hot-reload, run timeout escalation, LLM streaming, tool-calling protocol, prompt templates, action retry, signal contract, eval human-loop); P-C (error propagation, inter-module timeouts, retry budgets); P-D (per-wave score lift, per-feature business KPI); P-E (Spring AI 1.0.x GA, MCP version pin, Temporal vs simpler alt, pgvector vs Qdrant trigger). Each becomes its own REM row when closed."
+    maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W1..W4+
+    capability: l0_architecture
+    notes: "Carry-forward items per cycle-10 self-driven review. Not blockers; design coverage gaps to be addressed in respective waves."

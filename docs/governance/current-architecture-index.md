@@ -65,6 +65,12 @@
 - [`docs/cross-cutting/secrets-lifecycle.md`](../cross-cutting/secrets-lifecycle.md) -- Vault paths + rotation cadence.
 - [`docs/cross-cutting/supply-chain-controls.md`](../cross-cutting/supply-chain-controls.md) -- image digest + SBOM + Dependabot.
 - [`docs/cross-cutting/observability-policy.md`](../cross-cutting/observability-policy.md) -- cardinality budget + label scheme + sample rates.
+- [`docs/cross-cutting/non-functional-requirements.md`](../cross-cutting/non-functional-requirements.md) -- latency, throughput, availability, durability, cost, capacity SLOs per posture.
+- [`docs/cross-cutting/threat-model.md`](../cross-cutting/threat-model.md) -- STRIDE per trust boundary + cross-cutting threats.
+- [`docs/cross-cutting/api-conventions.md`](../cross-cutting/api-conventions.md) -- REST surface conventions: error codes, pagination, versioning, RFC-7807.
+- [`docs/cross-cutting/data-model-conventions.md`](../cross-cutting/data-model-conventions.md) -- naming, IDs (UUIDv7), timestamps, RLS, schema spine, Java type ownership.
+- [`docs/cross-cutting/deployment-topology.md`](../cross-cutting/deployment-topology.md) -- per-posture topology, replicas, HA / DR, rollout, capacity / cost.
+- [`docs/cross-cutting/failure-modes-catalog.md`](../cross-cutting/failure-modes-catalog.md) -- per-module runtime failure modes + observability.
 
 ## Governance corpus
 

@@ -98,3 +98,70 @@ HTTP contract does not change.
   status is RUNNING; SUCCEEDED is terminal.
 - Crash mid-run leaves stale RUNNING rows: mitigated by a periodic
   reaper that marks rows older than max-timeout as FAILED.
+
+## 10. Parallel runs + timeout escalation (added cycle-10 per RUN-1, RUN-2)
+
+### 10.1 Parallel runs per tenant
+
+A tenant may have multiple in-flight runs. Concurrency cap enforced
+at the controller (TB-2) before the orchestrator starts.
+
+| Posture | Default cap per tenant | Configurable per tenant? |
+|---|---|---|
+| dev | unbounded | n/a |
+| research | 50 | yes (`tenant_config.runs.max_parallel`) |
+| prod | 200 | yes |
+
+Cap exceeded -> 429 `BUDGET_RUN_LIMIT`. Counter kept in Valkey for hot
+path.
+
+Within a run, no orchestrator-level parallelism in v1: a run does one
+LLM call + tool dispatch at a time. Tool calls themselves may fan-out
+internally but that is the tool's responsibility. W4+ may add parallel
+tool execution.
+
+### 10.2 Timeout escalation
+
+Three timeout levels:
+
+| Timeout | Default (research) | Default (prod) | Source |
+|---|---|---|---|
+| Per-LLM-call | 60s | 30s | Resilience4j; Spring AI ChatClient |
+| Per-tool-call (in-process) | 5s | 3s | per-tool override allowed |
+| Per-tool-call (out-of-process) | 30s | 15s | per-tool override allowed |
+| Per-step total | 90s | 60s | LlmCall + ToolCall + state-machine bookkeeping |
+| Per-run total | 5min | 2min | wall clock from POST to terminal |
+| Per-run idle | 60s | 30s | no LLM/tool activity |
+
+Escalation:
+
+- Per-call timeout -> retry (Resilience4j; up to 3 attempts).
+- Per-step timeout -> circuit breaker may open; record fallback event;
+  step terminates with error.
+- Per-run total OR per-run idle exceeded -> orchestrator marks run
+  FAILED with `RUN_TIMEOUT`.
+
+Long-running runs (estimated > 30s in research/prod) are delegated to
+Temporal in W4 -- the per-run total timeout becomes a workflow-level
+timeout managed by Temporal.
+
+### 10.3 Cancellation semantics across sync vs Temporal boundary
+
+- Sync orchestrator: cancellation via in-process `CancelRunRegistry`;
+  cooperative checkpoint at every step boundary.
+- Temporal-managed (W4): cancellation via `CancelRunSignal`; activity
+  may not be interruptible mid-flight (Temporal cooperative cancel).
+- API contract: `POST /v1/runs/{id}/cancel` returns 200 in both modes;
+  internal mechanism differs but observable shape is the same.
+- Late cancel (after terminal): 200 idempotent; no state change.
+
+### 10.4 Tests
+
+| Test | Layer | Asserts |
+|---|---|---|
+| `RunParallelCapIT` | Integration | exceeding cap -> 429 |
+| `RunPerStepTimeoutIT` | Integration | step timeout fires -> step terminates; run continues if recoverable |
+| `RunTotalTimeoutIT` | Integration | total timeout fires -> run FAILED with RUN_TIMEOUT |
+| `RunIdleTimeoutIT` | Integration | no activity 30s -> RUN_TIMEOUT |
+| `CancelDuringSyncIT` | E2E | sync orchestrator cancels at next checkpoint |
+| `CancelDuringTemporalIT` | E2E (W4) | signal cancels workflow within tolerance |

@@ -1,0 +1,1 @@
+{"script":"check_architecture_sync.sh","version":"cycle-9-truth-cut","platform":"posix","sha":"3b19139","generated":"2026-05-09T13:36:50+08:00","scan_files_count":70,"working_tree_clean":true,"git_status_porcelain":"","local_only":false,"semantic_pass":true,"evidence_valid_for_delivery":true,"rule_body_succeeded":true,"failures":[]}

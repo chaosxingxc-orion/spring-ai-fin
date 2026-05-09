@@ -159,6 +159,31 @@ active_documents:
     layer: cross_cutting
     owner: observability
     encoding_policy: ascii
+  # Cycle-10 self-driven additions (per docs/architecture-design-systematic-review-2026-05-09.md)
+  - path: docs/cross-cutting/non-functional-requirements.md
+    layer: cross_cutting
+    owner: architecture
+    encoding_policy: ascii
+  - path: docs/cross-cutting/threat-model.md
+    layer: cross_cutting
+    owner: security
+    encoding_policy: ascii
+  - path: docs/cross-cutting/api-conventions.md
+    layer: cross_cutting
+    owner: platform
+    encoding_policy: ascii
+  - path: docs/cross-cutting/data-model-conventions.md
+    layer: cross_cutting
+    owner: architecture
+    encoding_policy: ascii
+  - path: docs/cross-cutting/deployment-topology.md
+    layer: cross_cutting
+    owner: ops
+    encoding_policy: ascii
+  - path: docs/cross-cutting/failure-modes-catalog.md
+    layer: cross_cutting
+    owner: architecture
+    encoding_policy: ascii
 
   # ---- Governance corpus ----
   - path: docs/governance/architecture-status.yaml
@@ -204,6 +229,10 @@ active_documents:
     owner: architecture
     encoding_policy: ascii
   - path: docs/architecture-design-self-audit.md
+    layer: governance
+    owner: architecture
+    encoding_policy: ascii
+  - path: docs/architecture-design-systematic-review-2026-05-09.md
     layer: governance
     owner: architecture
     encoding_policy: ascii

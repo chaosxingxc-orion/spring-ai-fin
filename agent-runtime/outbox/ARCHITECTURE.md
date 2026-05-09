@@ -87,3 +87,92 @@ when scale demands.
   NULL`; benchmark in `OutboxAtLeastOnceIT`.
 - Sink lag: alert on `outbox_unsent_age_seconds_max` Prometheus
   metric exceeding SLO.
+
+## 10. Per-tenant ordering + DLQ procedure (added cycle-10 per OUT-1, OUT-2)
+
+### 10.1 Per-tenant ordering
+
+The publisher provides **per-tenant in-order delivery** at the sink.
+Cross-tenant ordering is NOT guaranteed (tenants are independent).
+
+Mechanism:
+
+- A row's order key is `(tenant_id, created_at, id)`.
+- The publisher batch-fetches rows with `FOR UPDATE SKIP LOCKED` per
+  tenant -- one batch query per tenant in flight, not a global batch.
+- Within a batch for a tenant, rows are emitted in insertion order.
+- Multiple publisher replicas: each replica works on a *non-overlapping
+  set of tenants* via consistent hashing (W4+); within v1 single
+  replica is sufficient.
+
+Tradeoff: per-tenant batching limits throughput vs a global batch.
+Mitigation: increase replica count when load demands.
+
+### 10.2 DLQ table
+
+`outbox_event_dlq`:
+
+```
+event_id uuid PRIMARY KEY,
+tenant_id uuid NOT NULL,
+type text NOT NULL,
+payload jsonb NOT NULL,
+created_at timestamptz NOT NULL,
+last_attempted_at timestamptz NOT NULL,
+attempt_count integer NOT NULL,
+last_error text,
+moved_to_dlq_at timestamptz NOT NULL DEFAULT now()
+```
+
+A row from `outbox_event` moves to `outbox_event_dlq` when
+`attempt_count > max_retries` (default 10 in research; 5 in prod).
+
+### 10.3 DLQ replay procedure
+
+Manual operator action via admin API:
+
+```
+POST /v1/admin/outbox/dlq/{event_id}:replay
+```
+
+Effects:
+
+1. Move row from `outbox_event_dlq` back to `outbox_event` with
+   `attempt_count` reset to 0.
+2. Audit row recorded with operator id.
+3. Publisher picks up the row in the next tick.
+
+Bulk replay:
+
+```
+POST /v1/admin/outbox/dlq:replay
+body: { tenant_id?: uuid, type?: string, limit: 100 }
+```
+
+Replay runs are themselves audited. Replays cannot bypass per-tenant
+ordering: a replayed row is re-inserted with a NEW `created_at` to
+avoid re-ordering older rows.
+
+### 10.4 DLQ alerting
+
+Two metrics:
+
+- `outbox_event_dlq_count{tenant,type}` (gauge): current DLQ depth.
+- `outbox_event_dlq_oldest_age_seconds{tenant}` (gauge): age of oldest
+  DLQ row.
+
+Alerts:
+
+- ANY DLQ depth > 0 sustained 5min -> WARN.
+- DLQ depth > 100 for any tenant -> CRIT.
+- Oldest DLQ age > 24h -> CRIT.
+
+### 10.5 Tests
+
+| Test | Layer | Asserts |
+|---|---|---|
+| `OutboxPerTenantOrderingIT` | Integration | events from same tenant emit in insertion order; cross-tenant order unconstrained |
+| `OutboxDlqMoveIT` | Integration | row exceeding max retries moves to DLQ |
+| `OutboxDlqReplayIT` | E2E | replay reinserts row; audit recorded; sink eventually receives |
+| `OutboxDlqAlertIT` | Integration | DLQ depth metric + alert rule fire as expected |
+| `OutboxConsistentHashShardIT` | Integration (W4+) | two publisher replicas work on non-overlapping tenants |

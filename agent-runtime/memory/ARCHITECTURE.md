@@ -87,3 +87,62 @@ policy. W4: corpus export job.
 - pgvector index size growth: monitor `relation_size`; document threshold for migration to Qdrant.
 - Embedding-model lock-in: provider+model stored with row; mismatch rejected; migration documented.
 - L1 retention vs compliance: per-tenant override; default 90d for research; document GDPR / regional considerations.
+
+## 10. Eviction + per-tenant quota (added cycle-10 per MEM-1, MEM-2)
+
+### 10.1 Per-tier eviction policy
+
+| Tier | Storage | Eviction policy |
+|---|---|---|
+| L0 in-process (Caffeine) | per-JVM heap | LRU with `maximumSize` from config; default 10000 entries; expireAfterAccess 30 min |
+| L1 Postgres (`run_memory`, `session_memory`) | Postgres rows | TTL via daily `pg_cron` job; `run_memory` default 30d; `session_memory` default 90d |
+| L2 pgvector (`long_term_memory`) | Postgres + pgvector | per-tenant `max_rows`; FIFO eviction by `created_at` once cap reached, with optional importance-aware override (W4+) |
+
+L0 has no per-tenant cap (process-shared); L1 / L2 do.
+
+### 10.2 Per-tenant memory quota
+
+`tenant_memory_quota` table:
+
+```
+tenant_id uuid PRIMARY KEY,
+session_memory_max_rows  integer NOT NULL DEFAULT 100000,
+long_term_memory_max_rows integer NOT NULL DEFAULT 1000000,
+embedding_dim_locked      integer NOT NULL,    -- locked at first write
+updated_at timestamptz
+```
+
+Enforcement:
+
+- Pre-insert check on L1 + L2 paths: if row count for tenant >=
+  configured cap, emit eviction (FIFO by `created_at`) BEFORE the
+  insert. Atomic via advisory lock per tenant.
+- If eviction cannot keep up (sustained insert rate above eviction
+  rate), reject with 429 `MEM_QUOTA_EXCEEDED`.
+- A delete-burst is logged to `audit_log` so retention policy is
+  observable.
+
+### 10.3 PII tagging
+
+Optional column `pii_class` on `long_term_memory`:
+
+| Value | Meaning |
+|---|---|
+| `none` | no PII; default |
+| `pii_low` | indirect PII (e.g., session metadata) |
+| `pii_high` | direct PII (e.g., email, account number) |
+| `phi` | health / financial / regulated |
+
+Posture-aware behavior: in `research`/`prod`, writing without a
+`pii_class` requires the controller to call `MemoryService.recordFact(...,
+PiiClass.NONE)` explicitly -- there is no implicit default. Lint rule
+in W3.
+
+### 10.4 Tests
+
+| Test | Layer | Asserts |
+|---|---|---|
+| `MemoryEvictionIT` | Integration | inserting beyond cap evicts oldest row by FIFO |
+| `MemoryQuotaExceededIT` | Integration | sustained-rate insert -> 429 |
+| `MemoryAdvisoryLockIT` | Integration | concurrent inserts on same tenant serialize via advisory lock |
+| `MemoryPiiClassRequiredIT` | Integration (research) | missing `pii_class` -> 422 |

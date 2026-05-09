@@ -238,6 +238,55 @@ required module split. Sub-packages are organizational, not modular --
 they map to L2 ARCHITECTURE.md files for documentation only, not for
 build boundaries.
 
+### 3.1 Module dependency graph
+
+```
+              [agent-platform/contracts]
+                        ^
+                        | (DTOs, IDs, types)
+        +---------------+---------------+
+        |                               |
+[agent-platform/*]              [agent-runtime/*]
+   web                              run
+   auth                             llm
+   tenant                           tool
+   idempotency                      action
+   bootstrap                        memory
+   config                           outbox
+   contracts                        temporal
+                                    observability
+        |                               |
+        +---------------+---------------+
+                        v
+                   [Postgres / Valkey / Temporal / OPA / Vault]
+                   (L3 dependencies; via Spring beans)
+
+[agent-eval]  --(tests against agent-platform + agent-runtime contracts)-->
+```
+
+Rules:
+
+1. `agent-platform/contracts` is the only module that exports types
+   used by both `agent-platform/*` and `agent-runtime/*`. Every other
+   inter-module Java type lives in its owning module.
+2. **No cycles.** Directional edges only:
+   `agent-platform/* -> agent-platform/contracts`,
+   `agent-runtime/* -> agent-platform/contracts`, and
+   `agent-runtime/* <- agent-platform/*` is FORBIDDEN (the reverse;
+   platform calls runtime via a published interface in
+   `agent-platform/contracts` only).
+3. `agent-eval` may depend on either platform or runtime contracts but
+   neither depends on `agent-eval`.
+4. L3 dependencies (Postgres, Valkey, Temporal, OPA, Vault) are
+   accessed only via Spring beans configured in the relevant L2
+   module. No L2 directly opens a connection that another L2 owns.
+5. CI rule: ArchUnit tests in `agent-platform/contracts` enforce the
+   no-cycle property at PR time (W0 deliverable in
+   `BuildSmokeTest`).
+
+The full Java type ownership table is in
+`docs/cross-cutting/data-model-conventions.md` sec-13.
+
 ## 4. The nine quality attributes -- mechanism + test
 
 For each quality the table names the OSS component or glue that
@@ -363,6 +412,32 @@ Every component is justified by at least one principle.
 - A/B prompt versions per tenant stored in `prompt_version` table; gradual rollout. (W3.)
 - Run-as-training-data export job for fine-tuning corpora. (W4+.)
 
+### 5.4 Measurable proxies (added cycle-10 per L0-2)
+
+Each first-principle has at least one quantitative proxy that the
+roadmap can regress over time. Targets evolve wave-over-wave; the
+initial baselines below are W4-close targets.
+
+| Principle | Proxy metric | Source | W4-close target |
+|---|---|---|---|
+| P1 lower threshold | `time_to_first_run_seconds` -- from `docker compose up` to a successful `POST /v1/runs` returning a terminal status | manual stopwatch + scripted measurement in `bin/onboard-smoke.sh` | <= 600s on a stock laptop |
+| P1 lower threshold | `helm_install_to_health_seconds` -- from `helm install` to `/actuator/health/readiness` returning UP | scripted measurement in CI on a fresh kind cluster | <= 300s |
+| P1 lower threshold | `default_examples_count` -- agents shipped under `examples/` and runnable with one command | repo count | >= 5 |
+| P2 lower cost | `median_run_cost_usd_p50` -- per-run LLM cost across the canonical eval suite using cheap-tier-first router | `agent_run_cost_usd_total{}` over a known eval pass | <= $0.005 |
+| P2 lower cost | `prompt_cache_hit_rate` -- fraction of LLM calls served from prompt-cache | `llm_prompt_cache_hit_total{} / total` over 24h | >= 30% |
+| P2 lower cost | `tenant_budget_breach_per_month` -- count of `BUDGET_TENANT_EXHAUSTED` 429s per tenant per month | `agent_run_budget_breach_total{}` | <= 1 per active tenant |
+| P3 evolving intelligence | `eval_pass_rate_baseline` -- canonical prompt suite pass-rate (running against deployed default prompts) | `eval_pass_rate{suite="canonical"}` nightly | >= 0.85 with monotonic non-regression |
+| P3 evolving intelligence | `feedback_collection_rate` -- fraction of completed runs with at least one feedback row | `feedback_attached_total{} / agent_run_terminal_total{}` | >= 0.10 (10% of runs get feedback) |
+| P3 evolving intelligence | `prompt_ab_rollout_outcomes_per_quarter` -- count of prompt-version PRs that completed an A/B rollout to 100% with eval delta documented | manual ledger | >= 4 per quarter |
+
+Each proxy is owned by one L2 module (the source of the metric or
+script). Per-wave Acceptance gates in the engineering plan reference
+these proxies when the wave's principle alignment is non-trivial.
+
+Reporting cadence: monthly first-principles review at wave close;
+proxies that regress block wave closure (cycle-9 sec-E1 alignment --
+maturity is the headline; proxies are the diagnostic).
+
 ## 6. Cross-cutting policies
 
 ### 6.1 Posture model
@@ -420,6 +495,26 @@ cover every reviewer use case.
 - All secrets via Spring Cloud Vault or, in dev, `compose.env`.
 - Per-tenant overrides via `tenant_config` table; loaded by
   `TenantConfigLoader`; cached in Caffeine for 60s.
+
+## 6.6 Non-functional requirements (summary; full table in cross-cutting doc)
+
+Pinned NFRs live in `docs/cross-cutting/non-functional-requirements.md`.
+The headline numbers per posture:
+
+| Concern | research | prod |
+|---|---|---|
+| `POST /v1/runs` (real LLM) p99 | < 5s | < 5s |
+| `POST /v1/runs/{id}/cancel` p99 | < 200ms | < 100ms |
+| HTTP RPS / replica | 50 | 200 |
+| API availability monthly | 99.5% | 99.9% |
+| Run lifecycle availability | 99.5% | 99.9% (sync) / 99.95% (Temporal) |
+| Per-run median LLM cost | <= $0.005 | <= $0.003 |
+| Tenants per single-region deployment | 1-10 | up to 1000 |
+
+W4-close targets. Acceptance gates per wave (in
+`docs/plans/engineering-plan-W0-W4.md`) reference these. Ratchet
+direction: prod numbers are non-negotiable; research and dev are
+relaxed.
 
 ## 7. What is removed in this refresh
 

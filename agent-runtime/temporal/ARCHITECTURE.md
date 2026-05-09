@@ -79,3 +79,93 @@ in-process registry; W4 swaps the implementation transparently.
   + integration test pinning history.
 - DB pressure from Temporal persistence: separate Postgres in prod;
   shared DB in dev only.
+
+## 10. Workflow versioning + signal discipline + namespaces (added cycle-10 per TMP-1, 2, 3)
+
+### 10.1 Workflow versioning
+
+Use Temporal's `getVersion(...)` API for every change to workflow
+code that affects already-running workflows. Pattern:
+
+```java
+int v = Workflow.getVersion("v_<change-name>", DEFAULT_VERSION, NEW_VERSION);
+if (v == DEFAULT_VERSION) {
+  // old code path
+} else {
+  // new code path
+}
+```
+
+Rules:
+
+- Every behavior-changing PR to `RunWorkflowImpl` introduces a
+  `v_<change-name>` token. Naming: short, descriptive, kebab-case.
+- The `<change-name>` is part of the PR description and the test name
+  (`WorkflowReplayIT_v_<change-name>`).
+- A token is retired (removed from code) only after all workflows
+  started before the change have completed (typically 30 days).
+- A migration tool (W4+) lists currently-active version markers and
+  oldest workflow start time per marker.
+
+### 10.2 Signal contract
+
+Defined signals (W4):
+
+| Signal | Payload | Effect |
+|---|---|---|
+| `CancelRunSignal` | `{ reason: string }` | sets cancel flag; orchestrator cancels at next checkpoint |
+| `BumpBudgetSignal` (W4+) | `{ delta_usd: number }` | extends per-run budget; rare admin action |
+| `PauseRunSignal` (W4+) | `{}` | pauses workflow until `ResumeRunSignal` |
+| `ResumeRunSignal` (W4+) | `{}` | unpauses |
+
+Signal-handler discipline:
+
+- Handlers MUST be deterministic (no I/O).
+- Handlers MUST NOT block; they update workflow state and return.
+- Workflow code uses `Workflow.await(...)` to react to flag changes
+  rather than `Thread.sleep`.
+- Every signal has a unit test that fires it during `WorkflowReplayIT`
+  and asserts the resulting state.
+
+### 10.3 Namespace strategy
+
+| Posture | Namespace pattern | Notes |
+|---|---|---|
+| dev | `local-dev` | single namespace; all tenants share |
+| research | `<env>-research` (e.g., `staging-research`) | per-environment, all tenants share |
+| prod single-customer | `<customer>-prod` (e.g., `acme-prod`) | one namespace per customer |
+| prod multi-tenant | `prod-<region>` (e.g., `prod-eu-west`) | per-region; tenants share |
+
+Namespaces have separate retention policies + per-namespace metrics.
+Crossing namespaces (cross-customer or cross-region workflow) is NOT
+supported in v1.
+
+### 10.4 Activity catalog and idempotency
+
+Every activity:
+
+- Has a stable `ActivityType` constant (registered with Temporal at
+  startup).
+- Is idempotent (same input -> same output). Side effects flow through
+  `agent-runtime/action/ActionGuardChain` so the witness step keeps
+  the audit single-write.
+- Has explicit `RetryOptions` (no implicit defaults).
+
+Activity catalog (W4):
+
+| Activity | Idempotent on | Retry policy |
+|---|---|---|
+| `LlmCallActivity` | `(prompt_hash, model)` | 3x backoff; circuit-breaker integration |
+| `ToolCallActivity` | `(tool_name, version, args_hash)` | 5x; per-tool override |
+| `WriteAuditActivity` | `(audit_id)` (UUIDv7) | 10x; tx-bound; non-recoverable -> fail workflow |
+| `EmitOutboxActivity` | `(event_id)` | 10x; same as audit |
+
+### 10.5 Tests
+
+| Test | Layer | Asserts |
+|---|---|---|
+| `WorkflowReplayIT_*` | Replay | every active version marker has a passing replay test |
+| `SignalHandlerDeterminismIT` | Replay | signal handlers replay deterministically |
+| `ActivityIdempotencyIT` | Integration | replay activity twice; no double side effect |
+| `NamespaceIsolationIT` | Integration | workflows in different namespaces cannot interact |
+| `VersionMarkerInventoryIT` | CI (W4) | active markers + oldest workflow start age listed; fail if a marker > 90d old without retirement |
