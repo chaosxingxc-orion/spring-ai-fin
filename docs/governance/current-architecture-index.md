@@ -72,6 +72,9 @@
 - [`docs/cross-cutting/deployment-topology.md`](../cross-cutting/deployment-topology.md) -- per-posture topology, replicas, HA / DR, rollout, capacity / cost.
 - [`docs/cross-cutting/failure-modes-catalog.md`](../cross-cutting/failure-modes-catalog.md) -- per-module runtime failure modes + observability.
 - [`docs/cross-cutting/oss-bill-of-materials.md`](../cross-cutting/oss-bill-of-materials.md) -- exact OSS version pins + U0..U4 verification ladder + per-dep API surface + integration contract.
+- [`docs/cross-cutting/interaction-sequences.md`](../cross-cutting/interaction-sequences.md) -- end-to-end sequence diagrams (happy path + 3 failure paths + Temporal long-run + idempotent retry).
+- [`docs/cross-cutting/v1-customer-profile.md`](../cross-cutting/v1-customer-profile.md) -- reference Tier-1 financial-services customer profile anchoring NFR numbers.
+- [`docs/cross-cutting/design-decisions.md`](../cross-cutting/design-decisions.md) -- ADR-style register of 15 major architectural decisions + 5 deferred.
 
 ## Governance corpus
 

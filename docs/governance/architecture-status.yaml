@@ -1280,3 +1280,38 @@ findings:
     target_wave: W2..W4
     capability: l0_architecture
     notes: "Carry-forward; tracked but not blocking pre-W0 work."
+
+  # ---- Cycle-12 Phase A close ----
+  REM-2026-05-09-C12-1:
+    source: user-decision-2026-05-09 (2-phase model adopted)
+    description: "Phase A item 1: end-to-end interaction sequence diagrams. Cycle-12 added docs/cross-cutting/interaction-sequences.md with 6 flows: happy-path POST /v1/runs sync; LLM-provider outage; Postgres tx fail mid-run; tenant suspended mid-run; long-running via Temporal; idempotent retry with cached body."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: l0_architecture
+  REM-2026-05-09-C12-2:
+    source: user-decision-2026-05-09
+    description: "Phase A item 2: v1 reference customer profile pinned. Cycle-12 added docs/cross-cutting/v1-customer-profile.md (Tier-1 financial-services operator: 5 logical tenants, 500 internal users, 20k runs/day, 50 RPS sustained, 7-year audit retention, on-prem K8s single-region with DR). Anchors NFR doc's prod targets to concrete numbers."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: l0_architecture
+  REM-2026-05-09-C12-3:
+    source: user-decision-2026-05-09
+    description: "Phase A item 3: design-decision register (ADR-style). Cycle-12 added docs/cross-cutting/design-decisions.md with 15 ADRs covering: Java 21 + Spring Boot 3.5; Spring AI 1.0.7 vs LangChain4j; Temporal 1.34 vs Airflow; Postgres + pgvector vs Qdrant; SET LOCAL RLS GUC vs per-checkout reset; ActionGuard 5-stage vs 11-stage; Postgres outbox vs Kafka v1; OPA sidecar vs Cedar/custom; Vault OSS vs K8s Secrets; Keycloak default + BYO IdP; Spring Cloud Gateway vs Kong; Maven vs Gradle; UUIDv7 vs sequence; 3-posture model; multi-framework dispatch deferred. Plus 5 deferred decisions tracked."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: l0_architecture
+  REM-2026-05-09-C12-4:
+    source: user-decision-2026-05-09
+    description: "Phase A is complete at cycle-12 close. L0 sec-11.5 records this. Phase B trigger: pull OSS deps to local Maven cache (per user instruction: after Phase A complete, core work is to download OSS components locally). Phase B's first action is mvn -B dependency:resolve against the cycle-11 BoM; advances U1 -> U2; then proceeds module-by-module starting with W0."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: l0_architecture
+    notes: "Phase A closed. Phase B trigger pending."

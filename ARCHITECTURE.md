@@ -706,6 +706,38 @@ self-audit; see the audit doc for status):
 | `docs/cross-cutting/supply-chain-controls.md` | Image digest pin + SBOM |
 | `docs/cross-cutting/observability-policy.md` | Cardinality budget + tenant-id label policy |
 
+## 11.5 Phase A status (cycle-12 close)
+
+The architecture design is structured in two phases:
+
+- **Phase A -- Conceptual Design**: system structure, OSS choices,
+  cross-cutting policies, NFRs, threat model, deployment topology,
+  failure modes, OSS BoM, interaction sequences, v1 customer profile,
+  decision register. Produces L0 + L1 + cross-cutting docs.
+- **Phase B -- Implementation-Driven Detail**: per-module class
+  diagrams, real Spring/Java types, DDL files, OpenAPI snapshot,
+  retry policies as real configuration, workflow signatures with real
+  Temporal SDK types. Produces actual code skeletons.
+
+**Phase A is complete at cycle-12 close.** All conceptual artifacts are
+in tree:
+
+- L0: this document.
+- L1: `agent-platform/`, `agent-runtime/`.
+- L2: 16 modules + `agent-eval/`.
+- Cross-cutting: 13 active docs under `docs/cross-cutting/`.
+- Plans: engineering plan W0-W4 + systems engineering plan.
+- Audit: 240+ dim self-audit + systematic review.
+
+**Phase B trigger**: pull OSS dependencies to local Maven cache (per
+user 2026-05-09 instruction: "after Phase A is complete, the core work
+is to download the dependent open-source components locally"). The
+first action of Phase B is `mvn -B dependency:resolve` against the
+versions pinned in `docs/cross-cutting/oss-bill-of-materials.md`. The
+critical-path deps then advance from U1 (cycle-11 doc-verified) to U2
+(probe-code-verified). After U2 lands, Phase B proceeds module-by-module
+starting with W0 (`agent-platform/web` health endpoint).
+
 ## 12. Closing note
 
 This document plus `docs/plans/engineering-plan-W0-W4.md` and the

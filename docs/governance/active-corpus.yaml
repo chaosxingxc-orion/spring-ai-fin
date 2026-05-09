@@ -188,6 +188,18 @@ active_documents:
     layer: cross_cutting
     owner: architecture
     encoding_policy: ascii
+  - path: docs/cross-cutting/interaction-sequences.md
+    layer: cross_cutting
+    owner: architecture
+    encoding_policy: ascii
+  - path: docs/cross-cutting/v1-customer-profile.md
+    layer: cross_cutting
+    owner: architecture
+    encoding_policy: ascii
+  - path: docs/cross-cutting/design-decisions.md
+    layer: cross_cutting
+    owner: architecture
+    encoding_policy: ascii
 
   # ---- Governance corpus ----
   - path: docs/governance/architecture-status.yaml
