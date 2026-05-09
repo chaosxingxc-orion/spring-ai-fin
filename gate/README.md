@@ -35,7 +35,7 @@ The two scripts emit equivalent semantic results. **Local-only enforcement is do
 Two additional gate rules are enforced by both scripts (cycle-14 A1 and B1):
 
 - `ci_no_or_true_mask`: scans `.github/workflows/*.yml` and fails if any line that calls `gate/run_*` also contains `|| true`. Prevents a silently-ignored operator-shape smoke result from masking CI failure.
-- `rule_8_state_machine_coherent`: cross-validates `artifact_present_state` against `rule_8.state` in the manifest. Valid pairs: `none ↔ fail_closed_artifact_missing`, `source_only ↔ fail_closed_needs_build`, `jar_present ↔ fail_closed_needs_real_flow | pass`.
+- `rule_8_state_machine_coherent`: cross-validates `artifact_present_state` against `rule_8.state` in the manifest. Valid pairs: `none <-> fail_closed_artifact_missing`, `source_only <-> fail_closed_needs_build`, `jar_present <-> fail_closed_needs_real_flow | pass`.
 
 ## Operator-shape smoke gate -- fail-closed pre-W0; runnable-flow post-W0
 

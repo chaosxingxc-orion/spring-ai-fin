@@ -43,7 +43,7 @@ or `APP_POSTURE=prod` does NOT enforce the W1 required-key matrix.
 Single env var `APP_POSTURE = dev | research | prod` (default `dev`).
 Read once at startup; injected as `AppPosture` bean.
 
-**W0**: no enforcement — the bean is available but PostureBootGuard does not exist.
+**W0**: no enforcement -- the bean is available but PostureBootGuard does not exist.
 **W1**: PostureBootGuard inspects RequiredConfig and refuses to start with a non-zero
 exit code (and a structured log line + metric increment) if any required key is missing
 for the active posture.
