@@ -21,7 +21,7 @@ jobs:
           cache: maven
 
       - name: Maven verify (compile + unit + integration tests)
-        run: mvn -B -ntp --strict-checksums verify
+        run: ./mvnw -B -ntp --strict-checksums verify
 
       - name: Architecture-sync gate
         run: bash gate/check_architecture_sync.sh

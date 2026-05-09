@@ -5,8 +5,6 @@ target/
 *.ear
 *.class
 .mvn/wrapper/maven-wrapper.jar
-mvnw
-mvnw.cmd
 
 # Gradle (in case any module switches)
 build/
