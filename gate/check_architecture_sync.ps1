@@ -495,10 +495,10 @@ if (Test-Path $gateReadme) {
 
 # 16. Delivery-log parity (cycle-7 A2; cycle-8 B2 no-skip-on-missing for
 # current authoritative delivery; legacy_exemptions explicit in manifest).
-$deliveryFiles = Get-ChildItem -Path 'docs/delivery' -Filter '2026-05-08-*.md' -File -ErrorAction SilentlyContinue
+$deliveryFiles = Get-ChildItem -Path 'docs/delivery' -Filter '????-??-??-*.md' -File -ErrorAction SilentlyContinue
 foreach ($df in $deliveryFiles) {
   $base = [System.IO.Path]::GetFileNameWithoutExtension($df.Name)
-  $sha = $base -replace '^2026-05-08-', ''
+  $sha = $base -replace '^\d{4}-\d{2}-\d{2}-', ''
   if (-not $sha) { continue }
   $logFile = $null
   foreach ($candidate in @("gate/log/$sha-posix.json", "gate/log/$sha-windows.json", "gate/log/$sha.json")) {
@@ -635,7 +635,7 @@ if (Test-Path $manifestPath) {
 # 21. Delivery-log exact binding (cycle-8 B1).
 if ($manifestDelivery -and (Test-Path $manifestDelivery) -and $reviewedContentSha) {
   $deliveryBase = [System.IO.Path]::GetFileNameWithoutExtension((Split-Path -Leaf $manifestDelivery))
-  $deliverySha = $deliveryBase -replace '^2026-05-08-', ''
+  $deliverySha = $deliveryBase -replace '^\d{4}-\d{2}-\d{2}-', ''
   $foundLog = $null
   foreach ($candidate in @("gate/log/$deliverySha-posix.json", "gate/log/$deliverySha-windows.json", "gate/log/$deliverySha.json")) {
     if (Test-Path $candidate) { $foundLog = $candidate; break }
@@ -740,7 +740,7 @@ if ($rule8State -eq 'fail_closed_artifact_missing' -and (Test-Path $statusPath))
       Fail 'rule_8_state_consistency' "capability declares released while manifest.rule_8.state=fail_closed_artifact_missing" $statusPath ($i + 1)
     }
   }
-  $deliveryFiles2 = Get-ChildItem -Path 'docs/delivery' -Filter '2026-05-08-*.md' -File -ErrorAction SilentlyContinue
+  $deliveryFiles2 = Get-ChildItem -Path 'docs/delivery' -Filter '????-??-??-*.md' -File -ErrorAction SilentlyContinue
   foreach ($df in $deliveryFiles2) {
     $dRaw = Get-Content -Raw -LiteralPath $df.FullName
     if ($dRaw -match 'Rule\s*8\s*PASS') {

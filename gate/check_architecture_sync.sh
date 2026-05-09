@@ -663,7 +663,7 @@ runtime_error_message=""
   # evidence_commit_sha).
   if [[ -n "$manifest_delivery" && -f "$manifest_delivery" && -n "$reviewed_content_sha" ]]; then
     delivery_base=$(basename "$manifest_delivery" .md)
-    delivery_sha=${delivery_base##2026-05-08-}
+    delivery_sha=$(echo "$delivery_base" | sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2}-//')
     found_log=""
     for candidate in "gate/log/${delivery_sha}-posix.json" "gate/log/${delivery_sha}-windows.json" "gate/log/${delivery_sha}.json"; do
       if [[ -f "$candidate" ]]; then found_log="$candidate"; break; fi
