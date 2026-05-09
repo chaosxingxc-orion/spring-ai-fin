@@ -103,7 +103,8 @@
 ## Delivery evidence
 
 - [`docs/delivery/README.md`](../delivery/README.md) -- delivery rules.
-- [`docs/delivery/2026-05-08-71b77c6.md`](../delivery/2026-05-08-71b77c6.md) -- cycle-12 Phase A close (current authoritative).
+- [`docs/delivery/2026-05-08-f98dbae.md`](../delivery/2026-05-08-f98dbae.md) -- cycle-13 Phase B step 1 (current authoritative).
+- [`docs/delivery/2026-05-08-71b77c6.md`](../delivery/2026-05-08-71b77c6.md) -- cycle-12 Phase A close.
 - [`docs/delivery/2026-05-08-2a29eb5.md`](../delivery/2026-05-08-2a29eb5.md) -- cycle-11 OSS BoM + verification ladder.
 - [`docs/delivery/2026-05-08-7b1fa8c.md`](../delivery/2026-05-08-7b1fa8c.md) -- cycle-10 self-driven systematic review.
 - [`docs/delivery/2026-05-08-e9a692d.md`](../delivery/2026-05-08-e9a692d.md) -- cycle-9 truth-cut evidence.

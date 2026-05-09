@@ -252,10 +252,10 @@ capabilities:
     tests: []
     operator_gate: null
     open_findings: []
-    latest_semantic_pass_sha: 71b77c6        # cycle-12 Phase A close (interaction sequences + v1 customer profile + 15-ADR decision register)
-    latest_delivery_valid_sha: 71b77c6
-    latest_delivery_file: docs/delivery/2026-05-08-71b77c6.md
-    notes: "Updated by the cycle-12 audit-trail commit. The manifest is the authoritative record; this ledger summarizes. Phase A complete at this SHA."
+    latest_semantic_pass_sha: f98dbae        # cycle-13 Phase B step 1 (Maven scaffolding + W0 skeleton + probe code)
+    latest_delivery_valid_sha: f98dbae
+    latest_delivery_file: docs/delivery/2026-05-08-f98dbae.md
+    notes: "Updated by the cycle-13 audit-trail commit. Phase B step 1 complete at this SHA; U1 -> U2 promotion pending user mvn run."
     allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml."
 
   # ---- 2026-05-08 refresh capability rows (per refresh L2 modules) ----
