@@ -40,6 +40,10 @@
     <module>spring-ai-fin-knowledge-starter</module>
     <module>spring-ai-fin-governance-starter</module>
     <module>spring-ai-fin-persistence-starter</module>
+    <module>spring-ai-fin-mem0-starter</module>
+    <module>spring-ai-fin-graphmemory-starter</module>
+    <module>spring-ai-fin-docling-starter</module>
+    <module>spring-ai-fin-langchain4j-profile</module>
     <module>agent-eval</module>
   </modules>
 
