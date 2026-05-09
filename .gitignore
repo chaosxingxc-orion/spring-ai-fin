@@ -60,6 +60,10 @@ __pycache__/
 .venv/
 venv/
 
+# Tier C: local source clones (gitignored; SHAs tracked in third_party/MANIFEST.md)
+third_party/*/
+third_party/**/
+
 # Architecture artifacts
 docs/delivery/*.json
 docs/verification/*.json
