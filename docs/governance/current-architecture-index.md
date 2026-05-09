@@ -103,7 +103,7 @@
 ## Delivery evidence
 
 - [`docs/delivery/README.md`](../delivery/README.md) -- delivery rules.
-- `docs/delivery/2026-05-09-<cycle-14-sha>.md` -- cycle-14 response (pending; will be the current authoritative after the audit-trail commit).
+- [`docs/delivery/2026-05-09-c863c2b.md`](../delivery/2026-05-09-c863c2b.md) -- cycle-14 (A1+A2+B1+B2+C1+C2+D1+D2+E1; ASCII fix; two new gate rules; build_verification.state: pending_ci).
 - [`docs/delivery/2026-05-08-f98dbae.md`](../delivery/2026-05-08-f98dbae.md) -- cycle-13 Phase B step 1.
 - [`docs/delivery/2026-05-08-71b77c6.md`](../delivery/2026-05-08-71b77c6.md) -- cycle-12 Phase A close.
 - [`docs/delivery/2026-05-08-2a29eb5.md`](../delivery/2026-05-08-2a29eb5.md) -- cycle-11 OSS BoM + verification ladder.

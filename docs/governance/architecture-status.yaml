@@ -252,10 +252,10 @@ capabilities:
     tests: []
     operator_gate: null
     open_findings: []
-    latest_semantic_pass_sha: f98dbae        # cycle-13 Phase B step 1 (Maven scaffolding + W0 skeleton + probe code)
-    latest_delivery_valid_sha: f98dbae
-    latest_delivery_file: docs/delivery/2026-05-08-f98dbae.md
-    notes: "Updated by the cycle-13 audit-trail commit. Phase B step 1 complete at this SHA; U1 -> U2 promotion pending user mvn run."
+    latest_semantic_pass_sha: c863c2b        # cycle-14 architectural SHA (A1+A2+B1+B2+C1+C2+D1+D2+E1 + ASCII fix)
+    latest_delivery_valid_sha: c863c2b
+    latest_delivery_file: docs/delivery/2026-05-09-c863c2b.md
+    notes: "Updated by the cycle-14 audit-trail commit. Cycle-14 9 findings applied; two new gate rules (ci_no_or_true_mask, rule_8_state_machine_coherent); build_verification.state: pending_ci."
     allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml."
 
   # ---- 2026-05-08 refresh capability rows (per refresh L2 modules) ----
