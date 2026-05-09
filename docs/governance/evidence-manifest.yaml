@@ -58,12 +58,12 @@ schema_capabilities:
 # of cycle-8's remediation. The gate derives it from HEAD when verifying
 # audit_trail_shape.
 
-reviewed_content_sha: c863c2b                       # cycle-14 architectural SHA (ASCII fixes on top of cycle-14 main arch commit 08836b9)
-evidence_commit_parent_sha: c863c2b                 # MUST equal reviewed_content_sha (gate enforced)
+reviewed_content_sha: 18d637e                       # W0 architectural SHA (Maven Wrapper + Boot 4 / AI 2.0-M5 upgrade + OSS BoM U2 + Tier C manifest + gate style fix)
+evidence_commit_parent_sha: 18d637e                 # MUST equal reviewed_content_sha (gate enforced)
 evidence_commit_classification: audit_trail_only    # one of: direct_reviewed_content | audit_trail_only
 
 # Backward compatibility with v1/v2 readers (cycle-5/cycle-6/cycle-7).
-reviewed_sha: c863c2b
+reviewed_sha: 18d637e
 
 current_head_policy:
   accepted_shapes:
@@ -78,7 +78,7 @@ current_head_policy:
 
 # ---- Delivery and logs (cycle-8 sec-B1, sec-B2, sec-B3) ----
 
-delivery_file: docs/delivery/2026-05-09-c863c2b.md   # cycle-14 architectural delivery
+delivery_file: docs/delivery/2026-05-10-18d637e.md   # W0 delivery: Boot 4 / AI 2.0-M5 + OSS BoM U2 + Tier C manifest
 
 # Per cycle-8 sec-B3: log slots use the explicit state enum, never null.
 # Per cycle-8 sec-B1: when state == pass, path MUST exist and the log's
@@ -87,12 +87,12 @@ delivery_file: docs/delivery/2026-05-09-c863c2b.md   # cycle-14 architectural de
 architecture_sync_logs:
   posix:
     state: pass
-    path: gate/log/c863c2b-posix.json
-    log_sha: c863c2b
+    path: gate/log/18d637e-posix.json
+    log_sha: 18d637e
   windows:
     state: missing_blocker
     path: null
-    reason: "pwsh not available in cycle-14 author's environment. CI matrix W1 deliverable will produce gate/log/c863c2b-windows.json."
+    reason: "pwsh not available in W0 author environment. CI matrix (W1 deliverable) will produce gate/log/18d637e-windows.json."
   prior_delivery_valid_logs:
     - gate/log/81ff802-posix.json     # cycle-6 architectural
     - gate/log/302337f-posix.json     # cycle-5 architectural
@@ -131,8 +131,8 @@ operator_shape_logs:
 # distinguishes a local-only run from a delivery-valid run.
 self_test:
   state: pass
-  pass_sha: c863c2b
-  log_path: gate/log/self-test-c863c2b.json
+  pass_sha: 18d637e
+  log_path: gate/log/self-test-18d637e.json
   blocking_for_delivery: true
   pass_type: delivery_valid_pass    # one of: local_semantic_pass | delivery_valid_pass
 
@@ -145,15 +145,15 @@ operator_shape_evidence:
   dependency_mode: fake             # one of: fake | real | not_applicable
   rule_8_eligible: false            # only true when dependency_mode=real AND artifact_present_state=jar_present
   provider_access_log_evidence: null   # path to log proving real-provider HTTP traffic
-  reason: "Cycle-13 Phase B step 1: pom.xml + src present; JAR not built. CI mvn verify is the next signal (blocking step in .github/workflows/ci.yml). Real-dependency runs land in W4; CI smoke (if added) remains rule_8_eligible=false until then."
+  reason: "W0: artifact built locally (mvn verify GREEN at 18d637e); JAR in target/ (gitignored). No real-dependency long-lived run. Real-dependency N>=3 runs land in W4; CI smoke remains rule_8_eligible=false until then."
 
 rule_8:
-  state: fail_closed_needs_build      # cycle-13: pom.xml + src present; JAR not built; Rule 8 still fail-closed.
+  state: fail_closed_needs_real_flow  # W0: JAR built locally; no real-dep N>=3 sequential runs (W4 deliverable)
   pass_sha: null
   blocking_findings:
-    - "No built JAR under agent-platform/target/ (run mvn package)"
-    - "No real-dependency long-lived run (W4 deliverable)"
+    - "No real-dependency long-lived process run (W4 deliverable)"
     - "No N>=3 sequential real-LLM runs (W4 deliverable)"
+    - "No cross-context resource stability proof (W4 deliverable)"
   unblocks_at: W4   # full Rule 8 flow per docs/plans/engineering-plan-W0-W4.md sec-6
   # Cycle-8 sec-C2: rule_8_state_consistency assertion targets.
   no_capability_above_l2_unless_pass: true
@@ -255,12 +255,12 @@ status_findings_addressed:
 authoritative_index: docs/governance/current-architecture-index.md
 authoritative_index_last_updated_in_cycle: cycle-8
 
-artifact_present_state: source_only   # cycle-14 B1: enum none | source_only | jar_present; was artifact_present: false (pre-cycle-14 pre-source state)
+artifact_present_state: jar_present   # W0: mvn verify GREEN locally at 18d637e; JARs in target/ (gitignored); source + JAR both present
 test_reference_state_default: planned   # cycle-7 sec-C2: explicit field for test references
 
-# cycle-14 D1: build verification state tracks CI readiness for L0->L1 promotion.
+# cycle-14 D1 + W0: build verification state tracks CI readiness for L0->L1 promotion.
 build_verification:
-  state: pending_ci              # pending_ci | green | red
-  blocking_for_l1_promotion: true
+  state: green                   # pending_ci | green | red
+  blocking_for_l1_promotion: false
   ci_workflow: .github/workflows/ci.yml
-  notes: "Author env lacks mvn/java/docker. CI runs mvn -B -ntp --strict-checksums verify on every push. Capability agent_platform_facade stays L0 until CI green AND HealthEndpointIT green on the recorded SHA. When CI green, next audit-trail commit advances state to green and promotes agent_platform_facade L0->L1."
+  notes: "W0: mvn verify GREEN locally at sha 18d637e (Boot 4.0.5 + AI 2.0.0-M5). JARs produced in target/ (gitignored). CI confirmation pending next push to remote. agent_platform_facade advances L0->L1 when HealthEndpointIT GREEN on CI."
