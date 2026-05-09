@@ -108,12 +108,12 @@ secondary development = patches we contribute upstream.
 | Authorization (policy) | Open Policy Agent 0.65.x             | Rego policies + sidecar adapter                     | W3   |
 | Resilience             | Resilience4j 2.x                     | `@CircuitBreaker`, `@RateLimiter` annotations       | W1   |
 | Idempotency            | Postgres dedup table                 | `IdempotencyFilter` glue                            | W1   |
-| LLM client             | Spring AI 1.0.x                      | `ChatClient` beans per provider; routing rules      | W2   |
-| Tool protocol          | MCP Java SDK (Anthropic)             | MCP servers as Spring beans                         | W3   |
+| LLM client             | Spring AI 1.0.7 (GA; latest 1.0.x patch) | `ChatClient` beans per provider; routing rules    | W2   |
+| Tool protocol          | MCP Java SDK 2.0.0-M2 (milestone)    | MCP servers as Spring beans                         | W3   |
 | Vector search          | pgvector 0.7.x + Spring AI VectorStore | `EmbeddingStoreConfig` + retrieval glue           | W2-W3|
 | Embeddings             | Provider-side (OpenAI / Voyage)      | `EmbeddingClient` bean                              | W2   |
 | Document parsing       | Apache Tika 2.x                      | `DocumentParser` glue                               | W3   |
-| Workflow / durable     | Temporal Java SDK 1.25.x + Cluster   | `RunWorkflow` interface + activity classes          | W4   |
+| Workflow / durable     | Temporal Java SDK 1.34.0 + Cluster   | `RunWorkflow` interface + activity classes          | W4   |
 | Caching                | Caffeine 3.x (in-process) + Valkey 7.x | `CacheManager` config                             | W1-W2|
 | Outbox                 | Postgres `outbox` table              | `OutboxPublisher` glue                              | W2   |
 | Observability metrics  | Micrometer + Prometheus              | Custom metrics; `@Timed` annotations                | W0   |
@@ -162,6 +162,32 @@ deprecation evidence. Glue we own totals an estimated 4-6k LOC across W0-W4.
   documented in the wave's Rollback subsection.
 - **Reproducible builds.** `mvn -B -ntp` for CI; checksum-locked
   resolver via `--strict-checksums`.
+
+### 2.1.5 OSS verification ladder (U0..U4)
+
+The OSS matrix above pins each dep to a *version* and assigns a
+*wave*. Cycle-11 added a parallel axis: how *verified* the
+integration is. The ladder mirrors capability maturity (Rule 12 L0..L4)
+but tracks OSS integration, not product readiness.
+
+| Level | Meaning |
+|---|---|
+| **U0** | Design-only -- version chosen by reasoning; no docs read for this exact version |
+| **U1** | API-doc-verified -- version pinned; release notes / Javadoc read for the cited APIs |
+| **U2** | Sample-code-verified -- a probe in-tree compiles + the cited API resolves |
+| **U3** | Integration-verified -- IT test exercises the API at the pinned version |
+| **U4** | Production-verified -- prod traces show the API behaving as designed |
+
+Today only Spring AI 1.0.7, Temporal Java SDK 1.34.0, and MCP Java SDK
+2.0.0-M2 are at **U1** (cycle-11 verified them via upstream release
+notes / Maven Central on 2026-05-09). Every other dep is at **U0**.
+W0 advances all critical-path deps to U2 by adding a probe that
+compiles the cited API surface.
+
+The full per-dep BoM (groupId, artifactId, exact version, status,
+verification level, cited APIs, glue, fallback, risks) lives in
+`docs/cross-cutting/oss-bill-of-materials.md`. That doc is the
+authoritative source; this matrix is a summary.
 
 ### 2.2 Glue / OSS LOC ratio targets
 

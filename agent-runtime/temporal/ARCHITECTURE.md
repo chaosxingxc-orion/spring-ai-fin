@@ -14,7 +14,7 @@ signals; idempotent retries via Temporal's RetryOptions.
 | Dep | Version | Role |
 |---|---|---|
 | Temporal Server | 1.24.x | cluster (single-node dev; cluster prod) |
-| Temporal Java SDK | 1.25.x | workflow + activity APIs |
+| Temporal Java SDK | 1.34.0 (U1; `Workflow.getVersion(...)` API confirmed) | workflow + activity APIs |
 | Postgres | 16 | Temporal persistence (default) |
 
 ## 3. Glue we own

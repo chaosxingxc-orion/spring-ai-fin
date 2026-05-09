@@ -71,6 +71,7 @@
 - [`docs/cross-cutting/data-model-conventions.md`](../cross-cutting/data-model-conventions.md) -- naming, IDs (UUIDv7), timestamps, RLS, schema spine, Java type ownership.
 - [`docs/cross-cutting/deployment-topology.md`](../cross-cutting/deployment-topology.md) -- per-posture topology, replicas, HA / DR, rollout, capacity / cost.
 - [`docs/cross-cutting/failure-modes-catalog.md`](../cross-cutting/failure-modes-catalog.md) -- per-module runtime failure modes + observability.
+- [`docs/cross-cutting/oss-bill-of-materials.md`](../cross-cutting/oss-bill-of-materials.md) -- exact OSS version pins + U0..U4 verification ladder + per-dep API surface + integration contract.
 
 ## Governance corpus
 

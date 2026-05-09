@@ -13,10 +13,10 @@ Used by `run/` orchestrator and `temporal/` activities.
 
 | Dep | Version | Role |
 |---|---|---|
-| Spring AI | 1.0.x | `ChatClient` abstraction |
-| Spring AI Anthropic | 1.0.x | Anthropic provider |
-| Spring AI OpenAI | 1.0.x | OpenAI provider |
-| Spring AI Bedrock | 1.0.x | AWS Bedrock provider (W3) |
+| Spring AI | 1.0.7 (GA; U1) | `ChatClient` abstraction |
+| Spring AI Anthropic | 1.0.7 (GA; U1) | Anthropic provider |
+| Spring AI OpenAI | 1.0.7 (GA; U1) | OpenAI provider |
+| Spring AI Bedrock | 1.0.7 (GA; U1) | AWS Bedrock provider (W3) |
 | Resilience4j | 2.x | circuit breaker per provider |
 | WireMock | 3.x | provider fake in CI |
 

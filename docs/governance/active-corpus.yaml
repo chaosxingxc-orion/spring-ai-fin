@@ -184,6 +184,10 @@ active_documents:
     layer: cross_cutting
     owner: architecture
     encoding_policy: ascii
+  - path: docs/cross-cutting/oss-bill-of-materials.md
+    layer: cross_cutting
+    owner: architecture
+    encoding_policy: ascii
 
   # ---- Governance corpus ----
   - path: docs/governance/architecture-status.yaml

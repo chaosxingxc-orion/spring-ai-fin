@@ -14,7 +14,7 @@ ActionGuard. Replaces v6 `skill/` + parts of `capability/`.
 
 | Dep | Version | Role |
 |---|---|---|
-| MCP Java SDK (Anthropic) | latest 0.x | tool protocol |
+| MCP Java SDK (`io.modelcontextprotocol.sdk:mcp`) | 2.0.0-M2 (milestone; U1) | tool protocol -- API may change at 2.0.0 GA |
 | Spring Boot starter | (BOM) | bean lifecycle |
 | Apache Tika | 2.x | document parser tool default |
 

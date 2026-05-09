@@ -1238,10 +1238,45 @@ findings:
   # closed in their respective waves.
   REM-2026-05-09-C10-CF:
     source: docs/architecture-design-systematic-review-2026-05-09.md
-    description: "25 systematic-review carry-forward items tracked in sec-4.2 of the source doc. Categories: P-A (token-binding, alerting, cross-region tracing, sandboxing, audit chain validate, eval cost budget); P-B (token revocation, stepped-up auth, idempotency body storage, config hot-reload, run timeout escalation, LLM streaming, tool-calling protocol, prompt templates, action retry, signal contract, eval human-loop); P-C (error propagation, inter-module timeouts, retry budgets); P-D (per-wave score lift, per-feature business KPI); P-E (Spring AI 1.0.x GA, MCP version pin, Temporal vs simpler alt, pgvector vs Qdrant trigger). Each becomes its own REM row when closed."
+    description: "25 systematic-review carry-forward items tracked in sec-4.2 of the source doc. Categories: P-A (token-binding, alerting, cross-region tracing, sandboxing, audit chain validate, eval cost budget); P-B (token revocation, stepped-up auth, idempotency body storage, config hot-reload, run timeout escalation, LLM streaming, tool-calling protocol, prompt templates, action retry, signal contract, eval human-loop); P-C (error propagation, inter-module timeouts, retry budgets); P-D (per-wave score lift, per-feature business KPI); P-E (cycle-11 closes the version-pin + integration-contract subset; the remaining P-E items below). Each becomes its own REM row when closed."
     maturity: L0
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W1..W4+
     capability: l0_architecture
-    notes: "Carry-forward items per cycle-10 self-driven review. Not blockers; design coverage gaps to be addressed in respective waves."
+    notes: "Carry-forward items per cycle-10 self-driven review. Cycle-11 closed the OSS version-pin subset of P-E; remaining items still defer."
+
+  # ---- Cycle-11 OSS-integration verification ----
+  REM-2026-05-09-C11-1:
+    source: user-question-2026-05-09 (OSS-integration correctness)
+    description: "Cycle-10 P-E was carry-forward; user pointed out that without local OSS dep resolution, architecture correctness is API-plausible only. Cycle-11 adds docs/cross-cutting/oss-bill-of-materials.md with exact version pins per dep, U0..U4 verification ladder (parallel to L0..L4 maturity), per-dep API surface citations, integration contract, and risks. Spring AI 1.0.7 + Temporal Java SDK 1.34.0 + MCP Java SDK 2.0.0-M2 verified at U1 via upstream release notes / Maven Central. All other deps remain at U0 until W0 probe code lands them at U2."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0..W4
+    capability: l0_architecture
+  REM-2026-05-09-C11-2:
+    source: user-question-2026-05-09
+    description: "Stale version refs corrected: agent-runtime/llm Spring AI 1.0.x -> 1.0.7; agent-runtime/temporal Temporal SDK 1.25.x -> 1.34.0; agent-runtime/tool MCP latest 0.x -> 2.0.0-M2 (milestone). L0 sec-2 OSS matrix updated. L0 sec-2.1.5 OSS verification ladder added."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: l0_architecture
+  REM-2026-05-09-C11-3:
+    source: user-question-2026-05-09
+    description: "Per-wave OSS verification advancement plan (BoM sec-6): W0 promotes Spring Boot / Postgres / HikariCP / etc. to U2 via probe code; W1 promotes Spring Security / Keycloak to U3 via Testcontainers; W2 promotes Spring AI to U2/U3; W3 promotes OPA / MCP / pgvector; W4 promotes Temporal SDK to U3."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0..W4
+    capability: l0_architecture
+  REM-2026-05-09-C11-CF:
+    source: user-question-2026-05-09
+    description: "Remaining P-E carry-forward (after cycle-11): pgvector vs Qdrant trigger criteria (W2); Temporal vs simpler durable-execution alternative for v1 single-customer (W4); MCP 2.0.0-M2 -> 2.0.0 GA upgrade contingency in W3; Spring AI 1.0.x vs 1.1.x branch decision at W4 close."
+    maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W2..W4
+    capability: l0_architecture
+    notes: "Carry-forward; tracked but not blocking pre-W0 work."
