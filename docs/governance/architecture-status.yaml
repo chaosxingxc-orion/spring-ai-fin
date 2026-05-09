@@ -252,10 +252,10 @@ capabilities:
     tests: []
     operator_gate: null
     open_findings: []
-    latest_semantic_pass_sha: 7b1fa8c        # cycle-10 self-driven systematic review (6 cross-cutting docs + 6 L2 expansions + L0 NFR/measurable-principles/dep-graph)
-    latest_delivery_valid_sha: 7b1fa8c
-    latest_delivery_file: docs/delivery/2026-05-08-7b1fa8c.md
-    notes: "Updated by the cycle-10 audit-trail commit to point to the cycle-10 architectural SHA 7b1fa8c after evidence is produced. The manifest in docs/governance/evidence-manifest.yaml is the authoritative record; this ledger summarizes."
+    latest_semantic_pass_sha: 2a29eb5        # cycle-11 OSS BoM + U0..U4 verification ladder + Spring AI/Temporal/MCP version pins
+    latest_delivery_valid_sha: 2a29eb5
+    latest_delivery_file: docs/delivery/2026-05-08-2a29eb5.md
+    notes: "Updated by the cycle-11 audit-trail commit. The manifest is the authoritative record; this ledger summarizes."
     allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml."
 
   # ---- 2026-05-08 refresh capability rows (per refresh L2 modules) ----

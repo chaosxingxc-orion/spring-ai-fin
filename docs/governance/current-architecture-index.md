@@ -100,7 +100,8 @@
 ## Delivery evidence
 
 - [`docs/delivery/README.md`](../delivery/README.md) -- delivery rules.
-- [`docs/delivery/2026-05-08-7b1fa8c.md`](../delivery/2026-05-08-7b1fa8c.md) -- cycle-10 self-driven systematic review (current authoritative).
+- [`docs/delivery/2026-05-08-2a29eb5.md`](../delivery/2026-05-08-2a29eb5.md) -- cycle-11 OSS BoM + verification ladder (current authoritative).
+- [`docs/delivery/2026-05-08-7b1fa8c.md`](../delivery/2026-05-08-7b1fa8c.md) -- cycle-10 self-driven systematic review.
 - [`docs/delivery/2026-05-08-e9a692d.md`](../delivery/2026-05-08-e9a692d.md) -- cycle-9 truth-cut evidence.
 - [`docs/delivery/2026-05-08-4260a48.md`](../delivery/2026-05-08-4260a48.md) -- 2026-05-08 architecture refresh evidence.
 - [`docs/delivery/2026-05-08-cc2e1e3.md`](../delivery/2026-05-08-cc2e1e3.md) -- cycle-8 evidence-graph-v3 evidence.
