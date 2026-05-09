@@ -64,6 +64,7 @@ venv/
 docs/delivery/*.json
 docs/verification/*.json
 !docs/delivery/.gitkeep
+!docs/delivery/*.log
 !docs/verification/.gitkeep
 
 # Gate logs:
