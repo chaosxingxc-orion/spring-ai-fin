@@ -34,28 +34,68 @@ cd "$repo_root"
 sha_candidate="$(git rev-parse --short HEAD 2>/dev/null || echo no-git)"
 [[ -z "$sha_candidate" ]] && sha_candidate=no-git
 
-# Pre-W0: artifact missing. Probe once for clarity.
-declare -a artifact_probes=(
+# Cycle-13 (Phase B step 1): probe what's in tree to determine the
+# fail-closed reason.
+#   - No pom.xml + no src           -> FAIL_ARTIFACT_MISSING (pre-W0).
+#   - pom.xml + src exist but no JAR -> FAIL_NEEDS_BUILD (cycle-13 partial; user
+#                                       runs `mvn package` to advance).
+#   - JAR exists but no real-flow run -> FAIL_NEEDS_REAL_FLOW (W0..W4 in flight).
+#   - real-flow run pending          -> W4 deliverable per Rule 8.
+
+declare -a manifest_probes=(
   "pom.xml|no Maven build manifest at repo root"
   "agent-platform/pom.xml|no Maven build manifest under agent-platform/"
   "agent-runtime/pom.xml|no Maven build manifest under agent-runtime/"
+)
+declare -a source_probes=(
   "agent-platform/src/main/java|no source tree under agent-platform/"
   "agent-runtime/src/main/java|no source tree under agent-runtime/"
 )
 missing_json=""
 missing_count=0
-for entry in "${artifact_probes[@]}"; do
+manifests_present=true
+sources_present=true
+for entry in "${manifest_probes[@]}"; do
   path="${entry%%|*}"
   reason="${entry##*|}"
   if [[ ! -e "$path" ]]; then
     if [[ -n "$missing_json" ]]; then missing_json+=","; fi
     missing_json+="{\"path\":\"$path\",\"reason\":\"$reason\"}"
     missing_count=$((missing_count + 1))
+    manifests_present=false
+  fi
+done
+for entry in "${source_probes[@]}"; do
+  path="${entry%%|*}"
+  reason="${entry##*|}"
+  if [[ ! -e "$path" ]]; then
+    if [[ -n "$missing_json" ]]; then missing_json+=","; fi
+    missing_json+="{\"path\":\"$path\",\"reason\":\"$reason\"}"
+    missing_count=$((missing_count + 1))
+    sources_present=false
   fi
 done
 
+# Probe for a built JAR (any version under agent-platform/target/).
+jar_present=false
+if compgen -G "agent-platform/target/agent-platform-*.jar" > /dev/null 2>&1; then
+  jar_present=true
+fi
+
+# Determine outcome state.
+if [[ "$manifests_present" == "false" || "$sources_present" == "false" ]]; then
+  outcome="FAIL_ARTIFACT_MISSING"
+  message="Rule 8 operator-shape smoke gate fails closed: pom.xml or src tree missing. Pre-cycle-13 state. Architecture-sync evidence does NOT substitute for Rule 8 evidence."
+elif [[ "$jar_present" == "false" ]]; then
+  outcome="FAIL_NEEDS_BUILD"
+  message="Rule 8 operator-shape smoke gate fails closed: pom.xml + src present but no built JAR under agent-platform/target/. Run 'mvn -B -pl agent-platform -am package' to advance. Real Rule 8 flow (long-lived process + N>=3 real-dependency runs) remains a W4 deliverable."
+else
+  outcome="FAIL_NEEDS_REAL_FLOW"
+  message="Rule 8 operator-shape smoke gate fails closed: JAR exists but no real-flow run yet. Real Rule 8 flow (long-lived process + real dependencies + sequential N>=3 + lifecycle observability + cancellation round-trip + zero fallback) remains a W4 deliverable. Architecture-sync evidence does NOT substitute for Rule 8 evidence."
+fi
+
 artifact_present=true
-[[ $missing_count -gt 0 ]] && artifact_present=false
+[[ "$manifests_present" == "false" || "$sources_present" == "false" ]] && artifact_present=false
 
 log_dir="gate/log/local"
 mkdir -p "$log_dir"
@@ -64,19 +104,22 @@ log_path="$log_dir/operator-shape-${sha_candidate}-posix.json"
 {
   printf '{'
   printf '"script":"run_operator_shape_smoke.sh",'
-  printf '"version":"cycle-4-fail-closed",'
+  printf '"version":"cycle-13-tri-state",'
   printf '"kind":"operator_shape_smoke",'
   printf '"sha":"%s",' "$sha_candidate"
   printf '"generated":"%s",' "$(date -Iseconds 2>/dev/null || date -u +%Y-%m-%dT%H:%M:%SZ)"
+  printf '"manifests_present":%s,' "$manifests_present"
+  printf '"sources_present":%s,' "$sources_present"
+  printf '"jar_present":%s,' "$jar_present"
   printf '"artifact_present":%s,' "$artifact_present"
   printf '"missing_artifacts":[%s],' "$missing_json"
-  printf '"outcome":"FAIL_ARTIFACT_MISSING",'
+  printf '"outcome":"%s",' "$outcome"
   printf '"evidence_valid_for_delivery":false,'
   printf '"rule_8_evidence":false,'
-  printf '"message":"Rule 8 operator-shape smoke gate fails closed: no runnable artifact exists yet. W0 deliverable per docs/plans/W0-evidence-skeleton.md. Architecture-sync evidence (gate/check_architecture_sync.*) does NOT substitute for Rule 8 evidence."'
+  printf '"message":"%s"' "$message"
   printf '}\n'
 } > "$log_path"
 
-echo "FAIL: operator-shape smoke gate has no runnable artifact (W0 deliverable). Log: $log_path" >&2
+echo "FAIL ($outcome): operator-shape smoke gate. Log: $log_path" >&2
 cat "$log_path"
 exit 1

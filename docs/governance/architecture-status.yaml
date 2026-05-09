@@ -1315,3 +1315,46 @@ findings:
     target_wave: W0
     capability: l0_architecture
     notes: "Phase A closed. Phase B trigger pending."
+
+  # ---- Cycle-13 Phase B step 1: Maven scaffolding + W0 skeleton ----
+  REM-2026-05-09-C13-1:
+    source: user-decision-2026-05-09 (Option A autonomous)
+    description: "Maven multi-module scaffold added: root pom.xml (parent inheriting Spring Boot 3.5.0 + spring-ai-bom 1.0.7 + spring-cloud BOM 2024.0.0 + temporal 1.34.0 + mcp 2.0.0-M2 + Resilience4j 2.2.0 + Caffeine 3.1.8 + Flyway 10.21.0 + Testcontainers 1.20.4 + WireMock 3.9.1 + RestAssured 5.5.0 + OTel agent 2.10.0 + logstash-logback 8.0 + springdoc 2.6.0 + Tika 2.9.2 + ArchUnit 1.3.0); agent-platform/pom.xml; agent-runtime/pom.xml; agent-eval/pom.xml. All version pins traceable to docs/cross-cutting/oss-bill-of-materials.md."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: agent_platform_facade
+  REM-2026-05-09-C13-2:
+    source: user-decision-2026-05-09 (Option A autonomous)
+    description: "W0 minimal Spring Boot skeleton: PlatformApplication.java; HealthController returning UP + sha + db_ping_ns + ts; HealthCheckRepository proving JdbcTemplate reaches Postgres; V1__init.sql Flyway migration creating health_check singleton; application.yml with virtual threads on + HikariCP + Flyway + posture marker; WebSecurityConfig permitting /v1/health + actuator + OpenAPI in W0 (full oauth2-resource-server lands in W1); HealthEndpointIT.java Testcontainers-based E2E test."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: agent_platform_facade
+  REM-2026-05-09-C13-3:
+    source: user-decision-2026-05-09 (Option A autonomous)
+    description: "Probe code committed for U1 -> U2 promotion. agent-platform/.../probe/OssApiProbe.java imports cited APIs from Spring Web, Spring Security oauth2-resource-server, JdbcTemplate, Flyway, Resilience4j (CircuitBreaker + RateLimiter), Caffeine, Spring Cloud Vault, Hibernate Validator, springdoc, Micrometer, logstash-logback. agent-runtime/.../probe/OssApiProbe.java imports Spring AI (ChatClient, ChatModel, EmbeddingModel, VectorStore), Temporal Java SDK (Workflow, WorkflowInterface, WorkflowMethod, ActivityInterface, ActivityMethod, WorkflowClient + Workflow.getVersion compile-time signature check), Apache Tika (AutoDetectParser, Metadata). MCP class names deliberately not cited in probe (2.0.0-M2 milestone; W3 wave commits the real surface)."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: l0_architecture
+    notes: "U2 promotion pending user's mvn -B compile run. Author env lacks Java + Maven; user verifies."
+  REM-2026-05-09-C13-4:
+    source: user-decision-2026-05-09 (Option A autonomous)
+    description: "Operations scaffolding: Dockerfile (Maven 3.9 + Eclipse Temurin 21 build stage; distroless Java 21 runtime; layer-cached dependency fetch); ops/compose.yml (Postgres 16-alpine + agent-platform with health-checks + APP_POSTURE=dev); .github/workflows/ci.yml (Java 21 setup + mvn verify + architecture-sync gate + self-test + operator-shape smoke + test-results upload)."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: agent_platform_facade
+  REM-2026-05-09-C13-5:
+    source: user-decision-2026-05-09 (Option A autonomous)
+    description: "Operator-shape smoke gate advanced from FAIL_ARTIFACT_MISSING to tri-state: FAIL_ARTIFACT_MISSING (no pom + no src) | FAIL_NEEDS_BUILD (pom + src present; no JAR; cycle-13 state) | FAIL_NEEDS_REAL_FLOW (JAR present; no real Rule 8 flow yet, W4 deliverable). Manifest rule_8.state advanced from fail_closed_artifact_missing to fail_closed_needs_build; unblocks_at W4. Gate scripts both POSIX + PowerShell."
+    maturity: L1
+    status: implemented_unverified
+    evidence_state: implemented_unverified
+    target_wave: W4
+    capability: operator_shape_smoke_gate

@@ -224,13 +224,19 @@ Tier definition matches `ARCHITECTURE.md` sec-2.1 OSS dependency policy.
 
 ## 8. Honest gaps
 
-- **No dep is at U2 today.** No Maven artifacts have been pulled; no
-  probe code exists. The architecture's API claims are plausible but
-  unverified by compile.
+- **Cycle-13 status: pom.xml + probe code committed; U2 promotion is
+  pending the user's `mvn -B dependency:resolve` + `mvn -B -pl agent-platform -am compile` run.**
+  The author's environment lacks Java + Maven; probe-code compile-verification
+  is delegated to the user's local Maven cache or to CI's first
+  `actions/setup-java@v4` run. Once that passes:
+  - All deps imported by `agent-platform/.../probe/OssApiProbe.java` advance to U2.
+  - All deps imported by `agent-runtime/.../probe/OssApiProbe.java` advance to U2 (with MCP SDK still at U1 due to milestone API in flux).
 - **Spring AI 1.0.7 vs 1.1.x choice is not final.** Pinning to 1.0.x
   trades feature recency for stability; reconsidered each release.
 - **MCP Java SDK at milestone.** API may change at 2.0.0 GA. The
-  W3 plan must include a 2.0.0-GA upgrade contingency.
+  cycle-13 probe deliberately does NOT cite MCP class names yet;
+  W3 wave plan includes a 2.0.0-GA upgrade contingency + the W3-time
+  probe expansion.
 - **Temporal 1.34.0 may not be the GA at W4 start.** Pin will refresh
   at the W4 wave plan revision.
 - **Pinned exact versions in this doc may drift before W0** as

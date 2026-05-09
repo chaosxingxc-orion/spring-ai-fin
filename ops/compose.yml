@@ -1,0 +1,49 @@
+# dev compose: brings up Postgres + agent-platform only.
+# W1 adds Keycloak; W2 adds Valkey + Vault; W3 adds OPA; W4 adds Temporal.
+#
+# Per docs/cross-cutting/deployment-topology.md sec-2.1 (dev posture).
+
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: springaifin-postgres
+    environment:
+      POSTGRES_DB: springaifin
+      POSTGRES_USER: springaifin
+      POSTGRES_PASSWORD: springaifin
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U springaifin"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  agent-platform:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: springaifin-platform
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      APP_POSTURE: dev
+      APP_SHA: dev
+      DB_URL: jdbc:postgresql://postgres:5432/springaifin
+      DB_USER: springaifin
+      DB_PASS: springaifin
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost:8080/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+volumes:
+  pgdata:

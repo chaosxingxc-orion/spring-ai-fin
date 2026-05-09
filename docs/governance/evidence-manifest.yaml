@@ -145,15 +145,13 @@ operator_shape_evidence:
   reason: "Pre-W0: no runnable artifact; rule_8.state=fail_closed_artifact_missing. CI smoke (when added in W2) will be ci_operator_shape_smoke and remain rule_8_eligible=false until real-dependency runs land in W4."
 
 rule_8:
-  state: fail_closed_artifact_missing
+  state: fail_closed_needs_build      # cycle-13: pom.xml + src present; JAR not built; Rule 8 still fail-closed.
   pass_sha: null
   blocking_findings:
-    - "No pom.xml at repo root"
-    - "No agent-platform/pom.xml"
-    - "No agent-runtime/pom.xml"
-    - "No agent-platform/src/main/java tree"
-    - "No agent-runtime/src/main/java tree"
-  unblocks_at: W0   # docs/plans/W0-evidence-skeleton.md
+    - "No built JAR under agent-platform/target/ (run mvn package)"
+    - "No real-dependency long-lived run (W4 deliverable)"
+    - "No N>=3 sequential real-LLM runs (W4 deliverable)"
+  unblocks_at: W4   # full Rule 8 flow per docs/plans/engineering-plan-W0-W4.md sec-6
   # Cycle-8 sec-C2: rule_8_state_consistency assertion targets.
   no_capability_above_l2_unless_pass: true
   no_evidence_state_operator_gated_unless_pass: true

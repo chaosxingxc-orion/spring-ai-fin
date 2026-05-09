@@ -1,0 +1,67 @@
+# W0 platform application config.
+# Per docs/cross-cutting/posture-model.md: APP_POSTURE drives strict-mode behavior.
+# Per agent-platform/bootstrap/ARCHITECTURE.md: required-config matrix.
+
+spring:
+  application:
+    name: spring-ai-fin
+  threads:
+    virtual:
+      enabled: true   # ADR-01 + Loom; HikariCP 5 pool is virtual-thread-friendly.
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/springaifin}
+    username: ${DB_USER:springaifin}
+    password: ${DB_PASS:springaifin}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 4
+      connection-timeout: 5000
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
+server:
+  port: 8080
+  shutdown: graceful
+  tomcat:
+    max-http-form-post-size: 1MB
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when-authorized
+  metrics:
+    tags:
+      service: agent-platform
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui
+
+# W0 leaves auth disabled; W1 swaps to oauth2-resource-server with JWT.
+# Keeping a permitAll-default SecurityFilterChain bean in W0 keeps the wiring valid.
+
+logging:
+  level:
+    root: INFO
+    fin.springai: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}] - %msg%n"
+
+# Posture marker -- read at boot by PostureBootGuard (W0 lite; full guard in W1).
+app:
+  posture: ${APP_POSTURE:dev}
+  sha: ${APP_SHA:dev}
