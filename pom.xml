@@ -35,6 +35,11 @@
     <module>spring-ai-fin-dependencies</module>
     <module>agent-platform</module>
     <module>agent-runtime</module>
+    <module>spring-ai-fin-memory-starter</module>
+    <module>spring-ai-fin-skills-starter</module>
+    <module>spring-ai-fin-knowledge-starter</module>
+    <module>spring-ai-fin-governance-starter</module>
+    <module>spring-ai-fin-persistence-starter</module>
     <module>agent-eval</module>
   </modules>
 
