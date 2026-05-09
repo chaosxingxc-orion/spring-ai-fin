@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  spring-ai-fin-dependencies (SDK BoM).
+
+  This module is the externally-consumable version contract for the
+  spring-ai-fin SDK. External consumers import it in their
+  <dependencyManagement> section:
+
+    <dependencyManagement>
+      <dependencies>
+        <dependency>
+          <groupId>fin.springai</groupId>
+          <artifactId>spring-ai-fin-dependencies</artifactId>
+          <version>0.1.0-SNAPSHOT</version>
+          <type>pom</type>
+          <scope>import</scope>
+        </dependency>
+      </dependencies>
+    </dependencyManagement>
+
+  When imported, only this POM's <dependencyManagement> section is
+  inherited (not the parent chain). Module POMs within this repo also
+  import this BoM to assert that they have not drifted from the
+  published version contract.
+
+  Version pins match docs/cross-cutting/oss-bill-of-materials.md W0
+  state. All versions are exact patches; no ranges; no LATEST.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>fin.springai</groupId>
+    <artifactId>spring-ai-fin-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>spring-ai-fin-dependencies</artifactId>
+  <packaging>pom</packaging>
+
+  <name>spring-ai-fin dependencies (BoM)</name>
+  <description>
+    Bill of Materials POM for the spring-ai-fin SDK. Import this
+    artifact to pin all spring-ai-fin module and third-party
+    dependency versions in a single place.
+  </description>
+
+  <dependencyManagement>
+    <dependencies>
+
+      <!-- ============================================================ -->
+      <!-- spring-ai-fin SDK modules (this project)                     -->
+      <!-- ============================================================ -->
+
+      <dependency>
+        <groupId>fin.springai</groupId>
+        <artifactId>agent-platform</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>fin.springai</groupId>
+        <artifactId>agent-runtime</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <!-- ============================================================ -->
+      <!-- Platform: Spring AI (milestone — GA expected mid-2026)       -->
+      <!-- ============================================================ -->
+
+      <dependency>
+        <groupId>org.springframework.ai</groupId>
+        <artifactId>spring-ai-bom</artifactId>
+        <version>${spring-ai.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- ============================================================ -->
+      <!-- Platform: Spring Cloud (Oakwood — Boot 4.0.x train)          -->
+      <!-- ============================================================ -->
+
+      <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-dependencies</artifactId>
+        <version>${spring-cloud.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- ============================================================ -->
+      <!-- Skills: MCP Java SDK 1.0.0 GA                                -->
+      <!-- ============================================================ -->
+
+      <dependency>
+        <groupId>io.modelcontextprotocol.sdk</groupId>
+        <artifactId>mcp</artifactId>
+        <version>${mcp.version}</version>
+      </dependency>
+
+      <!-- ============================================================ -->
+      <!-- Workflow: Temporal Java SDK 1.35.0                           -->
+      <!-- ============================================================ -->
+
+      <dependency>
+        <groupId>io.temporal</groupId>
+        <artifactId>temporal-sdk</artifactId>
+        <version>${temporal.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.temporal</groupId>
+        <artifactId>temporal-testing</artifactId>
+        <version>${temporal.version}</version>
+      </dependency>
+
+      <!-- ============================================================ -->
+      <!-- Alternate RAG profile: langchain4j 1.14.1                    -->
+      <!-- ============================================================ -->
+
+      <dependency>
+        <groupId>dev.langchain4j</groupId>
+        <artifactId>langchain4j-bom</artifactId>
+        <version>${langchain4j.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- ============================================================ -->
+      <!-- Resilience: Resilience4j 2.4.0                               -->
+      <!-- ============================================================ -->
+
+      <dependency>
+        <groupId>io.github.resilience4j</groupId>
+        <artifactId>resilience4j-spring-boot3</artifactId>
+        <version>${resilience4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.github.resilience4j</groupId>
+        <artifactId>resilience4j-reactor</artifactId>
+        <version>${resilience4j.version}</version>
+      </dependency>
+
+      <!-- ============================================================ -->
+      <!-- Caching: Caffeine 3.2.4                                      -->
+      <!-- ============================================================ -->
+
+      <dependency>
+        <groupId>com.github.ben-manes.caffeine</groupId>
+        <artifactId>caffeine</artifactId>
+        <version>${caffeine.version}</version>
+      </dependency>
+
+      <!-- ============================================================ -->
+      <!-- Persistence: Flyway 11.19.1                                  -->
+      <!-- ============================================================ -->
+
+      <dependency>
+        <groupId>org.flywaydb</groupId>
+        <artifactId>flyway-core</artifactId>
+        <version>${flyway.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.flywaydb</groupId>
+        <artifactId>flyway-database-postgresql</artifactId>
+        <version>${flyway.version}</version>
+      </dependency>
+
+      <!-- ============================================================ -->
+      <!-- Document parsing: Apache Tika 3.3.0                          -->
+      <!-- ============================================================ -->
+
+      <dependency>
+        <groupId>org.apache.tika</groupId>
+        <artifactId>tika-core</artifactId>
+        <version>${tika.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tika</groupId>
+        <artifactId>tika-parsers-standard-package</artifactId>
+        <version>${tika.version}</version>
+      </dependency>
+
+      <!-- ============================================================ -->
+      <!-- Observability: Logstash encoder 8.0                          -->
+      <!-- ============================================================ -->
+
+      <dependency>
+        <groupId>net.logstash.logback</groupId>
+        <artifactId>logstash-logback-encoder</artifactId>
+        <version>${logstash-logback.version}</version>
+      </dependency>
+
+      <!-- ============================================================ -->
+      <!-- API docs: springdoc-openapi 3.0.3 (Boot 4 supported)         -->
+      <!-- ============================================================ -->
+
+      <dependency>
+        <groupId>org.springdoc</groupId>
+        <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+        <version>${springdoc.version}</version>
+      </dependency>
+
+      <!-- ============================================================ -->
+      <!-- Testing: Testcontainers 1.21.4                               -->
+      <!-- ============================================================ -->
+
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers-bom</artifactId>
+        <version>${testcontainers.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- ============================================================ -->
+      <!-- Testing: WireMock 3.9.1                                      -->
+      <!-- ============================================================ -->
+
+      <dependency>
+        <groupId>org.wiremock</groupId>
+        <artifactId>wiremock-standalone</artifactId>
+        <version>${wiremock.version}</version>
+      </dependency>
+
+      <!-- ============================================================ -->
+      <!-- Testing: RestAssured 5.5.0                                   -->
+      <!-- ============================================================ -->
+
+      <dependency>
+        <groupId>io.rest-assured</groupId>
+        <artifactId>rest-assured</artifactId>
+        <version>${restassured.version}</version>
+      </dependency>
+
+      <!-- ============================================================ -->
+      <!-- Governance: ArchUnit 1.4.2                                   -->
+      <!-- ============================================================ -->
+
+      <dependency>
+        <groupId>com.tngtech.archunit</groupId>
+        <artifactId>archunit-junit5</artifactId>
+        <version>${archunit.version}</version>
+      </dependency>
+
+    </dependencies>
+  </dependencyManagement>
+
+</project>

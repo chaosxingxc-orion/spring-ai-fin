@@ -32,6 +32,7 @@
   </parent>
 
   <modules>
+    <module>spring-ai-fin-dependencies</module>
     <module>agent-platform</module>
     <module>agent-runtime</module>
     <module>agent-eval</module>
