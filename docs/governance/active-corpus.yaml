@@ -53,8 +53,24 @@ active_documents:
     owner: runtime
     encoding_policy: ascii
 
-  # ---- L2: agent-platform ----
+  # ---- L2: agent-platform (refresh-surviving + v6 deferred-with-banner) ----
   - path: agent-platform/contracts/ARCHITECTURE.md
+    layer: L2
+    owner: platform
+    encoding_policy: ascii
+  - path: agent-platform/web/ARCHITECTURE.md
+    layer: L2
+    owner: platform
+    encoding_policy: ascii
+  - path: agent-platform/auth/ARCHITECTURE.md
+    layer: L2
+    owner: platform
+    encoding_policy: ascii
+  - path: agent-platform/tenant/ARCHITECTURE.md
+    layer: L2
+    owner: platform
+    encoding_policy: ascii
+  - path: agent-platform/idempotency/ARCHITECTURE.md
     layer: L2
     owner: platform
     encoding_policy: ascii
@@ -62,14 +78,17 @@ active_documents:
     layer: L2
     owner: platform
     encoding_policy: ascii
+    v7_disposition: merged_into:agent-platform/web
   - path: agent-platform/runtime/ARCHITECTURE.md
     layer: L2
     owner: platform
     encoding_policy: ascii
+    v7_disposition: deferred_in_v7
   - path: agent-platform/facade/ARCHITECTURE.md
     layer: L2
     owner: platform
     encoding_policy: ascii
+    v7_disposition: deferred_in_v7
   - path: agent-platform/bootstrap/ARCHITECTURE.md
     layer: L2
     owner: platform
@@ -78,17 +97,14 @@ active_documents:
     layer: L2
     owner: platform
     encoding_policy: ascii
+    v7_disposition: deferred_in_v7
   - path: agent-platform/config/ARCHITECTURE.md
     layer: L2
     owner: platform
     encoding_policy: ascii
 
-  # ---- L2: agent-runtime ----
-  - path: agent-runtime/server/ARCHITECTURE.md
-    layer: L2
-    owner: runtime
-    encoding_policy: ascii
-  - path: agent-runtime/runner/ARCHITECTURE.md
+  # ---- L2: agent-runtime (refresh-surviving + v6 deferred-with-banner) ----
+  - path: agent-runtime/run/ARCHITECTURE.md
     layer: L2
     owner: runtime
     encoding_policy: ascii
@@ -96,11 +112,11 @@ active_documents:
     layer: L2
     owner: runtime
     encoding_policy: ascii
-  - path: agent-runtime/skill/ARCHITECTURE.md
+  - path: agent-runtime/tool/ARCHITECTURE.md
     layer: L2
     owner: runtime
     encoding_policy: ascii
-  - path: agent-runtime/capability/ARCHITECTURE.md
+  - path: agent-runtime/action/ARCHITECTURE.md
     layer: L2
     owner: runtime
     encoding_policy: ascii
@@ -108,11 +124,11 @@ active_documents:
     layer: L2
     owner: runtime
     encoding_policy: ascii
-  - path: agent-runtime/knowledge/ARCHITECTURE.md
+  - path: agent-runtime/outbox/ARCHITECTURE.md
     layer: L2
     owner: runtime
     encoding_policy: ascii
-  - path: agent-runtime/adapters/ARCHITECTURE.md
+  - path: agent-runtime/temporal/ARCHITECTURE.md
     layer: L2
     owner: runtime
     encoding_policy: ascii
@@ -120,64 +136,135 @@ active_documents:
     layer: L2
     owner: runtime
     encoding_policy: ascii
-  - path: agent-runtime/outbox/ARCHITECTURE.md
+  - path: agent-runtime/server/ARCHITECTURE.md
     layer: L2
     owner: runtime
     encoding_policy: ascii
+    v7_disposition: renamed_to:agent-runtime/run
+  - path: agent-runtime/runner/ARCHITECTURE.md
+    layer: L2
+    owner: runtime
+    encoding_policy: ascii
+    v7_disposition: merged_into:agent-runtime/run
+  - path: agent-runtime/skill/ARCHITECTURE.md
+    layer: L2
+    owner: runtime
+    encoding_policy: ascii
+    v7_disposition: merged_into:agent-runtime/tool
+  - path: agent-runtime/capability/ARCHITECTURE.md
+    layer: L2
+    owner: runtime
+    encoding_policy: ascii
+    v7_disposition: merged_into:agent-runtime/tool+action
+  - path: agent-runtime/knowledge/ARCHITECTURE.md
+    layer: L2
+    owner: runtime
+    encoding_policy: ascii
+    v7_disposition: deferred_indefinitely
+  - path: agent-runtime/adapters/ARCHITECTURE.md
+    layer: L2
+    owner: runtime
+    encoding_policy: ascii
+    v7_disposition: deferred_in_v7
   - path: agent-runtime/posture/ARCHITECTURE.md
     layer: L2
     owner: runtime
     encoding_policy: ascii
+    v7_disposition: moved_to:docs/cross-cutting/posture-model.md
   - path: agent-runtime/auth/ARCHITECTURE.md
     layer: L2
     owner: runtime
     encoding_policy: ascii
+    v7_disposition: moved_to:agent-platform/auth
   - path: agent-runtime/action-guard/ARCHITECTURE.md
     layer: L2
     owner: runtime
     encoding_policy: ascii
+    v7_disposition: renamed_to:agent-runtime/action
   - path: agent-runtime/audit/ARCHITECTURE.md
     layer: L2
     owner: runtime
     encoding_policy: ascii
+    v7_disposition: replaced_by:OTel+audit_log
   - path: agent-runtime/evolve/ARCHITECTURE.md
     layer: L2
     owner: runtime
     encoding_policy: ascii
+    v7_disposition: replaced_by:agent-eval+skill_registry
   - path: agent-runtime/runtime/ARCHITECTURE.md
     layer: L2
     owner: runtime
     encoding_policy: ascii
+    v7_disposition: merged_into:agent-runtime/run+temporal
 
-  # ---- Cross-cutting current docs ----
+  # ---- current module: agent-eval ----
+  - path: agent-eval/ARCHITECTURE.md
+    layer: module
+    owner: runtime
+    encoding_policy: ascii
+
+  # ---- Cross-cutting current docs (refresh-aligned; under docs/cross-cutting/) ----
+  - path: docs/cross-cutting/posture-model.md
+    layer: cross_cutting
+    owner: architecture
+    encoding_policy: ascii
+  - path: docs/cross-cutting/security-control-matrix.md
+    layer: cross_cutting
+    owner: security
+    encoding_policy: ascii
+  - path: docs/cross-cutting/trust-boundary-diagram.md
+    layer: cross_cutting
+    owner: security
+    encoding_policy: ascii
+  - path: docs/cross-cutting/secrets-lifecycle.md
+    layer: cross_cutting
+    owner: security
+    encoding_policy: ascii
+  - path: docs/cross-cutting/supply-chain-controls.md
+    layer: cross_cutting
+    owner: security
+    encoding_policy: ascii
+  - path: docs/cross-cutting/observability-policy.md
+    layer: cross_cutting
+    owner: observability
+    encoding_policy: ascii
+
+  # ---- Cross-cutting (pre-refresh paths; pending W0 deprecation) ----
   - path: docs/security-control-matrix.md
     layer: cross_cutting
     owner: security
     encoding_policy: ascii
+    v7_disposition: moved_to:docs/cross-cutting/security-control-matrix.md
   - path: docs/trust-boundary-diagram.md
     layer: cross_cutting
     owner: security
     encoding_policy: ascii
+    v7_disposition: moved_to:docs/cross-cutting/trust-boundary-diagram.md
   - path: docs/sidecar-security-profile.md
     layer: cross_cutting
     owner: security
     encoding_policy: ascii
+    v7_disposition: deferred_in_v7
   - path: docs/gateway-conformance-profile.md
     layer: cross_cutting
     owner: platform
     encoding_policy: ascii
+    v7_disposition: deferred_in_v7
   - path: docs/secrets-lifecycle.md
     layer: cross_cutting
     owner: security
     encoding_policy: ascii
+    v7_disposition: moved_to:docs/cross-cutting/secrets-lifecycle.md
   - path: docs/supply-chain-controls.md
     layer: cross_cutting
     owner: security
     encoding_policy: ascii
+    v7_disposition: moved_to:docs/cross-cutting/supply-chain-controls.md
   - path: docs/observability/cardinality-policy.md
     layer: cross_cutting
     owner: observability
     encoding_policy: ascii
+    v7_disposition: moved_to:docs/cross-cutting/observability-policy.md
 
   # ---- Governance corpus ----
   - path: docs/governance/architecture-status.yaml
@@ -213,7 +300,20 @@ active_documents:
     owner: architecture
     encoding_policy: ascii
 
-  # ---- Plans ----
+  # ---- 2026-05-08 refresh: engineering + systems plans ----
+  # The L0 stays at root ARCHITECTURE.md (continuous v6 line; no major
+  # version bump per the user's preference). The plans below define the
+  # wave cadence and the doc-set drill-down.
+  - path: docs/plans/engineering-plan-W0-W4.md
+    layer: plan
+    owner: architecture
+    encoding_policy: ascii
+  - path: docs/plans/architecture-systems-engineering-plan.md
+    layer: plan
+    owner: architecture
+    encoding_policy: ascii
+
+  # ---- Plans (v6; pending W0 deprecation) ----
   - path: docs/plans/W0-evidence-skeleton.md
     layer: plan
     owner: architecture
@@ -306,5 +406,9 @@ historical_documents:
     banner_required: false
   - path: docs/systematic-architecture-remediation-cycle-8-response.en.md
     reason: cycle-8 response document (records reviewer prose verbatim)
+    active_scan: false
+    banner_required: false
+  - path: docs/architecture-meta-reflection-2026-05-08.en.md
+    reason: post-cycle-8 meta reflection (root-cause analysis + scoring framework; not a design document)
     active_scan: false
     banner_required: false

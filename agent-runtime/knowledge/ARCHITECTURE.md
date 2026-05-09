@@ -1,3 +1,10 @@
+> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
+> DEFERRED indefinitely in the refresh. Knowledge graph (Apache Jena) requires a customer demand to revive.
+> The authoritative L0 is `ARCHITECTURE.md`; the
+> systems-engineering plan is `docs/plans/architecture-systems-engineering-plan.md`.
+> This file is retained as v6 design rationale and will be
+> archived under `docs/v6-rationale/` at W0 close.
+
 # knowledge -- JSONB Glossary + 4-Layer Retrieval (L2)
 
 > **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) . L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)

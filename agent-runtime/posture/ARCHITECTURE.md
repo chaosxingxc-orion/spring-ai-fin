@@ -1,3 +1,10 @@
+> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
+> MOVED to `docs/cross-cutting/posture-model.md` in the refresh. The boot-time guard moves to `agent-platform/bootstrap/ARCHITECTURE.md`.
+> The authoritative L0 is `ARCHITECTURE.md`; the
+> systems-engineering plan is `docs/plans/architecture-systems-engineering-plan.md`.
+> This file is retained as v6 design rationale and will be
+> archived under `docs/v6-rationale/` at W0 close.
+
 # posture -- AppPosture + PostureBootGuard (L2)
 
 > **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) . L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)

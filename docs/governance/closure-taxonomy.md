@@ -2,6 +2,15 @@
 
 > Per `docs/systematic-architecture-improvement-plan-2026-05-07.en.md` sec-4.1 + `docs/systematic-architecture-remediation-plan-2026-05-08.en.md` sec-12.
 > Defines the status enum used in `architecture-status.yaml` and forbids `closed` (and equivalent shortcuts) as a status.
+>
+> **Refresh-aware (2026-05-08+)**: cycle-7 sec-D1 promoted `maturity`
+> (Rule 12 ladder; see `maturity-glossary.md`) to the primary readiness
+> field; the lifecycle field below is now `evidence_state` (a synonym
+> for the legacy `status`). The status enum below remains the same;
+> both `status:` and `evidence_state:` are accepted by the gate.
+> Per the 2026-05-08 refresh, refresh capability rows
+> (`refresh_*` keys in `architecture-status.yaml`) inherit this enum
+> directly; no new status values are introduced.
 
 ## Status enum
 

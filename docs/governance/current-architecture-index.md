@@ -3,11 +3,24 @@
 > Per `docs/systematic-architecture-remediation-plan-2026-05-08-cycle-4.en.md` sec-E1.
 > This file is the single index of **authoritative** design and governance documents at the current HEAD. Anything not listed here is either historical (banner-marked) or supplementary.
 
-## Hierarchy
+## Authoritative core (read these first)
+
+- [`ARCHITECTURE.md`](../../ARCHITECTURE.md) -- L0 platform architecture (continuous v6 line; 2026-05-08 refresh). OSS-first; nine quality attributes; three first-principles.
+- [`docs/plans/engineering-plan-W0-W4.md`](../plans/engineering-plan-W0-W4.md) -- the only document that schedules work and defines acceptance.
+- [`docs/plans/architecture-systems-engineering-plan.md`](../plans/architecture-systems-engineering-plan.md) -- doc-set drill-down (which L1 / L2 docs survive the refresh and which are deferred).
+- [`docs/architecture-meta-reflection-2026-05-08.en.md`](../architecture-meta-reflection-2026-05-08.en.md) -- root-cause analysis behind the refresh + 32-dimension scoring framework.
+
+## Hierarchy (cycle-1..8 corpus; pending W0 deprecation)
+
+> The layered hierarchy below is retained as design rationale until W0's
+> deprecation step moves the deferred subset under `docs/v6-rationale/`.
+> Do not start new work from the deferred entries; start from
+> `ARCHITECTURE.md` and the per-module L2 files marked
+> `refresh-active`.
 
 ### L0 -- System boundary
 
-- [`ARCHITECTURE.md`](../../ARCHITECTURE.md) -- platform purpose, scope, decisions, quality, risks across the whole system.
+- [`ARCHITECTURE.md`](../../ARCHITECTURE.md) -- platform purpose, scope, decisions, quality, risks (continuous v6; 2026-05-08 refresh).
 
 ### L1 -- Per-package
 

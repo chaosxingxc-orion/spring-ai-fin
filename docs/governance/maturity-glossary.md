@@ -2,6 +2,17 @@
 
 > Per `docs/systematic-architecture-improvement-plan-2026-05-07.en.md` sec-7 + CLAUDE.md Rule 12.
 > Defines the L0-L4 maturity ladder used in `architecture-status.yaml#capabilities[*].maturity`.
+>
+> **Refresh-aware (2026-05-08+)**: in the post-refresh repo every
+> capability is at L0 by design until W0..W4 lands code + Rule 4
+> three-layer tests. Promotion L0 -> L1 requires the wave's Acceptance
+> gates green (per `docs/plans/engineering-plan-W0-W4.md`). Promotion
+> L1 -> L2 requires a stable public contract + a snapshot test
+> (`OpenApiContractIT` for HTTP surfaces, schema-coverage IT for DB
+> surfaces). L3 requires posture-aware default-on per the posture
+> model (`docs/cross-cutting/posture-model.md`) plus an operator-shape
+> gate PASS at the SHA. L4 requires third-party extension evidence
+> (a customer or external module successfully extends without source).
 
 | Level | Name | Criterion |
 |---|---|---|

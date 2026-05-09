@@ -1,5 +1,15 @@
 # delivery -- Operator-shape gate evidence
 
+> **Refresh-aware (2026-05-08+)**: every wave (W0..W4 per
+> `docs/plans/engineering-plan-W0-W4.md`) closes with a delivery file
+> recording the wave's gate evidence. Architecture-sync and
+> operator-shape gates are recorded here per the cycle-1..8 conventions
+> below; the wave's score lift on the 32-dimension framework
+> (`docs/architecture-meta-reflection-2026-05-08.en.md`) and the
+> 240-dimension self-audit
+> (`docs/architecture-design-self-audit.md`) is reported in the
+> wave-close PR description, not in this delivery file.
+
 Per CLAUDE.md Rule 8 and `docs/systematic-architecture-improvement-plan-2026-05-07.en.md` sec-4.8.
 
 Every release SHA records its operator-shape gate run as `docs/delivery/<date>-<sha>.md`. Format:

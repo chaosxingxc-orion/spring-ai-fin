@@ -1,3 +1,10 @@
+> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
+> REPLACED in the refresh by OpenTelemetry traces (per `agent-runtime/observability/`) + an `audit_log` table owned by `agent-runtime/action/`. The v6 5-class taxonomy is dropped.
+> The authoritative L0 is `ARCHITECTURE.md`; the
+> systems-engineering plan is `docs/plans/architecture-systems-engineering-plan.md`.
+> This file is retained as v6 design rationale and will be
+> archived under `docs/v6-rationale/` at W0 close.
+
 # audit -- Audit Class Model + WORM Anchoring (L2)
 
 > **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) . L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)

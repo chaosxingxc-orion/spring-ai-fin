@@ -1,3 +1,10 @@
+> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
+> MOVED to `agent-platform/auth/ARCHITECTURE.md` in the refresh. Auth is a platform-edge concern; runtime trusts the upstream binding.
+> The authoritative L0 is `ARCHITECTURE.md`; the
+> systems-engineering plan is `docs/plans/architecture-systems-engineering-plan.md`.
+> This file is retained as v6 design rationale and will be
+> archived under `docs/v6-rationale/` at W0 close.
+
 # auth -- JWT Validation Primitives (L2)
 
 > **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) . L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)

@@ -258,6 +258,130 @@ capabilities:
     notes: "Updated by the cycle-8 audit-trail commit to point to the cycle-8 architectural SHA cc2e1e3 after evidence is produced. The manifest in docs/governance/evidence-manifest.yaml is the authoritative record; this ledger summarizes."
     allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml."
 
+  # ---- 2026-05-08 refresh capability rows (per refresh L2 modules) ----
+  # These rows correspond to the L2 docs created in the 2026-05-08
+  # architectural refresh. All maturity L0 by design (no code yet); each
+  # advances to L1 only after Rule 4 three-layer tests + a wave's
+  # Acceptance gate passes per docs/plans/engineering-plan-W0-W4.md.
+
+  refresh_web:
+    maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
+    l2_documents:
+      - agent-platform/web/ARCHITECTURE.md
+    target_wave: W0
+    refresh_role: northbound-controllers
+    allowed_claim: "Design accepted; W0 lands controllers + OpenAPI."
+
+  refresh_idempotency:
+    maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
+    l2_documents:
+      - agent-platform/idempotency/ARCHITECTURE.md
+    target_wave: W1
+    refresh_role: idempotency-key-dedup
+    allowed_claim: "Design accepted; W1 lands the filter + dedup table."
+
+  refresh_bootstrap:
+    maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
+    l2_documents:
+      - agent-platform/bootstrap/ARCHITECTURE.md
+    target_wave: W0
+    refresh_role: posture-boot-guard
+    allowed_claim: "Design accepted; W0 lands main class + PostureBootGuard."
+
+  refresh_config:
+    maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
+    l2_documents:
+      - agent-platform/config/ARCHITECTURE.md
+    target_wave: W2
+    refresh_role: per-tenant-config-overrides
+    allowed_claim: "Design accepted; W2 lands tenant_config + Spring Cloud Config."
+
+  refresh_run:
+    maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
+    l2_documents:
+      - agent-runtime/run/ARCHITECTURE.md
+    target_wave: W2
+    refresh_role: run-lifecycle-sync
+    supersedes: [agent_runtime_kernel]
+    allowed_claim: "Design accepted; W2 lands RunController + sync orchestrator."
+
+  refresh_tool:
+    maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
+    l2_documents:
+      - agent-runtime/tool/ARCHITECTURE.md
+    target_wave: W3
+    refresh_role: mcp-tool-registry
+    supersedes: [skill_runtime_authz]
+    allowed_claim: "Design accepted; W3 lands MCP registry + 2 reference tools."
+
+  refresh_memory:
+    maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
+    l2_documents:
+      - agent-runtime/memory/ARCHITECTURE.md
+    target_wave: W2/W3
+    refresh_role: tiered-memory
+    allowed_claim: "Design accepted; W2 lands L0/L1, W3 lands L2 pgvector."
+
+  refresh_temporal:
+    maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
+    l2_documents:
+      - agent-runtime/temporal/ARCHITECTURE.md
+    target_wave: W4
+    refresh_role: durable-workflows
+    allowed_claim: "Design accepted; W4 lands Temporal workflow + activities."
+
+  refresh_action:
+    maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
+    l2_documents:
+      - agent-runtime/action/ARCHITECTURE.md
+    target_wave: W3
+    refresh_role: actionguard-5-stage
+    supersedes: [action_guard]
+    allowed_claim: "Design accepted; W3 lands 5-stage chain + OPA bridge + audit_log."
+
+  refresh_eval:
+    maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
+    l2_documents:
+      - agent-eval/ARCHITECTURE.md
+    target_wave: W4
+    refresh_role: eval-harness
+    allowed_claim: "Design accepted; W4 lands canonical suite + nightly regression."
+
+  refresh_cross_cutting:
+    maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
+    l2_documents:
+      - docs/cross-cutting/posture-model.md
+      - docs/cross-cutting/security-control-matrix.md
+      - docs/cross-cutting/trust-boundary-diagram.md
+      - docs/cross-cutting/secrets-lifecycle.md
+      - docs/cross-cutting/supply-chain-controls.md
+      - docs/cross-cutting/observability-policy.md
+    target_wave: W0..W4
+    refresh_role: cross-cutting-policies
+    allowed_claim: "Design accepted; cross-cutting docs published under docs/cross-cutting/."
+
   operator_shape_smoke_gate:
     maturity: L0
     status: design_accepted
