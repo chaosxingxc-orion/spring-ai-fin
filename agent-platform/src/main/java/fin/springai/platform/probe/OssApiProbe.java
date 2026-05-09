@@ -1,14 +1,17 @@
 package fin.springai.platform.probe;
 
 /*
- * U1 -> U2 promotion probe for agent-platform critical-path deps.
+ * W0 U2 promotion probe for agent-platform critical-path deps.
  *
  * Imports the cited APIs from each pinned dep so a successful `mvn compile`
  * proves the API exists at the version pinned by the parent POM. Per
- * docs/cross-cutting/oss-bill-of-materials.md sec-6 (W0 promotes these to U2).
+ * docs/cross-cutting/oss-bill-of-materials.md (W0 promotes these to U2).
  *
- * This class has no runtime caller; it exists for the compiler. Runtime
- * import-checking is done at boot by Spring (configurations + autowiring).
+ * Spring Boot 4.0.5, Spring Security 6, Flyway 11.19.1, Resilience4j 2.4.0,
+ * Caffeine 3.2.4, springdoc-openapi 3.0.3, Logstash 8.0 verified at U2
+ * once this probe compiles.
+ *
+ * This class has no runtime caller; it exists for the compiler.
  */
 
 // Spring Web (Boot starter)
