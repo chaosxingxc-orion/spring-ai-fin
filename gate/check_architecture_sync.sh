@@ -837,11 +837,13 @@ runtime_error_message=""
     if [[ -n "$_artifact_state" && -n "$rule_8_state" ]]; then
       case "$_artifact_state" in
         none)
-          [[ "$rule_8_state" != "fail_closed_artifact_missing" ]] && \
-            fail "rule_8_state_machine_coherent" "artifact_present_state=none but rule_8.state=$rule_8_state (expected fail_closed_artifact_missing)" "$manifest_path" 0 ;;
+          if [[ "$rule_8_state" != "fail_closed_artifact_missing" ]]; then
+            fail "rule_8_state_machine_coherent" "artifact_present_state=none but rule_8.state=$rule_8_state (expected fail_closed_artifact_missing)" "$manifest_path" 0
+          fi ;;
         source_only)
-          [[ "$rule_8_state" != "fail_closed_needs_build" ]] && \
-            fail "rule_8_state_machine_coherent" "artifact_present_state=source_only but rule_8.state=$rule_8_state (expected fail_closed_needs_build)" "$manifest_path" 0 ;;
+          if [[ "$rule_8_state" != "fail_closed_needs_build" ]]; then
+            fail "rule_8_state_machine_coherent" "artifact_present_state=source_only but rule_8.state=$rule_8_state (expected fail_closed_needs_build)" "$manifest_path" 0
+          fi ;;
         jar_present)
           if [[ "$rule_8_state" != "fail_closed_needs_real_flow" && "$rule_8_state" != "pass" ]]; then
             fail "rule_8_state_machine_coherent" "artifact_present_state=jar_present but rule_8.state=$rule_8_state (expected fail_closed_needs_real_flow or pass)" "$manifest_path" 0
