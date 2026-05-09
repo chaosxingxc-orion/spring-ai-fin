@@ -815,6 +815,42 @@ runtime_error_message=""
     done
     unset buf
   fi
+
+  # 24. CI no-or-true mask (cycle-14 A1): gate/run_* calls in CI workflows
+  # must not be masked with || true. Removes the escape hatch that allowed a
+  # failing Rule 8 smoke gate to silently pass CI.
+  while IFS= read -r _wf_file; do
+    [[ -f "$_wf_file" ]] || continue
+    _wf_lineno=0
+    while IFS= read -r _wf_line; do
+      _wf_lineno=$((_wf_lineno + 1))
+      if [[ "$_wf_line" == *"gate/run_"* && "$_wf_line" == *"|| true"* ]]; then
+        fail "ci_no_or_true_mask" "CI workflow masks gate/run_* with '|| true' -- remove the mask or rename the step to *_report_only" "$_wf_file" $_wf_lineno
+      fi
+    done < "$_wf_file"
+  done < <(find .github/workflows -maxdepth 1 -name '*.yml' -type f 2>/dev/null || true)
+
+  # 25. Rule 8 state machine coherent (cycle-14 B1): artifact_present_state
+  # must agree with rule_8.state. Prevents internally-contradictory manifests.
+  if [[ -f "$manifest_path" ]]; then
+    _artifact_state=$(awk '/^artifact_present_state:/{gsub(/^artifact_present_state:[[:space:]]*/,""); gsub(/ #.*$/,""); gsub(/[[:space:]]*$/,""); print; exit}' "$manifest_path" 2>/dev/null || true)
+    if [[ -n "$_artifact_state" && -n "$rule_8_state" ]]; then
+      case "$_artifact_state" in
+        none)
+          [[ "$rule_8_state" != "fail_closed_artifact_missing" ]] && \
+            fail "rule_8_state_machine_coherent" "artifact_present_state=none but rule_8.state=$rule_8_state (expected fail_closed_artifact_missing)" "$manifest_path" 0 ;;
+        source_only)
+          [[ "$rule_8_state" != "fail_closed_needs_build" ]] && \
+            fail "rule_8_state_machine_coherent" "artifact_present_state=source_only but rule_8.state=$rule_8_state (expected fail_closed_needs_build)" "$manifest_path" 0 ;;
+        jar_present)
+          if [[ "$rule_8_state" != "fail_closed_needs_real_flow" && "$rule_8_state" != "pass" ]]; then
+            fail "rule_8_state_machine_coherent" "artifact_present_state=jar_present but rule_8.state=$rule_8_state (expected fail_closed_needs_real_flow or pass)" "$manifest_path" 0
+          fi ;;
+        *)
+          fail "rule_8_state_machine_coherent" "artifact_present_state has unknown value: $_artifact_state (valid: none | source_only | jar_present)" "$manifest_path" 0 ;;
+      esac
+    fi
+  fi
 } || {
   rule_body_succeeded=false
   runtime_error_message="rule body failed"
@@ -828,6 +864,7 @@ semantic_pass=true
 evidence_valid=true
 [[ "${tree_clean:-true}" == "false" ]] && evidence_valid=false
 [[ "$semantic_pass" == "false" ]] && evidence_valid=false
+[[ $local_only -eq 1 ]] && evidence_valid=false  # cycle-14 A2: local-only runs are never delivery-valid
 
 if [[ "$evidence_valid" == "true" ]]; then
   log_dir="gate/log"

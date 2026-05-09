@@ -43,6 +43,9 @@ schema_capabilities:
   local_vs_delivery_pass_distinguished: true     # cycle-9 sec-A2
   dependency_mode_recorded: true                 # cycle-9 sec-D2
   rule_8_eligibility_recorded: true              # cycle-9 sec-D2
+  rule_8_state_machine_coherent: true            # cycle-14 B1: artifact_present_state <-> rule_8.state cross-validation
+  ci_no_or_true_mask: true                       # cycle-14 A1: gate/run_* + || true forbidden in CI workflows
+  local_only_log_path_enforced: true             # cycle-14 A2: local-only runs always evidence_valid_for_delivery=false + gate/log/local/
   ledger_coverage_finding_to_capability: false   # W1
   cross_platform_ci_matrix: false                # W1
   fixture_test_suite: false                      # W1
@@ -116,12 +119,12 @@ operator_shape_logs:
   posix:
     state: missing_blocker
     path: null
-    reason: "FAIL_ARTIFACT_MISSING (no pom.xml / Spring Boot artifact). Logs go to gate/log/local/ (gitignored) and are NOT delivery evidence."
+    reason: "FAIL_NEEDS_BUILD (pom.xml + src present; no built JAR under agent-platform/target/; W0 mvn verify pending CI). Logs go to gate/log/local/ (gitignored) and are NOT delivery evidence. Full Rule 8 real-flow remains W4 deliverable."
   windows:
     state: missing_blocker
     path: null
-    reason: "FAIL_ARTIFACT_MISSING + pwsh availability not assumed; same blocker as posix."
-  unblocks_at: W0   # docs/plans/W0-evidence-skeleton.md
+    reason: "FAIL_NEEDS_BUILD + pwsh availability not assumed; same blocker as posix."
+  unblocks_at: W4   # real Rule 8 flow (real deps + N>=3 sequential runs) is W4; advance to FAIL_NEEDS_REAL_FLOW once JAR built
 
 # Cycle-8 sec-A2 + cycle-9 sec-A2: self-test PASS at the evidence commit
 # SHA is required for delivery validity. The pass type below
@@ -140,9 +143,9 @@ self_test:
 # `dependency_mode=fake` OR `rule_8_eligible=false`.
 operator_shape_evidence:
   dependency_mode: fake             # one of: fake | real | not_applicable
-  rule_8_eligible: false            # only true when dependency_mode=real AND artifact_present=true
+  rule_8_eligible: false            # only true when dependency_mode=real AND artifact_present_state=jar_present
   provider_access_log_evidence: null   # path to log proving real-provider HTTP traffic
-  reason: "Pre-W0: no runnable artifact; rule_8.state=fail_closed_artifact_missing. CI smoke (when added in W2) will be ci_operator_shape_smoke and remain rule_8_eligible=false until real-dependency runs land in W4."
+  reason: "Cycle-13 Phase B step 1: pom.xml + src present; JAR not built. CI mvn verify is the next signal (blocking step in .github/workflows/ci.yml). Real-dependency runs land in W4; CI smoke (if added) remains rule_8_eligible=false until then."
 
 rule_8:
   state: fail_closed_needs_build      # cycle-13: pom.xml + src present; JAR not built; Rule 8 still fail-closed.
@@ -227,6 +230,16 @@ status_findings_addressed:
     - REM-2026-05-08-C7-7
     - REM-2026-05-08-C7-8
     - REM-2026-05-08-C7-9
+  cycle_14:
+    - REM-2026-05-09-C14-1   # A1: CI bypass eliminated; operator-shape smoke removed from CI until W0
+    - REM-2026-05-09-C14-2   # A2: local-only enforcement in gate scripts; self-test fixture added
+    - REM-2026-05-09-C14-3   # B1: Rule 8 evidence state machine reconciled; new gate rule
+    - REM-2026-05-09-C14-4   # B2: maturity field removed from cycle-13 REM entries
+    - REM-2026-05-09-C14-5   # C1: W0 posture guard re-scoped to W1; bootstrap L2 narrowed
+    - REM-2026-05-09-C14-6   # C2: WebSecurityConfig.java Swagger permits removed; web L2 updated
+    - REM-2026-05-09-C14-7   # D1: build_verification field added; capability stays L0 until CI green
+    - REM-2026-05-09-C14-8   # D2: W0 acceptance criteria revised to behavior gates; step-1 label
+    - REM-2026-05-09-C14-9   # E1: Dockerfile dependency:go-offline no longer masks failure
   cycle_8:
     - REM-2026-05-08-C8-1   # A1: CRLF + .gitattributes + eol_policy gate rule
     - REM-2026-05-08-C8-2   # A2: self-test required for delivery
@@ -242,5 +255,12 @@ status_findings_addressed:
 authoritative_index: docs/governance/current-architecture-index.md
 authoritative_index_last_updated_in_cycle: cycle-8
 
-artifact_present: false
+artifact_present_state: source_only   # cycle-14 B1: enum none | source_only | jar_present; was artifact_present: false (pre-cycle-14 pre-source state)
 test_reference_state_default: planned   # cycle-7 sec-C2: explicit field for test references
+
+# cycle-14 D1: build verification state tracks CI readiness for L0->L1 promotion.
+build_verification:
+  state: pending_ci              # pending_ci | green | red
+  blocking_for_l1_promotion: true
+  ci_workflow: .github/workflows/ci.yml
+  notes: "Author env lacks mvn/java/docker. CI runs mvn -B -ntp --strict-checksums verify on every push. Capability agent_platform_facade stays L0 until CI green AND HealthEndpointIT green on the recorded SHA. When CI green, next audit-trail commit advances state to green and promotes agent_platform_facade L0->L1."

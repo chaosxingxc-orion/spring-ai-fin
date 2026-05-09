@@ -95,15 +95,16 @@
 
 ## Gates
 
-- `gate/check_architecture_sync.{ps1,sh}` -- architecture-sync gate (cycle-8-evidence-graph-v3 + cycle-9 truth-cut rules).
-- `gate/run_operator_shape_smoke.{ps1,sh}` -- Rule 8 operator-shape smoke gate (fail-closed pre-W0).
-- `gate/test_architecture_sync_gate.sh` -- self-test harness.
+- `gate/check_architecture_sync.{ps1,sh}` -- architecture-sync gate (cycle-8-evidence-graph-v3 + cycle-9 truth-cut + cycle-14 ci_no_or_true_mask + rule_8_state_machine_coherent + local_only_log_path_enforced rules).
+- `gate/run_operator_shape_smoke.{ps1,sh}` -- Rule 8 operator-shape smoke gate (fail-closed; FAIL_NEEDS_BUILD state; NOT in CI until W0 acceptance).
+- `gate/test_architecture_sync_gate.sh` -- self-test harness (cycle-14: added local-only evidence-validity fixture).
 - [`gate/README.md`](../../gate/README.md)
 
 ## Delivery evidence
 
 - [`docs/delivery/README.md`](../delivery/README.md) -- delivery rules.
-- [`docs/delivery/2026-05-08-f98dbae.md`](../delivery/2026-05-08-f98dbae.md) -- cycle-13 Phase B step 1 (current authoritative).
+- `docs/delivery/2026-05-09-<cycle-14-sha>.md` -- cycle-14 response (pending; will be the current authoritative after the audit-trail commit).
+- [`docs/delivery/2026-05-08-f98dbae.md`](../delivery/2026-05-08-f98dbae.md) -- cycle-13 Phase B step 1.
 - [`docs/delivery/2026-05-08-71b77c6.md`](../delivery/2026-05-08-71b77c6.md) -- cycle-12 Phase A close.
 - [`docs/delivery/2026-05-08-2a29eb5.md`](../delivery/2026-05-08-2a29eb5.md) -- cycle-11 OSS BoM + verification ladder.
 - [`docs/delivery/2026-05-08-7b1fa8c.md`](../delivery/2026-05-08-7b1fa8c.md) -- cycle-10 self-driven systematic review.

@@ -54,10 +54,13 @@ wave), G 4/6, C 3/5, E 1/5. Aggregate target: **23/32 by end-of-W4.**
 ### 2.1 Goal
 
 Make the repo a runnable Spring Boot application with Postgres-backed
-persistence, an authenticated `/health` endpoint, and one passing
-end-to-end test against a real local Postgres. Replace the v6
-documentation tower's claim of "the platform" with an actual minimal
-artifact.
+persistence, a `/health` endpoint, and one passing end-to-end test
+against a real local Postgres. Replace the v6 documentation tower's
+claim of "the platform" with an actual minimal artifact.
+
+**Current state (cycle-14): W0 skeleton step 1 is committed (pom.xml + src tree +
+HealthEndpointIT) but not yet compiled or tested by CI. W0 acceptance requires the
+behavior gates in sec-2.7 to turn green.**
 
 ### 2.2 Scope (in)
 
@@ -120,21 +123,48 @@ Total glue: ~730 LOC.
 
 ### 2.6 Tests
 
+#### Step 1 done (cycle-13)
+
 | Test name | Layer | Asserts |
 |---|---|---|
 | `HealthEndpointIT` | Integration (Testcontainers Postgres) | GET `/v1/health` -> 200 + body shape |
-| `FlywayMigrationIT` | Integration | Migration applies cleanly to fresh DB |
-| `BuildSmokeTest` | CI | `mvn -q package` exits 0 |
+
+#### Remaining for W0 acceptance
+
+| Test name | Layer | Status |
+|---|---|---|
+| `FlywayMigrationIT` | Integration | pending (or formally deferred to W1) |
+| `BuildSmokeTest` | CI | pending (blocked on CI green) |
 
 ### 2.7 Acceptance gates (must all pass)
 
-- R1 = 1: `mvn -q package` exits 0 in CI on Linux runner.
-- R2 >= 700 LOC committed (counts only `src/main/java`).
-- R3 >= 200 LOC committed (counts only `src/test/java`).
-- R6 = 1: `docker compose up` brings the app online + Postgres + the
-  health endpoint returns 200 within 60s of start.
-- HealthEndpointIT green in CI.
+Behavior gates (cycle-14 D2: replaced R2/R3 LOC gates with these):
+
+- **B1**: `mvn -B -ntp --strict-checksums verify` exits 0 in CI on Linux runner.
+- **B2**: `HealthEndpointIT` passes with real Testcontainers Postgres in CI.
+- **B3**: `FlywayMigrationIT` passes, OR is formally moved to W1 acceptance with a
+  recorded architecture-status.yaml entry.
+- **B4**: Posture guard tests (`PostureBootGuardResearchIT`, `PostureBootGuardProdIT`,
+  `PostureBootGuardDevIT`) are deferred to W1 per cycle-14 C1 re-scope.
+- **R6**: `docker compose up` brings the app online + Postgres + the health endpoint
+  returns 200 within 60s of start.
 - v6 supersession banner committed.
+
+#### 2.7.1 W0 step-1 outcome (cycle-13 f98dbae)
+
+Done:
+- [x] Maven multi-module scaffold with BoM-pinned versions
+- [x] W0 minimal Spring Boot skeleton with /v1/health
+- [x] HealthEndpointIT Testcontainers test committed
+- [x] Probe code per critical-path dep (cited APIs imported)
+- [x] Dockerfile + compose + CI workflow (mvn verify blocking)
+- [x] Operator-shape smoke gate tri-state
+
+Pending for W0 acceptance:
+- [ ] CI green on mvn verify (B1)
+- [ ] CI green on HealthEndpointIT (B2)
+- [ ] FlywayMigrationIT decision (B3)
+- [ ] R6 docker compose smoke
 
 ### 2.8 Out-of-scope reviewer findings during W0
 

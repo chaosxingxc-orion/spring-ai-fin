@@ -26,11 +26,16 @@ A PASS from these gates only means the document corpus is internally consistent.
 | Invocation | Working tree | `evidence_valid_for_delivery` | Use |
 |---|---|---|---|
 | `bash check_architecture_sync.sh` (default) | must be clean | `true` on PASS | the only mode whose log a delivery file may reference |
-| `bash check_architecture_sync.sh --local-only` | may be dirty | `false` always | local development; cannot be referenced by delivery |
+| `bash check_architecture_sync.sh --local-only` | may be dirty | `false` always (enforced by script) | local development; cannot be referenced by delivery |
 | `pwsh check_architecture_sync.ps1` (default) | must be clean | `true` on PASS | Windows equivalent |
-| `pwsh check_architecture_sync.ps1 -LocalOnly` | may be dirty | `false` always | Windows local development |
+| `pwsh check_architecture_sync.ps1 -LocalOnly` | may be dirty | `false` always (enforced by script) | Windows local development |
 
-The two scripts emit equivalent semantic results.
+The two scripts emit equivalent semantic results. **Local-only enforcement is done by the script itself** (cycle-14 A2): even on a clean tree, `--local-only` / `-LocalOnly` forces `evidence_valid_for_delivery=false` and always writes under `gate/log/local/`. The `gate/log/self-test-*.sh` fixture verifies this invariant.
+
+Two additional gate rules are enforced by both scripts (cycle-14 A1 and B1):
+
+- `ci_no_or_true_mask`: scans `.github/workflows/*.yml` and fails if any line that calls `gate/run_*` also contains `|| true`. Prevents a silently-ignored operator-shape smoke result from masking CI failure.
+- `rule_8_state_machine_coherent`: cross-validates `artifact_present_state` against `rule_8.state` in the manifest. Valid pairs: `none ↔ fail_closed_artifact_missing`, `source_only ↔ fail_closed_needs_build`, `jar_present ↔ fail_closed_needs_real_flow | pass`.
 
 ## Operator-shape smoke gate -- fail-closed pre-W0; runnable-flow post-W0
 

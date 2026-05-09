@@ -1316,19 +1316,22 @@ findings:
     capability: l0_architecture
     notes: "Phase A closed. Phase B trigger pending."
 
+  # REM entries record remediation tasks. They do NOT carry capability `maturity`
+  # -- only capability rows do. Use `status` for REM lifecycle.
+  # Cycle-14 B2: removed maturity field from REM entries below (it mixed task
+  # recording with capability progression; L1 on design_accepted entries was incorrect).
+
   # ---- Cycle-13 Phase B step 1: Maven scaffolding + W0 skeleton ----
   REM-2026-05-09-C13-1:
     source: user-decision-2026-05-09 (Option A autonomous)
     description: "Maven multi-module scaffold added: root pom.xml (parent inheriting Spring Boot 3.5.0 + spring-ai-bom 1.0.7 + spring-cloud BOM 2024.0.0 + temporal 1.34.0 + mcp 2.0.0-M2 + Resilience4j 2.2.0 + Caffeine 3.1.8 + Flyway 10.21.0 + Testcontainers 1.20.4 + WireMock 3.9.1 + RestAssured 5.5.0 + OTel agent 2.10.0 + logstash-logback 8.0 + springdoc 2.6.0 + Tika 2.9.2 + ArchUnit 1.3.0); agent-platform/pom.xml; agent-runtime/pom.xml; agent-eval/pom.xml. All version pins traceable to docs/cross-cutting/oss-bill-of-materials.md."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0
     capability: agent_platform_facade
   REM-2026-05-09-C13-2:
     source: user-decision-2026-05-09 (Option A autonomous)
-    description: "W0 minimal Spring Boot skeleton: PlatformApplication.java; HealthController returning UP + sha + db_ping_ns + ts; HealthCheckRepository proving JdbcTemplate reaches Postgres; V1__init.sql Flyway migration creating health_check singleton; application.yml with virtual threads on + HikariCP + Flyway + posture marker; WebSecurityConfig permitting /v1/health + actuator + OpenAPI in W0 (full oauth2-resource-server lands in W1); HealthEndpointIT.java Testcontainers-based E2E test."
-    maturity: L1
+    description: "W0 minimal Spring Boot skeleton: PlatformApplication.java; HealthController returning UP + sha + db_ping_ns + ts; HealthCheckRepository proving JdbcTemplate reaches Postgres; V1__init.sql Flyway migration creating health_check singleton; application.yml with virtual threads on + HikariCP + Flyway + posture marker; WebSecurityConfig permitting /v1/health + actuator only (Swagger removed in cycle-14 C2); HealthEndpointIT.java Testcontainers-based E2E test."
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0
@@ -1336,7 +1339,6 @@ findings:
   REM-2026-05-09-C13-3:
     source: user-decision-2026-05-09 (Option A autonomous)
     description: "Probe code committed for U1 -> U2 promotion. agent-platform/.../probe/OssApiProbe.java imports cited APIs from Spring Web, Spring Security oauth2-resource-server, JdbcTemplate, Flyway, Resilience4j (CircuitBreaker + RateLimiter), Caffeine, Spring Cloud Vault, Hibernate Validator, springdoc, Micrometer, logstash-logback. agent-runtime/.../probe/OssApiProbe.java imports Spring AI (ChatClient, ChatModel, EmbeddingModel, VectorStore), Temporal Java SDK (Workflow, WorkflowInterface, WorkflowMethod, ActivityInterface, ActivityMethod, WorkflowClient + Workflow.getVersion compile-time signature check), Apache Tika (AutoDetectParser, Metadata). MCP class names deliberately not cited in probe (2.0.0-M2 milestone; W3 wave commits the real surface)."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0
@@ -1344,8 +1346,7 @@ findings:
     notes: "U2 promotion pending user's mvn -B compile run. Author env lacks Java + Maven; user verifies."
   REM-2026-05-09-C13-4:
     source: user-decision-2026-05-09 (Option A autonomous)
-    description: "Operations scaffolding: Dockerfile (Maven 3.9 + Eclipse Temurin 21 build stage; distroless Java 21 runtime; layer-cached dependency fetch); ops/compose.yml (Postgres 16-alpine + agent-platform with health-checks + APP_POSTURE=dev); .github/workflows/ci.yml (Java 21 setup + mvn verify + architecture-sync gate + self-test + operator-shape smoke + test-results upload)."
-    maturity: L1
+    description: "Operations scaffolding: Dockerfile (Maven 3.9 + Eclipse Temurin 21 build stage; distroless Java 21 runtime; layer-cached dependency fetch; cycle-14 E1 removed || true from prefetch step); ops/compose.yml (Postgres 16-alpine + agent-platform with health-checks + APP_POSTURE=dev); .github/workflows/ci.yml (Java 21 setup + mvn verify + architecture-sync gate + self-test + test-results upload; cycle-14 A1 removed operator-shape smoke step until W0 acceptance)."
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0
@@ -1353,8 +1354,63 @@ findings:
   REM-2026-05-09-C13-5:
     source: user-decision-2026-05-09 (Option A autonomous)
     description: "Operator-shape smoke gate advanced from FAIL_ARTIFACT_MISSING to tri-state: FAIL_ARTIFACT_MISSING (no pom + no src) | FAIL_NEEDS_BUILD (pom + src present; no JAR; cycle-13 state) | FAIL_NEEDS_REAL_FLOW (JAR present; no real Rule 8 flow yet, W4 deliverable). Manifest rule_8.state advanced from fail_closed_artifact_missing to fail_closed_needs_build; unblocks_at W4. Gate scripts both POSIX + PowerShell."
-    maturity: L1
     status: implemented_unverified
     evidence_state: implemented_unverified
     target_wave: W4
     capability: operator_shape_smoke_gate
+
+  # ---- Cycle-14: response to cycle-14 reviewer findings ----
+  REM-2026-05-09-C14-1:
+    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-14.en.md
+    description: "A1: CI bypass eliminated. Operator-shape smoke step removed from .github/workflows/ci.yml until W0 build acceptance lands. New gate rule ci_no_or_true_mask scans .github/workflows/*.yml for forbidden || true masks on gate/run_* lines. Reintroduce smoke as blocking step when agent-platform/target/agent-platform-*.jar is produced."
+    status: design_accepted
+    target_wave: W0
+    capability: operator_shape_smoke_gate
+  REM-2026-05-09-C14-2:
+    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-14.en.md
+    description: "A2: local-only architecture-sync can no longer emit delivery-valid evidence. Both check_architecture_sync.{sh,ps1} force evidence_valid_for_delivery=false when local_only is set, and always write under gate/log/local/. New self-test fixture verifies this. New schema capability local_only_log_path_enforced."
+    status: design_accepted
+    target_wave: W0
+    capability: architecture_sync_gate
+  REM-2026-05-09-C14-3:
+    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-14.en.md
+    description: "B1: Rule 8 evidence state machine reconciled. operator_shape_logs.*.reason updated to FAIL_NEEDS_BUILD; unblocks_at changed to W4; operator_shape_evidence.reason updated; artifact_present: false replaced by artifact_present_state: source_only. New gate rule rule_8_state_machine_coherent enforces cross-field agreement."
+    status: design_accepted
+    target_wave: W0
+    capability: operator_shape_smoke_gate
+  REM-2026-05-09-C14-4:
+    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-14.en.md
+    description: "B2: maturity field removed from cycle-13 REM entries (C13-1 through C13-5). REM entries record remediation tasks, not capabilities; only capability rows carry maturity (L0..L4 per Rule 12). Comment added to REM section header."
+    status: design_accepted
+    target_wave: W0
+    capability: l0_architecture
+  REM-2026-05-09-C14-5:
+    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-14.en.md
+    description: "C1: W0 posture guard re-scoped to W1. agent-platform/bootstrap/ARCHITECTURE.md narrowed to W0 lite (posture marker only; no required-config validation). PostureBootGuard.java + RequiredConfig.java + per-posture ITs move to W1 acceptance."
+    status: design_accepted
+    target_wave: W1
+    capability: posture_model
+  REM-2026-05-09-C14-6:
+    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-14.en.md
+    description: "C2: W0 SecurityFilterChain Swagger permits removed (1-line WebSecurityConfig.java trim). WebSecurityConfig.java now permits only /v1/health and /actuator/**. agent-platform/web/ARCHITECTURE.md updated: W0 does not expose Swagger; W1 adds posture-aware exposure."
+    status: design_accepted
+    target_wave: W0
+    capability: agent_platform_facade
+  REM-2026-05-09-C14-7:
+    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-14.en.md
+    description: "D1: build_verification field added to evidence-manifest.yaml (state: pending_ci). Capability agent_platform_facade stays L0 until CI mvn verify green AND HealthEndpointIT green on the recorded SHA. Maven Wrapper deferred (cycle-13 documented Apache mirror 404)."
+    status: design_accepted
+    target_wave: W0
+    capability: agent_platform_facade
+  REM-2026-05-09-C14-8:
+    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-14.en.md
+    description: "D2: W0 acceptance criteria revised. engineering-plan-W0-W4.md sec-2.7 replaces R2/R3 LOC gates with behavior gates B1..B4 (mvn verify green; HealthEndpointIT green; FlywayMigrationIT green or W1; posture guard tests deferred to W1 per C14-5). Current cycle-13 state renamed 'W0 skeleton step 1'."
+    status: design_accepted
+    target_wave: W0
+    capability: agent_platform_facade
+  REM-2026-05-09-C14-9:
+    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-14.en.md
+    description: "E1: Dockerfile dependency:go-offline no longer masks failure. || true removed from line 17. Image build fails fast on supply-chain / artifact-resolution / checksum errors."
+    status: design_accepted
+    target_wave: W0
+    capability: agent_platform_facade

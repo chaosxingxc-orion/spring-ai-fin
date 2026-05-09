@@ -1,7 +1,7 @@
-# agent-platform/web -- L2 architecture (2026-05-08 refresh)
+# agent-platform/web -- L2 architecture (2026-05-08 refresh; cycle-14 update)
 
 > Owner: platform | Wave: W0 | Maturity: L0 | Reads: -- | Writes: --
-> Last refreshed: 2026-05-08
+> Last refreshed: 2026-05-09 (cycle-14 C2: Swagger not exposed in W0)
 
 ## 1. Purpose
 
@@ -16,7 +16,7 @@ for any per-request state.
 | Spring Boot starter web | 3.5.x | DispatcherServlet, MessageConverters |
 | Hibernate Validator | (BOM) | `@Valid` |
 | Jackson | (BOM) | JSON |
-| springdoc-openapi-starter-webmvc-ui | 2.x | OpenAPI doc + Swagger UI |
+| springdoc-openapi-starter-webmvc-ui | 2.x | OpenAPI doc + Swagger UI (W1+) |
 | Resilience4j | 2.x | `@RateLimiter` annotations |
 
 ## 3. Glue we own
@@ -28,27 +28,38 @@ for any per-request state.
 | `web/RunController.java` (proxy to runtime) | `/v1/runs` (W2) | 80 |
 | `web/GlobalExceptionHandler.java` | `@ControllerAdvice` | 80 |
 | `web/ProblemDetail.java` (record) | RFC-7807 | 30 |
-| `web/OpenApiConfig.java` | securitySchemes, info | 50 |
+| `web/OpenApiConfig.java` | securitySchemes, info (W1) | 50 |
 
 ## 4. Public contract
 
-OpenAPI 3.0 generated at `/v3/api-docs`, served at `/swagger-ui`.
-Versioned URL prefix `/v1/`. RFC-7807 problem-details on errors. All
-4xx have a stable `type` URI.
+Versioned URL prefix `/v1/`. RFC-7807 problem-details on errors. All 4xx have a stable `type` URI.
+
+**W0**: only `/v1/health` and `/actuator/**` are exposed. OpenAPI (`/v3/api-docs`) and
+Swagger UI (`/swagger-ui`) are NOT permitted by the W0 `WebSecurityConfig` (cycle-14 C2).
+
+**W1+**: `WebSecurityConfig` adds posture-aware Swagger exposure per the table in sec-5.
 
 ## 5. Posture-aware defaults
 
-| Aspect | dev | research | prod |
-|---|---|---|---|
-| `/swagger-ui` exposed | yes | localhost only | localhost only |
-| Stack traces in error body | yes | no | no |
-| Detailed validation messages | yes | minimal | minimal |
+| Aspect | W0 | dev (W1+) | research (W1+) | prod (W1+) |
+|---|---|---|---|---|
+| `/swagger-ui` exposed | not exposed | yes | localhost only | localhost only |
+| `/v3/api-docs` exposed | not exposed | yes | localhost only | localhost only |
+| Stack traces in error body | yes | yes | no | no |
+| Detailed validation messages | yes | yes | minimal | minimal |
 
 ## 6. Tests
+
+### W0
 
 | Test | Layer | Asserts |
 |---|---|---|
 | `HealthEndpointIT` | Integration | 200 + body schema |
+
+### W1 (planned)
+
+| Test | Layer | Asserts |
+|---|---|---|
 | `ValidationProblemDetailIT` | Integration | 400 + RFC-7807 body |
 | `OpenApiContractIT` | Integration | `/v3/api-docs` parses + matches pinned snapshot |
 | `Generic5xxNoLeakIT` | Integration (research) | unhandled exception -> 500 + sanitized body |
@@ -60,12 +71,13 @@ Versioned URL prefix `/v1/`. RFC-7807 problem-details on errors. All
 
 ## 8. Wave landing
 
-W0 brings `HealthController`, `OpenApiConfig`, `GlobalExceptionHandler`.
-W1 adds `WorkspaceController`. W2 adds `RunController` proxy.
+W0 brings `HealthController` + minimal `WebSecurityConfig` (health + actuator only).
+W1 adds `WorkspaceController`, `OpenApiConfig`, posture-aware Swagger exposure, and
+`GlobalExceptionHandler`. W2 adds `RunController` proxy.
 
 ## 9. Risks
 
 - DispatcherServlet + virtual threads: enabled by
   `spring.threads.virtual.enabled=true`; verified by load test in W2.
-- OpenAPI drift: `OpenApiContractIT` pins the schema; breaking changes
+- OpenAPI drift: `OpenApiContractIT` (W1) pins the schema; breaking changes
   bump the version prefix.
