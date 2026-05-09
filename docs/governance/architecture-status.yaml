@@ -252,10 +252,10 @@ capabilities:
     tests: []
     operator_gate: null
     open_findings: []
-    latest_semantic_pass_sha: 2a29eb5        # cycle-11 OSS BoM + U0..U4 verification ladder + Spring AI/Temporal/MCP version pins
-    latest_delivery_valid_sha: 2a29eb5
-    latest_delivery_file: docs/delivery/2026-05-08-2a29eb5.md
-    notes: "Updated by the cycle-11 audit-trail commit. The manifest is the authoritative record; this ledger summarizes."
+    latest_semantic_pass_sha: 71b77c6        # cycle-12 Phase A close (interaction sequences + v1 customer profile + 15-ADR decision register)
+    latest_delivery_valid_sha: 71b77c6
+    latest_delivery_file: docs/delivery/2026-05-08-71b77c6.md
+    notes: "Updated by the cycle-12 audit-trail commit. The manifest is the authoritative record; this ledger summarizes. Phase A complete at this SHA."
     allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml."
 
   # ---- 2026-05-08 refresh capability rows (per refresh L2 modules) ----
