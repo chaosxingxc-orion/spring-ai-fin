@@ -66,6 +66,55 @@
         <version>${project.version}</version>
       </dependency>
 
+      <!-- Capability starters (embedded defaults) -->
+      <dependency>
+        <groupId>fin.springai</groupId>
+        <artifactId>spring-ai-fin-memory-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>fin.springai</groupId>
+        <artifactId>spring-ai-fin-skills-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>fin.springai</groupId>
+        <artifactId>spring-ai-fin-knowledge-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>fin.springai</groupId>
+        <artifactId>spring-ai-fin-governance-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>fin.springai</groupId>
+        <artifactId>spring-ai-fin-persistence-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <!-- Optional sidecar adapter starters -->
+      <dependency>
+        <groupId>fin.springai</groupId>
+        <artifactId>spring-ai-fin-mem0-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>fin.springai</groupId>
+        <artifactId>spring-ai-fin-graphmemory-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>fin.springai</groupId>
+        <artifactId>spring-ai-fin-docling-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>fin.springai</groupId>
+        <artifactId>spring-ai-fin-langchain4j-profile</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- ============================================================ -->
       <!-- Platform: Spring AI (milestone — GA expected mid-2026)       -->
       <!-- ============================================================ -->
