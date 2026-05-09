@@ -12,7 +12,7 @@ set -euo pipefail
 DEADLINE="2026-08-01"
 POM="pom.xml"
 
-version=$(grep -oP '(?<=<spring-ai\.version>)[^<]+' "$POM" 2>/dev/null | head -1 || true)
+version=$(grep '<spring-ai\.version>' "$POM" 2>/dev/null | sed 's/.*<spring-ai\.version>\([^<]*\).*/\1/' | head -1 || true)
 
 if [[ -z "$version" ]]; then
   echo "ERROR: could not find <spring-ai.version> in $POM" >&2
