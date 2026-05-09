@@ -58,12 +58,12 @@ schema_capabilities:
 # of cycle-8's remediation. The gate derives it from HEAD when verifying
 # audit_trail_shape.
 
-reviewed_content_sha: 18d637e                       # W0 architectural SHA (Maven Wrapper + Boot 4 / AI 2.0-M5 upgrade + OSS BoM U2 + Tier C manifest + gate style fix)
-evidence_commit_parent_sha: 18d637e                 # MUST equal reviewed_content_sha (gate enforced)
+reviewed_content_sha: ec8daca                       # W0 finishing SHA (Steps 9-12: BoM starters, SPI freeze rules, milestone gate, dev-env + sdk-versioning docs)
+evidence_commit_parent_sha: ec8daca                 # MUST equal reviewed_content_sha (gate enforced)
 evidence_commit_classification: audit_trail_only    # one of: direct_reviewed_content | audit_trail_only
 
 # Backward compatibility with v1/v2 readers (cycle-5/cycle-6/cycle-7).
-reviewed_sha: 18d637e
+reviewed_sha: ec8daca
 
 current_head_policy:
   accepted_shapes:
@@ -78,7 +78,7 @@ current_head_policy:
 
 # ---- Delivery and logs (cycle-8 sec-B1, sec-B2, sec-B3) ----
 
-delivery_file: docs/delivery/2026-05-10-18d637e.md   # W0 delivery: Boot 4 / AI 2.0-M5 + OSS BoM U2 + Tier C manifest
+delivery_file: docs/delivery/2026-05-10-ec8daca.md   # W0 delivery: Steps 9-12 finishing work (BoM starters + SPI freeze + milestone gate + dev docs)
 
 # Per cycle-8 sec-B3: log slots use the explicit state enum, never null.
 # Per cycle-8 sec-B1: when state == pass, path MUST exist and the log's
@@ -87,8 +87,8 @@ delivery_file: docs/delivery/2026-05-10-18d637e.md   # W0 delivery: Boot 4 / AI 
 architecture_sync_logs:
   posix:
     state: pass
-    path: gate/log/18d637e-posix.json
-    log_sha: 18d637e
+    path: gate/log/ec8daca-posix.json
+    log_sha: ec8daca
   windows:
     state: missing_blocker
     path: null
@@ -131,8 +131,8 @@ operator_shape_logs:
 # distinguishes a local-only run from a delivery-valid run.
 self_test:
   state: pass
-  pass_sha: 18d637e
-  log_path: gate/log/self-test-18d637e.json
+  pass_sha: ec8daca
+  log_path: gate/log/self-test-ec8daca.json
   blocking_for_delivery: true
   pass_type: delivery_valid_pass    # one of: local_semantic_pass | delivery_valid_pass
 
@@ -255,7 +255,7 @@ status_findings_addressed:
 authoritative_index: docs/governance/current-architecture-index.md
 authoritative_index_last_updated_in_cycle: cycle-8
 
-artifact_present_state: jar_present   # W0: mvn verify GREEN locally at 18d637e; JARs in target/ (gitignored); source + JAR both present
+artifact_present_state: jar_present   # W0: mvn verify GREEN locally at ec8daca; JARs in target/ (gitignored); source + JAR both present
 test_reference_state_default: planned   # cycle-7 sec-C2: explicit field for test references
 
 # cycle-14 D1 + W0: build verification state tracks CI readiness for L0->L1 promotion.
@@ -263,4 +263,4 @@ build_verification:
   state: green                   # pending_ci | green | red
   blocking_for_l1_promotion: false
   ci_workflow: .github/workflows/ci.yml
-  notes: "W0: mvn verify GREEN locally at sha 18d637e (Boot 4.0.5 + AI 2.0.0-M5). JARs produced in target/ (gitignored). CI confirmation pending next push to remote. agent_platform_facade advances L0->L1 when HealthEndpointIT GREEN on CI."
+  notes: "W0: mvn verify GREEN locally at sha ec8daca (Boot 4.0.5 + AI 2.0.0-M5 + Steps 9-12 finishing). JARs produced in target/ (gitignored). CI confirmation pending next push to remote. agent_platform_facade advances L0->L1 when HealthEndpointIT GREEN on CI."
