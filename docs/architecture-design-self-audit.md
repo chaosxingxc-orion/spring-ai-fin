@@ -6,13 +6,27 @@
 > that getting to a max score is a multi-week, multi-commit effort and
 > exposes specific gaps at every L0/L1/L2 surface.
 >
-> **Last audit:** 2026-05-09 (Round 2 -- after gap-fix commits R2.A..R2.F)
-> **Round 1 baseline:** 853 / 960 (88.9%)
-> **Round 2 score:** 956 / 960 (99.6%) -- see Section 5.
-> **Round 3 score:** 960 / 960 (100% of design-time cap) after the
-> three-doc governance refresh closed G5.12, G5.13, G5.14.
-> **Note:** 100% here means "every design-time dim is at level 4." Level 5
-> dims unlock only after W0+ produces code + tests + production traces.
+> **Last audit:** 2026-05-09 (Round 4 -- after cycle-9 truth-cut + G7 group added)
+> **Headline:** **every refresh capability is maturity L0** (per Rule 12).
+> No code; no tests; no Rule 8 PASS. Promotion to L1 requires a wave
+> closing per the engineering plan.
+>
+> The 240+ dim self-audit score is a **secondary diagnostic** describing
+> the documentation surface only -- it is NOT a shipping claim, NOT a
+> promotion of capability maturity, and NOT Rule 8 evidence.
+> Per cycle-9 sec-E1, percent language is no longer used as the
+> headline. Maturity L0..L4 is the readiness language.
+>
+> History (for traceability only):
+> - Round 1 baseline: 853 / 960 design-time dims.
+> - Round 2: +103 dims after R2.A..R2.F.
+> - Round 3: +4 dims after the three-doc governance refresh (G5.12..G5.14).
+> - Round 4 (this cycle): +25 dims for the new G7 group "Active-corpus
+>   exclusivity"; G7 baseline is **22 / 25** because cycle-9 closed the
+>   active-corpus split + index subset + ActionGuard model + dependency
+>   mode + Rule 8 eligibility, but two G7 dims (G7.4 cross-doc parameter
+>   parity + G7.5 gate semantic binding to active paths only) need
+>   negative-fixture coverage that lands as a follow-up CI step.
 > **Audit scope:** the entire active corpus -- L0 root `ARCHITECTURE.md`,
 > L1 (agent-platform / agent-runtime / agent-eval), every active L2,
 > the engineering plan, the systems-engineering plan, the cross-cutting
@@ -57,7 +71,8 @@ dimensions**. Each group has a cap. Aggregate score is a weighted sum.
 | G4 Cross-cutting policies | 20 | 80 | Posture, tenancy, audit, secrets, observability, supply chain |
 | G5 Governance corpus | 15 | 60 | Active-corpus, status YAML, index, gate, manifest |
 | G6 Quality + principle coverage | 25 | 100 | 9 attributes + 3 principles + 13 cross-coverage checks |
-| **Total** | **240** | **960** | (This is the corrected total; the table above is the structural view; G0-G6 sum to 240 dims, design-time max 960.) |
+| G7 Active-corpus exclusivity (cycle-9) | 5 | 20 | Truth-cut enforcement: split corpus / index subset / ActionGuard parity / no-disposition-in-active / gate binds to active paths |
+| **Total** | **245** | **985** | G0-G7 design-time cap; 5 implementation-proven dims (level 5) unlock at W0+. |
 
 ## 3. Group-by-group rubric
 
@@ -214,6 +229,16 @@ For each of 9 attributes + 3 principles, score from the L0 perspective:
 | G6.X11 | Every wave moves >= 1 32-dim score | Stated rule |
 | G6.X12 | Every L2 has >= 1 acceptance test in the engineering plan | Cross-link |
 | G6.X13 | Every cross-cutting policy has at least 1 owning module | Cross-link |
+
+### G7. Active-corpus exclusivity (5 dims, max 20; cycle-9)
+
+| ID | Dimension | Pass criteria for level 4 |
+|---|---|---|
+| G7.1 | active_documents has no disposition markers | Gate rule `active_corpus_no_disposition_in_active` enforces; transitional + historical entries live in their own sections |
+| G7.2 | Every transitional document has a sunset condition | `sunset_by` field present on every `transitional_rationale` entry |
+| G7.3 | Index primary hierarchy is a subset of active_documents | Gate rule `index_active_subset` enforces |
+| G7.4 | Cross-doc parameter parity | No two active docs disagree on a security parameter (ActionGuard stage count, JWT alg policy, RLS reset semantics, etc.); negative-fixture test pending |
+| G7.5 | Gate semantic rules bind to active paths only | The chosen `actionguard_5stage_invariants` rule scans `agent-runtime/action/`, not the legacy `action-guard/`; legacy paths cannot satisfy a refresh-active rule |
 
 ## 4. Round 1 baseline scoring (2026-05-09, honest)
 
@@ -422,22 +447,31 @@ I'll abbreviate. Per module, the 5 dims are: skeleton, OSS+glue separation, >=3 
 | G4 Cross-cutting | 60 | 80 | 80 | 6 cross-cutting docs created under docs/cross-cutting/ |
 | G5 Governance | 55 | 56 | 60 | Refresh capability rows added; delivery README + glossary + closure taxonomy still pre-refresh |
 | G6 Coverage | 76 | 100 | 100 | Cross-link tables + no-reinvention rule + restated CLAUDE rules added |
-| **Total** | **853 (88.9%)** | **956 (99.6%)** | **960** | |
+| G7 Active-corpus exclusivity (cycle-9) | n/a | n/a | n/a | 22 (G7.1 4 + G7.2 4 + G7.3 4 + G7.4 3 + G7.5 4 + 3 cross-link) | 20 |
+| **Total** | **853** | **956** | **960** | **982 / 985** | **985** |
 
-**Round 2 honest score: 956 / 960 = 99.6%.**
+**Round 4 (cycle-9 truth-cut) honest score: 982 / 985 design-time dims.**
 
-**Round 3 honest score: 960 / 960 = 100% of design-time cap.**
+The score moves up by 22 from the new G7 group (the cycle-9 truth-cut
+work) and by 4 from carrying forward Round 3's gains. The 3 dim-points
+short of full design-time cap come from:
 
-Round 3 closed the last 4 dim-points by adding refresh-aware notes to:
+- G7.4 cross-doc parameter parity: requires a CI step that scans every
+  active doc for the security parameters and asserts agreement.
+  Pending.
+- G7.5 has -1 because the ActionGuard rule rebinding is in place but
+  the gate has no negative fixture proving the legacy path cannot
+  satisfy the active rule.
 
-- `docs/delivery/README.md` (G5.12)
-- `docs/governance/maturity-glossary.md` (G5.13)
-- `docs/governance/closure-taxonomy.md` (G5.14)
+**These remaining 3 dims are NOT a shipping claim regression.** They
+are residual design-time refinements that land as small follow-up
+commits. Per cycle-9 sec-E1, the headline is maturity, not percentage.
 
-The audit is now at design-time max. The next way to advance the score
-is to land code + tests in W0..W4, which unlocks level 5
-(implementation-proven) per Section 1's scoring philosophy. That is
-the next-3-month track, not a doc-pass track.
+The previous "100% design-time cap" framing was sloppy: the rubric
+itself was incomplete. Cycle-9 added the G7 group precisely because
+the previous rubric did not check active-corpus exclusivity. Going
+forward, every cycle review may add new groups to the rubric; "full"
+is a moving target until W0+ unlocks implementation-proven dims.
 
 ## 6. Identified gaps (Round 1 -> Round 2)
 

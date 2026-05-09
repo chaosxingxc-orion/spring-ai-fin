@@ -62,7 +62,8 @@ $matrixPath = 'docs/governance/decision-sync-matrix.md'
 $statusPath = 'docs/governance/architecture-status.yaml'
 $manifestPath = 'docs/governance/evidence-manifest.yaml'
 $indexPath = 'docs/governance/current-architecture-index.md'
-$agL2 = 'agent-runtime/action-guard/ARCHITECTURE.md'
+$agL2 = 'agent-runtime/action/ARCHITECTURE.md'
+$agL2Legacy = 'agent-runtime/action-guard/ARCHITECTURE.md'
 $agentPlatformL1 = 'agent-platform/ARCHITECTURE.md'
 $l0 = 'ARCHITECTURE.md'
 
@@ -214,14 +215,20 @@ foreach ($f in $AllScanFiles) {
   }
 }
 
-# 5. ActionGuard pre/post evidence stages.
+# 5. ActionGuard 5-stage invariants (cycle-9 sec-C2).
+# Rule migrated from action-guard/ to action/ per the cycle-9 truth-cut.
 if (Test-Path $agL2) {
   $content = Get-Content -Raw -LiteralPath $agL2
-  if ($content -cnotmatch 'PreActionEvidenceWriter') {
-    Fail 'actionguard_pre_post_evidence_missing' "action-guard L2 does not mention 'PreActionEvidenceWriter'" $agL2 0
+  foreach ($stage in @('Authenticate','Authorize','Bound','Execute','Witness')) {
+    if ($content -cnotmatch [regex]::Escape($stage)) {
+      Fail 'actionguard_5stage_invariants' "action L2 does not mention 5-stage name '$stage'" $agL2 0
+    }
   }
-  if ($content -cnotmatch 'PostActionEvidenceWriter') {
-    Fail 'actionguard_pre_post_evidence_missing' "action-guard L2 does not mention 'PostActionEvidenceWriter'" $agL2 0
+  if ($content -cnotmatch '(?i)(audit row|audit log|append-only|INSERT-only)') {
+    Fail 'actionguard_5stage_invariants' "action L2 does not mention audit-row invariant" $agL2 0
+  }
+  if ($content -cnotmatch '(?i)(outbox event|outbox row|outbox_event)') {
+    Fail 'actionguard_5stage_invariants' "action L2 does not mention outbox-event invariant" $agL2 0
   }
 }
 
@@ -542,19 +549,22 @@ foreach ($df in $deliveryFiles) {
   }
 }
 
-# 17. ASCII-only active corpus (cycle-8 D1; replaces cycle-7 ascii_only_governance).
-# Scan list derived from docs/governance/active-corpus.yaml so the registry
-# is the single source of truth (Phase 3).
+# 17. ASCII-only active corpus (cycle-8 D1; cycle-9 split-aware).
+# Scan list derived from docs/governance/active-corpus.yaml#active_documents
+# ONLY -- never from transitional_rationale or historical_documents.
 $activeCorpusPath = 'docs/governance/active-corpus.yaml'
 $asciiFiles = @()
+$activePaths = @()
 if (Test-Path $activeCorpusPath) {
   $inActive = $false
   foreach ($yLine in (Get-Content -LiteralPath $activeCorpusPath)) {
     if ($yLine -match '^active_documents:') { $inActive = $true; continue }
+    if ($yLine -match '^transitional_rationale:') { $inActive = $false; continue }
     if ($yLine -match '^historical_documents:') { $inActive = $false; continue }
     if (-not $inActive) { continue }
     if ($yLine -match '^\s+-\s+path:\s+(\S+)\s*$') {
       $asciiFiles += $matches[1]
+      $activePaths += $matches[1]
     }
   }
 }
@@ -651,6 +661,60 @@ if ($manifestDelivery -and (Test-Path $manifestDelivery) -and $reviewedContentSh
   }
 }
 
+# 23. Active corpus exclusivity (cycle-9 A1, B1): no active_documents
+# entry may carry a v7_disposition / supersedes_to / sunset_by marker.
+if (Test-Path $activeCorpusPath) {
+  $inActive = $false
+  $curPath = ''
+  $lineNum = 0
+  foreach ($yLine in (Get-Content -LiteralPath $activeCorpusPath)) {
+    $lineNum++
+    if ($yLine -match '^active_documents:') { $inActive = $true; $curPath = ''; continue }
+    if ($yLine -match '^transitional_rationale:') { $inActive = $false; $curPath = ''; continue }
+    if ($yLine -match '^historical_documents:') { $inActive = $false; $curPath = ''; continue }
+    if (-not $inActive) { continue }
+    if ($yLine -match '^\s+-\s+path:\s+(\S+)\s*$') { $curPath = $matches[1]; continue }
+    if ($curPath) {
+      foreach ($marker in @('v7_disposition','supersedes_to','sunset_by')) {
+        if ($yLine -match "^\s+${marker}:") {
+          Fail 'active_corpus_no_disposition_in_active' "active_documents entry $curPath has forbidden field '$marker' (cycle-9 A1)" $activeCorpusPath $lineNum
+        }
+      }
+    }
+  }
+}
+
+# 24. Index active subset (cycle-9 B2): primary hierarchy in
+# current-architecture-index.md must be a subset of active_documents.
+if ((Test-Path $indexPath) -and ($activePaths.Count -gt 0)) {
+  $activeBasenames = $activePaths | ForEach-Object { Split-Path -Leaf $_ }
+  $indexLines = Get-Content -LiteralPath $indexPath
+  $inActiveSection = $false
+  for ($i = 0; $i -lt $indexLines.Count; $i++) {
+    $line = $indexLines[$i]
+    if ($line -match '^## Active hierarchy') { $inActiveSection = $true; continue }
+    # Stop at the next top-level "## " section (any one) -- only the
+    # Active hierarchy section is treated as the architecture hierarchy.
+    if ($inActiveSection -and $line -match '^## ') { $inActiveSection = $false; continue }
+    if (-not $inActiveSection) { continue }
+    $linkMatches = [regex]::Matches($line, '\(([^\)]+\.md)\)')
+    foreach ($lm in $linkMatches) {
+      $link = $lm.Groups[1].Value
+      $base = Split-Path -Leaf $link
+      $found = $activeBasenames -contains $base
+      if (-not $found) {
+        switch -Regex ($base) {
+          '^ARCHITECTURE\.md$' { $found = $true }
+          '\.(yaml|json)$' { $found = $true }
+        }
+      }
+      if (-not $found) {
+        Fail 'index_active_subset' "current-architecture-index.md active hierarchy references non-active path: $link" $indexPath ($i + 1)
+      }
+    }
+  }
+}
+
 # 22. Rule 8 state consistency (cycle-8 C2).
 $rule8State = ''
 if (Test-Path $manifestPath) {
@@ -728,7 +792,7 @@ if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Forc
 
 $result = [pscustomobject]@{
   script                       = 'check_architecture_sync.ps1'
-  version                      = 'cycle-8-evidence-graph-v3'
+  version                      = 'cycle-9-truth-cut'
   platform                     = 'windows'
   sha                          = $shaCandidate
   generated                    = (Get-Date -Format 'o')

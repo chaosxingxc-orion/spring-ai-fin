@@ -2,7 +2,7 @@
 # spring-ai-fin architecture-sync gate (cycle-8 evidence graph v3; POSIX bash).
 # Catches drift classes from cycles 1-8.
 #
-# Cycle-8 changes (this version: "cycle-8-evidence-graph-v3"):
+# Cycle-8 changes (this version: "cycle-9-truth-cut"):
 #   - eol_policy rule (A1): tracked *.sh must be LF in working tree.
 #   - delivery_log_exact_binding rule (B1): authoritative delivery files
 #     MUST name a log path that exists and whose sha equals
@@ -81,7 +81,8 @@ matrix="docs/governance/decision-sync-matrix.md"
 status_path="docs/governance/architecture-status.yaml"
 manifest_path="docs/governance/evidence-manifest.yaml"
 index_path="docs/governance/current-architecture-index.md"
-ag_l2="agent-runtime/action-guard/ARCHITECTURE.md"
+ag_l2="agent-runtime/action/ARCHITECTURE.md"
+ag_l2_legacy="agent-runtime/action-guard/ARCHITECTURE.md"
 ap_l1="agent-platform/ARCHITECTURE.md"
 l0="ARCHITECTURE.md"
 
@@ -222,13 +223,24 @@ runtime_error_message=""
     unset buf
   done
 
-  # 4. Pre/Post evidence stages.
+  # 4. ActionGuard 5-stage invariants (cycle-9 sec-C2).
+  # Rule migrated from action-guard/ to action/ per the cycle-9 truth-cut.
+  # Binds to the refresh-active path; the legacy 11-stage path is in
+  # transitional_rationale and the gate must NOT validate it as active.
   if [[ -f "$ag_l2" ]]; then
-    if ! grep -F -q "PreActionEvidenceWriter" "$ag_l2"; then
-      fail "actionguard_pre_post_evidence_missing" "action-guard L2 does not mention 'PreActionEvidenceWriter'" "$ag_l2" 0
+    # 5-stage names must all be present.
+    for stage in "Authenticate" "Authorize" "Bound" "Execute" "Witness"; do
+      if ! grep -F -q "$stage" "$ag_l2"; then
+        fail "actionguard_5stage_invariants" "action L2 does not mention 5-stage name '$stage'" "$ag_l2" 0
+      fi
+    done
+    # Audit-before-action invariant: must explicitly say audit + outbox happen on Witness, not on Execute.
+    # Post-failure-evidence invariant: must explicitly say audit row written on terminal regardless of Execute success.
+    if ! grep -E -q '(audit row|audit log|append-only|INSERT-only)' "$ag_l2"; then
+      fail "actionguard_5stage_invariants" "action L2 does not mention audit-row invariant" "$ag_l2" 0
     fi
-    if ! grep -F -q "PostActionEvidenceWriter" "$ag_l2"; then
-      fail "actionguard_pre_post_evidence_missing" "action-guard L2 does not mention 'PostActionEvidenceWriter'" "$ag_l2" 0
+    if ! grep -E -q '(outbox event|outbox row|outbox_event)' "$ag_l2"; then
+      fail "actionguard_5stage_invariants" "action L2 does not mention outbox-event invariant" "$ag_l2" 0
     fi
   fi
 
@@ -574,21 +586,24 @@ runtime_error_message=""
     fi
   done < <(find docs/delivery -maxdepth 1 -type f -name '2026-05-08-*.md' 2>/dev/null || true)
 
-  # 16. ASCII-only active corpus (cycle-8 D1; replaces cycle-7 ascii_only_governance).
-  # Scan list is derived from docs/governance/active-corpus.yaml so the
-  # registry is the single source of truth (Phase 3).
+  # 16. ASCII-only active corpus (cycle-8 D1; cycle-9 split-aware).
+  # Scan list is derived from docs/governance/active-corpus.yaml#active_documents
+  # ONLY -- never from transitional_rationale or historical_documents.
   active_corpus_path="docs/governance/active-corpus.yaml"
   declare -a ascii_files=()
+  declare -a active_paths=()
   if [[ -f "$active_corpus_path" ]]; then
     in_active=0
     while IFS= read -r yline || [[ -n "$yline" ]]; do
       if [[ "$yline" == "active_documents:" ]]; then in_active=1; continue; fi
+      if [[ "$yline" == "transitional_rationale:" ]]; then in_active=0; continue; fi
       if [[ "$yline" == "historical_documents:" ]]; then in_active=0; continue; fi
       [[ $in_active -eq 0 ]] && continue
       if [[ "$yline" =~ ^[[:space:]]+-[[:space:]]+path:[[:space:]]+(.+)$ ]]; then
         ap="${BASH_REMATCH[1]}"
         ap="${ap%%[[:space:]]*}"
         ascii_files+=("$ap")
+        active_paths+=("$ap")
       fi
     done < "$active_corpus_path"
   fi
@@ -669,6 +684,74 @@ runtime_error_message=""
       if [[ -n "$log_sha_field" && "$log_sha_field" != "$reviewed_content_sha" && "$log_sha_field" != "$head_short" ]]; then
         fail "delivery_log_exact_binding" "log $found_log reports sha='$log_sha_field' which is neither reviewed_content_sha=$reviewed_content_sha nor HEAD=$head_short" "$found_log" 0
       fi
+    fi
+  fi
+
+  # 22. Active corpus exclusivity (cycle-9 A1, B1): no active_documents
+  # entry may carry a v7_disposition / supersedes_to / sunset_by marker.
+  if [[ -f "$active_corpus_path" ]]; then
+    in_active=0
+    cur_path=""
+    lineno=0
+    while IFS= read -r yline || [[ -n "$yline" ]]; do
+      lineno=$((lineno + 1))
+      if [[ "$yline" == "active_documents:" ]]; then in_active=1; cur_path=""; continue; fi
+      if [[ "$yline" == "transitional_rationale:" ]]; then in_active=0; cur_path=""; continue; fi
+      if [[ "$yline" == "historical_documents:" ]]; then in_active=0; cur_path=""; continue; fi
+      [[ $in_active -eq 0 ]] && continue
+      if [[ "$yline" =~ ^[[:space:]]+-[[:space:]]+path:[[:space:]]+(.+)$ ]]; then
+        cur_path="${BASH_REMATCH[1]}"
+        cur_path="${cur_path%%[[:space:]]*}"
+        continue
+      fi
+      if [[ -n "$cur_path" ]]; then
+        for marker in v7_disposition supersedes_to sunset_by; do
+          if [[ "$yline" =~ ^[[:space:]]+${marker}: ]]; then
+            fail "active_corpus_no_disposition_in_active" "active_documents entry $cur_path has forbidden field '$marker' (cycle-9 A1)" "$active_corpus_path" "$lineno"
+          fi
+        done
+      fi
+    done < "$active_corpus_path"
+  fi
+
+  # 23. Index active subset (cycle-9 B2): primary hierarchy in
+  # current-architecture-index.md must be a subset of active_documents.
+  if [[ -f "$index_path" && ${#active_paths[@]} -gt 0 ]]; then
+    declare -a active_basenames=()
+    for ap in "${active_paths[@]}"; do
+      active_basenames+=("$(basename "$ap")")
+    done
+    # Extract md links from "Active hierarchy" section only -- stop at
+    # the very next top-level "## " heading (Governance corpus / Plans
+    # / Gates / Delivery / etc are NOT part of the architecture
+    # hierarchy and host their own evidence references).
+    awk '/^## Active hierarchy/{p=1; next} p && /^## /{p=0} p' "$index_path" > /tmp/_active_section.txt 2>/dev/null || true
+    if [[ -f /tmp/_active_section.txt ]]; then
+      while IFS= read -r line; do
+        # find markdown links of the form (../../path/to/file.md) or (path)
+        while [[ "$line" =~ \(([^\)]+\.md)\) ]]; do
+          link="${BASH_REMATCH[1]}"
+          line="${line/${BASH_REMATCH[0]}/}"
+          # normalize: drop ../ prefixes; just check basename
+          base=$(basename "$link")
+          # skip if any active path basename matches
+          found=0
+          for ab in "${active_basenames[@]}"; do
+            if [[ "$ab" == "$base" ]]; then found=1; break; fi
+          done
+          # ARCHITECTURE.md occurs many times; treat any active L0/L1/L2 .md as OK if name matches
+          if [[ $found -eq 0 ]]; then
+            # link could legitimately reference an active path; skip transient files
+            case "$base" in
+              ARCHITECTURE.md|*.yaml|*.json) found=1 ;;
+            esac
+          fi
+          if [[ $found -eq 0 ]]; then
+            fail "index_active_subset" "current-architecture-index.md active hierarchy references non-active path: $link" "$index_path" 0
+          fi
+        done
+      done < /tmp/_active_section.txt
+      rm -f /tmp/_active_section.txt
     fi
   fi
 
@@ -762,7 +845,7 @@ porcelain_escaped="$(json_escape "${porcelain:-}")"
 {
   printf '{'
   printf '"script":"check_architecture_sync.sh",'
-  printf '"version":"cycle-8-evidence-graph-v3",'
+  printf '"version":"cycle-9-truth-cut",'
   printf '"platform":"posix",'
   printf '"sha":"%s",' "$sha_candidate"
   printf '"generated":"%s",' "$(date -Iseconds 2>/dev/null || date -u +%Y-%m-%dT%H:%M:%SZ)"

@@ -1032,3 +1032,78 @@ findings:
     target_wave: W2+
     capability: l0_architecture
     notes: "Tracks the wave order: tenant identity/RLS, auth posture/JWT, run lifecycle/cancellation, ActionGuard, audit/evidence chain, prompt-security taint, sidecar trust profile, observability failure signals."
+
+  # ---- Cycle-9 truth-cut findings ----
+  REM-2026-05-09-C9-1:
+    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
+    description: "Architecture-sync passed while active corpus held entries with disposition markers. Cycle-9 split active-corpus.yaml into active_documents (no disposition markers; gate-enforced via active_corpus_no_disposition_in_active), transitional_rationale (sunset_by field; pre-W0 archive), and historical_documents."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: architecture_sync_gate
+  REM-2026-05-09-C9-2:
+    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
+    description: "Local gate evidence over-readable as delivery. Cycle-9 added local_semantic_pass vs delivery_valid_pass distinction in manifest self_test.pass_type. Delivery files now quote evidence_valid_for_delivery explicitly."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: architecture_sync_gate
+  REM-2026-05-09-C9-3:
+    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
+    description: "Active-corpus mixed registry (cycle-9 B1; same fix as C9-1). The split into 3 sections is the truth-cut."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: architecture_sync_gate
+  REM-2026-05-09-C9-4:
+    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
+    description: "current-architecture-index.md primary hierarchy was contaminated with pre-refresh L2 docs. Cycle-9 restructured: one active hierarchy listing only refresh-active docs; pre-refresh hierarchy moved to a Historical Rationale section. Gate rule index_active_subset enforces."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: architecture_sync_gate
+  REM-2026-05-09-C9-5:
+    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
+    description: "ActionGuard had two active designs (5-stage in refresh L2 + cross-cutting matrix; 11-stage in pre-refresh action-guard/ + docs/security-control-matrix.md). Cycle-9 picked 5-stage as authoritative; 11-stage docs moved to transitional_rationale. Gate rule actionguard_5stage_invariants binds to agent-runtime/action/ (not action-guard/) and asserts the 5 stage names + audit-row + outbox-event invariants."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: action_guard
+  REM-2026-05-09-C9-6:
+    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
+    description: "Gate rule actionguard_pre_post_evidence_missing was binding to legacy action-guard/ path. Cycle-9 retired that rule; replaced by actionguard_5stage_invariants on agent-runtime/action/."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: architecture_sync_gate
+  REM-2026-05-09-C9-7:
+    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
+    description: "No runnable runtime artifact. Per user 2026-05-09 instruction (engineering implementation only needs a plan), W0 stays as plan only this cycle. Rule 8 remains fail-closed; cycle-9 D1 ACCEPT-AS-CORRECT."
+    maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: operator_shape_smoke_gate
+    notes: "Plan-only by user instruction; W0 is the next-track deliverable."
+  REM-2026-05-09-C9-8:
+    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
+    description: "Fake-provider smoke vs Rule 8 confusion. Cycle-9 added manifest dependency_mode (fake|real) + rule_8_eligible (true|false). Engineering plan renamed fake-provider sequential smoke to ci_operator_shape_smoke; rule_8_operator_shape reserved for real-dependency runs. Plan-level rule 8 added: no delivery file may claim Rule 8 PASS while dependency_mode=fake."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0/W2
+    capability: operator_shape_smoke_gate
+  REM-2026-05-09-C9-9:
+    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
+    description: "100% design-time cap language created premature closure pressure. Cycle-9 reorganized self-audit headline: maturity ladder is primary (every refresh capability is L0); 240+ dim score is a secondary diagnostic explicitly labeled non-shipping. Index sec-Capability-maturity restated."
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    target_wave: W0
+    capability: l0_architecture

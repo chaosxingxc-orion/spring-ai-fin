@@ -24,6 +24,13 @@
    W4 sec-acceptance.
 7. **One Java version, one Spring Boot major.** Java 21 LTS, Spring Boot
    3.5.x. No fork, no preview features in production code.
+8. **CI smoke is not Rule 8 (cycle-9 sec-D2).** Fake-provider sequential
+   runs in CI are named `ci_operator_shape_smoke` and have
+   `dependency_mode: fake` + `rule_8_eligible: false`. A run is named
+   `rule_8_operator_shape` and may set `rule_8_eligible: true` only
+   when `dependency_mode: real` AND a real Maven artifact is built AND
+   a long-lived process is started. No delivery file may claim Rule 8
+   PASS while `dependency_mode: fake`.
 
 ## 1. Wave summary
 
@@ -354,7 +361,7 @@ Total: ~1700 LOC.
 ### 4.7 Acceptance gates
 
 - R7 = 1: `RunHappyPathIT` green with at least one real provider call (nightly job; CI uses fake).
-- F1 (smoke) = 1: operator-shape gate replaced; sequential N=3 runs against fake provider; zero fallback events.
+- `ci_operator_shape_smoke` lands (W2): sequential N=3 runs against fake provider; zero fallback events. **Records `dependency_mode: fake` and `rule_8_eligible: false`** -- not Rule 8 evidence (cycle-9 sec-D2). F1 only unlocks when W4 lands `rule_8_operator_shape` against real dependencies.
 - F7 = 1: cancellation IT green.
 - G1 finite: governance LOC / product LOC ratio drops below `1.0`.
 - ConcurrencyLoadIT green.
@@ -579,8 +586,7 @@ Estimated 2500 LOC. Key files:
 ### 6.7 Acceptance gates
 
 - R8 = 1: real Postgres SET LOCAL test green (already W1; verify under load).
-- F8 = 1: sequential N=3 dependency runs (Rule 8 step 3) against real
-  provider in nightly job; fallback count = 0.
+- F8 = 1: `rule_8_operator_shape` (sequential N=3 against real provider) green in nightly. **`dependency_mode: real` + `rule_8_eligible: true`.** Fallback count = 0.
 - F9 (long-run) = 1: `LongRunResumeIT` green: kill workers mid-flight,
   run completes after worker restart.
 - HA test green: kill replica during load; zero 5xx outside drain.

@@ -1,0 +1,1 @@
+{"script":"check_architecture_sync.sh","version":"cycle-8-evidence-graph-v3","platform":"posix","sha":"29d069a","generated":"2026-05-08T23:09:20+08:00","scan_files_count":49,"working_tree_clean":true,"git_status_porcelain":"","local_only":false,"semantic_pass":true,"evidence_valid_for_delivery":true,"rule_body_succeeded":true,"failures":[]}

@@ -26,21 +26,27 @@ schema_version: evidence-manifest/v3
 # manifest-driven gate rule completeness. true means the gate enforces it now.
 schema_capabilities:
   head_coverage: true                            # cycle-7 audit_trail_shape
-  delivery_log_parity: true                      # cycle-6 + cycle-7 + cycle-8 (no skip on missing log)
+  delivery_log_parity: true                      # cycle-6 + cycle-7 + cycle-8
   delivery_log_exact_binding: true               # cycle-8 sec-B1
   manifest_no_tbd: true                          # cycle-8 sec-B3
   manifest_no_null_log_slots: true               # cycle-8 sec-B3
-  status_ledger_parity: true                     # cycle-7 manifest_edge_consistency
-  index_freshness: true                          # cycle-7 manifest_edge_consistency
-  active_corpus_registry_used: true              # cycle-8 sec-D1 + Phase 3
+  status_ledger_parity: true                     # cycle-7
+  index_freshness: true                          # cycle-7
+  active_corpus_registry_used: true              # cycle-8 sec-D1
   ascii_only_active_corpus: true                 # cycle-8 sec-D1
   eol_policy: true                               # cycle-8 sec-A1
   rule_8_state_consistency: true                 # cycle-8 sec-C2
   self_test_required_for_delivery: true          # cycle-8 sec-A2
+  active_corpus_no_disposition_in_active: true   # cycle-9 sec-A1, B1
+  index_active_subset: true                      # cycle-9 sec-B2
+  actionguard_5stage_invariants: true            # cycle-9 sec-C1, C2
+  local_vs_delivery_pass_distinguished: true     # cycle-9 sec-A2
+  dependency_mode_recorded: true                 # cycle-9 sec-D2
+  rule_8_eligibility_recorded: true              # cycle-9 sec-D2
   ledger_coverage_finding_to_capability: false   # W1
-  cross_platform_ci_matrix: false                # W1 (Phase 2.4)
-  fixture_test_suite: false                      # W1 (Phase 2.3)
-  capability_registry_separated: false           # W1 (Phase 4.1)
+  cross_platform_ci_matrix: false                # W1
+  fixture_test_suite: false                      # W1
+  capability_registry_separated: false           # W1
 
 # ---- Two-SHA evidence model (cycle-7 sec-B1; cycle-8 sec-B3) ----
 #
@@ -117,13 +123,26 @@ operator_shape_logs:
     reason: "FAIL_ARTIFACT_MISSING + pwsh availability not assumed; same blocker as posix."
   unblocks_at: W0   # docs/plans/W0-evidence-skeleton.md
 
-# Cycle-8 sec-A2: self-test PASS at the evidence commit SHA is required
-# for delivery validity.
+# Cycle-8 sec-A2 + cycle-9 sec-A2: self-test PASS at the evidence commit
+# SHA is required for delivery validity. The pass type below
+# distinguishes a local-only run from a delivery-valid run.
 self_test:
   state: pass
   pass_sha: 4260a48
   log_path: gate/log/self-test-4260a48.json
   blocking_for_delivery: true
+  pass_type: delivery_valid_pass    # one of: local_semantic_pass | delivery_valid_pass
+
+# Cycle-9 sec-D2: distinguish CI smoke from Rule 8 evidence.
+# `dependency_mode` records whether downstream dependencies were real or
+# fake. `rule_8_eligible` records whether this run is allowed to claim
+# Rule 8 PASS. A delivery file's Rule 8 claim is rejected if
+# `dependency_mode=fake` OR `rule_8_eligible=false`.
+operator_shape_evidence:
+  dependency_mode: fake             # one of: fake | real | not_applicable
+  rule_8_eligible: false            # only true when dependency_mode=real AND artifact_present=true
+  provider_access_log_evidence: null   # path to log proving real-provider HTTP traffic
+  reason: "Pre-W0: no runnable artifact; rule_8.state=fail_closed_artifact_missing. CI smoke (when added in W2) will be ci_operator_shape_smoke and remain rule_8_eligible=false until real-dependency runs land in W4."
 
 rule_8:
   state: fail_closed_artifact_missing

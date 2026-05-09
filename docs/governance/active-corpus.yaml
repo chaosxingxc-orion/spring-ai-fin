@@ -1,40 +1,51 @@
 # spring-ai-fin active-corpus registry.
 #
-# Per docs/systemic-remediation-operating-plan-2026-05-08.en.md Phase 3 and
+# Per docs/systemic-remediation-operating-plan-2026-05-08.en.md Phase 3,
 # docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
-# sec-D1.
+# sec-D1, and docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
+# sec-A1/B1.
 #
-# Purpose: replace the ad-hoc filename-skip patterns inside the gate with a
-# single machine-readable registry. The architecture-sync gate derives its
-# scan list from this file. Encoding (`ascii_only_active_corpus`) and
-# closure-language rules apply to every entry under `active_documents`.
-# Documents under `historical_documents` are explicitly excluded with a
-# reason.
+# Cycle-9 truth-cut: the registry is split into THREE exclusive
+# sections. No document may appear in more than one section. The
+# `active_documents` section is reserved for refresh-active sources of
+# truth -- entries with any disposition marker (renamed_to, moved_to,
+# merged_into, replaced_by, deferred_*) are forbidden under
+# `active_documents` and trigger the gate rule
+# `active_corpus_no_disposition_in_active`.
 #
 # Schema:
 #   active_documents:
 #     - path: <repo-relative-path>
-#       layer: L0|L1|L2|cross_cutting|governance|plan|gate
+#       layer: L0|L1|L2|cross_cutting|governance|plan|gate|module
 #       owner: <team-or-stream>
 #       encoding_policy: ascii|utf8_clean
+#   transitional_rationale:
+#     - path: <repo-relative-path>
+#       reason: <one-line rationale>
+#       supersedes_to: <refresh-active path or NONE>
+#       sunset_by: <W0|W1|...|specific date>
+#       banner_required: true|false
+#       active_scan: false
 #   historical_documents:
 #     - path: <repo-relative-path>
 #       reason: <one-line rationale>
 #       active_scan: false
 #       banner_required: true|false
-#
-# Update rule: when a new authoritative L2 lands or a current document is
-# superseded, update this file in the same PR. The architecture-sync gate's
-# `active_corpus_registry_freshness` rule (W1 deliverable) will fail if the
-# registry is stale relative to the docs tree.
 
-version: 1
-schema_version: active-corpus/v1
-generated_at: 2026-05-08
-generated_by: cycle-8 architectural commit (sec-D1 + Phase 3)
+version: 2
+schema_version: active-corpus/v2
+generated_at: 2026-05-09
+generated_by: cycle-9 architectural commit (sec-A1, B1)
 
-# Active corpus: scanned for closure-language, encoding, and per-rule
-# violations.
+# ============================================================
+# active_documents -- refresh-active sources of truth ONLY
+# ============================================================
+# Every entry here is a current authoritative document. Disposition
+# markers (renamed_to, moved_to, merged_into, replaced_by,
+# deferred_in_v7, deferred_indefinitely) are FORBIDDEN here -- the
+# gate fails when one is present. Move such entries to
+# transitional_rationale or historical_documents.
+
 active_documents:
 
   # ---- L0 ----
@@ -53,11 +64,7 @@ active_documents:
     owner: runtime
     encoding_policy: ascii
 
-  # ---- L2: agent-platform (refresh-surviving + v6 deferred-with-banner) ----
-  - path: agent-platform/contracts/ARCHITECTURE.md
-    layer: L2
-    owner: platform
-    encoding_policy: ascii
+  # ---- L2: agent-platform (refresh-active only) ----
   - path: agent-platform/web/ARCHITECTURE.md
     layer: L2
     owner: platform
@@ -74,36 +81,20 @@ active_documents:
     layer: L2
     owner: platform
     encoding_policy: ascii
-  - path: agent-platform/api/ARCHITECTURE.md
-    layer: L2
-    owner: platform
-    encoding_policy: ascii
-    v7_disposition: merged_into:agent-platform/web
-  - path: agent-platform/runtime/ARCHITECTURE.md
-    layer: L2
-    owner: platform
-    encoding_policy: ascii
-    v7_disposition: deferred_in_v7
-  - path: agent-platform/facade/ARCHITECTURE.md
-    layer: L2
-    owner: platform
-    encoding_policy: ascii
-    v7_disposition: deferred_in_v7
   - path: agent-platform/bootstrap/ARCHITECTURE.md
     layer: L2
     owner: platform
     encoding_policy: ascii
-  - path: agent-platform/cli/ARCHITECTURE.md
-    layer: L2
-    owner: platform
-    encoding_policy: ascii
-    v7_disposition: deferred_in_v7
   - path: agent-platform/config/ARCHITECTURE.md
     layer: L2
     owner: platform
     encoding_policy: ascii
+  - path: agent-platform/contracts/ARCHITECTURE.md
+    layer: L2
+    owner: platform
+    encoding_policy: ascii
 
-  # ---- L2: agent-runtime (refresh-surviving + v6 deferred-with-banner) ----
+  # ---- L2: agent-runtime (refresh-active only) ----
   - path: agent-runtime/run/ARCHITECTURE.md
     layer: L2
     owner: runtime
@@ -136,74 +127,14 @@ active_documents:
     layer: L2
     owner: runtime
     encoding_policy: ascii
-  - path: agent-runtime/server/ARCHITECTURE.md
-    layer: L2
-    owner: runtime
-    encoding_policy: ascii
-    v7_disposition: renamed_to:agent-runtime/run
-  - path: agent-runtime/runner/ARCHITECTURE.md
-    layer: L2
-    owner: runtime
-    encoding_policy: ascii
-    v7_disposition: merged_into:agent-runtime/run
-  - path: agent-runtime/skill/ARCHITECTURE.md
-    layer: L2
-    owner: runtime
-    encoding_policy: ascii
-    v7_disposition: merged_into:agent-runtime/tool
-  - path: agent-runtime/capability/ARCHITECTURE.md
-    layer: L2
-    owner: runtime
-    encoding_policy: ascii
-    v7_disposition: merged_into:agent-runtime/tool+action
-  - path: agent-runtime/knowledge/ARCHITECTURE.md
-    layer: L2
-    owner: runtime
-    encoding_policy: ascii
-    v7_disposition: deferred_indefinitely
-  - path: agent-runtime/adapters/ARCHITECTURE.md
-    layer: L2
-    owner: runtime
-    encoding_policy: ascii
-    v7_disposition: deferred_in_v7
-  - path: agent-runtime/posture/ARCHITECTURE.md
-    layer: L2
-    owner: runtime
-    encoding_policy: ascii
-    v7_disposition: moved_to:docs/cross-cutting/posture-model.md
-  - path: agent-runtime/auth/ARCHITECTURE.md
-    layer: L2
-    owner: runtime
-    encoding_policy: ascii
-    v7_disposition: moved_to:agent-platform/auth
-  - path: agent-runtime/action-guard/ARCHITECTURE.md
-    layer: L2
-    owner: runtime
-    encoding_policy: ascii
-    v7_disposition: renamed_to:agent-runtime/action
-  - path: agent-runtime/audit/ARCHITECTURE.md
-    layer: L2
-    owner: runtime
-    encoding_policy: ascii
-    v7_disposition: replaced_by:OTel+audit_log
-  - path: agent-runtime/evolve/ARCHITECTURE.md
-    layer: L2
-    owner: runtime
-    encoding_policy: ascii
-    v7_disposition: replaced_by:agent-eval+skill_registry
-  - path: agent-runtime/runtime/ARCHITECTURE.md
-    layer: L2
-    owner: runtime
-    encoding_policy: ascii
-    v7_disposition: merged_into:agent-runtime/run+temporal
 
-  # ---- current module: agent-eval ----
+  # ---- module: agent-eval ----
   - path: agent-eval/ARCHITECTURE.md
     layer: module
     owner: runtime
     encoding_policy: ascii
 
-  # ---- Cross-cutting current docs (refresh-aligned; under docs/cross-cutting/) ----
+  # ---- Cross-cutting (refresh-active only; under docs/cross-cutting/) ----
   - path: docs/cross-cutting/posture-model.md
     layer: cross_cutting
     owner: architecture
@@ -228,43 +159,6 @@ active_documents:
     layer: cross_cutting
     owner: observability
     encoding_policy: ascii
-
-  # ---- Cross-cutting (pre-refresh paths; pending W0 deprecation) ----
-  - path: docs/security-control-matrix.md
-    layer: cross_cutting
-    owner: security
-    encoding_policy: ascii
-    v7_disposition: moved_to:docs/cross-cutting/security-control-matrix.md
-  - path: docs/trust-boundary-diagram.md
-    layer: cross_cutting
-    owner: security
-    encoding_policy: ascii
-    v7_disposition: moved_to:docs/cross-cutting/trust-boundary-diagram.md
-  - path: docs/sidecar-security-profile.md
-    layer: cross_cutting
-    owner: security
-    encoding_policy: ascii
-    v7_disposition: deferred_in_v7
-  - path: docs/gateway-conformance-profile.md
-    layer: cross_cutting
-    owner: platform
-    encoding_policy: ascii
-    v7_disposition: deferred_in_v7
-  - path: docs/secrets-lifecycle.md
-    layer: cross_cutting
-    owner: security
-    encoding_policy: ascii
-    v7_disposition: moved_to:docs/cross-cutting/secrets-lifecycle.md
-  - path: docs/supply-chain-controls.md
-    layer: cross_cutting
-    owner: security
-    encoding_policy: ascii
-    v7_disposition: moved_to:docs/cross-cutting/supply-chain-controls.md
-  - path: docs/observability/cardinality-policy.md
-    layer: cross_cutting
-    owner: observability
-    encoding_policy: ascii
-    v7_disposition: moved_to:docs/cross-cutting/observability-policy.md
 
   # ---- Governance corpus ----
   - path: docs/governance/architecture-status.yaml
@@ -300,10 +194,7 @@ active_documents:
     owner: architecture
     encoding_policy: ascii
 
-  # ---- 2026-05-08 refresh: engineering + systems plans ----
-  # The L0 stays at root ARCHITECTURE.md (continuous v6 line; no major
-  # version bump per the user's preference). The plans below define the
-  # wave cadence and the doc-set drill-down.
+  # ---- Plans + audit (refresh-active) ----
   - path: docs/plans/engineering-plan-W0-W4.md
     layer: plan
     owner: architecture
@@ -312,18 +203,12 @@ active_documents:
     layer: plan
     owner: architecture
     encoding_policy: ascii
-
-  # ---- Plans (v6; pending W0 deprecation) ----
-  - path: docs/plans/W0-evidence-skeleton.md
-    layer: plan
-    owner: architecture
-    encoding_policy: ascii
-  - path: docs/plans/roadmap-W0-W4.md
-    layer: plan
+  - path: docs/architecture-design-self-audit.md
+    layer: governance
     owner: architecture
     encoding_policy: ascii
 
-  # ---- Gate ----
+  # ---- Gate-facing readme ----
   - path: gate/README.md
     layer: gate
     owner: architecture
@@ -333,18 +218,189 @@ active_documents:
     owner: architecture
     encoding_policy: ascii
 
-# Historical documents: explicitly excluded from active scans.
-# They legitimately reference superseded designs or forbidden phrases for
-# traceability and review record. They MUST carry a "HISTORICAL DOCUMENT"
-# banner where banner_required is true.
+# ============================================================
+# transitional_rationale -- old docs retained for migration context
+# ============================================================
+# Each entry has a `supersedes_to` (the refresh-active path that
+# replaces it, or NONE if simply deferred) and a `sunset_by` (the
+# wave or date by which the file should move to historical_documents
+# or be archived under docs/v6-rationale/). The W0 deprecation step
+# archives all transitional_rationale entries.
+
+transitional_rationale:
+
+  # ---- Pre-refresh L2 docs (banner-marked) ----
+  - path: agent-platform/api/ARCHITECTURE.md
+    reason: pre-refresh L2; merged into agent-platform/web
+    supersedes_to: agent-platform/web/ARCHITECTURE.md
+    sunset_by: W0
+    banner_required: true
+    active_scan: false
+  - path: agent-platform/runtime/ARCHITECTURE.md
+    reason: pre-refresh L2; deferred (no separate runtime-binding layer in refresh)
+    supersedes_to: NONE
+    sunset_by: W0
+    banner_required: true
+    active_scan: false
+  - path: agent-platform/facade/ARCHITECTURE.md
+    reason: pre-refresh L2; folded into agent-platform L1
+    supersedes_to: agent-platform/ARCHITECTURE.md
+    sunset_by: W0
+    banner_required: true
+    active_scan: false
+  - path: agent-platform/cli/ARCHITECTURE.md
+    reason: pre-refresh L2; CLI not in W0..W4 scope
+    supersedes_to: NONE
+    sunset_by: W0
+    banner_required: true
+    active_scan: false
+  - path: agent-runtime/server/ARCHITECTURE.md
+    reason: pre-refresh L2; renamed to agent-runtime/run
+    supersedes_to: agent-runtime/run/ARCHITECTURE.md
+    sunset_by: W0
+    banner_required: true
+    active_scan: false
+  - path: agent-runtime/runner/ARCHITECTURE.md
+    reason: pre-refresh L2; merged into agent-runtime/run
+    supersedes_to: agent-runtime/run/ARCHITECTURE.md
+    sunset_by: W0
+    banner_required: true
+    active_scan: false
+  - path: agent-runtime/runtime/ARCHITECTURE.md
+    reason: pre-refresh L2; merged into agent-runtime/run + agent-runtime/temporal
+    supersedes_to: agent-runtime/temporal/ARCHITECTURE.md
+    sunset_by: W0
+    banner_required: true
+    active_scan: false
+  - path: agent-runtime/skill/ARCHITECTURE.md
+    reason: pre-refresh L2; merged into agent-runtime/tool
+    supersedes_to: agent-runtime/tool/ARCHITECTURE.md
+    sunset_by: W0
+    banner_required: true
+    active_scan: false
+  - path: agent-runtime/capability/ARCHITECTURE.md
+    reason: pre-refresh L2; merged into agent-runtime/tool + action
+    supersedes_to: agent-runtime/tool/ARCHITECTURE.md
+    sunset_by: W0
+    banner_required: true
+    active_scan: false
+  - path: agent-runtime/knowledge/ARCHITECTURE.md
+    reason: pre-refresh L2; knowledge graph deferred indefinitely
+    supersedes_to: NONE
+    sunset_by: W0
+    banner_required: true
+    active_scan: false
+  - path: agent-runtime/adapters/ARCHITECTURE.md
+    reason: pre-refresh L2; multi-framework dispatch deferred to W4+
+    supersedes_to: NONE
+    sunset_by: W0
+    banner_required: true
+    active_scan: false
+  - path: agent-runtime/audit/ARCHITECTURE.md
+    reason: pre-refresh L2; replaced by OTel + audit_log table (in agent-runtime/action)
+    supersedes_to: agent-runtime/action/ARCHITECTURE.md
+    sunset_by: W0
+    banner_required: true
+    active_scan: false
+  - path: agent-runtime/evolve/ARCHITECTURE.md
+    reason: pre-refresh L2; replaced by agent-eval + skill registry
+    supersedes_to: agent-eval/ARCHITECTURE.md
+    sunset_by: W0
+    banner_required: true
+    active_scan: false
+  - path: agent-runtime/posture/ARCHITECTURE.md
+    reason: pre-refresh L2; moved to docs/cross-cutting/posture-model.md
+    supersedes_to: docs/cross-cutting/posture-model.md
+    sunset_by: W0
+    banner_required: true
+    active_scan: false
+  - path: agent-runtime/auth/ARCHITECTURE.md
+    reason: pre-refresh L2; moved to agent-platform/auth (auth is platform-edge concern)
+    supersedes_to: agent-platform/auth/ARCHITECTURE.md
+    sunset_by: W0
+    banner_required: true
+    active_scan: false
+  - path: agent-runtime/action-guard/ARCHITECTURE.md
+    reason: pre-refresh L2; renamed to agent-runtime/action; 11-stage collapsed to 5-stage
+    supersedes_to: agent-runtime/action/ARCHITECTURE.md
+    sunset_by: W0
+    banner_required: true
+    active_scan: false
+
+  # ---- Pre-refresh cross-cutting (MOVED-banner-marked) ----
+  - path: docs/security-control-matrix.md
+    reason: pre-refresh; moved to docs/cross-cutting/security-control-matrix.md
+    supersedes_to: docs/cross-cutting/security-control-matrix.md
+    sunset_by: W0
+    banner_required: true
+    active_scan: false
+  - path: docs/trust-boundary-diagram.md
+    reason: pre-refresh; moved to docs/cross-cutting/trust-boundary-diagram.md
+    supersedes_to: docs/cross-cutting/trust-boundary-diagram.md
+    sunset_by: W0
+    banner_required: true
+    active_scan: false
+  - path: docs/secrets-lifecycle.md
+    reason: pre-refresh; moved to docs/cross-cutting/secrets-lifecycle.md
+    supersedes_to: docs/cross-cutting/secrets-lifecycle.md
+    sunset_by: W0
+    banner_required: true
+    active_scan: false
+  - path: docs/supply-chain-controls.md
+    reason: pre-refresh; moved to docs/cross-cutting/supply-chain-controls.md
+    supersedes_to: docs/cross-cutting/supply-chain-controls.md
+    sunset_by: W0
+    banner_required: true
+    active_scan: false
+  - path: docs/observability/cardinality-policy.md
+    reason: pre-refresh; moved to docs/cross-cutting/observability-policy.md
+    supersedes_to: docs/cross-cutting/observability-policy.md
+    sunset_by: W0
+    banner_required: true
+    active_scan: false
+  - path: docs/sidecar-security-profile.md
+    reason: pre-refresh; deferred until Python sidecar lands (W4+)
+    supersedes_to: NONE
+    sunset_by: W4
+    banner_required: false
+    active_scan: false
+  - path: docs/gateway-conformance-profile.md
+    reason: pre-refresh; deferred until Spring Cloud Gateway gets advanced features
+    supersedes_to: NONE
+    sunset_by: W2
+    banner_required: false
+    active_scan: false
+
+  # ---- Pre-refresh plans (banner-marked) ----
+  - path: docs/plans/W0-evidence-skeleton.md
+    reason: pre-refresh plan; superseded by docs/plans/engineering-plan-W0-W4.md
+    supersedes_to: docs/plans/engineering-plan-W0-W4.md
+    sunset_by: W0
+    banner_required: true
+    active_scan: false
+  - path: docs/plans/roadmap-W0-W4.md
+    reason: pre-refresh plan; superseded by docs/plans/engineering-plan-W0-W4.md
+    supersedes_to: docs/plans/engineering-plan-W0-W4.md
+    sunset_by: W0
+    banner_required: true
+    active_scan: false
+
+# ============================================================
+# historical_documents -- excluded from current review and gate
+# ============================================================
+# These files describe earlier design positions or are review records.
+# They are excluded from the active review surface and from gate
+# semantics. They MUST carry a "HISTORICAL" banner where banner_required.
+
 historical_documents:
 
+  # ---- v5 / v6-superseded design docs ----
   - path: docs/architecture-v5.0.md
     reason: superseded design (architecture v5.0)
     active_scan: false
     banner_required: true
   - path: docs/architecture-v5.0-review-2026-05-07.md
-    reason: review record for superseded design v5.0
+    reason: review record for superseded v5.0
     active_scan: false
     banner_required: true
   - path: docs/architecture-review-2026-05-07.md
@@ -360,10 +416,7 @@ historical_documents:
     active_scan: false
     banner_required: true
 
-  # Review-cycle inputs: these are reviewer prose that legitimately uses
-  # forbidden phrases when describing them. They are quarantined from the
-  # gate via filename-pattern exclusion, NOT banner-marked, because they
-  # are inputs to specific cycles rather than design documents.
+  # ---- Review-cycle inputs (cycles 1..9) ----
   - path: docs/systematic-architecture-improvement-plan-2026-05-07.en.md
     reason: review input (improvement plan)
     active_scan: false
@@ -400,6 +453,10 @@ historical_documents:
     reason: review input (cycle 8)
     active_scan: false
     banner_required: false
+  - path: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
+    reason: review input (cycle 9)
+    active_scan: false
+    banner_required: false
   - path: docs/systemic-remediation-operating-plan-2026-05-08.en.md
     reason: review input (systemic operating plan)
     active_scan: false
@@ -408,7 +465,11 @@ historical_documents:
     reason: cycle-8 response document (records reviewer prose verbatim)
     active_scan: false
     banner_required: false
+  - path: docs/systematic-architecture-remediation-cycle-9-response.en.md
+    reason: cycle-9 response document (records reviewer prose verbatim)
+    active_scan: false
+    banner_required: false
   - path: docs/architecture-meta-reflection-2026-05-08.en.md
-    reason: post-cycle-8 meta reflection (root-cause analysis + scoring framework; not a design document)
+    reason: post-cycle-8 meta reflection (root-cause + 32-dim scoring framework)
     active_scan: false
     banner_required: false
