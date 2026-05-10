@@ -12,7 +12,7 @@
 > - L1 cognitive runtime: [`../agent-runtime/ARCHITECTURE.md`](../agent-runtime/ARCHITECTURE.md)
 > - L2 docs for 9 critical subsystems (see §11.2)
 > - Behavioural rules: [`../CLAUDE.md`](../CLAUDE.md)
-> - v5.0 historical input: [`architecture-v5.0.md`](architecture-v5.0.md)
+> - v5.0 historical input: [`ARCHITECTURE.md`](../ARCHITECTURE.md) (canonical; v5.0 historical doc archived)
 > - v5.0 adversarial review: [`architecture-v5.0-review-2026-05-07.md`](architecture-v5.0-review-2026-05-07.md)
 > - Predecessor: `D:/chao_workspace/hi-agent/ARCHITECTURE.md` (32 production waves of operational learning)
 
@@ -998,7 +998,7 @@ docs/architecture-review-2026-05-07.md           (THIS DOCUMENT — committee-fa
 │   ├── server/ARCHITECTURE.md                   (L2 AgentRuntime + RunManager; 198 lines)
 │   └── skill/ARCHITECTURE.md                    (L2 MCP tools + Spring AI Advisors; 141 lines)
 └── docs/
-    ├── architecture-v5.0.md                     (historical input; 9,922 lines preserved)
+    ├── architecture-v5.0.md                     (historical; superseded by ARCHITECTURE.md)
     └── architecture-v5.0-review-2026-05-07.md   (the adversarial review that produced v6.0; 216 lines)
 ```
 

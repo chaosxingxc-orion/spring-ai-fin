@@ -57,7 +57,7 @@ function Rel([string]$abs) {
 # ---- Shared variable initialization (cycle-7 A1: must precede any rule using these) ----
 $gateReadme = 'gate/README.md'
 $delReadme = 'docs/delivery/README.md'
-$securityMatrix = 'docs/security-control-matrix.md'
+$securityMatrix = 'docs/cross-cutting/security-control-matrix.md'
 $matrixPath = 'docs/governance/decision-sync-matrix.md'
 $statusPath = 'docs/governance/architecture-status.yaml'
 $manifestPath = 'docs/governance/evidence-manifest.yaml'
@@ -287,12 +287,12 @@ foreach ($f in $NonDocsArchFiles) {
   }
 }
 
-# 8b. RLS pool lifecycle in security-control-matrix.md.
+# 8b. RLS pool lifecycle in docs/cross-cutting/security-control-matrix.md.
 if (Test-Path $securityMatrix) {
   $lines = Get-Content -LiteralPath $securityMatrix
   for ($i = 0; $i -lt $lines.Count; $i++) {
     if ($lines[$i] -clike '*connectionInitSql*') {
-      Fail 'rls_pool_lifecycle_matrix' "security-control-matrix.md cites 'connectionInitSql' as a tenant reset control" $securityMatrix ($i + 1)
+      Fail 'rls_pool_lifecycle_matrix' "docs/cross-cutting/security-control-matrix.md cites 'connectionInitSql' as a tenant reset control" $securityMatrix ($i + 1)
     }
   }
 }

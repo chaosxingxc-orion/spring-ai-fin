@@ -7,7 +7,7 @@
 
 **Status**: v1 -- created 2026-05-08 in response to security review sec-P1-10
 **Owner**: Platform team (GOV)
-**Companion**: [`security-control-matrix.md`](security-control-matrix.md) sec-15
+**Companion**: [`security-control-matrix.md`](cross-cutting/security-control-matrix.md) sec-15
 
 License preference (Apache 2.0 / MIT only on runtime path; L0 D-15) handles **legal** risk. Supply-chain controls handle **security** risk: malicious code in dependencies, compromised build pipelines, vulnerable transitive deps.
 

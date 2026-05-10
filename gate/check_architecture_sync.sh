@@ -76,7 +76,7 @@ fail() {
 # Shared variables (cycle-7 A1: must precede any rule).
 gate_readme="gate/README.md"
 del_readme="docs/delivery/README.md"
-security_matrix="docs/security-control-matrix.md"
+security_matrix="docs/cross-cutting/security-control-matrix.md"
 matrix="docs/governance/decision-sync-matrix.md"
 status_path="docs/governance/architecture-status.yaml"
 manifest_path="docs/governance/evidence-manifest.yaml"
@@ -320,13 +320,13 @@ runtime_error_message=""
     unset buf
   done
 
-  # 7b. RLS pool lifecycle in security-control-matrix.md.
+  # 7b. RLS pool lifecycle in docs/cross-cutting/security-control-matrix.md.
   if [[ -f "$security_matrix" ]]; then
     lineno=0
     while IFS= read -r line || [[ -n "$line" ]]; do
       lineno=$((lineno + 1))
       if [[ "$line" == *connectionInitSql* ]]; then
-        fail "rls_pool_lifecycle_matrix" "security-control-matrix.md cites 'connectionInitSql' as a tenant reset control" "$security_matrix" "$lineno"
+        fail "rls_pool_lifecycle_matrix" "docs/cross-cutting/security-control-matrix.md cites 'connectionInitSql' as a tenant reset control" "$security_matrix" "$lineno"
       fi
     done < "$security_matrix"
   fi

@@ -200,7 +200,7 @@ Each carries a "Pre-refresh design rationale (DEFERRED IN refresh)" banner with 
 
 ### Banner-marked archives
 
-- `docs/architecture-v5.0.md`, `docs/architecture-v5.0-review-2026-05-07.md`
+- `docs/architecture-v5.0.md` (deleted; canonical is `ARCHITECTURE.md`), `docs/architecture-v5.0-review-2026-05-07.md`
 - `docs/architecture-review-2026-05-07.md`
 - `docs/deep-architecture-security-assessment-2026-05-07.en.md`
 - `docs/security-response-2026-05-08.md`
