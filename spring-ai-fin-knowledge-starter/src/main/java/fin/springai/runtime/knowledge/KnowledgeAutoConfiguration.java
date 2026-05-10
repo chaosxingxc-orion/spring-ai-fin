@@ -1,0 +1,47 @@
+package fin.springai.runtime.knowledge;
+
+import fin.springai.runtime.spi.knowledge.DocumentSourceConnector;
+import fin.springai.runtime.spi.knowledge.LayoutParser;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.springframework.beans.factory.BeanCreationException;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.core.env.Environment;
+
+@AutoConfiguration
+@ConditionalOnClass(LayoutParser.class)
+public class KnowledgeAutoConfiguration {
+
+    @Bean
+    @ConditionalOnMissingBean(MeterRegistry.class)
+    SimpleMeterRegistry springAiFinKnowledgeFallbackMeterRegistry() {
+        return new SimpleMeterRegistry();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(LayoutParser.class)
+    LayoutParser layoutParser(MeterRegistry registry, Environment env) {
+        rejectIfNonDevPosture(env, "LayoutParser");
+        return new NotConfiguredLayoutParser(registry);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(DocumentSourceConnector.class)
+    DocumentSourceConnector documentSourceConnector(MeterRegistry registry, Environment env) {
+        rejectIfNonDevPosture(env, "DocumentSourceConnector");
+        return new NotConfiguredDocumentSourceConnector(registry);
+    }
+
+    private static void rejectIfNonDevPosture(Environment env, String beanName) {
+        String posture = env.getProperty("app.posture", "dev");
+        if (!"dev".equalsIgnoreCase(posture)) {
+            throw new BeanCreationException(
+                    "L0 sentinel " + beanName + " is only allowed in posture=dev. " +
+                    "Provide a real @Bean " + beanName + " or set app.posture=dev. " +
+                    "Current posture: " + posture);
+        }
+    }
+}
