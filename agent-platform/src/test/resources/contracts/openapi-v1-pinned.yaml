@@ -1,0 +1,54 @@
+openapi: "3.0.1"
+info:
+  title: spring-ai-fin API v1
+  description: "Northbound facade for the spring-ai-fin agent platform. Stability: stable (W0 surface). Non-health routes are added in W1+."
+  version: "1.0.0-W0"
+  contact:
+    name: spring-ai-fin platform team
+
+servers:
+  - url: http://localhost:8080
+    description: Local dev server
+
+paths:
+  /v1/health:
+    get:
+      summary: Platform health check
+      description: "Returns UP status, git SHA, DB round-trip latency, and timestamp. Exempt from X-Tenant-Id and Idempotency-Key header requirements (operator probe path)."
+      operationId: getHealth
+      tags: [platform]
+      parameters: []
+      responses:
+        "200":
+          description: Platform is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status, sha, db_ping_ns, ts]
+      properties:
+        status:
+          type: string
+          example: UP
+          description: Always "UP" when the endpoint responds.
+        sha:
+          type: string
+          example: "97b0827"
+          description: Git commit SHA of the running build, or "dev" if APP_SHA is not set.
+        db_ping_ns:
+          type: integer
+          format: int64
+          description: Round-trip latency to Postgres in nanoseconds.
+        ts:
+          type: string
+          format: date-time
+          description: Server timestamp of the response (ISO-8601).
+
+x-stability-tier: stable
+x-contract-owner: agent-platform
+x-w1-note: "W1 will add /v1/runs (POST, GET), /v1/runs/{runId} (GET, DELETE) with mandatory X-Tenant-Id and Idempotency-Key headers."

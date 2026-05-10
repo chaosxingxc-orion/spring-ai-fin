@@ -1,5 +1,7 @@
 package fin.springai.platform.contracts;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -11,6 +13,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.io.InputStream;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -18,10 +21,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * OpenAPI contract snapshot integration test for the W0 public surface.
  *
- * <p>Verifies that every path and operation declared in docs/contracts/openapi-v1.yaml
- * is present in the live springdoc spec at /v3/api-docs. The test does NOT fail on
- * additive changes (new paths or schemas in the live spec that are absent from the
- * pinned contract file are allowed). Only breaking removals block the build.</p>
+ * <p>Loads the pinned contract from the test classpath
+ * (src/test/resources/contracts/openapi-v1-pinned.yaml) and diffs it against the
+ * live springdoc spec at /v3/api-docs. Every path and operation declared in the
+ * pinned file must be present in the live spec. Additive changes (new paths or
+ * operations in live that are absent from the pinned file) are allowed. Only
+ * breaking removals block the build.</p>
  *
  * <p>Starts a full Spring Boot application with real Postgres via Testcontainers,
  * matching the pattern established in HealthEndpointIT.</p>
@@ -49,43 +54,34 @@ class OpenApiContractIT {
     @Autowired
     private TestRestTemplate restTemplate;
 
+    private static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory());
+
     @Test
     @SuppressWarnings("unchecked")
-    void openApiSpecContainsHealthEndpoint() {
+    void liveSpecContainsAllPinnedOperations() throws Exception {
+        // Load pinned spec from test classpath.
+        InputStream pinned = getClass().getResourceAsStream("/contracts/openapi-v1-pinned.yaml");
+        assertThat(pinned).as("pinned spec on classpath at /contracts/openapi-v1-pinned.yaml").isNotNull();
+        Map<String, Object> pinnedSpec = YAML_MAPPER.readValue(pinned, Map.class);
+
+        // Fetch live spec from running app.
         String url = "http://localhost:" + port + "/v3/api-docs";
-        Map<String, Object> spec = restTemplate.getForObject(url, Map.class);
+        Map<String, Object> liveSpec = restTemplate.getForObject(url, Map.class);
+        assertThat(liveSpec).as("live OpenAPI spec from /v3/api-docs").isNotNull();
 
-        assertThat(spec).isNotNull();
-        assertThat(spec).containsKey("paths");
-
-        Map<String, Object> paths = (Map<String, Object>) spec.get("paths");
-        assertThat(paths).containsKey("/v1/health");
-
-        Map<String, Object> healthPath = (Map<String, Object>) paths.get("/v1/health");
-        assertThat(healthPath).containsKey("get");
+        // Compare: every operation in pinned must exist in live.
+        OpenApiSnapshotComparator.ComparisonResult result =
+                OpenApiSnapshotComparator.compare(pinnedSpec, liveSpec);
+        assertThat(result.violations())
+                .as("Breaking changes detected: pinned operations missing from live spec")
+                .isEmpty();
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    void openApiSpecContainsHealthResponseSchema() {
+    void liveSpecInfoIsPresent() {
         String url = "http://localhost:" + port + "/v3/api-docs";
         Map<String, Object> spec = restTemplate.getForObject(url, Map.class);
-
-        assertThat(spec).isNotNull();
-        Map<String, Object> components = (Map<String, Object>) spec.get("components");
-        if (components != null) {
-            Map<String, Object> schemas = (Map<String, Object>) components.get("schemas");
-            // Health response may be inlined or referenced -- either is acceptable in W0
-            assertThat(schemas != null || spec.containsKey("paths")).isTrue();
-        }
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    void openApiSpecInfoIsPresent() {
-        String url = "http://localhost:" + port + "/v3/api-docs";
-        Map<String, Object> spec = restTemplate.getForObject(url, Map.class);
-
         assertThat(spec).containsKey("info");
         Map<String, Object> info = (Map<String, Object>) spec.get("info");
         assertThat(info).containsKey("title");
