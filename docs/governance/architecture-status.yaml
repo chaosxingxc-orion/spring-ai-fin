@@ -54,7 +54,7 @@ capabilities:
     allowed_claim: "L1: /v1/health GREEN; ArchUnit 4 rules GREEN. SPI contracts frozen."
 
   agent_runtime_kernel:
-    maturity: L0
+    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md
@@ -62,9 +62,11 @@ capabilities:
       - agent-runtime/ARCHITECTURE.md
     implementation:
       - agent-runtime/src/main/java/fin/springai/runtime/probe/OssApiProbe.java
-    tests: []
+    tests:
+      - agent-runtime/src/test/java/fin/springai/runtime/probe/OssApiProbeTest.java
     operator_gate: null
-    allowed_claim: "L0: OssApiProbe shell present; no kernel logic yet. W2 delivers run lifecycle."
+    latest_delivery_valid_sha: 154ee30
+    allowed_claim: "L1: OssApiProbe shell + OssApiProbeTest (3 tests GREEN). No kernel logic yet. W2 delivers run lifecycle."
 
   action_guard:
     maturity: L0
@@ -1040,7 +1042,6 @@ findings:
   REM-2026-05-09-C9-1:
     source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
     description: "Architecture-sync passed while active corpus held entries with disposition markers. Cycle-9 split active-corpus.yaml into active_documents (no disposition markers; gate-enforced via active_corpus_no_disposition_in_active), transitional_rationale (sunset_by field; pre-W0 archive), and historical_documents."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0
@@ -1048,7 +1049,6 @@ findings:
   REM-2026-05-09-C9-2:
     source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
     description: "Local gate evidence over-readable as delivery. Cycle-9 added local_semantic_pass vs delivery_valid_pass distinction in manifest self_test.pass_type. Delivery files now quote evidence_valid_for_delivery explicitly."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0
@@ -1056,7 +1056,6 @@ findings:
   REM-2026-05-09-C9-3:
     source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
     description: "Active-corpus mixed registry (cycle-9 B1; same fix as C9-1). The split into 3 sections is the truth-cut."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0
@@ -1064,7 +1063,6 @@ findings:
   REM-2026-05-09-C9-4:
     source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
     description: "current-architecture-index.md primary hierarchy was contaminated with pre-refresh L2 docs. Cycle-9 restructured: one active hierarchy listing only refresh-active docs; pre-refresh hierarchy moved to a Historical Rationale section. Gate rule index_active_subset enforces."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0
@@ -1072,7 +1070,6 @@ findings:
   REM-2026-05-09-C9-5:
     source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
     description: "ActionGuard had two active designs (5-stage in refresh L2 + cross-cutting matrix; 11-stage in pre-refresh action-guard/ + docs/security-control-matrix.md). Cycle-9 picked 5-stage as authoritative; 11-stage docs moved to transitional_rationale. Gate rule actionguard_5stage_invariants binds to agent-runtime/action/ (not action-guard/) and asserts the 5 stage names + audit-row + outbox-event invariants."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0
@@ -1080,7 +1077,6 @@ findings:
   REM-2026-05-09-C9-6:
     source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
     description: "Gate rule actionguard_pre_post_evidence_missing was binding to legacy action-guard/ path. Cycle-9 retired that rule; replaced by actionguard_5stage_invariants on agent-runtime/action/."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0
@@ -1088,7 +1084,6 @@ findings:
   REM-2026-05-09-C9-7:
     source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
     description: "No runnable runtime artifact. Per user 2026-05-09 instruction (engineering implementation only needs a plan), W0 stays as plan only this cycle. Rule 8 remains fail-closed; cycle-9 D1 ACCEPT-AS-CORRECT."
-    maturity: L0
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0
@@ -1097,7 +1092,6 @@ findings:
   REM-2026-05-09-C9-8:
     source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
     description: "Fake-provider smoke vs Rule 8 confusion. Cycle-9 added manifest dependency_mode (fake|real) + rule_8_eligible (true|false). Engineering plan renamed fake-provider sequential smoke to ci_operator_shape_smoke; rule_8_operator_shape reserved for real-dependency runs. Plan-level rule 8 added: no delivery file may claim Rule 8 PASS while dependency_mode=fake."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0/W2
@@ -1105,7 +1099,6 @@ findings:
   REM-2026-05-09-C9-9:
     source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
     description: "100% design-time cap language created premature closure pressure. Cycle-9 reorganized self-audit headline: maturity ladder is primary (every refresh capability is L0); 240+ dim score is a secondary diagnostic explicitly labeled non-shipping. Index sec-Capability-maturity restated."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0
@@ -1117,7 +1110,6 @@ findings:
   REM-2026-05-09-C10-1:
     source: docs/architecture-design-systematic-review-2026-05-09.md
     description: "L0 lacked NFRs / SLOs (latency, throughput, availability, durability, cost, capacity per posture). Cycle-10 added docs/cross-cutting/non-functional-requirements.md with concrete numbers + L0 sec-6.6 summary."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0..W4
@@ -1125,7 +1117,6 @@ findings:
   REM-2026-05-09-C10-2:
     source: docs/architecture-design-systematic-review-2026-05-09.md
     description: "First-principles (P1/P2/P3) lacked measurable proxies. Cycle-10 added L0 sec-5.4 with 9 measurable proxies (time-to-first-run, helm-install-to-health, default examples count, median run cost, prompt-cache hit rate, budget breach count, eval pass rate, feedback collection rate, prompt A/B rollout count)."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0..W4
@@ -1133,7 +1124,6 @@ findings:
   REM-2026-05-09-C10-3:
     source: docs/architecture-design-systematic-review-2026-05-09.md
     description: "Module dependency graph was implicit. Cycle-10 added L0 sec-3.1 explicit graph + acyclic rule + ArchUnit CI test."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0
@@ -1141,7 +1131,6 @@ findings:
   REM-2026-05-09-C10-4:
     source: docs/architecture-design-systematic-review-2026-05-09.md
     description: "Threat model missing as a coherent doc. Cycle-10 added docs/cross-cutting/threat-model.md with STRIDE per trust boundary (TB-1..TB-4) + cross-cutting threats."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W1+
@@ -1149,7 +1138,6 @@ findings:
   REM-2026-05-09-C10-5:
     source: docs/architecture-design-systematic-review-2026-05-09.md
     description: "API conventions missing. Cycle-10 added docs/cross-cutting/api-conventions.md (URL versioning, methods + idempotency, naming, status codes, RFC-7807 error body, error code taxonomy, pagination, headers, OpenAPI, deprecation)."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0
@@ -1157,7 +1145,6 @@ findings:
   REM-2026-05-09-C10-6:
     source: docs/architecture-design-systematic-review-2026-05-09.md
     description: "Data model conventions missing. Cycle-10 added docs/cross-cutting/data-model-conventions.md (naming, UUIDv7 IDs, required columns, multi-tenant patterns, timestamps, soft vs hard delete, indexes, jsonb usage, migrations, schema spine, Java type ownership)."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0..W4
@@ -1165,7 +1152,6 @@ findings:
   REM-2026-05-09-C10-7:
     source: docs/architecture-design-systematic-review-2026-05-09.md
     description: "Deployment topology missing. Cycle-10 added docs/cross-cutting/deployment-topology.md (dev compose, single-region K8s, multi-region option, replica counts, scaling assumptions, network policies, rollout strategy, DR, cost model)."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0..W4
@@ -1173,7 +1159,6 @@ findings:
   REM-2026-05-09-C10-8:
     source: docs/architecture-design-systematic-review-2026-05-09.md
     description: "Failure modes catalog missing. Cycle-10 added docs/cross-cutting/failure-modes-catalog.md (per-module runtime failure modes + Detect / Mitigation / Outcome per row + cross-cutting failure modes)."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0..W4
@@ -1181,7 +1166,6 @@ findings:
   REM-2026-05-09-C10-9:
     source: docs/architecture-design-systematic-review-2026-05-09.md
     description: "Tenant lifecycle (create / suspend / delete / export / impersonate) was not specified. Cycle-10 added agent-platform/tenant L2 sec-10 with state machine + per-action procedure + admin API."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W1+
@@ -1189,7 +1173,6 @@ findings:
   REM-2026-05-09-C10-10:
     source: docs/architecture-design-systematic-review-2026-05-09.md
     description: "Memory eviction + per-tenant quota not specified. Cycle-10 added agent-runtime/memory L2 sec-10 with per-tier eviction + tenant quota table + PII tagging."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W2/W3
@@ -1197,7 +1180,6 @@ findings:
   REM-2026-05-09-C10-11:
     source: docs/architecture-design-systematic-review-2026-05-09.md
     description: "Tool versioning + per-tenant quota + sandbox levels not specified. Cycle-10 added agent-runtime/tool L2 sec-10 with SemVer versioning + dual quota + 5-level sandbox table."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W3
@@ -1205,7 +1187,6 @@ findings:
   REM-2026-05-09-C10-12:
     source: docs/architecture-design-systematic-review-2026-05-09.md
     description: "Parallel run handling + timeout escalation not specified. Cycle-10 added agent-runtime/run L2 sec-10 with per-tenant cap + 6-level timeout table + cancellation across sync/Temporal boundary."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W2
@@ -1213,7 +1194,6 @@ findings:
   REM-2026-05-09-C10-13:
     source: docs/architecture-design-systematic-review-2026-05-09.md
     description: "Workflow versioning + signal discipline + namespace strategy not specified. Cycle-10 added agent-runtime/temporal L2 sec-10 with getVersion pattern + signal contract + namespace pattern + activity catalog."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W4
@@ -1221,7 +1201,6 @@ findings:
   REM-2026-05-09-C10-14:
     source: docs/architecture-design-systematic-review-2026-05-09.md
     description: "Outbox per-tenant ordering + DLQ procedure not specified. Cycle-10 added agent-runtime/outbox L2 sec-10 with per-tenant batch ordering + DLQ table + replay API + DLQ alerts."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W2/W3
@@ -1229,7 +1208,6 @@ findings:
   REM-2026-05-09-C10-15:
     source: docs/architecture-design-systematic-review-2026-05-09.md
     description: "Cross-module Java type ownership unclear. Cycle-10 documented in data-model-conventions sec-13: agent-platform/contracts is the single shared-type module; no cycles."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0
@@ -1242,7 +1220,6 @@ findings:
   REM-2026-05-09-C10-CF:
     source: docs/architecture-design-systematic-review-2026-05-09.md
     description: "25 systematic-review carry-forward items tracked in sec-4.2 of the source doc. Categories: P-A (token-binding, alerting, cross-region tracing, sandboxing, audit chain validate, eval cost budget); P-B (token revocation, stepped-up auth, idempotency body storage, config hot-reload, run timeout escalation, LLM streaming, tool-calling protocol, prompt templates, action retry, signal contract, eval human-loop); P-C (error propagation, inter-module timeouts, retry budgets); P-D (per-wave score lift, per-feature business KPI); P-E (cycle-11 closes the version-pin + integration-contract subset; the remaining P-E items below). Each becomes its own REM row when closed."
-    maturity: L0
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W1..W4+
@@ -1253,7 +1230,6 @@ findings:
   REM-2026-05-09-C11-1:
     source: user-question-2026-05-09 (OSS-integration correctness)
     description: "Cycle-10 P-E was carry-forward; user pointed out that without local OSS dep resolution, architecture correctness is API-plausible only. Cycle-11 adds docs/cross-cutting/oss-bill-of-materials.md with exact version pins per dep, U0..U4 verification ladder (parallel to L0..L4 maturity), per-dep API surface citations, integration contract, and risks. Spring AI 1.0.7 + Temporal Java SDK 1.34.0 + MCP Java SDK 2.0.0-M2 verified at U1 via upstream release notes / Maven Central. All other deps remain at U0 until W0 probe code lands them at U2."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0..W4
@@ -1261,7 +1237,6 @@ findings:
   REM-2026-05-09-C11-2:
     source: user-question-2026-05-09
     description: "Stale version refs corrected: agent-runtime/llm Spring AI 1.0.x -> 1.0.7; agent-runtime/temporal Temporal SDK 1.25.x -> 1.34.0; agent-runtime/tool MCP latest 0.x -> 2.0.0-M2 (milestone). L0 sec-2 OSS matrix updated. L0 sec-2.1.5 OSS verification ladder added."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0
@@ -1269,7 +1244,6 @@ findings:
   REM-2026-05-09-C11-3:
     source: user-question-2026-05-09
     description: "Per-wave OSS verification advancement plan (BoM sec-6): W0 promotes Spring Boot / Postgres / HikariCP / etc. to U2 via probe code; W1 promotes Spring Security / Keycloak to U3 via Testcontainers; W2 promotes Spring AI to U2/U3; W3 promotes OPA / MCP / pgvector; W4 promotes Temporal SDK to U3."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0..W4
@@ -1277,7 +1251,6 @@ findings:
   REM-2026-05-09-C11-CF:
     source: user-question-2026-05-09
     description: "Remaining P-E carry-forward (after cycle-11): pgvector vs Qdrant trigger criteria (W2); Temporal vs simpler durable-execution alternative for v1 single-customer (W4); MCP 2.0.0-M2 -> 2.0.0 GA upgrade contingency in W3; Spring AI 1.0.x vs 1.1.x branch decision at W4 close."
-    maturity: L0
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W2..W4
@@ -1288,7 +1261,6 @@ findings:
   REM-2026-05-09-C12-1:
     source: user-decision-2026-05-09 (2-phase model adopted)
     description: "Phase A item 1: end-to-end interaction sequence diagrams. Cycle-12 added docs/cross-cutting/interaction-sequences.md with 6 flows: happy-path POST /v1/runs sync; LLM-provider outage; Postgres tx fail mid-run; tenant suspended mid-run; long-running via Temporal; idempotent retry with cached body."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0
@@ -1296,7 +1268,6 @@ findings:
   REM-2026-05-09-C12-2:
     source: user-decision-2026-05-09
     description: "Phase A item 2: v1 reference customer profile pinned. Cycle-12 added docs/cross-cutting/v1-customer-profile.md (Tier-1 financial-services operator: 5 logical tenants, 500 internal users, 20k runs/day, 50 RPS sustained, 7-year audit retention, on-prem K8s single-region with DR). Anchors NFR doc's prod targets to concrete numbers."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0
@@ -1304,7 +1275,6 @@ findings:
   REM-2026-05-09-C12-3:
     source: user-decision-2026-05-09
     description: "Phase A item 3: design-decision register (ADR-style). Cycle-12 added docs/cross-cutting/design-decisions.md with 15 ADRs covering: Java 21 + Spring Boot 3.5; Spring AI 1.0.7 vs LangChain4j; Temporal 1.34 vs Airflow; Postgres + pgvector vs Qdrant; SET LOCAL RLS GUC vs per-checkout reset; ActionGuard 5-stage vs 11-stage; Postgres outbox vs Kafka v1; OPA sidecar vs Cedar/custom; Vault OSS vs K8s Secrets; Keycloak default + BYO IdP; Spring Cloud Gateway vs Kong; Maven vs Gradle; UUIDv7 vs sequence; 3-posture model; multi-framework dispatch deferred. Plus 5 deferred decisions tracked."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0
@@ -1312,7 +1282,6 @@ findings:
   REM-2026-05-09-C12-4:
     source: user-decision-2026-05-09
     description: "Phase A is complete at cycle-12 close. L0 sec-11.5 records this. Phase B trigger: pull OSS deps to local Maven cache (per user instruction: after Phase A complete, core work is to download OSS components locally). Phase B's first action is mvn -B dependency:resolve against the cycle-11 BoM; advances U1 -> U2; then proceeds module-by-module starting with W0."
-    maturity: L1
     status: design_accepted
     evidence_state: design_accepted
     target_wave: W0
@@ -1556,8 +1525,8 @@ findings:
       - agent-platform/src/test/java/fin/springai/platform/api/ApiCompatibilityTest.java
     tests:
       - agent-platform/src/test/java/fin/springai/platform/api/ApiCompatibilityTest.java
-    latest_delivery_valid_sha: 8505f7d
-    allowed_claim: "ArchUnit 4 rules GREEN: no spring-ai-alibaba import; platform/runtime/SPI separation."
+    latest_delivery_valid_sha: 56a8bfe
+    allowed_claim: "L1: ArchUnit 4 rules GREEN; rules 3+4 now non-vacuous (SPI starters on test-classpath); japicmp baseline configured (skip=true; enforcement W1+)."
 
   # ---- cycle-15/16 closure extension: W0 contracts + contract spine ----
 
@@ -1600,7 +1569,9 @@ findings:
     tests:
       - spring-ai-fin-resilience-starter/src/test/java/fin/springai/runtime/resilience/ResilienceAutoConfigurationTest.java
     latest_delivery_valid_sha: c000b73
-    allowed_claim: "L1: ResilienceContract SPI; sentinel fails fast in research/prod; both auto-config registrations present."
+    caller_users: 0
+    notes: "caller_users=0 (W2). SPI is contract-only; @CircuitBreaker annotation wiring deferred to W2 when host code exists."
+    allowed_claim: "L1: ResilienceContract SPI; sentinel fails fast in research/prod; both auto-config registrations present. No call-site users yet (W2)."
 
   document_source_connector_registry:
     maturity: L1
@@ -1612,7 +1583,9 @@ findings:
     tests:
       - spring-ai-fin-knowledge-starter/src/test/java/fin/springai/runtime/knowledge/KnowledgeAutoConfigurationTest.java
     latest_delivery_valid_sha: c000b73
-    allowed_claim: "L1: immutable registry; duplicate-id rejection at construction; wired via List<DocumentSourceConnector> in KnowledgeAutoConfiguration."
+    non_sentinel_connectors: 0
+    notes: "non_sentinel_connectors=0 (W2+). Registry structure complete; real connector impls (S3, docling) deferred."
+    allowed_claim: "L1: immutable registry; duplicate-id rejection at construction; wired via List<DocumentSourceConnector> in KnowledgeAutoConfiguration. Zero real connector impls (W2+)."
 
   memory_configuration_properties:
     maturity: L1
@@ -1623,8 +1596,8 @@ findings:
       - spring-ai-fin-memory-starter/src/main/java/fin/springai/runtime/memory/MemoryProperties.java
     tests:
       - spring-ai-fin-memory-starter/src/test/java/fin/springai/runtime/memory/MemoryAutoConfigurationTest.java
-    latest_delivery_valid_sha: c000b73
-    allowed_claim: "L1: @ConfigurationProperties(springai.fin.memory); IDE auto-complete via configuration-processor."
+    latest_delivery_valid_sha: 25e85ae
+    allowed_claim: "L1: @ConfigurationProperties(springai.fin.memory) + @ConditionalOnProperty wiring real; starterBeansAbsentWhenDisabled test GREEN."
 
   skills_configuration_properties:
     maturity: L1
@@ -1635,8 +1608,8 @@ findings:
       - spring-ai-fin-skills-starter/src/main/java/fin/springai/runtime/skills/SkillsProperties.java
     tests:
       - spring-ai-fin-skills-starter/src/test/java/fin/springai/runtime/skills/SkillsAutoConfigurationTest.java
-    latest_delivery_valid_sha: c000b73
-    allowed_claim: "L1: @ConfigurationProperties(springai.fin.skills)."
+    latest_delivery_valid_sha: 25e85ae
+    allowed_claim: "L1: @ConfigurationProperties(springai.fin.skills) + @ConditionalOnProperty wiring real; starterBeansAbsentWhenDisabled test GREEN."
 
   knowledge_configuration_properties:
     maturity: L1
@@ -1647,8 +1620,8 @@ findings:
       - spring-ai-fin-knowledge-starter/src/main/java/fin/springai/runtime/knowledge/KnowledgeProperties.java
     tests:
       - spring-ai-fin-knowledge-starter/src/test/java/fin/springai/runtime/knowledge/KnowledgeAutoConfigurationTest.java
-    latest_delivery_valid_sha: c000b73
-    allowed_claim: "L1: @ConfigurationProperties(springai.fin.knowledge)."
+    latest_delivery_valid_sha: 25e85ae
+    allowed_claim: "L1: @ConfigurationProperties(springai.fin.knowledge) + @ConditionalOnProperty wiring real; starterBeansAbsentWhenDisabled test GREEN."
 
   governance_configuration_properties:
     maturity: L1
@@ -1659,8 +1632,8 @@ findings:
       - spring-ai-fin-governance-starter/src/main/java/fin/springai/runtime/governance/GovernanceProperties.java
     tests:
       - spring-ai-fin-governance-starter/src/test/java/fin/springai/runtime/governance/GovernanceAutoConfigurationTest.java
-    latest_delivery_valid_sha: c000b73
-    allowed_claim: "L1: @ConfigurationProperties(springai.fin.governance)."
+    latest_delivery_valid_sha: 25e85ae
+    allowed_claim: "L1: @ConfigurationProperties(springai.fin.governance) + @ConditionalOnProperty wiring real; starterBeansAbsentWhenDisabled test GREEN."
 
   persistence_configuration_properties:
     maturity: L1
@@ -1671,8 +1644,8 @@ findings:
       - spring-ai-fin-persistence-starter/src/main/java/fin/springai/runtime/persistence/PersistenceProperties.java
     tests:
       - spring-ai-fin-persistence-starter/src/test/java/fin/springai/runtime/persistence/PersistenceAutoConfigurationTest.java
-    latest_delivery_valid_sha: c000b73
-    allowed_claim: "L1: @ConfigurationProperties(springai.fin.persistence)."
+    latest_delivery_valid_sha: 25e85ae
+    allowed_claim: "L1: @ConfigurationProperties(springai.fin.persistence) + @ConditionalOnProperty wiring real; starterBeansAbsentWhenDisabled test GREEN."
 
   openapi_v1_snapshot:
     maturity: L2
@@ -1683,8 +1656,8 @@ findings:
       - docs/contracts/openapi-v1.yaml
     tests:
       - agent-platform/src/test/java/fin/springai/platform/contracts/OpenApiContractIT.java
-    latest_delivery_valid_sha: c000b73
-    allowed_claim: "L2: OpenAPI 3.0.1 snapshot pinning /v1/health surface; OpenApiContractIT verifies live spec contains declared paths."
+    latest_delivery_valid_sha: 829e633
+    allowed_claim: "L2: OpenAPI 3.0.1 snapshot pinning /v1/health surface; OpenApiContractIT runs actual snapshot diff via OpenApiSnapshotComparator (pinned YAML vs live /v3/api-docs)."
 
   integration_guide:
     maturity: L2
@@ -1805,3 +1778,125 @@ findings:
     tests: []
     latest_delivery_valid_sha: c000b73
     allowed_claim: "L2: per-route stability tier; mandatory header conventions; status code conventions."
+
+  # ---- architecture-review-readiness pass (T-AR-1..T-AR-10) 2026-05-10 ----
+
+  japicmp_configured:
+    maturity: L1
+    status: implemented_unverified
+    evidence_state: implemented_unverified
+    l0_decision: ARCHITECTURE.md (sec.3.2)
+    implementation:
+      - spring-ai-fin-dependencies/pom.xml
+    tests:
+      - agent-platform/src/test/java/fin/springai/platform/api/ApiCompatibilityTest.java
+    latest_delivery_valid_sha: 56a8bfe
+    allowed_claim: "L1: japicmp-maven-plugin 0.23.0 wired in BoM pluginManagement; skip=true for W0 baseline; enforcement activates W1+ on first version diff."
+
+  rls_policy_sql:
+    maturity: L1
+    status: implemented_unverified
+    evidence_state: implemented_unverified
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - docs/security/rls-policy.sql
+    tests: []
+    latest_delivery_valid_sha: c7169a5
+    allowed_claim: "L1: PostgreSQL RLS DDL + assert_tenant_guc_set() trigger enforcing app.tenant_id GUC at every mutation; SQL artifact in-tree."
+
+  tenant_isolation_it_scaffold:
+    maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - docs/security/rls-policy.sql
+    tests:
+      - agent-platform/src/test/java/fin/springai/platform/security/TenantIsolationIT.java
+      - agent-platform/src/test/java/fin/springai/platform/security/RlsPolicyCoverageIT.java
+      - agent-platform/src/test/java/fin/springai/platform/security/GucEmptyAtTxStartIT.java
+    latest_delivery_valid_sha: c7169a5
+    allowed_claim: "L0: three RLS IT skeletons present (@Disabled); W2 wires real persistence layer and removes @Disabled."
+
+  ops_runbooks_skeleton:
+    maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - ops/runbooks/README.md
+      - ops/runbooks/dr.md
+      - ops/runbooks/rollback.md
+      - ops/runbooks/digest-pin.md
+      - ops/runbooks/total-credential-loss.md
+      - ops/runbooks/incident-response.md
+    tests: []
+    latest_delivery_valid_sha: 4a79bb5
+    allowed_claim: "L0: 5 runbooks present with trigger/scope/procedure/verification sections; all marked Maturity: L0."
+
+  helm_chart_skeleton:
+    maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - ops/helm/spring-ai-fin/Chart.yaml
+      - ops/helm/spring-ai-fin/values.yaml
+      - ops/helm/spring-ai-fin/templates/deployment.yaml
+      - ops/helm/spring-ai-fin/templates/service.yaml
+      - ops/helm/spring-ai-fin/templates/networkpolicy.yaml
+      - ops/helm/spring-ai-fin/templates/configmap.yaml
+    tests: []
+    latest_delivery_valid_sha: 4a79bb5
+    allowed_claim: "L0: Helm chart skeleton present; not deployment-tested. W4 deployment-tested."
+
+  doctor_script:
+    maturity: L0
+    status: implemented_unverified
+    evidence_state: implemented_unverified
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - gate/doctor.sh
+      - gate/doctor.ps1
+    tests: []
+    latest_delivery_valid_sha: 4a79bb5
+    allowed_claim: "L0: doctor scripts check APP_POSTURE, required env vars, gate log presence, mvnw exec bit, Java availability; exit 0/1."
+
+  adr_per_file:
+    maturity: L1
+    status: design_accepted
+    evidence_state: design_accepted
+    l0_decision: ARCHITECTURE.md
+    l2_documents:
+      - docs/adr/README.md
+    implementation:
+      - docs/adr/
+    tests: []
+    latest_delivery_valid_sha: 3d34d7b
+    allowed_claim: "L1: 15 per-file MADR 4.0 ADRs in docs/adr/; version refs current (Spring AI 2.0.0-M5, Temporal 1.35.0, Boot 4.0.5); README index present."
+
+  perf_evidence_path:
+    maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - perf/README.md
+      - perf/baseline-2026-05-10.md
+      - perf/jmh/pom.xml
+      - perf/jmh/src/main/java/fin/springai/perf/FilterBench.java
+    tests: []
+    latest_delivery_valid_sha: 154ee30
+    allowed_claim: "L0: JMH skeleton + baseline doc present; no captured numbers (W4 cadence). Strategy and regression policy documented."
+
+  agent_runtime_smoke_test:
+    maturity: L1
+    status: implemented_unverified
+    evidence_state: implemented_unverified
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - agent-runtime/src/main/java/fin/springai/runtime/probe/OssApiProbe.java
+    tests:
+      - agent-runtime/src/test/java/fin/springai/runtime/probe/OssApiProbeTest.java
+    latest_delivery_valid_sha: 154ee30
+    allowed_claim: "L1: OssApiProbeTest 3 tests (classIsLoadable, probeReturnsNonNullString, temporalGetVersionShapeReturnsMinusOne) GREEN."
