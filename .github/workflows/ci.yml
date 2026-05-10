@@ -21,7 +21,7 @@ jobs:
           cache: maven
 
       - name: Maven verify (compile + unit + integration tests)
-        run: mvn -B -ntp --strict-checksums verify
+        run: ./mvnw -B -ntp --strict-checksums verify
 
       - name: Architecture-sync gate
         run: bash gate/check_architecture_sync.sh
@@ -29,8 +29,12 @@ jobs:
       - name: Architecture-sync self-test
         run: bash gate/test_architecture_sync_gate.sh
 
-      - name: Operator-shape smoke gate (W0 will fail without artifact; expected pre-W0 close)
-        run: bash gate/run_operator_shape_smoke.sh || true
+      # Operator-shape smoke gate is intentionally NOT in CI until W0 build verification
+      # lands (cycle-14 A1 user-chosen variant). The gate/run_operator_shape_smoke.sh script
+      # exits 1 with FAIL_NEEDS_BUILD until 'mvn package' produces a JAR. Keeping it out of
+      # CI (rather than masking with || true) makes CI status honest.
+      # Reintroduce as a blocking step (no || true, no continue-on-error) once
+      # agent-platform/target/agent-platform-*.jar is produced by mvn verify on CI.
 
       - name: Upload test results
         if: always()

@@ -76,7 +76,7 @@ fail() {
 # Shared variables (cycle-7 A1: must precede any rule).
 gate_readme="gate/README.md"
 del_readme="docs/delivery/README.md"
-security_matrix="docs/security-control-matrix.md"
+security_matrix="docs/cross-cutting/security-control-matrix.md"
 matrix="docs/governance/decision-sync-matrix.md"
 status_path="docs/governance/architecture-status.yaml"
 manifest_path="docs/governance/evidence-manifest.yaml"
@@ -320,13 +320,13 @@ runtime_error_message=""
     unset buf
   done
 
-  # 7b. RLS pool lifecycle in security-control-matrix.md.
+  # 7b. RLS pool lifecycle in docs/cross-cutting/security-control-matrix.md.
   if [[ -f "$security_matrix" ]]; then
     lineno=0
     while IFS= read -r line || [[ -n "$line" ]]; do
       lineno=$((lineno + 1))
       if [[ "$line" == *connectionInitSql* ]]; then
-        fail "rls_pool_lifecycle_matrix" "security-control-matrix.md cites 'connectionInitSql' as a tenant reset control" "$security_matrix" "$lineno"
+        fail "rls_pool_lifecycle_matrix" "docs/cross-cutting/security-control-matrix.md cites 'connectionInitSql' as a tenant reset control" "$security_matrix" "$lineno"
       fi
     done < "$security_matrix"
   fi
@@ -663,7 +663,7 @@ runtime_error_message=""
   # evidence_commit_sha).
   if [[ -n "$manifest_delivery" && -f "$manifest_delivery" && -n "$reviewed_content_sha" ]]; then
     delivery_base=$(basename "$manifest_delivery" .md)
-    delivery_sha=${delivery_base##2026-05-08-}
+    delivery_sha=$(echo "$delivery_base" | sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2}-//')
     found_log=""
     for candidate in "gate/log/${delivery_sha}-posix.json" "gate/log/${delivery_sha}-windows.json" "gate/log/${delivery_sha}.json"; do
       if [[ -f "$candidate" ]]; then found_log="$candidate"; break; fi
@@ -815,6 +815,73 @@ runtime_error_message=""
     done
     unset buf
   fi
+
+  # 24. CI no-or-true mask (cycle-14 A1): gate/run_* calls in CI workflows
+  # must not be masked with || true. Removes the escape hatch that allowed a
+  # failing Rule 8 smoke gate to silently pass CI.
+  while IFS= read -r _wf_file; do
+    [[ -f "$_wf_file" ]] || continue
+    _wf_lineno=0
+    while IFS= read -r _wf_line; do
+      _wf_lineno=$((_wf_lineno + 1))
+      if [[ "$_wf_line" == *"gate/run_"* && "$_wf_line" == *"|| true"* ]]; then
+        fail "ci_no_or_true_mask" "CI workflow masks gate/run_* with '|| true' -- remove the mask or rename the step to *_report_only" "$_wf_file" $_wf_lineno
+      fi
+    done < "$_wf_file"
+  done < <(find .github/workflows -maxdepth 1 -name '*.yml' -type f 2>/dev/null || true)
+
+  # 25. Rule 8 state machine coherent (cycle-14 B1): artifact_present_state
+  # must agree with rule_8.state. Prevents internally-contradictory manifests.
+  if [[ -f "$manifest_path" ]]; then
+    _artifact_state=$(awk '/^artifact_present_state:/{gsub(/^artifact_present_state:[[:space:]]*/,""); gsub(/ #.*$/,""); gsub(/[[:space:]]*$/,""); print; exit}' "$manifest_path" 2>/dev/null || true)
+    if [[ -n "$_artifact_state" && -n "$rule_8_state" ]]; then
+      case "$_artifact_state" in
+        none)
+          if [[ "$rule_8_state" != "fail_closed_artifact_missing" ]]; then
+            fail "rule_8_state_machine_coherent" "artifact_present_state=none but rule_8.state=$rule_8_state (expected fail_closed_artifact_missing)" "$manifest_path" 0
+          fi ;;
+        source_only)
+          if [[ "$rule_8_state" != "fail_closed_needs_build" ]]; then
+            fail "rule_8_state_machine_coherent" "artifact_present_state=source_only but rule_8.state=$rule_8_state (expected fail_closed_needs_build)" "$manifest_path" 0
+          fi ;;
+        jar_present)
+          if [[ "$rule_8_state" != "fail_closed_needs_real_flow" && "$rule_8_state" != "pass" ]]; then
+            fail "rule_8_state_machine_coherent" "artifact_present_state=jar_present but rule_8.state=$rule_8_state (expected fail_closed_needs_real_flow or pass)" "$manifest_path" 0
+          fi ;;
+        *)
+          fail "rule_8_state_machine_coherent" "artifact_present_state has unknown value: $_artifact_state (valid: none | source_only | jar_present)" "$manifest_path" 0 ;;
+      esac
+    fi
+  fi
+  # 26. Contract catalog present (cycle-15/16 D1): docs/contracts/contract-catalog.md
+  # must exist. Created in T-CS-Docs; indexes all external contract types.
+  _contract_catalog="docs/contracts/contract-catalog.md"
+  if [[ ! -f "$_contract_catalog" ]]; then
+    fail "contract_catalog_present" "docs/contracts/contract-catalog.md not found; create it per T-CS-Docs" "$_contract_catalog" 0
+  fi
+
+  # 27. OpenAPI snapshot pinned (cycle-15/16 D2): docs/contracts/openapi-v1.yaml
+  # must exist. Created in T-CS-2; pins the W0 public surface.
+  _openapi_yaml="docs/contracts/openapi-v1.yaml"
+  if [[ ! -f "$_openapi_yaml" ]]; then
+    fail "openapi_snapshot_pinned" "docs/contracts/openapi-v1.yaml not found; create it per T-CS-2" "$_openapi_yaml" 0
+  fi
+
+  # 28. Metric naming namespace (cycle-15/16 D3): all .counter("...") calls in
+  # Java sources must use the springai_fin_ prefix. Catches namespace drift.
+  while IFS= read -r _mf; do
+    [[ -f "$_mf" ]] || continue
+    while IFS= read -r _ml; do
+      if [[ "$_ml" == *'.counter("'* ]]; then
+        _n="${_ml#*.counter(\"}"
+        _n="${_n%%\"*}"
+        if [[ -n "$_n" && "${_n:0:12}" != "springai_fin" ]]; then
+          fail "metric_naming_namespace" "Counter name '$_n' does not use springai_fin_ prefix" "$_mf" 0
+        fi
+      fi
+    done < "$_mf"
+  done < <(find . -name '*.java' -not -path '*/target/*' -not -path '*/.git/*' 2>/dev/null || true)
+
 } || {
   rule_body_succeeded=false
   runtime_error_message="rule body failed"
@@ -828,6 +895,7 @@ semantic_pass=true
 evidence_valid=true
 [[ "${tree_clean:-true}" == "false" ]] && evidence_valid=false
 [[ "$semantic_pass" == "false" ]] && evidence_valid=false
+[[ $local_only -eq 1 ]] && evidence_valid=false  # cycle-14 A2: local-only runs are never delivery-valid
 
 if [[ "$evidence_valid" == "true" ]]; then
   log_dir="gate/log"

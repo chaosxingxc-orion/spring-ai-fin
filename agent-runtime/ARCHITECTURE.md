@@ -3,7 +3,7 @@
 > Owner: runtime | Wave: W2..W4 | Maturity: L0 | Reads: tenant_workspace,
 > prompt_version, tool_registry | Writes: run, run_memory, session_memory,
 > long_term_memory, outbox_event, audit_log
-> Last refreshed: 2026-05-08
+> Last refreshed: 2026-05-10
 
 ## 1. Purpose
 
@@ -22,9 +22,9 @@ bound the tenant.
 
 | Dependency | Version | Role |
 |---|---|---|
-| Spring AI | 1.0.x | `ChatClient` per LLM provider |
-| Spring AI Anthropic / OpenAI | 1.0.x | Provider-specific bindings |
-| Spring AI VectorStore PgVector | 1.0.x | Vector store wrapper |
+| Spring AI | 2.0.0-M5 | `ChatClient` per LLM provider |
+| Spring AI Anthropic / OpenAI | 2.0.0-M5 | Provider-specific bindings |
+| Spring AI VectorStore PgVector | 2.0.0-M5 | Vector store wrapper |
 | MCP Java SDK | latest | Tool protocol |
 | Temporal Java SDK + Cluster | server 1.24.x; SDK 1.25.x | Durable workflows |
 | pgvector | 0.7.x | Vector index in Postgres |
@@ -96,8 +96,9 @@ Each L2 has its own `ARCHITECTURE.md` following the skeleton in `docs/plans/arch
 
 - Authentication (handled by `agent-platform/auth/`).
 - Tenant binding / RLS GUC (handled by `agent-platform/tenant/`).
-- Multi-framework dispatch (LangChain4j / Python sidecar): deferred to
-  W4+; the active design surface is Spring AI only.
+- Multi-framework dispatch (LangChain4j / Python sidecar): Spring AI native
+  is the W0 default; LangChain4j and Python sidecar adapters are scaffolded
+  behind `enabled=true` toggles in dedicated starter modules.
 - Knowledge graph (Apache Jena): deferred indefinitely.
 - Run analytics dashboards: future module.
 

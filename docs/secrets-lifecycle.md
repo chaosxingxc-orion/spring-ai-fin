@@ -7,7 +7,7 @@
 
 **Status**: v1 -- created 2026-05-08 in response to security review sec-P1-9
 **Owner**: Platform team (GOV) + Customer security team
-**Companion**: [`security-control-matrix.md`](security-control-matrix.md) sec-15
+**Companion**: [`security-control-matrix.md`](cross-cutting/security-control-matrix.md) sec-15
 
 This document specifies the full lifecycle of every secret used by spring-ai-fin: source, rotation, revocation, scoping, memory handling, no-logging, break-glass.
 

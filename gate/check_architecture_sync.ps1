@@ -57,7 +57,7 @@ function Rel([string]$abs) {
 # ---- Shared variable initialization (cycle-7 A1: must precede any rule using these) ----
 $gateReadme = 'gate/README.md'
 $delReadme = 'docs/delivery/README.md'
-$securityMatrix = 'docs/security-control-matrix.md'
+$securityMatrix = 'docs/cross-cutting/security-control-matrix.md'
 $matrixPath = 'docs/governance/decision-sync-matrix.md'
 $statusPath = 'docs/governance/architecture-status.yaml'
 $manifestPath = 'docs/governance/evidence-manifest.yaml'
@@ -287,12 +287,12 @@ foreach ($f in $NonDocsArchFiles) {
   }
 }
 
-# 8b. RLS pool lifecycle in security-control-matrix.md.
+# 8b. RLS pool lifecycle in docs/cross-cutting/security-control-matrix.md.
 if (Test-Path $securityMatrix) {
   $lines = Get-Content -LiteralPath $securityMatrix
   for ($i = 0; $i -lt $lines.Count; $i++) {
     if ($lines[$i] -clike '*connectionInitSql*') {
-      Fail 'rls_pool_lifecycle_matrix' "security-control-matrix.md cites 'connectionInitSql' as a tenant reset control" $securityMatrix ($i + 1)
+      Fail 'rls_pool_lifecycle_matrix' "docs/cross-cutting/security-control-matrix.md cites 'connectionInitSql' as a tenant reset control" $securityMatrix ($i + 1)
     }
   }
 }
@@ -495,10 +495,10 @@ if (Test-Path $gateReadme) {
 
 # 16. Delivery-log parity (cycle-7 A2; cycle-8 B2 no-skip-on-missing for
 # current authoritative delivery; legacy_exemptions explicit in manifest).
-$deliveryFiles = Get-ChildItem -Path 'docs/delivery' -Filter '2026-05-08-*.md' -File -ErrorAction SilentlyContinue
+$deliveryFiles = Get-ChildItem -Path 'docs/delivery' -Filter '????-??-??-*.md' -File -ErrorAction SilentlyContinue
 foreach ($df in $deliveryFiles) {
   $base = [System.IO.Path]::GetFileNameWithoutExtension($df.Name)
-  $sha = $base -replace '^2026-05-08-', ''
+  $sha = $base -replace '^\d{4}-\d{2}-\d{2}-', ''
   if (-not $sha) { continue }
   $logFile = $null
   foreach ($candidate in @("gate/log/$sha-posix.json", "gate/log/$sha-windows.json", "gate/log/$sha.json")) {
@@ -635,7 +635,7 @@ if (Test-Path $manifestPath) {
 # 21. Delivery-log exact binding (cycle-8 B1).
 if ($manifestDelivery -and (Test-Path $manifestDelivery) -and $reviewedContentSha) {
   $deliveryBase = [System.IO.Path]::GetFileNameWithoutExtension((Split-Path -Leaf $manifestDelivery))
-  $deliverySha = $deliveryBase -replace '^2026-05-08-', ''
+  $deliverySha = $deliveryBase -replace '^\d{4}-\d{2}-\d{2}-', ''
   $foundLog = $null
   foreach ($candidate in @("gate/log/$deliverySha-posix.json", "gate/log/$deliverySha-windows.json", "gate/log/$deliverySha.json")) {
     if (Test-Path $candidate) { $foundLog = $candidate; break }
@@ -740,7 +740,7 @@ if ($rule8State -eq 'fail_closed_artifact_missing' -and (Test-Path $statusPath))
       Fail 'rule_8_state_consistency' "capability declares released while manifest.rule_8.state=fail_closed_artifact_missing" $statusPath ($i + 1)
     }
   }
-  $deliveryFiles2 = Get-ChildItem -Path 'docs/delivery' -Filter '2026-05-08-*.md' -File -ErrorAction SilentlyContinue
+  $deliveryFiles2 = Get-ChildItem -Path 'docs/delivery' -Filter '????-??-??-*.md' -File -ErrorAction SilentlyContinue
   foreach ($df in $deliveryFiles2) {
     $dRaw = Get-Content -Raw -LiteralPath $df.FullName
     if ($dRaw -match 'Rule\s*8\s*PASS') {
@@ -772,6 +772,80 @@ if (Test-Path $statusPath) {
   }
 }
 
+# 24. CI no-or-true mask (cycle-14 A1): gate/run_* calls in CI workflows
+# must not be masked with || true. Removes the escape hatch that allowed a
+# failing Rule 8 smoke gate to silently pass CI.
+$wfFiles = Get-ChildItem -Path '.github/workflows' -Filter '*.yml' -File -ErrorAction SilentlyContinue
+foreach ($wf in $wfFiles) {
+  $wfLines = Get-Content -LiteralPath $wf.FullName
+  for ($wi = 0; $wi -lt $wfLines.Count; $wi++) {
+    $wLine = $wfLines[$wi]
+    if ($wLine -match 'gate/run_' -and $wLine -match '\|\|\s*true') {
+      Fail 'ci_no_or_true_mask' "CI workflow masks gate/run_* with '|| true' -- remove the mask or rename the step to *_report_only" (Rel $wf.FullName) ($wi + 1)
+    }
+  }
+}
+
+# 25. Rule 8 state machine coherent (cycle-14 B1): artifact_present_state
+# must agree with rule_8.state. Prevents internally-contradictory manifests.
+if (Test-Path $manifestPath) {
+  $manifestText2 = Get-Content -Raw -LiteralPath $manifestPath
+  $artifactPresentState = ''
+  if ($manifestText2 -match '(?m)^artifact_present_state:\s*(\S+)') {
+    $artifactPresentState = ($matches[1] -replace '\s*#.*$','').Trim()
+  }
+  if ($artifactPresentState -ne '' -and $rule8State -ne '') {
+    switch ($artifactPresentState) {
+      'none' {
+        if ($rule8State -ne 'fail_closed_artifact_missing') {
+          Fail 'rule_8_state_machine_coherent' "artifact_present_state=none but rule_8.state=$rule8State (expected fail_closed_artifact_missing)" $manifestPath 0
+        }
+      }
+      'source_only' {
+        if ($rule8State -ne 'fail_closed_needs_build') {
+          Fail 'rule_8_state_machine_coherent' "artifact_present_state=source_only but rule_8.state=$rule8State (expected fail_closed_needs_build)" $manifestPath 0
+        }
+      }
+      'jar_present' {
+        if ($rule8State -ne 'fail_closed_needs_real_flow' -and $rule8State -ne 'pass') {
+          Fail 'rule_8_state_machine_coherent' "artifact_present_state=jar_present but rule_8.state=$rule8State (expected fail_closed_needs_real_flow or pass)" $manifestPath 0
+        }
+      }
+      default {
+        Fail 'rule_8_state_machine_coherent' "artifact_present_state has unknown value: $artifactPresentState (valid: none | source_only | jar_present)" $manifestPath 0
+      }
+    }
+  }
+}
+
+  # 26. Contract catalog present (cycle-15/16 D1)
+  $contractCatalog = Join-Path $repoRoot 'docs/contracts/contract-catalog.md'
+  if (-not (Test-Path $contractCatalog)) {
+    Fail 'contract_catalog_present' 'docs/contracts/contract-catalog.md not found; create it per T-CS-Docs' $contractCatalog 0
+  }
+
+  # 27. OpenAPI snapshot pinned (cycle-15/16 D2)
+  $openapiYaml = Join-Path $repoRoot 'docs/contracts/openapi-v1.yaml'
+  if (-not (Test-Path $openapiYaml)) {
+    Fail 'openapi_snapshot_pinned' 'docs/contracts/openapi-v1.yaml not found; create it per T-CS-2' $openapiYaml 0
+  }
+
+  # 28. Metric naming namespace (cycle-15/16 D3)
+  Get-ChildItem -Recurse -Filter '*.java' -Path $repoRoot |
+    Where-Object { $_.FullName -notmatch '[\\/]target[\\/]' } |
+    ForEach-Object {
+      $jFile = $_.FullName
+      Select-String -LiteralPath $jFile -Pattern '\.counter\("([^"]+)"' -AllMatches |
+        ForEach-Object {
+          foreach ($m in $_.Matches) {
+            $name = $m.Groups[1].Value
+            if ($name -ne '' -and -not $name.StartsWith('springai_fin')) {
+              Fail 'metric_naming_namespace' "Counter name '$name' does not use springai_fin_ prefix" $jFile 0
+            }
+          }
+        }
+    }
+
 } catch {
   $ruleBodySucceeded = $false
   $runtimeErrorMessage = $_.Exception.Message
@@ -782,6 +856,7 @@ if (Test-Path $statusPath) {
 $semanticFailures = @($failures | Where-Object { $_.category -ne 'dirty_tree' })
 $semanticPass = $semanticFailures.Count -eq 0
 $evidenceValidForDelivery = $treeClean -and $semanticPass
+if ($LocalOnly) { $evidenceValidForDelivery = $false }  # cycle-14 A2: local-only runs are never delivery-valid
 
 if ($evidenceValidForDelivery) {
   $logDir = Join-Path $PSScriptRoot 'log'

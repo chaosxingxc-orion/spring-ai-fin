@@ -33,6 +33,10 @@ gate/*.sh text eol=lf
 *.kt text eol=lf
 *.xml text eol=lf
 
+# Maven Wrapper: shell script LF; Windows batch CRLF (cmd.exe requires it).
+mvnw text eol=lf
+mvnw.cmd text eol=crlf
+
 # Binary types: never normalize.
 *.png binary
 *.jpg binary

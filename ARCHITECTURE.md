@@ -1,13 +1,13 @@
-# spring-ai-fin Platform -- Architecture (v6.0)
+# spring-ai-fin Platform -- Architecture (v6.1)
 
-> **Last refreshed:** 2026-05-08 (continuous refinement; not a major version
-> bump). This document folds in the 2026-05-08 reset described in
-> `docs/architecture-meta-reflection-2026-05-08.en.md`: every core
-> component is now grounded in a named open-source project, every
-> architectural claim has a row in `docs/plans/engineering-plan-W0-W4.md`,
-> and aspirational surfaces that did not survive cycles 1..8 of review
-> have been removed. The version line stays v6 -- this is a refresh, not
-> a rewrite, per the user's "no fast version bumps" rule.
+> **Last refreshed:** 2026-05-10 (v6.1 refresh; not a major version bump).
+> v6.1 adds: ADR per-file split (docs/adr/), operational runbooks
+> (ops/runbooks/), RLS policy SQL (docs/security/rls-policy.sql),
+> performance evidence path (perf/), doctor scripts (gate/doctor.*),
+> @ConditionalOnProperty wiring in all 5 starters, OpenApiContractIT
+> actual snapshot diff, and ApiCompatibilityTest non-vacuous rules.
+> The version line stays v6 -- this is a refresh, not a rewrite, per
+> the "no fast version bumps" rule.
 >
 > **Authoring rule:** every section either names an OSS component + a
 > glue module + a test, or it does not belong in this document.
@@ -18,7 +18,7 @@ spring-ai-fin is a self-hostable agent runtime for financial-services
 operators. It accepts authenticated tenant requests, drives one or more
 LLMs through a tool-calling loop with audit-grade evidence, and persists
 durable side effects through an idempotent outbox. It is built on Spring
-Boot 3.x + Java 21.
+Boot 4.0.5 + Java 21.
 
 Four constraints applied to every section below:
 
@@ -96,7 +96,7 @@ secondary development = patches we contribute upstream.
 
 | Concern                | Primary OSS                          | Hardening / glue we own                             | Wave |
 |------------------------|--------------------------------------|-----------------------------------------------------|------|
-| HTTP server            | Spring Boot 3.5.x + embedded Tomcat  | Controllers, exception handlers                     | W0   |
+| HTTP server            | Spring Boot 4.0.5 + embedded Tomcat  | Controllers, exception handlers                     | W0   |
 | Concurrency            | Java 21 virtual threads (Project Loom) | `spring.threads.virtual.enabled=true`             | W0   |
 | Build / package        | Maven 3.9                            | `pom.xml` multi-module                              | W0   |
 | Migrations             | Flyway 10.x                          | SQL files                                           | W0   |
@@ -108,12 +108,12 @@ secondary development = patches we contribute upstream.
 | Authorization (policy) | Open Policy Agent 0.65.x             | Rego policies + sidecar adapter                     | W3   |
 | Resilience             | Resilience4j 2.x                     | `@CircuitBreaker`, `@RateLimiter` annotations       | W1   |
 | Idempotency            | Postgres dedup table                 | `IdempotencyFilter` glue                            | W1   |
-| LLM client             | Spring AI 1.0.7 (GA; latest 1.0.x patch) | `ChatClient` beans per provider; routing rules    | W2   |
+| LLM client             | Spring AI 2.0.0-M5 (milestone)       | `ChatClient` beans per provider; routing rules      | W2   |
 | Tool protocol          | MCP Java SDK 2.0.0-M2 (milestone)    | MCP servers as Spring beans                         | W3   |
 | Vector search          | pgvector 0.7.x + Spring AI VectorStore | `EmbeddingStoreConfig` + retrieval glue           | W2-W3|
 | Embeddings             | Provider-side (OpenAI / Voyage)      | `EmbeddingClient` bean                              | W2   |
 | Document parsing       | Apache Tika 2.x                      | `DocumentParser` glue                               | W3   |
-| Workflow / durable     | Temporal Java SDK 1.34.0 + Cluster   | `RunWorkflow` interface + activity classes          | W4   |
+| Workflow / durable     | Temporal Java SDK 1.35.0 + Cluster   | `RunWorkflow` interface + activity classes          | W4   |
 | Caching                | Caffeine 3.x (in-process) + Valkey 7.x | `CacheManager` config                             | W1-W2|
 | Outbox                 | Postgres `outbox` table              | `OutboxPublisher` glue                              | W2   |
 | Observability metrics  | Micrometer + Prometheus              | Custom metrics; `@Timed` annotations                | W0   |
@@ -132,8 +132,12 @@ secondary development = patches we contribute upstream.
 | Eval harness           | Custom on JUnit + Ragas-Java port    | Eval suite                                          | W4   |
 | CI                     | GitHub Actions                       | `.github/workflows/*.yml`                           | W0   |
 | Linting                | Checkstyle + ErrorProne              | `.checkstyle.xml`                                   | W0   |
-| _Multi-framework dispatch_ | _LangChain4j (alternative bean)_  | _Adapter glue if a customer demands_                | W4+  |
-| _Python sidecar_        | _Generic gRPC; FastAPI / sidecar app_ | _Only if a customer demands_                       | W4+  |
+| Multi-framework dispatch | LangChain4j 1.x (alternate profile) | `spring-ai-fin-langchain4j-profile`; disabled by default | W0 scaffold |
+| Python sidecar -- memory  | Mem0 REST API                     | `spring-ai-fin-mem0-starter`; `enabled=false` default    | W0 scaffold |
+| Python sidecar -- graph   | Graphiti REST API (Zep OSS)       | `spring-ai-fin-graphmemory-starter`; `enabled=false`     | W0 scaffold |
+| PDF layout parsing       | Docling REST API (IBM)            | `spring-ai-fin-docling-starter`; `enabled=false`         | W0 scaffold |
+| Resilience SPI contract   | spring-ai-fin-resilience-starter  | SPI contract-only; maps operation ids to Resilience4j policy names; caller_users=0 (W2 annotations) | W0 scaffold |
+| Spring AI fin BoM        | spring-ai-fin-dependencies        | Pins 9 starter coords + 13 OSS transitive deps           | W0           |
 
 This table is the authoritative dependency list. Adding a row requires a
 decision in the engineering plan; removing a row requires explicit
@@ -178,8 +182,8 @@ but tracks OSS integration, not product readiness.
 | **U3** | Integration-verified -- IT test exercises the API at the pinned version |
 | **U4** | Production-verified -- prod traces show the API behaving as designed |
 
-Today only Spring AI 1.0.7, Temporal Java SDK 1.34.0, and MCP Java SDK
-2.0.0-M2 are at **U1** (cycle-11 verified them via upstream release
+Spring AI 2.0.0-M5, Temporal Java SDK 1.35.0, and MCP Java SDK
+2.0.0-M2 are at **U1** (cycle-11 verified via upstream release
 notes / Maven Central on 2026-05-09). Every other dep is at **U0**.
 W0 advances all critical-path deps to U2 by adding a probe that
 compiles the cited API surface.
@@ -211,50 +215,83 @@ architecture-design self-audit (`docs/architecture-design-self-audit.md`).
 
 ```
 spring-ai-fin/
-  pom.xml                           # parent (Maven; Java 21; Spring Boot BOM)
-  agent-platform/                   # northbound module (web + auth + edge)
+  pom.xml                                   # parent (Maven; Java 21; Spring Boot 3.5 BOM)
+  agent-platform/                           # northbound facade (L1 -- HealthEndpointIT GREEN)
     pom.xml
-    src/main/java/...
-      web/                          # Controllers + exception handlers
-      auth/                         # Security filter chain config
-      tenant/                       # TenantBinder + RLS interceptor
-      idempotency/                  # IdempotencyFilter + dedup repo
-      bootstrap/                    # Spring Boot main + PostureBootGuard
-      config/                       # tenant-config + Spring Cloud Config
-      contracts/                    # public DTO records + OpenAPI
-    src/main/resources/
-      application.yml
-      db/migration/                 # Flyway SQL
-    src/test/...                    # unit + integration tests
-  agent-runtime/                    # cognitive runtime
+    src/main/java/fin/springai/platform/
+      AgentPlatformApplication.java         # Spring Boot main
+      health/HealthController.java          # GET /v1/health
+      probe/OssApiProbe.java                # OSS class presence probe
+    src/test/java/fin/springai/platform/
+      api/ApiCompatibilityTest.java         # ArchUnit 4 rules (SPI separation)
+      health/HealthEndpointIT.java          # /v1/health integration test
+  agent-runtime/                            # cognitive runtime kernel (L0 -- shell only)
     pom.xml
-    src/main/java/...
-      run/                          # RunController, RunOrchestrator
-      llm/                          # ChatClient beans, LlmRouter
-      tool/                         # MCP server registrations + ToolRegistry
-      action/                       # ActionGuard 5-stage chain
-      memory/                       # MemoryService (L0/L1/L2)
-      outbox/                       # OutboxPublisher
-      temporal/                     # Temporal workflow + activity classes
-      observability/                # custom metrics + cardinality guard
-    src/main/resources/
-      application.yml
-      db/migration/
+    src/main/java/fin/springai/runtime/
+      probe/OssApiProbe.java
+  spring-ai-fin-dependencies/              # BoM (L1)
+    pom.xml                                # pins 9 starters + 13 OSS transitive deps
+  spring-ai-fin-memory-starter/            # SPI: LongTermMemoryRepository, GraphMemoryRepository (L0)
+    pom.xml
+    src/main/java/fin/springai/runtime/
+      memory/MemoryAutoConfiguration.java
+      memory/NotConfiguredLongTermMemoryRepository.java
+      memory/NotConfiguredGraphMemoryRepository.java
+      spi/memory/LongTermMemoryRepository.java
+      spi/memory/GraphMemoryRepository.java
+    src/test/...                           # MemoryAutoConfigurationTest
+  spring-ai-fin-skills-starter/            # SPI: ToolProvider (L0)
+    pom.xml
+    src/main/java/fin/springai/runtime/
+      skills/SkillsAutoConfiguration.java
+      skills/NotConfiguredToolProvider.java
+      spi/skills/ToolProvider.java
     src/test/...
-  agent-eval/                       # eval harness (W4)
+  spring-ai-fin-knowledge-starter/         # SPI: LayoutParser, DocumentSourceConnector (L0)
     pom.xml
-    src/main/java/...
-  ops/
-    compose.yml                     # dev compose: postgres, valkey, temporal, keycloak, grafana, loki
-    helm/                           # prod chart
-    grafana-dashboards/
-    opa/policies/                   # Rego (W3)
-  gate/                             # architecture-sync + operator-shape gates
+    src/main/java/fin/springai/runtime/
+      knowledge/KnowledgeAutoConfiguration.java
+      knowledge/NotConfiguredLayoutParser.java
+      knowledge/NotConfiguredDocumentSourceConnector.java
+      spi/knowledge/LayoutParser.java
+      spi/knowledge/DocumentSourceConnector.java
+    src/test/...
+  spring-ai-fin-governance-starter/        # SPI: PolicyEvaluator (L0)
+    pom.xml
+    src/main/java/fin/springai/runtime/
+      governance/GovernanceAutoConfiguration.java
+      governance/NotConfiguredPolicyEvaluator.java
+      spi/governance/PolicyEvaluator.java
+    src/test/...
+  spring-ai-fin-persistence-starter/       # SPI: RunRepository, IdempotencyRepository, ArtifactRepository (L0)
+    pom.xml
+    src/main/java/fin/springai/runtime/
+      persistence/PersistenceAutoConfiguration.java
+      persistence/NotConfiguredRunRepository.java
+      persistence/NotConfiguredIdempotencyRepository.java
+      persistence/NotConfiguredArtifactRepository.java
+      spi/persistence/RunRepository.java
+      spi/persistence/IdempotencyRepository.java
+      spi/persistence/ArtifactRepository.java
+    src/test/...
+  spring-ai-fin-mem0-starter/              # sidecar -- Mem0 REST (enabled=false, L0)
+    pom.xml
+    src/main/java/fin/springai/runtime/mem0/
+  spring-ai-fin-graphmemory-starter/       # sidecar -- Graphiti REST (enabled=false, L0)
+    pom.xml
+    src/main/java/fin/springai/runtime/graphmemory/
+  spring-ai-fin-docling-starter/           # sidecar -- Docling REST (enabled=false, L0)
+    pom.xml
+    src/main/java/fin/springai/runtime/docling/
+  spring-ai-fin-langchain4j-profile/       # alternate framework profile (enabled=false, L0)
+    pom.xml
+    src/main/java/fin/springai/runtime/langchain4j/
+  third_party/                             # OSS attribution + third-party notices
+  gate/                                    # architecture-sync + milestone gates
   docs/
-    plans/engineering-plan-W0-W4.md       # the wave plan
-    plans/architecture-systems-engineering-plan.md   # doc-set drill-down
-    cross-cutting/                  # security, posture, observability policies
-    governance/                     # active-corpus, status, manifest
+    cross-cutting/                         # OSS BoM policy, security, posture
+    governance/                            # architecture-status.yaml, evidence-manifest.yaml
+    delivery/                              # gate-run evidence files (per-SHA)
   CLAUDE.md
   AGENTS.md
 ```
@@ -267,51 +304,59 @@ build boundaries.
 ### 3.1 Module dependency graph
 
 ```
-              [agent-platform/contracts]
-                        ^
-                        | (DTOs, IDs, types)
-        +---------------+---------------+
-        |                               |
-[agent-platform/*]              [agent-runtime/*]
-   web                              run
-   auth                             llm
-   tenant                           tool
-   idempotency                      action
-   bootstrap                        memory
-   config                           outbox
-   contracts                        temporal
-                                    observability
-        |                               |
-        +---------------+---------------+
-                        v
-                   [Postgres / Valkey / Temporal / OPA / Vault]
-                   (L3 dependencies; via Spring beans)
+[agent-platform]
+      |
+      |  (no direct Java import of runtime; SPI contract only)
+      v
+[spring-ai-fin-*-starter]  --provides-->  SPI interfaces
+      |                                   (LongTermMemoryRepository,
+      |                                    GraphMemoryRepository,
+      |                                    ToolProvider,
+      |                                    LayoutParser,
+      |                                    DocumentSourceConnector,
+      |                                    PolicyEvaluator,
+      |                                    RunRepository,
+      |                                    IdempotencyRepository,
+      |                                    ArtifactRepository)
+      |
+      |  @ConditionalOnMissingBean -- real impl replaces sentinel
+      v
+[agent-runtime]  --consumes-->  SPI interfaces (via Spring DI)
+      |
+      v
+   [Postgres / LLM providers / MCP servers / Python sidecars]
 
-[agent-eval]  --(tests against agent-platform + agent-runtime contracts)-->
+[spring-ai-fin-{mem0,graphmemory,docling,langchain4j}-starter]
+      |  enabled=false by default (sidecar adapters)
+      +--provides--> SPI impl (replaces sentinel when enabled=true + URL configured)
 ```
 
 Rules:
 
-1. `agent-platform/contracts` is the only module that exports types
-   used by both `agent-platform/*` and `agent-runtime/*`. Every other
-   inter-module Java type lives in its owning module.
-2. **No cycles.** Directional edges only:
-   `agent-platform/* -> agent-platform/contracts`,
-   `agent-runtime/* -> agent-platform/contracts`, and
-   `agent-runtime/* <- agent-platform/*` is FORBIDDEN (the reverse;
-   platform calls runtime via a published interface in
-   `agent-platform/contracts` only).
-3. `agent-eval` may depend on either platform or runtime contracts but
-   neither depends on `agent-eval`.
-4. L3 dependencies (Postgres, Valkey, Temporal, OPA, Vault) are
-   accessed only via Spring beans configured in the relevant L2
-   module. No L2 directly opens a connection that another L2 owns.
-5. CI rule: ArchUnit tests in `agent-platform/contracts` enforce the
-   no-cycle property at PR time (W0 deliverable in
-   `BuildSmokeTest`).
+1. SPI packages (`fin.springai.runtime.spi.*`) import only `java.*` types.
+   No Spring, no Micrometer, no platform classes. Enforced by ArchUnit
+   `ApiCompatibilityTest.spi_packages_import_only_java_sdk_types`.
+2. `agent-platform` must not import `agent-runtime` Java types directly.
+   Platform calls runtime via the SPI contract only. Enforced by
+   `ApiCompatibilityTest.platform_does_not_depend_on_runtime`.
+3. Sidecar starters may depend on the core starter that owns their SPI
+   (e.g. `graphmemory` -> `memory`). Core starters must not depend on sidecar starters.
+4. `spring-ai-fin-dependencies` BoM pins all starter coordinates and
+   OSS transitive deps; modules declare version-free `<dependency>` entries.
 
-The full Java type ownership table is in
-`docs/cross-cutting/data-model-conventions.md` sec-13.
+### 3.2 SPI extension surface
+
+The 7 SPI interfaces below are the extension surface for W1+ implementations.
+They are frozen (no breaking changes without a new major version) and enforced
+by `ApiCompatibilityTest` (ArchUnit, GREEN at 97b0827):
+
+- `fin.springai.runtime.spi.memory.LongTermMemoryRepository`
+- `fin.springai.runtime.spi.memory.GraphMemoryRepository`
+- `fin.springai.runtime.spi.skills.ToolProvider`
+- `fin.springai.runtime.spi.knowledge.LayoutParser`
+- `fin.springai.runtime.spi.knowledge.DocumentSourceConnector`
+- `fin.springai.runtime.spi.governance.PolicyEvaluator`
+- `fin.springai.runtime.spi.persistence.RunRepository` (+ `IdempotencyRepository`, `ArtifactRepository`)
 
 ## 4. The nine quality attributes -- mechanism + test
 
@@ -547,7 +592,7 @@ relaxed.
 Explicitly removed or deferred from the cycle-1..8 design surface to
 avoid documentation-as-implementation:
 
-- **Multi-framework dispatch** (Python sidecar, LangChain4j adapter): deferred to W4+. Not promised.
+- **Multi-framework dispatch** (LangChain4j alternate profile, Python sidecars): Spring AI native is the W0 default path. LangChain4j alternate profile and Python sidecars (Mem0, Graphiti, Docling) are scaffolded behind `enabled=true` toggles in dedicated starter modules; no LangChain4j or sidecar code runs by default.
 - **Apache Jena knowledge graph**: deferred indefinitely until a customer demands it.
 - **5-class audit model**: replaced by OTel + one audit table.
 - **11-stage ActionGuard**: replaced by 5-stage.
@@ -706,6 +751,8 @@ self-audit; see the audit doc for status):
 | `docs/cross-cutting/supply-chain-controls.md` | Image digest pin + SBOM |
 | `docs/cross-cutting/observability-policy.md` | Cardinality budget + tenant-id label policy |
 
+See [docs/contracts/contract-catalog.md](docs/contracts/contract-catalog.md) for the full contract catalog (HTTP API, SPI, configuration, telemetry, and BoM coordinates).
+
 ## 11.5 Phase A status (cycle-12 close)
 
 The architecture design is structured in two phases:
@@ -737,6 +784,21 @@ versions pinned in `docs/cross-cutting/oss-bill-of-materials.md`. The
 critical-path deps then advance from U1 (cycle-11 doc-verified) to U2
 (probe-code-verified). After U2 lands, Phase B proceeds module-by-module
 starting with W0 (`agent-platform/web` health endpoint).
+
+## 11.6 Architecture-review-readiness pass (v6.1, 2026-05-10)
+
+The following artifacts were added in the v6.1 readiness pass:
+
+- **ADR index**: [`docs/adr/`](docs/adr/) -- 15 per-file MADR 4.0 ADRs; version refs current.
+- **Operational runbooks**: [`ops/runbooks/`](ops/runbooks/) -- 5 runbooks (DR, rollback, digest-pin, credential-loss, incident); L0.
+- **Helm chart skeleton**: [`ops/helm/spring-ai-fin/`](ops/helm/spring-ai-fin/) -- L0, not deployment-tested (W4).
+- **RLS policy**: [`docs/security/rls-policy.sql`](docs/security/rls-policy.sql) -- PostgreSQL RLS DDL enforcing `app.tenant_id` GUC.
+- **Performance evidence path**: [`perf/`](perf/) -- JMH skeleton; no captured numbers (W4 cadence).
+- **Doctor scripts**: [`gate/doctor.sh`](gate/doctor.sh), [`gate/doctor.ps1`](gate/doctor.ps1) -- env health checks.
+
+Honest Tier 3 deferrals (see [`docs/governance/open-items.md`](docs/governance/open-items.md)):
+`@CircuitBreaker` call-site wiring (W2), sidecar adapter impls (W2+), real-LLM N>=3 Rule 8 runs (W4),
+BudgetMetric SPI (W2), RLS ITs un-disabled (W2), JMH numbers (W4).
 
 ## 12. Closing note
 

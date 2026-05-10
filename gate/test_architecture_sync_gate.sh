@@ -93,7 +93,7 @@ if bash gate/check_architecture_sync.sh --local-only > /dev/null 2>&1 || true; t
   : # exit code is irrelevant; we test that it produced structured output
 fi
 sha=$(git rev-parse --short HEAD 2>/dev/null || echo no-git)
-assert_log_structured "check_architecture_sync.sh" "gate/log/${sha}-posix.json gate/log/local/${sha}-posix.json" "${ARCH_SYNC_FIELDS[@]}"
+assert_log_structured "check_architecture_sync.sh" "gate/log/local/${sha}-posix.json" "${ARCH_SYNC_FIELDS[@]}"
 
 # 2. PowerShell architecture-sync gate (cycle-8 A3: parity contract).
 if command -v pwsh >/dev/null 2>&1; then
@@ -114,7 +114,7 @@ else
 fi
 
 # 3. Operator-shape smoke gate (POSIX) - must fail closed.
-echo "==> Running operator-shape smoke gate (POSIX); expecting FAIL_ARTIFACT_MISSING..."
+echo "==> Running operator-shape smoke gate (POSIX); expecting FAIL_NEEDS_BUILD (pom.xml+src present, no JAR)..."
 bash gate/run_operator_shape_smoke.sh > /dev/null 2>&1 || true
 assert_log_structured "run_operator_shape_smoke.sh" "gate/log/local/operator-shape-${sha}-posix.json" "${SMOKE_FIELDS[@]}"
 
@@ -125,6 +125,26 @@ if command -v pwsh >/dev/null 2>&1; then
   assert_log_structured "run_operator_shape_smoke.ps1" "gate/log/local/operator-shape-${sha}-windows.json" "${SMOKE_FIELDS[@]}"
 else
   echo "SKIP [run_operator_shape_smoke.ps1]: pwsh not available in this environment"
+fi
+
+# 5. Local-only evidence-validity enforcement (cycle-14 A2): a clean-tree
+# --local-only run must produce evidence_valid_for_delivery=false and write
+# only to gate/log/local/, never gate/log/.
+echo "==> Verifying local-only run produced evidence_valid_for_delivery=false under gate/log/local/ ..."
+local_log_path="gate/log/local/${sha}-posix.json"
+total=$((total + 1))
+if [[ -f "$local_log_path" ]] && grep -q '"evidence_valid_for_delivery":false' "$local_log_path"; then
+  echo "OK   [local_only_log_path_enforced]: evidence_valid_for_delivery=false in $local_log_path"
+else
+  echo "FAIL [local_only_log_path_enforced]: expected evidence_valid_for_delivery=false in $local_log_path" >&2
+  failed=$((failed + 1))
+fi
+total=$((total + 1))
+if [[ ! -f "gate/log/${sha}-posix.json" ]]; then
+  echo "OK   [local_only_log_path_enforced]: no log written to gate/log/ by local-only run (correct)"
+else
+  echo "FAIL [local_only_log_path_enforced]: local-only run wrote to gate/log/ -- must only write to gate/log/local/" >&2
+  failed=$((failed + 1))
 fi
 
 echo ""

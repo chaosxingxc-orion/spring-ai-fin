@@ -2,7 +2,7 @@
 
 **Status**: v1 -- created 2026-05-08 in response to security review sec-P0-7
 **Owner**: Platform team (RO) + Customer infrastructure team
-**Companion**: [`security-control-matrix.md`](security-control-matrix.md) sec-9 . [`agent-runtime/adapters/ARCHITECTURE.md`](../agent-runtime/adapters/ARCHITECTURE.md)
+**Companion**: [`security-control-matrix.md`](cross-cutting/security-control-matrix.md) sec-9 . [`agent-runtime/adapters/ARCHITECTURE.md`](../agent-runtime/adapters/ARCHITECTURE.md)
 
 This profile defines the security controls for the out-of-process Python sidecar that hosts mainstream Python agent frameworks (LangGraph, CrewAI, AutoGen, Pydantic-AI, OpenAI Agents SDK). The sidecar is opt-in at customer discretion; this profile is binding when adopted.
 

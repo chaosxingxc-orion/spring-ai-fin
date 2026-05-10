@@ -1,0 +1,2 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+  fin.springai.runtime.persistence.PersistenceAutoConfiguration

@@ -5,8 +5,6 @@ target/
 *.ear
 *.class
 .mvn/wrapper/maven-wrapper.jar
-mvnw
-mvnw.cmd
 
 # Gradle (in case any module switches)
 build/
@@ -62,10 +60,15 @@ __pycache__/
 .venv/
 venv/
 
+# Tier C: local source clones (gitignored; SHAs tracked in third_party/MANIFEST.md)
+third_party/*/
+third_party/**/
+
 # Architecture artifacts
 docs/delivery/*.json
 docs/verification/*.json
 !docs/delivery/.gitkeep
+!docs/delivery/*.log
 !docs/verification/.gitkeep
 
 # Gate logs:

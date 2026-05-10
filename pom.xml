@@ -27,13 +27,24 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.5.0</version>
+    <version>4.0.5</version>
     <relativePath/>
   </parent>
 
   <modules>
+    <module>spring-ai-fin-dependencies</module>
     <module>agent-platform</module>
     <module>agent-runtime</module>
+    <module>spring-ai-fin-memory-starter</module>
+    <module>spring-ai-fin-skills-starter</module>
+    <module>spring-ai-fin-knowledge-starter</module>
+    <module>spring-ai-fin-governance-starter</module>
+    <module>spring-ai-fin-persistence-starter</module>
+    <module>spring-ai-fin-mem0-starter</module>
+    <module>spring-ai-fin-graphmemory-starter</module>
+    <module>spring-ai-fin-docling-starter</module>
+    <module>spring-ai-fin-langchain4j-profile</module>
+    <module>spring-ai-fin-resilience-starter</module>
     <module>agent-eval</module>
   </modules>
 
@@ -44,22 +55,23 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <!-- BoM-pinned versions; update via cycle if a major bump is planned. -->
-    <spring-ai.version>1.0.7</spring-ai.version>
-    <spring-cloud.version>2024.0.0</spring-cloud.version>
-    <temporal.version>1.34.0</temporal.version>
-    <mcp.version>2.0.0-M2</mcp.version>
-    <resilience4j.version>2.2.0</resilience4j.version>
-    <caffeine.version>3.1.8</caffeine.version>
-    <flyway.version>10.21.0</flyway.version>
-    <testcontainers.version>1.20.4</testcontainers.version>
+    <!-- BoM-pinned versions (Step 3 W0 upgrade to latest stable). -->
+    <spring-ai.version>2.0.0-M5</spring-ai.version>
+    <spring-cloud.version>2025.1.1</spring-cloud.version>
+    <temporal.version>1.35.0</temporal.version>
+    <mcp.version>1.0.0</mcp.version>
+    <langchain4j.version>1.14.1</langchain4j.version>
+    <resilience4j.version>2.4.0</resilience4j.version>
+    <caffeine.version>3.2.4</caffeine.version>
+    <flyway.version>11.19.1</flyway.version>
+    <testcontainers.version>1.21.4</testcontainers.version>
     <wiremock.version>3.9.1</wiremock.version>
     <restassured.version>5.5.0</restassured.version>
     <opentelemetry-agent.version>2.10.0</opentelemetry-agent.version>
     <logstash-logback.version>8.0</logstash-logback.version>
-    <springdoc.version>2.6.0</springdoc.version>
-    <tika.version>2.9.2</tika.version>
-    <archunit.version>1.3.0</archunit.version>
+    <springdoc.version>3.0.3</springdoc.version>
+    <tika.version>3.3.0</tika.version>
+    <archunit.version>1.4.2</archunit.version>
   </properties>
 
   <dependencyManagement>
@@ -102,7 +114,16 @@
         <version>${mcp.version}</version>
       </dependency>
 
-      <!-- Resilience4j (Spring Boot 3 starter). -->
+      <!-- langchain4j (alternate RAG profile + document-loader catalog). -->
+      <dependency>
+        <groupId>dev.langchain4j</groupId>
+        <artifactId>langchain4j-bom</artifactId>
+        <version>${langchain4j.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- Resilience4j (Boot 3/4 compatible via spring-boot3 artifact). -->
       <dependency>
         <groupId>io.github.resilience4j</groupId>
         <artifactId>resilience4j-spring-boot3</artifactId>
@@ -193,6 +214,25 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+
+  <repositories>
+    <!-- Spring Milestones for Spring AI 2.0-M5 (not yet on Maven Central). -->
+    <repository>
+      <id>spring-milestones</id>
+      <name>Spring Milestones</name>
+      <url>https://repo.spring.io/milestone</url>
+      <snapshots><enabled>false</enabled></snapshots>
+    </repository>
+  </repositories>
+
+  <pluginRepositories>
+    <pluginRepository>
+      <id>spring-milestones</id>
+      <name>Spring Milestones</name>
+      <url>https://repo.spring.io/milestone</url>
+      <snapshots><enabled>false</enabled></snapshots>
+    </pluginRepository>
+  </pluginRepositories>
 
   <build>
     <pluginManagement>

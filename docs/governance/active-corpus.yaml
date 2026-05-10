@@ -514,6 +514,14 @@ historical_documents:
     reason: cycle-9 response document (records reviewer prose verbatim)
     active_scan: false
     banner_required: false
+  - path: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-14.en.md
+    reason: review input (cycle 14)
+    active_scan: false
+    banner_required: false
+  - path: docs/systematic-architecture-remediation-cycle-14-response.en.md
+    reason: cycle-14 response document (accept/reject decisions + action mapping)
+    active_scan: false
+    banner_required: false
   - path: docs/architecture-meta-reflection-2026-05-08.en.md
     reason: post-cycle-8 meta reflection (root-cause + 32-dim scoring framework)
     active_scan: false

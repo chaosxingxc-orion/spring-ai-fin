@@ -14,7 +14,7 @@ COPY agent-platform/pom.xml ./agent-platform/
 COPY agent-runtime/pom.xml ./agent-runtime/
 COPY agent-eval/pom.xml ./agent-eval/
 # Pre-fetch deps to leverage Docker layer cache.
-RUN mvn -B -ntp -pl agent-platform -am dependency:go-offline -DskipTests || true
+RUN mvn -B -ntp -pl agent-platform -am dependency:go-offline -DskipTests
 COPY agent-platform/src ./agent-platform/src
 COPY agent-runtime/src ./agent-runtime/src
 COPY agent-eval/src ./agent-eval/src

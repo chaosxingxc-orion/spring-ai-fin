@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>fin.springai</groupId>
+    <artifactId>spring-ai-fin-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>spring-ai-fin-mem0-starter</artifactId>
+  <packaging>jar</packaging>
+
+  <name>spring-ai-fin mem0 adapter starter (optional)</name>
+  <description>
+    Optional adapter: implements LongTermMemoryRepository SPI via the
+    mem0 REST API (https://github.com/mem0ai/mem0; 55k+ stars; Apache-2.0).
+    Activate by adding this artifact to the classpath alongside
+    spring-ai-fin-memory-starter.
+    Requires: ops/compose/sidecar-mem0.yml service running.
+  </description>
+
+  <dependencies>
+    <dependency>
+      <groupId>fin.springai</groupId>
+      <artifactId>spring-ai-fin-memory-starter</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-configuration-processor</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <!-- spring-boot-starter-web + resilience4j added in W2 when REST client lands -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+</project>

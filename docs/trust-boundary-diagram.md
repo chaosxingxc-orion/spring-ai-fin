@@ -7,7 +7,7 @@
 
 **Status**: v1 -- created 2026-05-08 in response to security review sec-6.1
 **Owner**: Platform team (GOV track)
-**Companion**: [`security-control-matrix.md`](security-control-matrix.md)
+**Companion**: [`security-control-matrix.md`](cross-cutting/security-control-matrix.md)
 
 This diagram is the canonical map of trust boundaries in spring-ai-fin. Every line crossing a boundary names: **authentication . authorization . tenant propagation . data classification . audit . allowed protocols . failure behaviour**.
 
@@ -396,5 +396,5 @@ This diagram is owned by the GOV track. Adding a new external dependency (new pr
 
 `TrustBoundaryDiagramLinter` runs in CI to assert:
 - Every boundary in the diagram has a row in sec-2
-- Every boundary referenced in `security-control-matrix.md` is in this diagram
+- Every boundary referenced in `docs/cross-cutting/security-control-matrix.md` is in this diagram
 - No untraceable cross-zone arrow exists

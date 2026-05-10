@@ -1,7 +1,7 @@
 # OSS Bill of Materials -- cross-cutting policy
 
-> Owner: architecture | Wave: W0 (introduce); per-wave verification advances | Maturity: L0
-> Last refreshed: 2026-05-09
+> Owner: architecture | Wave: W0 (introduce); per-wave verification advances | Maturity: L2
+> Last refreshed: 2026-05-10 (W0 U2 promotion complete)
 
 ## 1. Purpose
 
@@ -11,208 +11,280 @@ the **verification level** of each (the U0..U4 ladder below), and
 documents the **integration contract** (how our glue talks to the
 dep, what fallback exists, what risks remain).
 
-Replaces the previous OSS matrix in `ARCHITECTURE.md` sec-2 which
-only listed approximate version ranges (`1.0.x`, `latest`) without
-verification. The cycle-11 user prompt correctly identified that
-range-pinning without API-doc verification was insufficient; this
-document is the response.
-
 ## 2. The U0..U4 verification ladder
-
-Verification level is parallel to capability maturity (Rule 12 L0..L4)
-but tracks the OSS-integration axis, not the product axis.
 
 | Level | Meaning | Evidence |
 |---|---|---|
-| **U0** | Design-only | Version range chosen by reasoning + general knowledge; no docs read for this version specifically |
-| **U1** | API-doc-verified | Pinned to a specific version; official changelog / Javadoc / release notes read for the APIs we cite; no code written |
-| **U2** | Sample-code-verified | A small in-tree probe (compile-only or smoke test) confirms the dep resolves + the cited API exists and compiles |
-| **U3** | Integration-verified | An IT test exercises the API end-to-end at the pinned version against a real instance / Testcontainer |
+| **U0** | Design-only | Version range chosen by reasoning; no docs read for this version specifically |
+| **U1** | API-doc-verified | Pinned to a specific version; official changelog / Javadoc read for the APIs we cite |
+| **U2** | Sample-code-verified | In-tree probe compiles against the dep at the pinned version; `mvn compile` green |
+| **U3** | Integration-verified | IT test exercises the API end-to-end at the pinned version against a real instance |
 | **U4** | Production-verified | Production traces / metrics show the API behaving as designed across several releases |
 
-**Today every dep starts at U0 or U1.** W0 advances critical-path deps
-to U2 (probe code lands). W2/W3/W4 advance to U3 as IT tests land.
-U4 is reached only after sustained prod use.
+## 3. Critical-path deps (U2 as of W0, sha cd13612)
 
-A dep at U0 is allowed in design; the architecture must mark it as
-such and accept that the version / API claim may change when probed.
-A dep that the architecture relies on for a security-critical control
-(JWT validation, RLS enforcement, ActionGuard authorization) may NOT
-be at U0 when the corresponding wave starts coding -- it must reach
-U1 by then.
+All five W0 critical-path deps are at U2 as of commit cd13612
+(`probe: refresh OssApiProbe for AI 2.0 + MCP 1.0.0 GA`).
+Evidence: `docs/delivery/2026-05-10-ca9bbba-mvn-resolve.log`.
 
-## 3. Verified critical-path deps (U1 today)
-
-Three high-risk deps got direct verification on 2026-05-09 via the
-upstream release pages.
-
-### 3.1 Spring AI (U1)
+### 3.1 Spring AI 2.0.0-M5 (U2)
 
 | Field | Value |
 |---|---|
 | GroupId / Artifact | `org.springframework.ai:spring-ai-bom` (BOM) + `spring-ai-starter-*` per provider |
-| Version pinned | `1.0.7` (latest 1.0.x patch as of 2026-05-08) |
-| Branch | 1.0.x (stable); 1.1.x available; 2.0.x milestones not used |
-| Status | GA (Spring AI 1.0.0 released 2025-05-20; 1.0.7 released 2026-05-08) |
-| Verification level | U1 -- official Spring blog release notes + Maven Central availability confirmed |
-| APIs we cite | `org.springframework.ai.chat.client.ChatClient` (builder + `.prompt().user(...).call()`), `org.springframework.ai.embedding.EmbeddingModel`, `org.springframework.ai.vectorstore.pgvector.PgVectorStore`, `org.springframework.ai.tool.ToolCallback` (function calling) |
+| Version pinned | `2.0.0-M5` |
+| Status | **MILESTONE** -- 2.0 GA expected mid-2026. Required for Spring Boot 4.0 compatibility (1.x incompatible with Boot 4). |
+| Verification level | **U2** at sha cd13612 |
+| Verified-at-sha | cd13612 |
+| APIs cited | `ChatClient`, `ChatModel`, `EmbeddingModel`, `VectorStore` (package `org.springframework.ai.*`) |
+| Probe | `agent-runtime/.../probe/OssApiProbe.java` |
 | Glue we own | `agent-runtime/llm/ChatClientFactory`, `agent-runtime/llm/LlmRouter`, `agent-runtime/memory/PgVectorAdapter` |
-| Integration contract | Provider-specific starters (`spring-ai-starter-model-anthropic`, `spring-ai-starter-model-openai`); each provider gets one bean; `LlmRouter` chooses |
-| Fallback if dep absent | `FakeChatClient` for CI; degrades to `LLM_PROVIDER_UNAVAILABLE` 502 |
-| Risks | (a) 1.0.x patch version may bump weekly -- treat as patch-compatible only; (b) tool-calling API surface evolved late in 1.0; verify exact signatures at U2 in W2; (c) 1.1.x branches in parallel -- if a 1.1-only API is needed, plan a major-bump wave |
-| Upgrade trigger | 1.1 GA stable + ecosystem catches up; not before W4 |
+| Risks | (a) Milestone API may shift between M5 and GA; gate/check_spring_ai_milestone.sh fails CI past 2026-08-01 if still on M-version, forcing re-eval. (b) 2.0 GA expected ~mid-2026 -- plan W2 upgrade. |
+| Upgrade trigger | 2.0 GA; or gate fires |
 
-### 3.2 Temporal Java SDK (U1)
+### 3.2 Temporal Java SDK 1.35.0 (U2)
 
 | Field | Value |
 |---|---|
 | GroupId / Artifact | `io.temporal:temporal-sdk` |
-| Version pinned | `1.34.0` |
-| Status | GA (1.x line stable for years) |
-| Verification level | U1 -- Maven Central + official Temporal docs confirm `1.34.0` and the `Workflow.getVersion(...)` API at the documented role |
-| APIs we cite | `io.temporal.workflow.Workflow.getVersion(String changeId, int minSupported, int maxSupported)` (workflow versioning markers); `io.temporal.workflow.WorkflowInterface` + `@WorkflowMethod` (workflow contract); `io.temporal.activity.ActivityInterface` + `@ActivityMethod` (activity contract); `io.temporal.client.WorkflowClient.signalWithStart(...)` (signal contract); `io.temporal.workflow.SignalMethod` |
-| Glue we own | `agent-runtime/temporal/RunWorkflow` (interface), `RunWorkflowImpl`, `LlmCallActivity`, `ToolCallActivity`, `CancelRunSignal`, `TemporalConfig` |
-| Integration contract | Workflow code is deterministic; activities do all I/O; retry policies declared per activity; namespaces per environment / customer |
-| Fallback if dep absent | `agent-runtime/run/RunOrchestrator` synchronous mode (W2-W3); workflow durability lost but short runs work |
-| Risks | (a) Temporal cluster ops complexity -- managed Temporal Cloud as upgrade path; (b) Workflow lint required to avoid non-determinism; (c) `getVersion` markers must be retired at >= 30 days |
-| Upgrade trigger | minor Temporal SDK every 90 days; major every 12 months |
+| Version pinned | `1.35.0` |
+| Status | GA (1.x line stable) |
+| Verification level | **U2** at sha cd13612 |
+| Verified-at-sha | cd13612 |
+| APIs cited | `Workflow`, `WorkflowInterface`, `WorkflowMethod`, `ActivityInterface`, `ActivityMethod`, `WorkflowClient` (package `io.temporal.*`) |
+| Probe | `agent-runtime/.../probe/OssApiProbe.java#temporalGetVersionShape()` |
+| Glue we own | `agent-runtime/temporal/RunWorkflow`, `RunWorkflowImpl`, `LlmCallActivity`, `ToolCallActivity` |
+| Risks | Workflow determinism lint required; `getVersion` markers must be retired >= 30 days after rollout |
+| Upgrade trigger | Minor every 90 days; major every 12 months |
 
-### 3.3 MCP Java SDK (U1, milestone)
+### 3.3 MCP Java SDK 1.0.0 GA (U2)
 
 | Field | Value |
 |---|---|
 | GroupId / Artifact | `io.modelcontextprotocol.sdk:mcp` |
-| Version pinned | `2.0.0-M2` |
-| Status | **MILESTONE (not GA)** -- API may change before 2.0.0 GA |
-| Verification level | U1 -- Maven Central artifact existence confirmed; specific API surface still in flux per MCP spec evolution |
-| APIs we cite | (target) MCP server stub registration; tool descriptor schema; stdio + HTTP transport. Specific class names not yet pinned -- requires U2 probe in W3. |
-| Glue we own | `agent-runtime/tool/McpToolRegistry`, `EchoTool` (stub), `HttpGetAllowlistTool`, `DocParserTool` |
-| Integration contract | Tools register at startup as Spring beans implementing the SDK's tool interface; per-tenant allowlist in `tool_registry`; sandbox levels per tenant |
-| Fallback if dep absent | In-process Java tool beans only (sandbox level 0 -- dev only) |
-| Risks | (a) **MILESTONE STATUS** -- 2.0.0 GA may rename / re-shape APIs; the W3 wave must defend a 2.0.0-GA upgrade path; (b) MCP spec itself evolves on a 2025-11-25 / 2026-XX-XX cadence; (c) the M2 -> GA timeline is not on our roadmap, so we may upgrade to GA mid-W3 |
-| Upgrade trigger | 2.0.0 GA at any time; planned for the W3 wave's first sprint |
-| Mitigation | The `McpToolRegistry` glue is intentionally thin -- it adapts the SDK's interface to our `Tool` interface so an SDK API change is a single adapter rewrite, not a corpus-wide change |
+| Version pinned | `1.0.0` (GA -- downgraded from milestone 2.0.0-M2 to stable release) |
+| Status | GA |
+| Verification level | **U2** at sha cd13612 |
+| Verified-at-sha | cd13612 |
+| APIs cited | `McpClient`, `McpSyncClient`, `McpAsyncClient` (package `io.modelcontextprotocol.client`); `McpSchema` (package `io.modelcontextprotocol.spec`) |
+| Probe | `agent-runtime/.../probe/OssApiProbe.java` |
+| Glue we own | `agent-runtime/tool/McpToolRegistry` |
+| Risks | MCP spec continues evolving; 1.0.0 is first stable release; server transports (SSE, streamable-HTTP) are part of the API |
+| Upgrade trigger | Patch as available; minor when a needed MCP server feature requires it |
 
-## 4. Other deps (U0 today; W0+ probe required)
+### 3.4 Apache Tika 3.3.0 (U2)
 
-The deps below are at U0 -- versions pinned by reasoning + general
-knowledge, not by reading 2026-05-09 release notes. **W0 adds a probe
-test per dep that compiles against the listed APIs and advances the
-dep to U2.** Until W0 lands, treat the version / API claim as
-plausible but unverified.
-
-### 4.1 JVM + build chain
-
-| Dep | Pinned | API surface | Notes |
-|---|---|---|---|
-| OpenJDK | `21.0.x` LTS | virtual threads (`Thread.ofVirtual()`), records, sealed classes | Eclipse Temurin or Liberica binary OK; W0 picks one |
-| Maven | `3.9.x` | `mvn -B -ntp --strict-checksums` | parent BOM + module poms |
-| Spring Boot | `3.5.x` | `@SpringBootApplication`, actuator, virtual-thread enable | confirms compatibility with Java 21 |
-
-### 4.2 Persistence
-
-| Dep | Pinned | API surface | Notes |
-|---|---|---|---|
-| PostgreSQL | `16.x` | `SET LOCAL`, RLS policies, `FOR UPDATE SKIP LOCKED`, partitioned tables | core DB; on-prem or managed |
-| pgvector | `0.7.x` | `vector` column type; `ivfflat` + `hnsw` indexes; `<->` distance ops | extension; verify supported on the chosen Postgres host |
-| HikariCP | `5.x` (transitive via Spring Boot) | pool sizing, leak detection | virtual-thread-friendly per Hikari 5.x release notes |
-| Flyway | `10.x` | `mvn flyway:migrate`; `V<n>__<name>.sql` | classpath roots per module |
-| Spring Data JDBC | (BOM transitive) | `JdbcTemplate`, `@Repository`, optimistic-lock support | not JPA |
-
-### 4.3 Identity + auth + policy
-
-| Dep | Pinned | API surface | Notes |
-|---|---|---|---|
-| Spring Security | `6.x` (BOM transitive) | `SecurityFilterChain`, `oauth2ResourceServer`, JWT decoder | matches Spring Boot 3.5.x |
-| Nimbus JOSE+JWT | `9.x` (transitive) | `RSASSAVerifier`, `JWKSet` | algorithm allowlist explicit |
-| Keycloak | `25.x` (compose only) | OIDC discovery; realm import | dev IdP; prod customers may bring their own |
-| OPA | `0.65.x` | sidecar HTTP API; Rego policy bundle | latency target < 5ms p99 (sidecar) |
-| HashiCorp Vault | OSS edition | KV v2 secret backend; `secret/` paths | dev mode in compose; cluster in prod |
-| Spring Cloud Vault | `4.x` | `@RefreshScope`, watcher | matches Spring Cloud 2024.x for Boot 3.5 |
-| Spring Cloud Config | `4.x` | `@ConfigurationProperties` reload | optional in dev |
-
-### 4.4 Resilience + observability
-
-| Dep | Pinned | API surface | Notes |
-|---|---|---|---|
-| Resilience4j | `2.x` | `@CircuitBreaker`, `@RateLimiter`, `@Retry` annotations | per-bean instance; metrics via Micrometer |
-| Caffeine | `3.x` | `Cache.builder().expireAfter(...)` | L0 memory cache + per-tenant config cache |
-| Valkey | `7.x` (Redis fork; OSS) | client lib: `lettuce` 6.x | for cross-replica state if needed (W2+) |
-| Micrometer | (BOM transitive) | `Counter`, `Timer`, `@Timed` | Prometheus exposition |
-| OpenTelemetry Java agent | `2.x` | auto-instrumentation; `@WithSpan` | attached at JVM start |
-| Logback + JSON encoder | (BOM) + `net.logstash:logstash-logback-encoder:8.x` | structured logs to Loki | configured in W0 |
-| Loki + Grafana + Tempo | latest stable | log + dashboard + trace store | compose + Helm |
-
-### 4.5 Web + tooling
-
-| Dep | Pinned | API surface | Notes |
-|---|---|---|---|
-| Spring Web (MVC) | (BOM) | DispatcherServlet, `@RestController` | virtual threads enabled |
-| Spring Cloud Gateway | `4.x` | `RouteLocator`, filter chain | W2 onward |
-| Hibernate Validator | (BOM) | `@Valid`, `@NotNull` etc. | Bean Validation 3 |
-| Jackson | (BOM) | `ObjectMapper` | YAML adds `jackson-dataformat-yaml` |
-| springdoc-openapi | `2.x` | OpenAPI 3 generation | `/v3/api-docs` |
-| Apache Tika | `2.x` | `Parser`, `Detector` | document parsing tool default (W3) |
-
-### 4.6 Container + ops
-
-| Dep | Pinned | API surface | Notes |
-|---|---|---|---|
-| Buildpacks (Paketo) | latest | Dockerfile alternative | one of two; pick at W0 |
-| Distroless base image | `gcr.io/distroless/java21-debian12@sha256:<digest>` | runtime base | digest pinned |
-| Kubernetes | `1.30+` | Deployment, HPA, PDB, NetworkPolicy | required version per Helm chart |
-| Helm | `3.x` | umbrella chart | `ops/helm/` |
-
-### 4.7 Testing
-
-| Dep | Pinned | API surface | Notes |
-|---|---|---|---|
-| JUnit 5 | `5.10.x` | `@Test`, `@ParameterizedTest`, lifecycle | core |
-| Testcontainers | `1.20.x` | `PostgreSQLContainer`, `GenericContainer`, `KeycloakContainer` | per-IT integration |
-| WireMock | `3.x` | provider fake | LLM provider stub in CI |
-| RestAssured | `5.x` | E2E HTTP tests | preferred over MockMvc for E2E |
-| Karate | `1.x` | `.feature` BDD-style E2E | optional alternative |
-| Mockito | (BOM) | unit-test mocks | restricted to Layer 1 (per Rule 4) |
-
-### 4.8 Eval + agentics (W4)
-
-| Dep | Pinned | API surface | Notes |
-|---|---|---|---|
-| Ragas-Java port OR custom | TBD | RAG eval metrics | W4; choice deferred |
-| LangChain4j (alt to Spring AI) | DEFERRED | -- | only if a customer demands |
-
-## 5. Integration contract template
-
-Every dep above has the same shape under "Integration contract":
-
-```
-- Where the dep is declared (Maven coordinates, BOM)
-- Which Spring bean(s) it produces
-- Which glue module owns the wiring
-- Which configuration properties it reads
-- Which fallback behavior exists if the dep is unavailable
-- Which test exercises the integration (per L2 doc)
-```
-
-Per-dep entries above use abbreviated forms; the full template lands
-when the dep advances to U2 in W0.
-
-## 6. Per-wave verification advancement
-
-| Wave | Promotion target |
+| Field | Value |
 |---|---|
-| **W0** | Spring Boot, Postgres, Flyway, HikariCP, Java 21, Maven, JUnit, Testcontainers, Logback, Micrometer, Buildpacks -> **U2** (probe in tree) |
-| **W1** | Spring Security, Keycloak, Resilience4j, Spring Cloud Vault -> **U2** + **U3** (IT against Testcontainers) |
-| **W2** | Spring AI 1.0.7, Spring Cloud Gateway, OTel Java agent, Loki/Grafana, Caffeine -> **U2** + **U3** |
-| **W3** | OPA 0.65.x, MCP 2.0.0-Mx, Apache Tika, pgvector 0.7.x, Spring AI VectorStore PgVector -> **U2** + **U3** |
-| **W4** | Temporal Java SDK 1.34.0, Helm chart full, distroless image -> **U3** |
-| **W4+** | Eval framework, optional Qdrant trigger -> **U2** |
+| GroupId / Artifact | `org.apache.tika:tika-core` + `tika-parsers-standard-package` |
+| Version pinned | `3.3.0` |
+| Status | GA (3.x series replaces 2.x which reached EOL April 2025) |
+| Verification level | **U2** at sha cd13612 |
+| Verified-at-sha | cd13612 |
+| APIs cited | `AutoDetectParser`, `Metadata` (package `org.apache.tika.*`) |
+| Breaking change vs 2.x | Metadata key prefixes changed: `html:`, `mapi:`, `X-TIKA:resourceName`. No production code reads Tika metadata yet (pipeline lands W2). |
+| Probe | `agent-runtime/.../probe/OssApiProbe.java` |
+| Upgrade trigger | Patch as available |
 
-After W4 close, the BoM doc is re-visited every quarter; any dep
-that has not been touched (no PRs, no upgrades) for > 90 days is
-flagged for review.
+### 3.5 Spring Boot 4.0.5 + platform stack (U2)
 
-## 7. Risk-weighted maintenance
+All Spring Boot 4.x transitive deps (Web, Security, Data JDBC, Actuator, Validation, Cache) resolved and compiled at sha cd13612.
+
+| Component | Version |
+|---|---|
+| Spring Boot parent | `4.0.5` |
+| Spring Cloud BOM | `2025.1.1` ("Oakwood" -- only train compatible with Boot 4.0.x) |
+| Spring Security | `6.x` (BOM transitive) |
+| Spring Data JDBC | BOM transitive |
+| Flyway | `11.19.1` |
+| Resilience4j | `2.4.0` |
+| Caffeine | `3.2.4` |
+| springdoc-openapi | `3.0.3` (Boot 4 official support) |
+| logstash-logback-encoder | `8.0` |
+| Micrometer | BOM transitive |
+| Testcontainers | `1.21.4` |
+| WireMock | `3.9.1` (4.x is beta) |
+| RestAssured | `5.5.0` (6.0.0 is major) |
+| ArchUnit | `1.4.2` |
+
+## 4. Other deps (U0-U1; wave schedule below)
+
+### 4.1 JVM + build chain (U2 at W0)
+
+| Dep | Pinned | Status |
+|---|---|---|
+| OpenJDK 21 | Temurin `21.0.11+10` | U2 -- installed and compile-verified |
+| Maven | `3.9.15` (via wrapper) | U2 -- mvnw bootstrapped at sha ca9bbba |
+
+### 4.2 Persistence (U0/U1; U2 target W1-W2)
+
+| Dep | Pinned | API surface | Notes |
+|---|---|---|---|
+| PostgreSQL | `16.x` | `SET LOCAL`, RLS, `FOR UPDATE SKIP LOCKED`, partitioned tables | External; Testcontainer for IT |
+| pgvector | `0.7.x` | `vector` column, `ivfflat`/`hnsw` indexes, `<->` ops | Extension; needs host support |
+| HikariCP | `5.x` (BOM transitive) | pool sizing, leak detection | Virtual-thread-friendly per 5.x release notes |
+| Spring Data JDBC | BOM transitive | `JdbcTemplate`, `@Repository` | Not JPA |
+
+### 4.3 Identity + auth + policy (U0/U1; U2 target W1)
+
+| Dep | Pinned | Notes |
+|---|---|---|
+| Spring Security | `6.x` (BOM) | `SecurityFilterChain`, `oauth2ResourceServer`, JWT decoder |
+| Nimbus JOSE+JWT | `9.x` (transitive) | Algorithm allowlist explicit |
+| Keycloak | `25.x` (compose only) | OIDC discovery; realm import; dev IdP |
+| OPA | `0.65.x` | sidecar HTTP API; Rego policy bundle; latency < 5ms p99 |
+| HashiCorp Vault | OSS | KV v2; dev mode in compose; cluster in prod |
+| Spring Cloud Vault | `2025.1.1` BOM | `@RefreshScope`, watcher |
+
+### 4.4 Resilience + observability (U2 compile-verified, U3 target W1)
+
+| Dep | Pinned | Notes |
+|---|---|---|
+| Resilience4j | `2.4.0` | `@CircuitBreaker`, `@RateLimiter`, `@Retry`; metrics via Micrometer |
+| Caffeine | `3.2.4` | L0 memory cache + per-tenant config cache |
+| OpenTelemetry Java agent | `2.10.0` | auto-instrumentation; `@WithSpan` |
+| logstash-logback-encoder | `8.0` | structured logs to Loki |
+
+### 4.5 Document parsing + knowledge (U2 Tika core; sidecars U0)
+
+| Dep | Pinned | Channel | Notes |
+|---|---|---|---|
+| Apache Tika | `3.3.0` | Maven | Core + parsers-standard; U2 at W0 |
+| Docling-serve | pinned in third_party/MANIFEST.md | Tier C (REST sidecar) | Layout-aware PDF; optional via docling-starter SPI |
+
+### 4.6 langchain4j (alternate RAG profile; U0 at W0)
+
+| Field | Value |
+|---|---|
+| BOM | `dev.langchain4j:langchain4j-bom:1.14.1` |
+| Status | GA (1.14.1 released 2026-05-07) |
+| Usage | Alternate RAG profile starter (`spring-ai-fin-langchain4j-profile`); not in default path |
+| Verification level | U0 -- BOM declared; no module depends on it yet |
+| Target | U2 when spring-ai-fin-langchain4j-profile scaffolded (Step 11) |
+
+## 5. Per-wave verification advancement (revised W0 complete)
+
+| Wave | Status | Promotion target |
+|---|---|---|
+| **W0** | **COMPLETE** at sha cd13612 | Java 21, Maven 3.9.15, Spring Boot 4.0.5, Spring AI 2.0.0-M5, MCP 1.0.0 GA, Temporal 1.35.0, Tika 3.3.0, Flyway 11.19.1, Resilience4j 2.4.0, Caffeine 3.2.4, Testcontainers 1.21.4, ArchUnit 1.4.2 -> **U2** |
+| **W1** | Pending | Spring Security, Keycloak, Spring Cloud Vault, OPA -> **U2** + **U3** (IT against Testcontainers) |
+| **W2** | Pending | Spring AI VectorStore PgVector, OTel Java agent, Loki/Grafana, Kafka/Redpanda, Caffeine IT -> **U3** |
+| **W3** | Pending | OPA runtime policy, pgvector, Temporal full IT, WireMock LLM stubs -> **U3** |
+| **W4** | Pending | Helm chart full, distroless image -> **U3** |
+| **W4+** | Future | Eval framework -> **U2** |
+
+## 6. Integration model (W0 decision, reference-project verified)
+
+**Decision: Hybrid library-first SDK with optional Python-community REST sidecars.**
+
+The SDK ships as Spring Boot Starters published to Maven Central. The default
+integration mode for every capability is in-JVM Java code; nothing in the default
+path requires an extra service beyond the data plane (Postgres+pgvector, Temporal
+server, OPA daemon, observability stack, LLM provider APIs, MCP tool servers).
+
+For capabilities where the most-active OSS community lives in Python, the SDK
+exposes a stable Java SPI; an optional adapter starter implements that SPI as a
+thin REST client, and a docker-compose overlay in `ops/compose/` provisions the
+Python sidecar. Consumers opt in per deployment.
+
+This model is validated by three reference projects (langchain4j, spring-ai-alibaba,
+agentscope-java), all of which ship as Maven Central libraries with zero mandatory
+microservices. See `docs/architecture-v6.X.md` integration-model section for the
+full analysis.
+
+### Per-capability OSS adoption matrix
+
+| Capability | Default (Maven Central, embedded) | Optional sidecar (REST via SPI) |
+|---|---|---|
+| Skills / Tools | MCP Java SDK 1.0.0 GA + external MCP servers | n/a (MCP is protocol-based) |
+| Short-term memory | Spring AI `ChatMemory` (in-process) | n/a |
+| Long-term hierarchical memory | Spring AI `ChatMemoryRepository` over Postgres | **mem0** (55.2k stars) via `LongTermMemoryRepository` SPI |
+| Knowledge-graph memory | none in default path | **Graphiti** (25.8k stars) via `GraphMemoryRepository` SPI |
+| Document parsing (general) | Apache Tika 3.3.0 (in-process) | n/a |
+| Document parsing (layout-aware) | Tika fallback | **Docling-serve** (IBM/LF AI&Data) via `LayoutParser` SPI |
+| RAG pipeline (default) | Spring AI 2.0-M5 ETL (`DocumentReader` -> `DocumentTransformer` -> `VectorStore`) | n/a |
+| RAG pipeline (alternate) | langchain4j 1.14.1 modules (opt-in profile) | n/a |
+| Vector store | Spring AI `VectorStore` client + pgvector | Spring AI Pinecone/Qdrant/Weaviate adapters |
+| Embedding model | Spring AI client -> OpenAI/Anthropic/Bedrock/Ollama | n/a |
+| Governance build-time | ArchUnit + active-corpus.yaml | n/a |
+| Governance runtime | OPA Java client (in-process) | OPA daemon (external REST) |
+| Database / persistence | Spring Data JDBC + Flyway 11.19.1 + Postgres | n/a |
+| Workflow orchestration | Temporal Java SDK 1.35.0 + Temporal server (external) | n/a |
+
+### SPI surface (frozen by ArchUnit at Step 10)
+
+- `fin.springai.runtime.spi.memory.LongTermMemoryRepository` -- default: Spring AI JDBC repo. Sidecar: mem0.
+- `fin.springai.runtime.spi.memory.GraphMemoryRepository` -- sidecar only: Graphiti (cycle-15 confirms vs Cognee).
+- `fin.springai.runtime.spi.knowledge.LayoutParser` -- default: Tika. Sidecar: Docling.
+- `fin.springai.runtime.spi.knowledge.DocumentSourceConnector` -- N implementations, opt-in per source.
+- `fin.springai.runtime.spi.skills.ToolProvider` -- wraps MCP `McpClient` + local `@Tool` registry.
+- `fin.springai.runtime.spi.governance.PolicyEvaluator` -- default: in-process JSR-303 + ArchUnit. External: OPA client.
+- `fin.springai.runtime.spi.persistence.RunRepository`, `IdempotencyRepository`, `ArtifactRepository` -- Spring Data JDBC default impls.
+
+## 7. Tier C: local source clones + Python OSS sidecars
+
+Tracked in `third_party/MANIFEST.md`. All entries gitignored; SHAs captured in the manifest.
+
+### Infrastructure servers (11)
+
+| Name | Purpose |
+|---|---|
+| Postgres + pgvector | Primary data store + vector extension |
+| Keycloak | OIDC IdP (dev) |
+| Temporal server | Workflow orchestration |
+| Redpanda | Kafka-compatible event bus |
+| MinIO | Object storage |
+| Loki | Log aggregation |
+| Grafana | Dashboards |
+| Prometheus | Metrics |
+| Tempo | Distributed tracing |
+| OPA | Policy engine daemon |
+| OpenSearch | Full-text search (optional) |
+
+### Python community OSS sidecars (5)
+
+| Name | Stars | Purpose | SPI |
+|---|---|---|---|
+| **mem0** (`mem0ai/mem0`) | 55.2k | Long-term hierarchical memory | `LongTermMemoryRepository` via `spring-ai-fin-mem0-starter` |
+| **Graphiti** (`getzep/graphiti`) | 25.8k | Knowledge-graph memory | `GraphMemoryRepository` via `spring-ai-fin-graphmemory-starter` |
+| **Cognee** (`topoteretes/cognee`) | 17.1k | Graph memory alternative to Graphiti | Evaluation alternative; cycle-15 picks one |
+| **Docling-serve** (`docling-project/docling-serve`) | IBM/LF AI&Data | Layout-aware PDF parsing | `LayoutParser` via `spring-ai-fin-docling-starter` |
+| **RAGFlow** (`infiniflow/ragflow`) | 80.1k | Alternate full-stack RAG platform | No SDK adapter; consumer integrates via RAGFlow API |
+
+## 8. Excluded dependencies (competitor code -- never import)
+
+These projects' implementations are **NOT imported as Maven dependencies,
+NOT cloned to `third_party/`, and NOT auto-configured anywhere in the SDK**.
+Their architectures may be cited as design evidence in plans/ADRs, but their
+code does not enter our build.
+
+| Project | Group ID | Reason | Permitted use |
+|---|---|---|---|
+| **spring-ai-alibaba** | `com.alibaba.cloud.ai:*` | Direct competitor in the agent runtime / SDK space | Architectural reference in ADRs/docs only |
+
+**ArchUnit enforcement (Step 10):**
+```java
+noClasses().that().resideInAPackage("fin.springai..")
+           .should().dependOnClassesThat()
+           .resideInAPackage("com.alibaba.cloud.ai..");
+```
+
+Future cycles MUST check this section before proposing any `com.alibaba.cloud.ai:*` artifact.
+
+The remaining reference projects (langchain4j, agentscope-java) are NOT on this list:
+- **langchain4j** (`dev.langchain4j:*`) -- generic open-source agent toolkit; imported as alternate RAG profile + document-loader catalog.
+- **agentscope-java** (`io.agentscope:*`) -- research-oriented agent framework; not currently imported; available as architectural reference only.
+
+## 9. Backward-compatibility strategy (SDK publishing)
+
+1. **Strict version pinning.** Every dep pinned to exact patch in `pom.xml` `<properties>`. No ranges, no `LATEST`.
+2. **BoM module.** `spring-ai-fin-dependencies` (packaging=pom) is the SDK's published version contract.
+3. **SPI freeze via ArchUnit.** `ApiCompatibilityTest` enforces public-package boundary on `fin.springai.runtime.spi.**`. Any change requires editing the test.
+4. **Spring AI milestone gate.** `gate/check_spring_ai_milestone.sh` fails CI past 2026-08-01 if `spring-ai.version` still contains `-M`.
+5. **Sidecar adapter independence.** Sidecar adapter starters live in their own modules; the Python service can break compatibility without affecting the SDK's SPI surface.
+6. **Deprecation policy**: SemVer; minor for additive; major for breaking; downstream gets one minor of deprecation overlap. Documented in `docs/cross-cutting/sdk-versioning.md`.
+
+## 10. Risk-weighted maintenance
 
 | Tier | Cadence | Examples |
 |---|---|---|
@@ -220,54 +292,26 @@ flagged for review.
 | **T2** runtime-critical | minor quarterly; major within 180 days | Spring AI, Temporal, pgvector, Resilience4j, Caffeine |
 | **T3** testing / build | minor on convenience | Testcontainers, JUnit, Maven plugins |
 
-Tier definition matches `ARCHITECTURE.md` sec-2.1 OSS dependency policy.
+## 11. Honest gaps
 
-## 8. Honest gaps
+- **Spring AI 2.0.0-M5 milestone risk.** API may shift between M5 and GA. `gate/check_spring_ai_milestone.sh` enforces re-evaluation by 2026-08-01. W2 plan includes upgrade-to-GA contingency.
+- **WireMock stuck at 3.9.1.** WireMock 4.x is in beta (4.0.0-beta.34 as of 2026-05-10); keeping 3.x until 4.x reaches GA.
+- **RestAssured stuck at 5.5.0.** 6.0.0 is a major version jump; upgrade deferred to W1 wave evaluation.
+- **logstash-logback-encoder stuck at 8.0.** 9.0 is a major version jump; upgrade deferred to W1 evaluation.
+- **Graphiti vs Cognee not yet picked.** Both cloned into `third_party/`; `spring-ai-fin-graphmemory-starter` initially wires Graphiti (higher activity). Cycle-15 confirms or swaps.
+- **langchain4j at U0.** BOM declared; no module depends on it yet. Advances to U2 when `spring-ai-fin-langchain4j-profile` scaffolded at Step 11.
+- **Python sidecar version drift.** mem0 / Graphiti / Docling release independently. Mitigated by SPI layer + `third_party/MANIFEST.md` SHA pinning.
+- **springdoc 3.0.3 Boot 4 runtime behavior.** Compile-verified at W0; runtime auto-configuration verified in W1 IT tests.
 
-- **Cycle-13 status: pom.xml + probe code committed; U2 promotion is
-  pending the user's `mvn -B dependency:resolve` + `mvn -B -pl agent-platform -am compile` run.**
-  The author's environment lacks Java + Maven; probe-code compile-verification
-  is delegated to the user's local Maven cache or to CI's first
-  `actions/setup-java@v4` run. Once that passes:
-  - All deps imported by `agent-platform/.../probe/OssApiProbe.java` advance to U2.
-  - All deps imported by `agent-runtime/.../probe/OssApiProbe.java` advance to U2 (with MCP SDK still at U1 due to milestone API in flux).
-- **Spring AI 1.0.7 vs 1.1.x choice is not final.** Pinning to 1.0.x
-  trades feature recency for stability; reconsidered each release.
-- **MCP Java SDK at milestone.** API may change at 2.0.0 GA. The
-  cycle-13 probe deliberately does NOT cite MCP class names yet;
-  W3 wave plan includes a 2.0.0-GA upgrade contingency + the W3-time
-  probe expansion.
-- **Temporal 1.34.0 may not be the GA at W4 start.** Pin will refresh
-  at the W4 wave plan revision.
-- **Pinned exact versions in this doc may drift before W0** as
-  upstream releases land. The cadence rule sec-7 catches drift but
-  does not prevent it.
+## 12. References
 
-## 9. Tests (W0+)
-
-| Test | Layer | Asserts |
-|---|---|---|
-| `OssBomCompileProbeIT` | CI (W0) | every dep listed at U2 compiles + transitively resolves |
-| `OssBomVersionPinIT` | CI (W0) | every BOM-managed dep matches pin in `pom.xml` |
-| `OssBomMilestoneNoticeIT` | CI (W3) | milestone deps (e.g., MCP) emit a "milestone-pinned" build warning |
-
-## 10. Cadence
-
-- This doc is updated at every cycle close where an OSS dep was
-  pinned, upgraded, swapped, or had its U-level advanced.
-- Quarterly: full BoM walk; any U0 entry > 90 days old without
-  promotion plan is flagged.
-- At every wave close: U-level promotions per sec-6 are recorded as
-  status YAML rows.
-
-## 11. References
-
-- `ARCHITECTURE.md` sec-2 (OSS component matrix; this BoM is the
-  authoritative version)
-- `ARCHITECTURE.md` sec-2.1 (OSS dependency policy: pinning,
-  Dependabot, tier cadence)
-- `docs/cross-cutting/supply-chain-controls.md` (build provenance,
-  SBOM, image digest pinning)
-- Spring AI 1.0.7 release notes (2026-05-08) -- upstream confirmation
-- Temporal Java SDK docs / Maven Central -- 1.34.0 confirmation
-- MCP Java SDK Maven Central -- `io.modelcontextprotocol.sdk:mcp:2.0.0-M2`
+- `ARCHITECTURE.md` sec-2 (OSS component matrix)
+- `docs/architecture-v6.X.md` integration-model section
+- `docs/plans/engineering-plan-W0-W4.md`
+- `third_party/MANIFEST.md` (Tier C SHA manifest)
+- `docs/cross-cutting/sdk-versioning.md` (deprecation policy)
+- `docs/cross-cutting/dev-environment.md` (toolchain install guide)
+- Spring AI 2.0.0-M5 release notes (milestone)
+- Temporal Java SDK 1.35.0 -- Maven Central confirmation
+- MCP Java SDK 1.0.0 GA -- Maven Central `io.modelcontextprotocol.sdk:mcp:1.0.0`
+- langchain4j 1.14.1 GA (2026-05-07) -- `dev.langchain4j:langchain4j-bom:1.14.1`
