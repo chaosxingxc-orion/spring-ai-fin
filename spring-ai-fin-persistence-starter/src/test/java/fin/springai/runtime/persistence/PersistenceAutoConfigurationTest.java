@@ -66,4 +66,14 @@ class PersistenceAutoConfigurationTest {
             assertThat(props.enabled()).isTrue();
         });
     }
+
+    @Test
+    void starterBeansAbsentWhenDisabled() {
+        runner.withPropertyValues("springai.fin.persistence.enabled=false")
+            .run(ctx -> {
+                assertThat(ctx).doesNotHaveBean(RunRepository.class);
+                assertThat(ctx).doesNotHaveBean(IdempotencyRepository.class);
+                assertThat(ctx).doesNotHaveBean(ArtifactRepository.class);
+            });
+    }
 }

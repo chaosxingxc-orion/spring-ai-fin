@@ -65,4 +65,13 @@ class MemoryAutoConfigurationTest {
             assertThat(props.enabled()).isTrue();
         });
     }
+
+    @Test
+    void starterBeansAbsentWhenDisabled() {
+        runner.withPropertyValues("springai.fin.memory.enabled=false")
+            .run(ctx -> {
+                assertThat(ctx).doesNotHaveBean(LongTermMemoryRepository.class);
+                assertThat(ctx).doesNotHaveBean(GraphMemoryRepository.class);
+            });
+    }
 }

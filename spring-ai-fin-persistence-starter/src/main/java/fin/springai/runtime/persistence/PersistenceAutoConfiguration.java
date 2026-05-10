@@ -9,6 +9,7 @@ import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
@@ -26,6 +27,7 @@ public class PersistenceAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(RunRepository.class)
+    @ConditionalOnProperty(prefix = "springai.fin.persistence", name = "enabled", havingValue = "true", matchIfMissing = true)
     RunRepository runRepository(MeterRegistry registry, Environment env) {
         rejectIfNonDevPosture(env, "RunRepository");
         return new NotConfiguredRunRepository(registry);
@@ -33,6 +35,7 @@ public class PersistenceAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(IdempotencyRepository.class)
+    @ConditionalOnProperty(prefix = "springai.fin.persistence", name = "enabled", havingValue = "true", matchIfMissing = true)
     IdempotencyRepository idempotencyRepository(MeterRegistry registry, Environment env) {
         rejectIfNonDevPosture(env, "IdempotencyRepository");
         return new NotConfiguredIdempotencyRepository(registry);
@@ -40,6 +43,7 @@ public class PersistenceAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(ArtifactRepository.class)
+    @ConditionalOnProperty(prefix = "springai.fin.persistence", name = "enabled", havingValue = "true", matchIfMissing = true)
     ArtifactRepository artifactRepository(MeterRegistry registry, Environment env) {
         rejectIfNonDevPosture(env, "ArtifactRepository");
         return new NotConfiguredArtifactRepository(registry);

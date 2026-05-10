@@ -8,6 +8,7 @@ import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
@@ -25,6 +26,7 @@ public class MemoryAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(LongTermMemoryRepository.class)
+    @ConditionalOnProperty(prefix = "springai.fin.memory", name = "enabled", havingValue = "true", matchIfMissing = true)
     LongTermMemoryRepository longTermMemoryRepository(MeterRegistry registry, Environment env) {
         rejectIfNonDevPosture(env, "LongTermMemoryRepository");
         return new NotConfiguredLongTermMemoryRepository(registry);
@@ -32,6 +34,7 @@ public class MemoryAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(GraphMemoryRepository.class)
+    @ConditionalOnProperty(prefix = "springai.fin.memory", name = "enabled", havingValue = "true", matchIfMissing = true)
     GraphMemoryRepository graphMemoryRepository(MeterRegistry registry, Environment env) {
         rejectIfNonDevPosture(env, "GraphMemoryRepository");
         return new NotConfiguredGraphMemoryRepository(registry);

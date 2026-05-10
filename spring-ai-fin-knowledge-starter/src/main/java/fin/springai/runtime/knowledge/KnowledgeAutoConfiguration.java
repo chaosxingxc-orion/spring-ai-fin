@@ -9,6 +9,7 @@ import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
@@ -26,6 +27,7 @@ public class KnowledgeAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(LayoutParser.class)
+    @ConditionalOnProperty(prefix = "springai.fin.knowledge", name = "enabled", havingValue = "true", matchIfMissing = true)
     LayoutParser layoutParser(MeterRegistry registry, Environment env) {
         rejectIfNonDevPosture(env, "LayoutParser");
         return new NotConfiguredLayoutParser(registry);
@@ -33,12 +35,14 @@ public class KnowledgeAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(DocumentSourceConnector.class)
+    @ConditionalOnProperty(prefix = "springai.fin.knowledge", name = "enabled", havingValue = "true", matchIfMissing = true)
     DocumentSourceConnector documentSourceConnector(MeterRegistry registry, Environment env) {
         rejectIfNonDevPosture(env, "DocumentSourceConnector");
         return new NotConfiguredDocumentSourceConnector(registry);
     }
 
     @Bean
+    @ConditionalOnProperty(prefix = "springai.fin.knowledge", name = "enabled", havingValue = "true", matchIfMissing = true)
     DocumentSourceConnectorRegistry documentSourceConnectorRegistry(List<DocumentSourceConnector> connectors) {
         return new DocumentSourceConnectorRegistry(connectors);
     }

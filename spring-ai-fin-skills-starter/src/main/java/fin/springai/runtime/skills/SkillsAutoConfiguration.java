@@ -7,6 +7,7 @@ import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
@@ -24,6 +25,7 @@ public class SkillsAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(ToolProvider.class)
+    @ConditionalOnProperty(prefix = "springai.fin.skills", name = "enabled", havingValue = "true", matchIfMissing = true)
     ToolProvider toolProvider(MeterRegistry registry, Environment env) {
         String posture = env.getProperty("app.posture", "dev");
         if (!"dev".equalsIgnoreCase(posture)) {

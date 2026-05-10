@@ -90,4 +90,14 @@ class KnowledgeAutoConfigurationTest {
             assertThat(props.enabled()).isTrue();
         });
     }
+
+    @Test
+    void starterBeansAbsentWhenDisabled() {
+        runner.withPropertyValues("springai.fin.knowledge.enabled=false")
+            .run(ctx -> {
+                assertThat(ctx).doesNotHaveBean(DocumentSourceConnector.class);
+                assertThat(ctx).doesNotHaveBean(LayoutParser.class);
+                assertThat(ctx).doesNotHaveBean(DocumentSourceConnectorRegistry.class);
+            });
+    }
 }

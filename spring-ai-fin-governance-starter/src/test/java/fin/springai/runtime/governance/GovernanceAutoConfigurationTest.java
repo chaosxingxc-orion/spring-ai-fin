@@ -64,4 +64,12 @@ class GovernanceAutoConfigurationTest {
             assertThat(props.enabled()).isTrue();
         });
     }
+
+    @Test
+    void starterBeansAbsentWhenDisabled() {
+        runner.withPropertyValues("springai.fin.governance.enabled=false")
+            .run(ctx -> {
+                assertThat(ctx).doesNotHaveBean(PolicyEvaluator.class);
+            });
+    }
 }
