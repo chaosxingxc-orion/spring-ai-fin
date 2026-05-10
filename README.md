@@ -1,8 +1,8 @@
 # spring-ai-fin
 
-> **Capability-layer enterprise agent platform for Southeast Asia financial services (Indonesia OJK / Singapore MAS).** Built on Spring Boot + Spring AI 1.1+. Multi-framework dispatch (Spring AI native, LangChain4j, Python sidecars). Pre-implementation; this repo currently holds the architecture design corpus pending committee review.
+> **Capability-layer enterprise agent platform for Southeast Asia financial services (Indonesia OJK / Singapore MAS).** Built on Spring Boot 3.5 + Spring AI 2.0.0-M5. Multi-framework dispatch (Spring AI native, LangChain4j profile, Python sidecars). W0 scaffold landed; 14 Maven modules, SPI surface frozen at 7 interfaces.
 
-**Status**: v6.0 architecture review edition · 2026-05-07 · pre-implementation
+**Status**: v6.0 architecture · W0 scaffold landed 2026-05-10 · 14 Maven modules · SPI surface frozen
 **License preference**: Apache 2.0 / MIT only on the runtime path (see [`ARCHITECTURE.md`](ARCHITECTURE.md) D-15)
 
 ---
@@ -20,44 +20,41 @@
 
 ```
 spring-ai-fin/
-├── ARCHITECTURE.md                              L0 system boundary (1,648 lines, 17 decisions)
+├── ARCHITECTURE.md                              L0 system boundary (17 decisions)
 ├── CLAUDE.md                                    Behavioural rules (12 universal rules)
 ├── README.md                                    this file
 │
-├── agent-platform/                              Tier-A northbound facade (frozen v1)
-│   ├── ARCHITECTURE.md                          L1
-│   ├── api/ARCHITECTURE.md                      L2 — HTTP transport + filter chain
-│   ├── bootstrap/ARCHITECTURE.md                L2 — assembly seam #1
-│   ├── cli/ARCHITECTURE.md                      L2 — operator CLI
-│   ├── config/ARCHITECTURE.md                   L2 — settings + version pin
-│   ├── contracts/ARCHITECTURE.md                L2 — frozen v1 records
-│   ├── facade/ARCHITECTURE.md                   L2 — contract↔kernel adapters
-│   └── runtime/ARCHITECTURE.md                  L2 — kernel binding seam #2
+├── agent-platform/                              Tier-A northbound facade (L1 — HealthEndpointIT GREEN)
+│   └── ARCHITECTURE.md                          L1
 │
-├── agent-runtime/                               Tier-B cognitive runtime
-│   ├── ARCHITECTURE.md                          L1
-│   ├── adapters/ARCHITECTURE.md                 L2 — multi-framework dispatch ★
-│   ├── auth/ARCHITECTURE.md                     L2 — JWT primitives
-│   ├── capability/ARCHITECTURE.md               L2 — registry + invoker + breaker
-│   ├── evolve/ARCHITECTURE.md                   L2 — experiments + postmortem
-│   ├── knowledge/ARCHITECTURE.md                L2 — JSONB glossary + 4-layer retrieval
-│   ├── llm/ARCHITECTURE.md                      L2 — Spring AI gateway + tier router
-│   ├── memory/ARCHITECTURE.md                   L2 — L0–L3 layered memory
-│   ├── observability/ARCHITECTURE.md            L2 — Rule 7 four-prong + spine
-│   ├── outbox/ARCHITECTURE.md                   L2 — OUTBOX_ASYNC + SYNC_SAGA + DIRECT_DB ★
-│   ├── posture/ARCHITECTURE.md                  L2 — three-posture model
-│   ├── runner/ARCHITECTURE.md                   L2 — TRACE 5-stage executor
-│   ├── runtime/ARCHITECTURE.md                  L2 — Reactor scheduler + harness
-│   ├── server/ARCHITECTURE.md                   L2 — AgentRuntime + RunManager
-│   └── skill/ARCHITECTURE.md                    L2 — MCP tools + Spring AI Advisors
+├── agent-runtime/                               Tier-B cognitive runtime (L0 — OssApiProbe shell)
+│   └── ARCHITECTURE.md                          L1
+│
+├── spring-ai-fin-dependencies/                  BoM — pins 9 starter coordinates + 13 OSS deps (L1)
+│   └── pom.xml
+│
+├── spring-ai-fin-memory-starter/                SPI: LongTermMemoryRepository, GraphMemoryRepository (L0)
+├── spring-ai-fin-skills-starter/                SPI: ToolProvider (L0)
+├── spring-ai-fin-knowledge-starter/             SPI: LayoutParser, DocumentSourceConnector (L0)
+├── spring-ai-fin-governance-starter/            SPI: PolicyEvaluator (L0)
+├── spring-ai-fin-persistence-starter/           SPI: RunRepository, IdempotencyRepository, ArtifactRepository (L0)
+│
+├── spring-ai-fin-mem0-starter/                  Sidecar adapter — Mem0 REST (enabled=false by default, L0)
+├── spring-ai-fin-graphmemory-starter/           Sidecar adapter — Graphiti REST (enabled=false by default, L0)
+├── spring-ai-fin-docling-starter/               Sidecar adapter — Docling REST (enabled=false by default, L0)
+├── spring-ai-fin-langchain4j-profile/           Alternate framework profile — LangChain4j (enabled=false, L0)
+│
+├── third_party/                                 Third-party notices and OSS attribution
 │
 └── docs/
     ├── architecture-review-2026-05-07.md        Committee-facing review document
-    ├── architecture-v5.0.md                     Historical input (preserved)
-    └── architecture-v5.0-review-2026-05-07.md   Adversarial review that produced v6.0
+    ├── governance/                              architecture-status.yaml, evidence-manifest.yaml
+    ├── delivery/                                Gate-run evidence files (per-SHA)
+    └── cross-cutting/                           OSS BoM policy, security, posture
 ```
 
-★ = the two L2 docs implementing v6.0's most distinctive choices.
+SPI interfaces are frozen by `ApiCompatibilityTest` (ArchUnit 4 rules GREEN at commit 97b0827).
+L-levels per Rule 12: L0 = sentinel impl only; L1 = tested component.
 
 ## Architecture summary
 
@@ -66,22 +63,31 @@ spring-ai-fin/
 │ Tier-A Northbound Facade — agent-platform/                       │
 │ • Frozen v1 HTTP contract (`/v1/*`)                              │
 │ • Filter chain: JWTAuth → TenantContext → Idempotency            │
-│ • Operator CLI                                                   │
-│ • Customer Spring Boot Starters                                  │
+│ • /v1/health (HealthEndpointIT GREEN)                            │
 └──────────────────────────────────────────────────────────────────┘
                               │ SAS-1 single seam
                               ▼
 ┌──────────────────────────────────────────────────────────────────┐
-│ Tier-B Cognitive Runtime — agent-runtime/                        │
-│ • TRACE 5-stage durable RunExecutor                              │
-│ • LLMGateway over Spring AI ChatClient                           │
-│ • FrameworkAdapter dispatch (Spring AI / LangChain4j / Python)   │
-│ • Memory + Knowledge + Skill subsystems                          │
-│ • Observability spine + Outbox + Sync-Saga + Direct-DB           │
+│ SPI / Starter Layer — spring-ai-fin-*-starter (W0 scaffold)      │
+│ • LongTermMemoryRepository · GraphMemoryRepository               │
+│ • ToolProvider                                                   │
+│ • LayoutParser · DocumentSourceConnector                         │
+│ • PolicyEvaluator                                                │
+│ • RunRepository · IdempotencyRepository · ArtifactRepository     │
+│ L0 sentinel impls in dev; posture fail-fast in research/prod     │
 └──────────────────────────────────────────────────────────────────┘
+           │ SPI consumed                  │ sidecar adapters
+           ▼                               ▼
+┌──────────────────────────────┐  ┌────────────────────────────┐
+│ Tier-B Cognitive Runtime     │  │ Sidecar adapters (opt-in)  │
+│ agent-runtime/               │  │ Mem0 · Graphiti · Docling  │
+│ • LLMGateway (Spring AI)     │  │ LangChain4j profile        │
+│ • Memory + Knowledge + Skill │  │ enabled=false by default   │
+│ • Observability spine        │  └────────────────────────────┘
+└──────────────────────────────┘
                               │ outbound only
                               ▼
-                LLM providers, Postgres, MCP servers, Python sidecars
+                LLM providers, Postgres, MCP servers
 ```
 
 ## Predecessor
@@ -90,8 +96,7 @@ This architecture inherits 32 release waves of operational learnings from a Pyth
 
 ## Status
 
-- v5.0 architecture document (9,922 lines, single file) underwent adversarial review
-- 6 HIGH + 9 MEDIUM findings identified
-- v6.0 (this corpus) corrects all 6 HIGH and 8 of 9 MEDIUM findings
-- Pending: architecture committee review and approval per [`docs/architecture-review-2026-05-07.md`](docs/architecture-review-2026-05-07.md) §24
-- Implementation has NOT started; W1 plan is conditional on committee approval
+- v6.0 architecture review committee approval pending per [`docs/architecture-review-2026-05-07.md`](docs/architecture-review-2026-05-07.md) §24
+- W0 scaffold landed at commit `97b0827` (see `docs/delivery/` for gate-run evidence)
+- 14 Maven modules built; 7 SPI interfaces frozen; `ApiCompatibilityTest` (ArchUnit) GREEN
+- Next milestone: W1 default impls (Spring Data JDBC `RunRepository`, JDBC `LongTermMemoryRepository`, Tika `LayoutParser`)

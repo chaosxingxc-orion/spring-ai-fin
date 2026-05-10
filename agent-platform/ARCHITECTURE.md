@@ -1,8 +1,8 @@
 # agent-platform -- L1 architecture (2026-05-08 refresh)
 
-> Owner: platform | Wave: W0..W3 | Maturity: L0 | Reads: JWT + tenant
+> Owner: platform | Wave: W0..W3 | Maturity: L1 | Reads: JWT + tenant
 > overrides | Writes: tenant_workspace, idempotency_dedup, audit_log
-> Last refreshed: 2026-05-08
+> Last refreshed: 2026-05-10
 
 ## 1. Purpose
 
@@ -46,6 +46,8 @@ belong to `agent-runtime`.
 | `contracts/` | OpenAPI surface (versioned) + DTO records | W0 |
 
 Each L2 has its own `ARCHITECTURE.md` following the skeleton in `docs/plans/architecture-systems-engineering-plan.md` sec-3.
+
+9 SPI surfaces are published by the `spring-ai-fin-*-starter` modules and frozen by `ApiCompatibilityTest` (ArchUnit 4 rules GREEN). Platform code calls runtime capabilities only through these SPI contracts, never through direct Java imports of `agent-runtime` types.
 
 ## 4. Public contract
 
