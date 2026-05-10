@@ -1556,5 +1556,5 @@ findings:
       - agent-platform/src/test/java/fin/springai/platform/api/ApiCompatibilityTest.java
     tests:
       - agent-platform/src/test/java/fin/springai/platform/api/ApiCompatibilityTest.java
-    latest_delivery_valid_sha: 97b0827
+    latest_delivery_valid_sha: 8505f7d
     allowed_claim: "ArchUnit 4 rules GREEN: no spring-ai-alibaba import; platform/runtime/SPI separation."

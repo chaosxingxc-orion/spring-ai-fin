@@ -123,7 +123,8 @@
 ## Delivery evidence
 
 - [`docs/delivery/README.md`](../delivery/README.md) -- delivery rules.
-- [`docs/delivery/2026-05-10-97b0827.md`](../delivery/2026-05-10-97b0827.md) -- cycle-15/16 defect closure: SPI Rule 11 spine, posture fail-fast, doc refresh, ledger sync.
+- [`docs/delivery/2026-05-10-8505f7d.md`](../delivery/2026-05-10-8505f7d.md) -- cycle-15/16 defect closure: SPI Rule 11 spine, posture fail-fast, doc refresh, ledger sync, ASCII gate fixes (authoritative).
+- [`docs/delivery/2026-05-10-97b0827.md`](../delivery/2026-05-10-97b0827.md) -- cycle-15/16 interim delivery (superseded by 8505f7d delivery).
 - [`docs/delivery/2026-05-10-68c07f1.md`](../delivery/2026-05-10-68c07f1.md) -- W0: milestone gate grep-P locale fix; build_verification.state: green.
 - [`docs/delivery/2026-05-10-ec8daca.md`](../delivery/2026-05-10-ec8daca.md) -- W0: Steps 9-12 finishing work (BoM starters + SPI freeze + milestone gate + dev docs); build_verification.state: green.
 - [`docs/delivery/2026-05-10-18d637e.md`](../delivery/2026-05-10-18d637e.md) -- W0: Maven Wrapper + Boot 4.0.5 / AI 2.0.0-M5 upgrade + OSS BoM U2 (verified at cd13612) + Tier C manifest (16 entries); build_verification.state: green.
