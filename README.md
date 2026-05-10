@@ -90,6 +90,62 @@ L-levels per Rule 12: L0 = sentinel impl only; L1 = tested component.
                 LLM providers, Postgres, MCP servers
 ```
 
+## 5-minute quickstart
+
+### 1. Import the BoM
+
+```xml
+<dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>fin.springai</groupId>
+      <artifactId>spring-ai-fin-dependencies</artifactId>
+      <version>0.1.0-SNAPSHOT</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
+  </dependencies>
+</dependencyManagement>
+```
+
+### 2. Add a starter
+
+```xml
+<dependency>
+  <groupId>fin.springai</groupId>
+  <artifactId>spring-ai-fin-memory-starter</artifactId>
+</dependency>
+```
+
+### 3. Drop in a @Bean override (posture=dev uses sentinel if omitted)
+
+```java
+@Bean
+LongTermMemoryRepository myMemoryRepo(DataSource ds) {
+    return new MyJdbcLongTermMemoryRepository(ds);
+}
+```
+
+```java
+@Bean
+PolicyEvaluator myPolicyEvaluator() {
+    return new MyAllowAllPolicyEvaluator();
+}
+```
+
+```java
+@Bean
+DocumentSourceConnector s3Connector(S3Client s3) {
+    return new S3DocumentSourceConnector(s3);
+}
+```
+
+Posture is set via `APP_POSTURE` env var (dev/research/prod). Research and prod reject
+sentinel stubs at startup; provide real @Bean overrides before deploying.
+
+See [docs/cross-cutting/integration-guide.md](docs/cross-cutting/integration-guide.md) for
+the full integration guide.
+
 ## Predecessor
 
 This architecture inherits 32 release waves of operational learnings from a Python predecessor (`hi-agent`). The 12 universal rules in [`CLAUDE.md`](CLAUDE.md) are translated from that predecessor's hard-won discipline.
