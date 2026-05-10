@@ -3,9 +3,7 @@ package fin.springai.platform.contracts;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -16,6 +14,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.io.InputStream;
 import java.util.Map;
 
+import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -51,25 +50,25 @@ class OpenApiContractIT {
     @LocalServerPort
     private int port;
 
-    @Autowired
-    private TestRestTemplate restTemplate;
-
     private static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory());
 
     @Test
     @SuppressWarnings("unchecked")
     void liveSpecContainsAllPinnedOperations() throws Exception {
-        // Load pinned spec from test classpath.
         InputStream pinned = getClass().getResourceAsStream("/contracts/openapi-v1-pinned.yaml");
         assertThat(pinned).as("pinned spec on classpath at /contracts/openapi-v1-pinned.yaml").isNotNull();
         Map<String, Object> pinnedSpec = YAML_MAPPER.readValue(pinned, Map.class);
 
-        // Fetch live spec from running app.
-        String url = "http://localhost:" + port + "/v3/api-docs";
-        Map<String, Object> liveSpec = restTemplate.getForObject(url, Map.class);
+        Map<String, Object> liveSpec = given()
+                .port(port)
+                .when()
+                .get("/v3/api-docs")
+                .then()
+                .statusCode(200)
+                .extract()
+                .as(Map.class);
         assertThat(liveSpec).as("live OpenAPI spec from /v3/api-docs").isNotNull();
 
-        // Compare: every operation in pinned must exist in live.
         OpenApiSnapshotComparator.ComparisonResult result =
                 OpenApiSnapshotComparator.compare(pinnedSpec, liveSpec);
         assertThat(result.violations())
@@ -80,8 +79,14 @@ class OpenApiContractIT {
     @Test
     @SuppressWarnings("unchecked")
     void liveSpecInfoIsPresent() {
-        String url = "http://localhost:" + port + "/v3/api-docs";
-        Map<String, Object> spec = restTemplate.getForObject(url, Map.class);
+        Map<String, Object> spec = given()
+                .port(port)
+                .when()
+                .get("/v3/api-docs")
+                .then()
+                .statusCode(200)
+                .extract()
+                .as(Map.class);
         assertThat(spec).containsKey("info");
         Map<String, Object> info = (Map<String, Object>) spec.get("info");
         assertThat(info).containsKey("title");

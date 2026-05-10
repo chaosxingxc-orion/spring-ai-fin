@@ -212,6 +212,73 @@
         <version>${archunit.version}</version>
         <scope>test</scope>
       </dependency>
+
+      <!-- Local fin.springai modules — managed here so consumers never need inline <version>. -->
+      <dependency>
+        <groupId>fin.springai</groupId>
+        <artifactId>agent-platform</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>fin.springai</groupId>
+        <artifactId>agent-runtime</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>fin.springai</groupId>
+        <artifactId>agent-eval</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>fin.springai</groupId>
+        <artifactId>spring-ai-fin-memory-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>fin.springai</groupId>
+        <artifactId>spring-ai-fin-skills-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>fin.springai</groupId>
+        <artifactId>spring-ai-fin-knowledge-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>fin.springai</groupId>
+        <artifactId>spring-ai-fin-governance-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>fin.springai</groupId>
+        <artifactId>spring-ai-fin-persistence-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>fin.springai</groupId>
+        <artifactId>spring-ai-fin-resilience-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>fin.springai</groupId>
+        <artifactId>spring-ai-fin-mem0-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>fin.springai</groupId>
+        <artifactId>spring-ai-fin-graphmemory-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>fin.springai</groupId>
+        <artifactId>spring-ai-fin-docling-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>fin.springai</groupId>
+        <artifactId>spring-ai-fin-langchain4j-profile</artifactId>
+        <version>${project.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
