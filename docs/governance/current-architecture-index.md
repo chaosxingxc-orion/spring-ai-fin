@@ -27,8 +27,28 @@
 
 ### L1 -- Per-package
 
-- [`agent-platform/ARCHITECTURE.md`](../../agent-platform/ARCHITECTURE.md) -- northbound HTTP module.
-- [`agent-runtime/ARCHITECTURE.md`](../../agent-runtime/ARCHITECTURE.md) -- cognitive runtime kernel.
+- [`agent-platform/ARCHITECTURE.md`](../../agent-platform/ARCHITECTURE.md) -- northbound HTTP module (Maturity: L1; HealthEndpointIT + ApiCompatibilityTest GREEN).
+- [`agent-runtime/ARCHITECTURE.md`](../../agent-runtime/ARCHITECTURE.md) -- cognitive runtime kernel (Maturity: L0; OssApiProbe shell).
+
+### Capability starters (W0 scaffold; SPI frozen)
+
+- `spring-ai-fin-dependencies/` -- BoM (L1; pins 9 starter coordinates + 13 OSS deps)
+- `spring-ai-fin-memory-starter/` -- SPI: LongTermMemoryRepository, GraphMemoryRepository (L0 sentinel)
+- `spring-ai-fin-skills-starter/` -- SPI: ToolProvider (L0 sentinel)
+- `spring-ai-fin-knowledge-starter/` -- SPI: LayoutParser, DocumentSourceConnector (L0 sentinel)
+- `spring-ai-fin-governance-starter/` -- SPI: PolicyEvaluator (L0 sentinel)
+- `spring-ai-fin-persistence-starter/` -- SPI: RunRepository, IdempotencyRepository, ArtifactRepository (L0 sentinel)
+
+### Sidecar adapter starters (enabled=false by default; L0)
+
+- `spring-ai-fin-mem0-starter/` -- Mem0 REST adapter for LongTermMemoryRepository
+- `spring-ai-fin-graphmemory-starter/` -- Graphiti REST adapter for GraphMemoryRepository
+- `spring-ai-fin-docling-starter/` -- Docling REST adapter for LayoutParser
+- `spring-ai-fin-langchain4j-profile/` -- LangChain4j alternate framework profile
+
+### Supporting directories
+
+- `third_party/` -- OSS attribution + third-party notices
 
 ### L2 -- Per-module (refresh-active only)
 
@@ -103,6 +123,7 @@
 ## Delivery evidence
 
 - [`docs/delivery/README.md`](../delivery/README.md) -- delivery rules.
+- [`docs/delivery/2026-05-10-97b0827.md`](../delivery/2026-05-10-97b0827.md) -- cycle-15/16 defect closure: SPI Rule 11 spine, posture fail-fast, doc refresh, ledger sync.
 - [`docs/delivery/2026-05-10-68c07f1.md`](../delivery/2026-05-10-68c07f1.md) -- W0: milestone gate grep-P locale fix; build_verification.state: green.
 - [`docs/delivery/2026-05-10-ec8daca.md`](../delivery/2026-05-10-ec8daca.md) -- W0: Steps 9-12 finishing work (BoM starters + SPI freeze + milestone gate + dev docs); build_verification.state: green.
 - [`docs/delivery/2026-05-10-18d637e.md`](../delivery/2026-05-10-18d637e.md) -- W0: Maven Wrapper + Boot 4.0.5 / AI 2.0.0-M5 upgrade + OSS BoM U2 (verified at cd13612) + Tier C manifest (16 entries); build_verification.state: green.
@@ -123,19 +144,17 @@ of the reviewed content SHA.
 
 ## Capability maturity (cycle-9 sec-E1: lead with maturity, not percentage)
 
-Every refresh capability is currently maturity **L0** (design accepted,
-no code yet). Promotion L0 -> L1 requires code + Rule 4 three-layer
-tests (per `docs/plans/engineering-plan-W0-W4.md` Acceptance gates per
-wave). Promotion L1 -> L2 requires a stable public contract + a
-snapshot test. L3 requires posture-aware default-on + an operator-shape
-gate PASS. L4 requires third-party extension evidence.
+W0 scaffold landed at commit `97b0827`. Current maturity per capability:
 
-The 240+ dim self-audit reaching design-time cap is **NOT** a shipping
-claim and **NOT** Rule 8 evidence. It only states that the design
-documentation surface is internally consistent and complete. Real
-readiness is measured by the 32-dim scoring framework
-(`docs/architecture-meta-reflection-2026-05-08.en.md`), which currently
-reads 0 / 32 (R / F dims unlock at W0+).
+- `agent_platform_facade`: **L1** — `HealthEndpointIT` + `ApiCompatibilityTest` GREEN
+- `spi_compatibility_freeze`: **L1** — ArchUnit 4 rules GREEN
+- `spring_ai_fin_dependencies_bom`: **L1** — BoM resolves all 9 starters
+- `spring_ai_fin_*_starter` (5 core + 4 sidecar): **L0** — sentinel impls; W1 lands real impls
+- All other capabilities from the 2026-05-08 architecture refresh: **L0** (design accepted)
+
+Promotion L0 → L1 requires code + Rule 4 three-layer tests (per `docs/plans/engineering-plan-W0-W4.md` acceptance gates per wave). Promotion L1 → L2 requires a stable public contract + snapshot test. L3 requires posture-aware default-on + operator-shape gate PASS. L4 requires third-party extension evidence.
+
+Real readiness is measured by the 32-dim scoring framework (`docs/architecture-meta-reflection-2026-05-08.en.md`); W0 scaffold moved the score from ~0/32 to ~5/32 (R1/R2/R4/R5 partial).
 
 ## Historical Rationale (NOT authoritative)
 

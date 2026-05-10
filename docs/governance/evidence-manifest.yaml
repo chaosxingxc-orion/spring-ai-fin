@@ -58,12 +58,12 @@ schema_capabilities:
 # of cycle-8's remediation. The gate derives it from HEAD when verifying
 # audit_trail_shape.
 
-reviewed_content_sha: 68c07f1                       # W0 milestone gate fix: grep-P to sed (locale-safe)
-evidence_commit_parent_sha: 68c07f1                 # MUST equal reviewed_content_sha (gate enforced)
+reviewed_content_sha: 97b0827                       # cycle-15/16 defect closure: SPI records, posture fail-fast, doc refresh
+evidence_commit_parent_sha: 97b0827                 # MUST equal reviewed_content_sha (gate enforced)
 evidence_commit_classification: audit_trail_only    # one of: direct_reviewed_content | audit_trail_only
 
 # Backward compatibility with v1/v2 readers (cycle-5/cycle-6/cycle-7).
-reviewed_sha: 68c07f1
+reviewed_sha: 97b0827
 
 current_head_policy:
   accepted_shapes:
@@ -78,7 +78,7 @@ current_head_policy:
 
 # ---- Delivery and logs (cycle-8 sec-B1, sec-B2, sec-B3) ----
 
-delivery_file: docs/delivery/2026-05-10-68c07f1.md   # W0 milestone gate fix (grep-P locale issue)
+delivery_file: docs/delivery/2026-05-10-97b0827.md   # cycle-15/16 defect closure (SPI + posture + docs + ledger)
 
 # Per cycle-8 sec-B3: log slots use the explicit state enum, never null.
 # Per cycle-8 sec-B1: when state == pass, path MUST exist and the log's
@@ -87,8 +87,8 @@ delivery_file: docs/delivery/2026-05-10-68c07f1.md   # W0 milestone gate fix (gr
 architecture_sync_logs:
   posix:
     state: pass
-    path: gate/log/68c07f1-posix.json
-    log_sha: 68c07f1
+    path: gate/log/64748f1-posix.json
+    log_sha: 64748f1
   windows:
     state: missing_blocker
     path: null
@@ -131,8 +131,8 @@ operator_shape_logs:
 # distinguishes a local-only run from a delivery-valid run.
 self_test:
   state: pass
-  pass_sha: 68c07f1
-  log_path: gate/log/self-test-68c07f1.json
+  pass_sha: 97b0827
+  log_path: gate/log/self-test-97b0827.json
   blocking_for_delivery: true
   pass_type: delivery_valid_pass    # one of: local_semantic_pass | delivery_valid_pass
 

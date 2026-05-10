@@ -37,18 +37,21 @@ capabilities:
     open_findings: []
 
   agent_platform_facade:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
+    maturity: L1
+    status: implemented_unverified
+    evidence_state: implemented_unverified
     l0_decision: ARCHITECTURE.md
     l2_documents:
-      - agent-platform/contracts/ARCHITECTURE.md
-      - agent-platform/api/ARCHITECTURE.md
-      - agent-platform/facade/ARCHITECTURE.md
-    implementation: null
-    tests: []
+      - agent-platform/ARCHITECTURE.md
+    implementation:
+      - agent-platform/src/main/java/fin/springai/platform/AgentPlatformApplication.java
+      - agent-platform/src/main/java/fin/springai/platform/health/HealthController.java
+    tests:
+      - agent-platform/src/test/java/fin/springai/platform/health/HealthEndpointIT.java
+      - agent-platform/src/test/java/fin/springai/platform/api/ApiCompatibilityTest.java
     operator_gate: null
-    allowed_claim: "Proposed contract"
+    latest_delivery_valid_sha: 97b0827
+    allowed_claim: "L1: /v1/health GREEN; ArchUnit 4 rules GREEN. SPI contracts frozen."
 
   agent_runtime_kernel:
     maturity: L0
@@ -56,12 +59,12 @@ capabilities:
     evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md
     l2_documents:
-      - agent-runtime/server/ARCHITECTURE.md
-      - agent-runtime/runner/ARCHITECTURE.md
-    implementation: null
+      - agent-runtime/ARCHITECTURE.md
+    implementation:
+      - agent-runtime/src/main/java/fin/springai/runtime/probe/OssApiProbe.java
     tests: []
     operator_gate: null
-    allowed_claim: "Proposed runtime"
+    allowed_claim: "L0: OssApiProbe shell present; no kernel logic yet. W2 delivers run lifecycle."
 
   action_guard:
     maturity: L0
@@ -1414,3 +1417,144 @@ findings:
     status: design_accepted
     target_wave: W0
     capability: agent_platform_facade
+
+  # ---- 2026-05-10 cycle-15/16 W0 scaffolding ----
+
+  spring_ai_fin_dependencies_bom:
+    maturity: L1
+    status: implemented_unverified
+    evidence_state: implemented_unverified
+    l0_decision: docs/cross-cutting/oss-bill-of-materials.md
+    implementation: spring-ai-fin-dependencies/pom.xml
+    tests: []
+    latest_delivery_valid_sha: 97b0827
+    allowed_claim: "BoM publishes 9 starter coordinates + 13 transitive OSS pins."
+
+  spring_ai_fin_memory_starter:
+    maturity: L0
+    status: implemented_unverified
+    evidence_state: implemented_unverified
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - spring-ai-fin-memory-starter/src/main/java/fin/springai/runtime/memory/MemoryAutoConfiguration.java
+      - spring-ai-fin-memory-starter/src/main/java/fin/springai/runtime/spi/memory/LongTermMemoryRepository.java
+      - spring-ai-fin-memory-starter/src/main/java/fin/springai/runtime/spi/memory/GraphMemoryRepository.java
+    tests:
+      - spring-ai-fin-memory-starter/src/test/java/fin/springai/runtime/memory/MemoryAutoConfigurationTest.java
+    latest_delivery_valid_sha: 97b0827
+    allowed_claim: "L0 sentinel impl + frozen SPI; W1 lands JDBC default."
+
+  spring_ai_fin_skills_starter:
+    maturity: L0
+    status: implemented_unverified
+    evidence_state: implemented_unverified
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - spring-ai-fin-skills-starter/src/main/java/fin/springai/runtime/skills/SkillsAutoConfiguration.java
+      - spring-ai-fin-skills-starter/src/main/java/fin/springai/runtime/spi/skills/ToolProvider.java
+    tests:
+      - spring-ai-fin-skills-starter/src/test/java/fin/springai/runtime/skills/SkillsAutoConfigurationTest.java
+    latest_delivery_valid_sha: 97b0827
+    allowed_claim: "L0 sentinel impl + frozen SPI; W1 lands MCP ToolProvider."
+
+  spring_ai_fin_knowledge_starter:
+    maturity: L0
+    status: implemented_unverified
+    evidence_state: implemented_unverified
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - spring-ai-fin-knowledge-starter/src/main/java/fin/springai/runtime/knowledge/KnowledgeAutoConfiguration.java
+      - spring-ai-fin-knowledge-starter/src/main/java/fin/springai/runtime/spi/knowledge/LayoutParser.java
+      - spring-ai-fin-knowledge-starter/src/main/java/fin/springai/runtime/spi/knowledge/DocumentSourceConnector.java
+    tests:
+      - spring-ai-fin-knowledge-starter/src/test/java/fin/springai/runtime/knowledge/KnowledgeAutoConfigurationTest.java
+    latest_delivery_valid_sha: 97b0827
+    allowed_claim: "L0 sentinel impl + frozen SPI; W1 lands Tika LayoutParser."
+
+  spring_ai_fin_governance_starter:
+    maturity: L0
+    status: implemented_unverified
+    evidence_state: implemented_unverified
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - spring-ai-fin-governance-starter/src/main/java/fin/springai/runtime/governance/GovernanceAutoConfiguration.java
+      - spring-ai-fin-governance-starter/src/main/java/fin/springai/runtime/spi/governance/PolicyEvaluator.java
+    tests:
+      - spring-ai-fin-governance-starter/src/test/java/fin/springai/runtime/governance/GovernanceAutoConfigurationTest.java
+    latest_delivery_valid_sha: 97b0827
+    allowed_claim: "L0 sentinel impl + frozen SPI; W1 lands JSR-303 PolicyEvaluator."
+
+  spring_ai_fin_persistence_starter:
+    maturity: L0
+    status: implemented_unverified
+    evidence_state: implemented_unverified
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - spring-ai-fin-persistence-starter/src/main/java/fin/springai/runtime/persistence/PersistenceAutoConfiguration.java
+      - spring-ai-fin-persistence-starter/src/main/java/fin/springai/runtime/spi/persistence/RunRepository.java
+      - spring-ai-fin-persistence-starter/src/main/java/fin/springai/runtime/spi/persistence/IdempotencyRepository.java
+      - spring-ai-fin-persistence-starter/src/main/java/fin/springai/runtime/spi/persistence/ArtifactRepository.java
+    tests:
+      - spring-ai-fin-persistence-starter/src/test/java/fin/springai/runtime/persistence/PersistenceAutoConfigurationTest.java
+    latest_delivery_valid_sha: 97b0827
+    allowed_claim: "L0 sentinel impl + frozen SPI; W1 lands Spring Data JDBC RunRepository."
+
+  spring_ai_fin_mem0_starter:
+    maturity: L0
+    status: implemented_unverified
+    evidence_state: implemented_unverified
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - spring-ai-fin-mem0-starter/src/main/java/fin/springai/runtime/mem0/Mem0AutoConfiguration.java
+    tests:
+      - spring-ai-fin-mem0-starter/src/test/java/fin/springai/runtime/mem0/Mem0AutoConfigurationTest.java
+    latest_delivery_valid_sha: 97b0827
+    allowed_claim: "Sidecar adapter scaffold; disabled by default (enabled=false); W1 wires real Mem0 REST client."
+
+  spring_ai_fin_graphmemory_starter:
+    maturity: L0
+    status: implemented_unverified
+    evidence_state: implemented_unverified
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - spring-ai-fin-graphmemory-starter/src/main/java/fin/springai/runtime/graphmemory/GraphMemoryAutoConfiguration.java
+    tests:
+      - spring-ai-fin-graphmemory-starter/src/test/java/fin/springai/runtime/graphmemory/GraphMemoryAutoConfigurationTest.java
+    latest_delivery_valid_sha: 97b0827
+    allowed_claim: "Sidecar adapter scaffold; disabled by default; W1 wires real Graphiti REST client."
+
+  spring_ai_fin_docling_starter:
+    maturity: L0
+    status: implemented_unverified
+    evidence_state: implemented_unverified
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - spring-ai-fin-docling-starter/src/main/java/fin/springai/runtime/docling/DoclingAutoConfiguration.java
+    tests:
+      - spring-ai-fin-docling-starter/src/test/java/fin/springai/runtime/docling/DoclingAutoConfigurationTest.java
+    latest_delivery_valid_sha: 97b0827
+    allowed_claim: "Sidecar adapter scaffold; disabled by default; W1 wires real Docling REST client."
+
+  spring_ai_fin_langchain4j_profile:
+    maturity: L0
+    status: implemented_unverified
+    evidence_state: implemented_unverified
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - spring-ai-fin-langchain4j-profile/src/main/java/fin/springai/runtime/langchain4j/LangChain4jAutoConfiguration.java
+    tests:
+      - spring-ai-fin-langchain4j-profile/src/test/java/fin/springai/runtime/langchain4j/LangChain4jAutoConfigurationTest.java
+    latest_delivery_valid_sha: 97b0827
+    allowed_claim: "Alternate framework profile scaffold; disabled by default; W2+ wires LangChain4j ChatModel."
+
+  spi_compatibility_freeze:
+    maturity: L1
+    status: test_verified
+    evidence_state: test_verified
+    l0_decision: ARCHITECTURE.md (§3.2)
+    implementation:
+      - agent-platform/src/test/java/fin/springai/platform/api/ApiCompatibilityTest.java
+    tests:
+      - agent-platform/src/test/java/fin/springai/platform/api/ApiCompatibilityTest.java
+    latest_delivery_valid_sha: 97b0827
+    allowed_claim: "ArchUnit 4 rules GREEN: no spring-ai-alibaba import; platform/runtime/SPI separation."
