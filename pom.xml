@@ -44,6 +44,7 @@
     <module>spring-ai-fin-graphmemory-starter</module>
     <module>spring-ai-fin-docling-starter</module>
     <module>spring-ai-fin-langchain4j-profile</module>
+    <module>spring-ai-fin-resilience-starter</module>
     <module>agent-eval</module>
   </modules>
 

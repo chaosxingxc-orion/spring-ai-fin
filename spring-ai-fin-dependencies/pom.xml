@@ -92,6 +92,11 @@
         <artifactId>spring-ai-fin-persistence-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>fin.springai</groupId>
+        <artifactId>spring-ai-fin-resilience-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
 
       <!-- Optional sidecar adapter starters -->
       <dependency>
