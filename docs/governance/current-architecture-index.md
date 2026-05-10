@@ -146,10 +146,10 @@ of the reviewed content SHA.
 
 W0 scaffold landed at commit `97b0827`. Current maturity per capability:
 
-- `agent_platform_facade`: **L1** — `HealthEndpointIT` + `ApiCompatibilityTest` GREEN
-- `spi_compatibility_freeze`: **L1** — ArchUnit 4 rules GREEN
-- `spring_ai_fin_dependencies_bom`: **L1** — BoM resolves all 9 starters
-- `spring_ai_fin_*_starter` (5 core + 4 sidecar): **L0** — sentinel impls; W1 lands real impls
+- `agent_platform_facade`: **L1** -- `HealthEndpointIT` + `ApiCompatibilityTest` GREEN
+- `spi_compatibility_freeze`: **L1** -- ArchUnit 4 rules GREEN
+- `spring_ai_fin_dependencies_bom`: **L1** -- BoM resolves all 9 starters
+- `spring_ai_fin_*_starter` (5 core + 4 sidecar): **L0** -- sentinel impls; W1 lands real impls
 - All other capabilities from the 2026-05-08 architecture refresh: **L0** (design accepted)
 
 Promotion L0 → L1 requires code + Rule 4 three-layer tests (per `docs/plans/engineering-plan-W0-W4.md` acceptance gates per wave). Promotion L1 → L2 requires a stable public contract + snapshot test. L3 requires posture-aware default-on + operator-shape gate PASS. L4 requires third-party extension evidence.

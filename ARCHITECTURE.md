@@ -133,8 +133,8 @@ secondary development = patches we contribute upstream.
 | CI                     | GitHub Actions                       | `.github/workflows/*.yml`                           | W0   |
 | Linting                | Checkstyle + ErrorProne              | `.checkstyle.xml`                                   | W0   |
 | Multi-framework dispatch | LangChain4j 1.x (alternate profile) | `spring-ai-fin-langchain4j-profile`; disabled by default | W0 scaffold |
-| Python sidecar — memory  | Mem0 REST API                     | `spring-ai-fin-mem0-starter`; `enabled=false` default    | W0 scaffold |
-| Python sidecar — graph   | Graphiti REST API (Zep OSS)       | `spring-ai-fin-graphmemory-starter`; `enabled=false`     | W0 scaffold |
+| Python sidecar -- memory  | Mem0 REST API                     | `spring-ai-fin-mem0-starter`; `enabled=false` default    | W0 scaffold |
+| Python sidecar -- graph   | Graphiti REST API (Zep OSS)       | `spring-ai-fin-graphmemory-starter`; `enabled=false`     | W0 scaffold |
 | PDF layout parsing       | Docling REST API (IBM)            | `spring-ai-fin-docling-starter`; `enabled=false`         | W0 scaffold |
 | Spring AI fin BoM        | spring-ai-fin-dependencies        | Pins 9 starter coords + 13 OSS transitive deps           | W0           |
 

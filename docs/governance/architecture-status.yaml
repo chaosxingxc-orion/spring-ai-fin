@@ -1551,7 +1551,7 @@ findings:
     maturity: L1
     status: test_verified
     evidence_state: test_verified
-    l0_decision: ARCHITECTURE.md (§3.2)
+    l0_decision: ARCHITECTURE.md (sec.3.2)
     implementation:
       - agent-platform/src/test/java/fin/springai/platform/api/ApiCompatibilityTest.java
     tests:
