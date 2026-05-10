@@ -68,9 +68,9 @@ Does NOT own:
 ```mermaid
 flowchart LR
     REQ[Incoming HTTP request]
-    JWT[JWTAuthFilter<br/>HMAC-SHA256 validate<br/>research/prod required]
-    TEN[TenantContextFilter<br/>X-Tenant-Id matches JWT claim<br/>build TenantContext + emit spine event]
-    IDM[IdempotencyFilter<br/>reserve_or_replay<br/>4 metrics]
+    JWT["JWTAuthFilter (order 10)<br/>HMAC-SHA256 validate<br/>research/prod required<br/>W2 deliverable"]
+    TEN["TenantContextFilter (order 20)<br/>X-Tenant-Id matches JWT claim<br/>build TenantContext + emit spine event"]
+    IDM["IdempotencyHeaderFilter (order 30)<br/>reserve_or_replay<br/>4 metrics"]
     HND[Route handler]
     
     REQ --> JWT
@@ -81,11 +81,11 @@ flowchart LR
 
 **Why this order**:
 
-1. **JWTAuth outermost**: cannot trust anything until JWT verified
-2. **Tenant before idempotency**: idempotency keys are per-tenant; cross-tenant collision impossible by construction
-3. **Idempotency before handler**: reservation MUST happen before any side effect
+1. **JWTAuth outermost (order 10)**: cannot trust anything until JWT verified. Note: JWTAuth is a W2 deliverable; W0/W1 use a passthrough dev filter at order 10.
+2. **TenantContextFilter (order 20)**: idempotency keys are per-tenant; cross-tenant collision impossible by construction.
+3. **IdempotencyHeaderFilter (order 30)**: reservation MUST happen before any side effect.
 
-Spring Boot's `OncePerRequestFilter` order set explicitly via `@Order(10/20/30)` annotations.
+Spring Boot's `OncePerRequestFilter` order set explicitly via `@Order(10)`, `@Order(20)`, `@Order(30)` annotations on the respective filter classes.
 
 ---
 

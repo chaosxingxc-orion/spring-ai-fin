@@ -136,6 +136,7 @@ secondary development = patches we contribute upstream.
 | Python sidecar -- memory  | Mem0 REST API                     | `spring-ai-fin-mem0-starter`; `enabled=false` default    | W0 scaffold |
 | Python sidecar -- graph   | Graphiti REST API (Zep OSS)       | `spring-ai-fin-graphmemory-starter`; `enabled=false`     | W0 scaffold |
 | PDF layout parsing       | Docling REST API (IBM)            | `spring-ai-fin-docling-starter`; `enabled=false`         | W0 scaffold |
+| Resilience SPI contract   | spring-ai-fin-resilience-starter  | SPI contract-only; maps operation ids to Resilience4j policy names; W2 caller annotations | W0 scaffold |
 | Spring AI fin BoM        | spring-ai-fin-dependencies        | Pins 9 starter coords + 13 OSS transitive deps           | W0           |
 
 This table is the authoritative dependency list. Adding a row requires a
@@ -749,6 +750,8 @@ self-audit; see the audit doc for status):
 | `docs/cross-cutting/secrets-lifecycle.md` | Vault path scheme + rotation cadence |
 | `docs/cross-cutting/supply-chain-controls.md` | Image digest pin + SBOM |
 | `docs/cross-cutting/observability-policy.md` | Cardinality budget + tenant-id label policy |
+
+See [docs/contracts/contract-catalog.md](docs/contracts/contract-catalog.md) for the full contract catalog (HTTP API, SPI, configuration, telemetry, and BoM coordinates).
 
 ## 11.5 Phase A status (cycle-12 close)
 
