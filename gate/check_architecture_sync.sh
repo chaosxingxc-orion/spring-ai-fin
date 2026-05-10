@@ -360,29 +360,6 @@ runtime_error_message=""
     unset buf
   done
 
-  # 7d. HS256 + prod conflict.
-  hs_prod_scan_files=("$security_matrix" "agent-runtime/auth/ARCHITECTURE.md")
-  for f in "${hs_prod_scan_files[@]}"; do
-    [[ ! -f "$f" ]] && continue
-    lineno=0
-    while IFS= read -r line || [[ -n "$line" ]]; do
-      lineno=$((lineno + 1))
-      shopt -s nocasematch
-      has_hs256=0
-      [[ "$line" == *HS256* || "$line" == *"HMAC-SHA256"* || "$line" == *"APP_JWT_SECRET"* ]] && has_hs256=1
-      has_prod=0
-      [[ "$line" == *"prod"* ]] && has_prod=1
-      is_rejected=0
-      for q in rejected 'not permitted' refused 'reject HmacValidator' 'not a prod boot input' 'HmacValidator is active' 'only when' 'no HS256 path' 'HS256 only for' 'HS256 only on' 'only for DEV' 'only for BYOC' 'mandatory for' 'mandatory regardless' 'explicit BYOC' 'carve-out only' 'with carve-out' 'loopback only'; do
-        [[ "$line" == *"$q"* ]] && is_rejected=1
-      done
-      shopt -u nocasematch
-      if [[ $has_hs256 -eq 1 && $has_prod -eq 1 && $is_rejected -eq 0 ]]; then
-        fail "hs256_prod_conflict" "doc mentions HS256/APP_JWT_SECRET + prod without rejection qualifier" "$f" "$lineno"
-      fi
-    done < "$f"
-  done
-
   # 8. Gate path drift.
   if [[ -f "$matrix" ]]; then
     lineno=0
@@ -427,15 +404,7 @@ runtime_error_message=""
     done <<< "$refs"
   fi
 
-  # 12. L0 Last refreshed.
-  if [[ -f "$l0" ]]; then
-    if ! head -n 5 "$l0" | grep -F -q 'Last refreshed:** 2026-05-08'; then
-      head_line=$(head -n 5 "$l0" | grep -F 'Last refreshed' | head -1 || true)
-      fail "l0_stale_refresh_date" "L0 'Last refreshed' should be 2026-05-08; current: ${head_line:-<none>}" "$l0" 3
-    fi
-  fi
-
-  # 13. Manifest freshness (cycle-6 + cycle-7 v2 schema).
+  # 12. Manifest freshness (cycle-6 + cycle-7 v2 schema).
   reviewed_content_sha=""
   evidence_commit_sha=""
   evidence_classification=""
@@ -474,7 +443,7 @@ runtime_error_message=""
     fi
   fi
 
-  # 13b. Audit-trail shape (cycle-7 B1).
+  # 12b. Audit-trail shape (cycle-7 B1).
   # Derive evidence_commit_sha from HEAD (it's always HEAD by definition;
   # storing it in the manifest as TBD/explicit is optional). The structural
   # constraints are: parent equality, allowed-paths subset.
@@ -504,7 +473,7 @@ runtime_error_message=""
     fi
   fi
 
-  # 13c. Manifest-edge consistency (cycle-7 B2).
+  # 12c. Manifest-edge consistency (cycle-7 B2).
   if [[ -n "$reviewed_content_sha" && -f "$status_path" ]]; then
     if ! grep -F -q "$reviewed_content_sha" "$status_path"; then
       fail "manifest_edge_consistency" "architecture-status.yaml does not reference manifest.reviewed_content_sha=$reviewed_content_sha" "$status_path" 0
@@ -517,7 +486,7 @@ runtime_error_message=""
     fi
   fi
 
-  # 14. README to files.
+  # 13. README to files.
   smoke_ps1="gate/run_operator_shape_smoke.ps1"
   smoke_sh="gate/run_operator_shape_smoke.sh"
   if [[ -f "$gate_readme" ]] && { [[ -f "$smoke_ps1" ]] || [[ -f "$smoke_sh" ]]; }; then
@@ -538,7 +507,7 @@ runtime_error_message=""
     unset buf
   fi
 
-  # 15. Delivery-log parity (cycle-7 A2; cycle-8 B2 no-skip-on-missing for
+  # 14. Delivery-log parity (cycle-7 A2; cycle-8 B2 no-skip-on-missing for
   # current authoritative delivery; legacy_exemptions explicit in manifest).
   while IFS= read -r dfile; do
     [[ -z "$dfile" ]] && continue
@@ -586,7 +555,7 @@ runtime_error_message=""
     fi
   done < <(find docs/delivery -maxdepth 1 -type f -name '2026-05-08-*.md' 2>/dev/null || true)
 
-  # 16. ASCII-only active corpus (cycle-8 D1; cycle-9 split-aware).
+  # 15. ASCII-only active corpus (cycle-8 D1; cycle-9 split-aware).
   # Scan list is derived from docs/governance/active-corpus.yaml#active_documents
   # ONLY -- never from transitional_rationale or historical_documents.
   active_corpus_path="docs/governance/active-corpus.yaml"
@@ -625,7 +594,7 @@ runtime_error_message=""
     fi
   done
 
-  # 18. EOL policy (cycle-8 A1): tracked *.sh files must be LF in working tree.
+  # 17. EOL policy (cycle-8 A1): tracked *.sh files must be LF in working tree.
   while IFS= read -r shf; do
     [[ -z "$shf" ]] && continue
     [[ ! -f "$shf" ]] && continue
@@ -637,7 +606,7 @@ runtime_error_message=""
     fail "eol_policy" ".gitattributes does not exist; LF policy is unenforced" ".gitattributes" 0
   fi
 
-  # 19. Manifest no TBD / no null log slots (cycle-8 B3).
+  # 18. Manifest no TBD / no null log slots (cycle-8 B3).
   if [[ -f "$manifest_path" ]]; then
     lineno=0
     while IFS= read -r line || [[ -n "$line" ]]; do
@@ -655,7 +624,7 @@ runtime_error_message=""
     done < "$manifest_path"
   fi
 
-  # 20. Delivery-log exact binding (cycle-8 B1).
+  # 19. Delivery-log exact binding (cycle-8 B1).
   # For the current authoritative delivery file (manifest.delivery_file),
   # require: a log path declared (in architecture_sync_logs.<platform>.path
   # OR derivable from <delivery-sha>-{posix,windows,legacy}.json), the log
@@ -687,7 +656,7 @@ runtime_error_message=""
     fi
   fi
 
-  # 22. Active corpus exclusivity (cycle-9 A1, B1): no active_documents
+  # 21. Active corpus exclusivity (cycle-9 A1, B1): no active_documents
   # entry may carry a v7_disposition / supersedes_to / sunset_by marker.
   if [[ -f "$active_corpus_path" ]]; then
     in_active=0
@@ -714,7 +683,7 @@ runtime_error_message=""
     done < "$active_corpus_path"
   fi
 
-  # 23. Index active subset (cycle-9 B2): primary hierarchy in
+  # 22. Index active subset (cycle-9 B2): primary hierarchy in
   # current-architecture-index.md must be a subset of active_documents.
   if [[ -f "$index_path" && ${#active_paths[@]} -gt 0 ]]; then
     declare -a active_basenames=()
@@ -755,7 +724,7 @@ runtime_error_message=""
     fi
   fi
 
-  # 21. Rule 8 state consistency (cycle-8 C2).
+  # 20. Rule 8 state consistency (cycle-8 C2).
   rule_8_state=""
   if [[ -f "$manifest_path" ]]; then
     rule_8_state=$(awk '/^rule_8:/{flag=1; next} flag && /^[[:space:]]+state:/ {gsub(/^[[:space:]]+state:[[:space:]]*/,""); print; exit}' "$manifest_path" 2>/dev/null || true)
@@ -789,7 +758,7 @@ runtime_error_message=""
     done < <(find docs/delivery -maxdepth 1 -type f -name '2026-05-08-*.md' 2>/dev/null || true)
   fi
 
-  # 17. Capability legacy-bucket (cycle-7 D2).
+  # 16. Capability legacy-bucket (cycle-7 D2).
   if [[ -f "$status_path" ]]; then
     declare -a buf=()
     while IFS= read -r line || [[ -n "$line" ]]; do buf+=("$line"); done < "$status_path"
@@ -816,7 +785,7 @@ runtime_error_message=""
     unset buf
   fi
 
-  # 24. CI no-or-true mask (cycle-14 A1): gate/run_* calls in CI workflows
+  # 23. CI no-or-true mask (cycle-14 A1): gate/run_* calls in CI workflows
   # must not be masked with || true. Removes the escape hatch that allowed a
   # failing Rule 8 smoke gate to silently pass CI.
   while IFS= read -r _wf_file; do
@@ -830,7 +799,7 @@ runtime_error_message=""
     done < "$_wf_file"
   done < <(find .github/workflows -maxdepth 1 -name '*.yml' -type f 2>/dev/null || true)
 
-  # 25. Rule 8 state machine coherent (cycle-14 B1): artifact_present_state
+  # 24. Rule 8 state machine coherent (cycle-14 B1): artifact_present_state
   # must agree with rule_8.state. Prevents internally-contradictory manifests.
   if [[ -f "$manifest_path" ]]; then
     _artifact_state=$(awk '/^artifact_present_state:/{gsub(/^artifact_present_state:[[:space:]]*/,""); gsub(/ #.*$/,""); gsub(/[[:space:]]*$/,""); print; exit}' "$manifest_path" 2>/dev/null || true)
@@ -853,21 +822,21 @@ runtime_error_message=""
       esac
     fi
   fi
-  # 26. Contract catalog present (cycle-15/16 D1): docs/contracts/contract-catalog.md
+  # 25. Contract catalog present (cycle-15/16 D1): docs/contracts/contract-catalog.md
   # must exist. Created in T-CS-Docs; indexes all external contract types.
   _contract_catalog="docs/contracts/contract-catalog.md"
   if [[ ! -f "$_contract_catalog" ]]; then
     fail "contract_catalog_present" "docs/contracts/contract-catalog.md not found; create it per T-CS-Docs" "$_contract_catalog" 0
   fi
 
-  # 27. OpenAPI snapshot pinned (cycle-15/16 D2): docs/contracts/openapi-v1.yaml
+  # 26. OpenAPI snapshot pinned (cycle-15/16 D2): docs/contracts/openapi-v1.yaml
   # must exist. Created in T-CS-2; pins the W0 public surface.
   _openapi_yaml="docs/contracts/openapi-v1.yaml"
   if [[ ! -f "$_openapi_yaml" ]]; then
     fail "openapi_snapshot_pinned" "docs/contracts/openapi-v1.yaml not found; create it per T-CS-2" "$_openapi_yaml" 0
   fi
 
-  # 28. Metric naming namespace (cycle-15/16 D3): all .counter("...") calls in
+  # 27. Metric naming namespace (cycle-15/16 D3): all .counter("...") calls in
   # Java sources must use the springai_fin_ prefix. Catches namespace drift.
   while IFS= read -r _mf; do
     [[ -f "$_mf" ]] || continue

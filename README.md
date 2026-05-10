@@ -1,8 +1,8 @@
 # spring-ai-fin
 
-> **Capability-layer enterprise agent platform for Southeast Asia financial services (Indonesia OJK / Singapore MAS).** Built on Spring Boot 4.0.5 + Spring AI 2.0.0-M5. Multi-framework dispatch (Spring AI native, LangChain4j profile, Python sidecars). W0 scaffold + architecture-review-readiness pass landed; 15 Maven modules, SPI surface frozen at 9 interfaces.
+> **Capability-layer enterprise agent platform for Southeast Asia financial services (Indonesia OJK / Singapore MAS).** Built on Spring Boot 4.0.5 + Spring AI 2.0.0-M5. Multi-framework dispatch (Spring AI native, LangChain4j profile, Python sidecars). W0 scaffold: Maven compile+unit-test PASS at a7756cd; ITs pending Docker in CI. 14 Maven modules, SPI surface frozen at 7 interfaces.
 
-**Status**: v6.1 architecture · W0 scaffold + readiness pass landed 2026-05-10 · 15 Maven modules · SPI surface frozen
+**Status**: v6.1 architecture · W0 scaffold: Maven compile+unit-test PASS at a7756cd; ITs pending Docker in CI · 14 Maven modules · SPI surface frozen
 **License preference**: Apache 2.0 / MIT only on the runtime path (see [`ARCHITECTURE.md`](ARCHITECTURE.md) D-15)
 
 ---
@@ -24,21 +24,21 @@ spring-ai-fin/
 ├── CLAUDE.md                                    Behavioural rules (12 universal rules)
 ├── README.md                                    this file
 │
-├── agent-platform/                              Tier-A northbound facade (L1 — HealthEndpointIT GREEN)
+├── agent-platform/                              Tier-A northbound facade (L1 — HealthEndpointIT; CI pass expected)
 │   └── ARCHITECTURE.md                          L1
 │
-├── agent-runtime/                               Tier-B cognitive runtime (L1 — OssApiProbeTest GREEN)
+├── agent-runtime/                               Tier-B cognitive runtime (L1 — OssApiProbeTest compile-verified at a7756cd)
 │   └── ARCHITECTURE.md                          L1
 │
-├── spring-ai-fin-dependencies/                  BoM — pins 10 starter coordinates + 13 OSS deps (L1)
+├── spring-ai-fin-dependencies/                  BoM — pins 7 starter coordinates + 13 OSS deps (L1 — SPI interface compiled)
 │   └── pom.xml
 │
-├── spring-ai-fin-memory-starter/                SPI: LongTermMemoryRepository, GraphMemoryRepository (L1)
-├── spring-ai-fin-skills-starter/                SPI: ToolProvider (L1)
-├── spring-ai-fin-knowledge-starter/             SPI: LayoutParser, DocumentSourceConnector (L1)
-├── spring-ai-fin-governance-starter/            SPI: PolicyEvaluator (L1)
-├── spring-ai-fin-persistence-starter/           SPI: RunRepository, IdempotencyRepository, ArtifactRepository (L1)
-├── spring-ai-fin-resilience-starter/            SPI: ResilienceContract (L1 — contract-only; W2 callers)
+├── spring-ai-fin-memory-starter/                SPI: LongTermMemoryRepository, GraphMemoryRepository (L1 — SPI interface compiled)
+├── spring-ai-fin-skills-starter/                SPI: ToolProvider (L1 — SPI interface compiled)
+├── spring-ai-fin-knowledge-starter/             SPI: LayoutParser, DocumentSourceConnector (L1 — SPI interface compiled)
+├── spring-ai-fin-governance-starter/            SPI: PolicyEvaluator (L1 — SPI interface compiled)
+├── spring-ai-fin-persistence-starter/           SPI: RunRepository, IdempotencyRepository, ArtifactRepository (L1 — SPI interface compiled)
+├── spring-ai-fin-resilience-starter/            SPI: ResilienceContract (L1 — SPI interface compiled; W2 callers)
 │
 ├── spring-ai-fin-mem0-starter/                  Sidecar adapter — Mem0 REST (enabled=false by default, L0)
 ├── spring-ai-fin-graphmemory-starter/           Sidecar adapter — Graphiti REST (enabled=false by default, L0)
@@ -62,7 +62,7 @@ spring-ai-fin/
     └── cross-cutting/                           OSS BoM policy, security, posture
 ```
 
-SPI interfaces are frozen by `ApiCompatibilityTest` (ArchUnit 4 rules non-vacuously GREEN; japicmp configured).
+SPI interfaces are frozen by `ApiCompatibilityTest` (ArchUnit 4 rules compile-verified at a7756cd; japicmp configured).
 L-levels per Rule 12: L0 = sentinel impl only; L1 = tested component; L2 = public contract.
 
 ## Architecture-review readiness
@@ -113,7 +113,7 @@ See [`ops/runbooks/`](ops/runbooks/) for operational runbooks.
 │ Tier-A Northbound Facade — agent-platform/                       │
 │ • Frozen v1 HTTP contract (`/v1/*`)                              │
 │ • Filter chain: JWTAuth → TenantContext → Idempotency            │
-│ • /v1/health (HealthEndpointIT GREEN)                            │
+│ • /v1/health (HealthEndpointIT; CI pass expected)                │
 └──────────────────────────────────────────────────────────────────┘
                               │ SAS-1 single seam
                               ▼
@@ -203,7 +203,7 @@ This architecture inherits 32 release waves of operational learnings from a Pyth
 ## Status
 
 - v6.1 architecture; review committee approval pending per [`docs/architecture-review-2026-05-07.md`](docs/architecture-review-2026-05-07.md) §24
-- W0 scaffold + architecture-review-readiness pass landed 2026-05-10 (see `docs/delivery/` for gate-run evidence)
-- 15 Maven modules built; 9 SPI interfaces frozen; `ApiCompatibilityTest` (ArchUnit 4 rules non-vacuous) GREEN
+- Phase 0 milestone: Maven compile+unit-test PASS at a7756cd (2026-05-10); ITs pending Docker in CI (see `docs/delivery/` for gate-run evidence)
+- 14 Maven modules (reactor); 7 SPI starters; 4 sidecar/profile modules; SPI surface frozen. `ApiCompatibilityTest` compile-verified at a7756cd; HealthEndpointIT CI-expected.
 - `@ConditionalOnProperty` wired in all 5 starters; `OpenApiContractIT` runs actual snapshot diff
 - Next milestone: W1 default impls (Spring Data JDBC `RunRepository`, JDBC `LongTermMemoryRepository`, Tika `LayoutParser`)

@@ -56,7 +56,7 @@ Three layers, each layer terminates at a public contract.
 +----------------------|--------------------------------------+
                        |
 +----------------------v--------------------------------------+
-|  L2: Application -- Spring Boot 3.x + Java 21 virtual threads|
+|  L2: Application -- Spring Boot 4.0.5 + Java 21 virtual threads|
 |     - RunController, ToolController, AdminController         |
 |     - RunOrchestrator (sync) | TemporalRunWorkflow (async)   |
 |     - ActionGuard (filter pipeline)                          |
@@ -215,8 +215,8 @@ architecture-design self-audit (`docs/architecture-design-self-audit.md`).
 
 ```
 spring-ai-fin/
-  pom.xml                                   # parent (Maven; Java 21; Spring Boot 3.5 BOM)
-  agent-platform/                           # northbound facade (L1 -- HealthEndpointIT GREEN)
+  pom.xml                                   # parent (Maven; Java 21; Spring Boot 4.0.5 BOM)
+  agent-platform/                           # northbound facade (L1 -- compile+unit verified at a7756cd; HealthEndpointIT CI-expected)
     pom.xml
     src/main/java/fin/springai/platform/
       AgentPlatformApplication.java         # Spring Boot main
@@ -348,7 +348,7 @@ Rules:
 
 The 7 SPI interfaces below are the extension surface for W1+ implementations.
 They are frozen (no breaking changes without a new major version) and enforced
-by `ApiCompatibilityTest` (ArchUnit, GREEN at 97b0827):
+by `ApiCompatibilityTest` (ArchUnit, compile-verified at a7756cd):
 
 - `fin.springai.runtime.spi.memory.LongTermMemoryRepository`
 - `fin.springai.runtime.spi.memory.GraphMemoryRepository`

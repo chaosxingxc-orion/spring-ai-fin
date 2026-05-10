@@ -124,7 +124,7 @@ File: `src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure
 fin.springai.runtime.mem0.Mem0AutoConfiguration
 ```
 
-This is the Spring Boot 3.x way to register auto-configurations (replaces `spring.factories`).
+This is the Spring Boot 4.x way to register auto-configurations (replaces `spring.factories`).
 
 ---
 

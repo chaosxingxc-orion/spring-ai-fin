@@ -259,7 +259,7 @@ ENTRYPOINT ["java", "-jar", "/app/agent-platform.jar"]
 
 ### 7.1 We use Spring AI, not provider SDKs
 
-Per L0 D-4, we use Spring AI 1.1+ unmodified. We do NOT depend on:
+Per L0 D-4, we use Spring AI 2.0.0-M5 unmodified. We do NOT depend on:
 - `com.openai:openai-java` (provider SDK; transitive bloat; algorithm confusion potential)
 - `com.anthropic:anthropic-java` (provider SDK)
 - Provider-specific clients

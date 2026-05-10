@@ -14,6 +14,17 @@ generated_at: 2026-05-08
 generated_by: docs/systematic-architecture-remediation-plan-2026-05-08.en.md sec-4 + sec-12
 supersedes: version 1 (2026-05-08 morning)
 
+# Source: root pom.xml <modules> list at commit a7756cd
+repository_counts:
+  note: "Canonical counts -- derived from root pom.xml modules list. All documents reference these; no document may claim a different count without updating this block."
+  reactor_modules: 14
+  sdk_spi_starters: 6
+  sidecar_adapter_starters: 3
+  alternate_framework_profiles: 1
+  internal_modules: 3
+  bom_module: 1
+  total_reactor_modules: 14
+
 # Cycle-7 sec-D1: maturity (L0..L4) is the primary status field for capabilities;
 # the lifecycle field below is `evidence_state` (formerly `status`). The two
 # track different things:
@@ -50,7 +61,7 @@ capabilities:
       - agent-platform/src/test/java/fin/springai/platform/health/HealthEndpointIT.java
       - agent-platform/src/test/java/fin/springai/platform/api/ApiCompatibilityTest.java
     operator_gate: null
-    latest_delivery_valid_sha: 97b0827
+    latest_delivery_valid_sha: a7756cd   # updated: Phase 0 mvn verify GREEN; ApiCompatibilityTest passes without Docker
     allowed_claim: "L1: /v1/health GREEN; ArchUnit 4 rules GREEN. SPI contracts frozen."
 
   agent_runtime_kernel:
@@ -1525,7 +1536,7 @@ findings:
       - agent-platform/src/test/java/fin/springai/platform/api/ApiCompatibilityTest.java
     tests:
       - agent-platform/src/test/java/fin/springai/platform/api/ApiCompatibilityTest.java
-    latest_delivery_valid_sha: 56a8bfe
+    latest_delivery_valid_sha: a7756cd   # updated: ApiCompatibilityTest (ArchUnit, no Docker) passes at Phase 0 build
     allowed_claim: "L1: ArchUnit 4 rules GREEN; rules 3+4 now non-vacuous (SPI starters on test-classpath); japicmp baseline configured (skip=true; enforcement W1+)."
 
   # ---- cycle-15/16 closure extension: W0 contracts + contract spine ----
@@ -1790,19 +1801,20 @@ findings:
       - spring-ai-fin-dependencies/pom.xml
     tests:
       - agent-platform/src/test/java/fin/springai/platform/api/ApiCompatibilityTest.java
-    latest_delivery_valid_sha: 56a8bfe
+    latest_delivery_valid_sha: a7756cd   # updated: ApiCompatibilityTest (ArchUnit, no Docker) passes at Phase 0 build
     allowed_claim: "L1: japicmp-maven-plugin 0.23.0 wired in BoM pluginManagement; skip=true for W0 baseline; enforcement activates W1+ on first version diff."
 
   rls_policy_sql:
-    maturity: L1
-    status: implemented_unverified
-    evidence_state: implemented_unverified
+    maturity: L0
+    status: design_accepted
+    evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md
     implementation:
       - docs/security/rls-policy.sql
     tests: []
     latest_delivery_valid_sha: c7169a5
-    allowed_claim: "L1: PostgreSQL RLS DDL + assert_tenant_guc_set() trigger enforcing app.tenant_id GUC at every mutation; SQL artifact in-tree."
+    note: "L0: SQL artifact present; runtime isolation tests @Disabled until W2 real Postgres migration"
+    allowed_claim: "L0: PostgreSQL RLS DDL + assert_tenant_guc_set() trigger in-tree; runtime isolation unverified. Maturity downgraded from L1: all three RLS integration tests (TenantIsolationIT, RlsPolicyCoverageIT, GucEmptyAtTxStartIT) are @Disabled UnsupportedOperationException scaffolds; @Disabled tests cannot count as L1 evidence. Advances to L1 when W2 removes @Disabled and tests pass. See delivery/2026-05-11-a7756cd.md."
 
   tenant_isolation_it_scaffold:
     maturity: L0

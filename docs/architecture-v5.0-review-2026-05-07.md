@@ -1,3 +1,5 @@
+> **Historical note (2026-05-11):** This document reviewed the pre-upgrade architecture (Spring Boot ≤3.5.x / Spring AI ≤1.0.7). The executable baseline is now Boot 4.0.5 / Spring AI 2.0.0-M5.
+
 > ⚠ **HISTORICAL DOCUMENT — DO NOT IMPLEMENT.** This is the 2026-05-07 critique of v5.0 that drove the v6.0 refactor. Kept for traceability. Current authoritative corpus is indexed in [`docs/governance/current-architecture-index.md`](governance/current-architecture-index.md).
 
 # Architecture v5.0 — Adversarial Review

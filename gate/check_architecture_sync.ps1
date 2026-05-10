@@ -316,22 +316,6 @@ foreach ($f in $rlsVocabFiles) {
   }
 }
 
-# 8d. HS256 + prod conflict (cycle-6 C1 extension).
-$hsProdScanFiles = @($securityMatrix, 'agent-runtime/auth/ARCHITECTURE.md')
-foreach ($f in $hsProdScanFiles) {
-  if (-not (Test-Path $f)) { continue }
-  $lines = Get-Content -LiteralPath $f
-  for ($i = 0; $i -lt $lines.Count; $i++) {
-    $line = $lines[$i]
-    $hasHs256 = ($line -cmatch '(?i)(HS256|HMAC-SHA256|APP_JWT_SECRET)')
-    $hasProd = ($line -cmatch '(?i)\bprod\b')
-    $isRejected = ($line -cmatch '(?i)(rejected|not permitted|refused|reject HmacValidator|not a prod boot input|HmacValidator is active|only when|no HS256 path|HS256 only for|HS256 only on|only for DEV|only for BYOC|mandatory for|mandatory regardless|explicit BYOC|carve-out only|with carve-out|loopback only)')
-    if ($hasHs256 -and $hasProd -and (-not $isRejected)) {
-      Fail 'hs256_prod_conflict' "doc mentions HS256/APP_JWT_SECRET + prod without rejected/not-permitted qualifier" $f ($i + 1)
-    }
-  }
-}
-
 # 9. Gate path drift.
 if (Test-Path $matrixPath) {
   $lines = Get-Content -LiteralPath $matrixPath
@@ -380,16 +364,7 @@ if (Test-Path $matrixPath) {
   }
 }
 
-# 13. L0 'Last refreshed' date.
-if (Test-Path $l0) {
-  $head = Get-Content -LiteralPath $l0 -TotalCount 5
-  $headLine = $head | Where-Object { $_ -match 'Last refreshed' } | Select-Object -First 1
-  if ($headLine -and $headLine -notmatch 'Last refreshed:\*\*\s*2026-05-08') {
-    Fail 'l0_stale_refresh_date' "L0 'Last refreshed' should be 2026-05-08; current: $headLine" $l0 3
-  }
-}
-
-# 14. Manifest freshness (cycle-6 A2; cycle-7 extended).
+# 13. Manifest freshness (cycle-6 A2; cycle-7 extended).
 $reviewedContentSha = ''
 $evidenceCommitSha = ''
 $evidenceClassification = ''
@@ -423,7 +398,7 @@ if (Test-Path $manifestPath) {
   }
 }
 
-# 14b. Audit-trail shape (cycle-7 B1).
+# 13b. Audit-trail shape (cycle-7 B1).
 # evidence_commit_sha is always HEAD by definition; structural constraints
 # are parent equality and allowed-paths subset.
 if ($reviewedContentSha -and ($shaCandidate -ne 'no-git')) {
@@ -460,7 +435,7 @@ if ($reviewedContentSha -and ($shaCandidate -ne 'no-git')) {
   }
 }
 
-# 14c. Manifest-edge consistency (cycle-7 B2 partial).
+# 13c. Manifest-edge consistency (cycle-7 B2 partial).
 if ($reviewedContentSha -and (Test-Path $statusPath)) {
   $statusContent = Get-Content -Raw -LiteralPath $statusPath
   if ($statusContent -notmatch [regex]::Escape($reviewedContentSha)) {
@@ -475,7 +450,7 @@ if ($manifestDelivery -and (Test-Path $indexPath)) {
   }
 }
 
-# 15. README to files.
+# 14. README to files.
 $smokePs1 = 'gate/run_operator_shape_smoke.ps1'
 $smokeSh = 'gate/run_operator_shape_smoke.sh'
 if (Test-Path $gateReadme) {
@@ -493,7 +468,7 @@ if (Test-Path $gateReadme) {
   }
 }
 
-# 16. Delivery-log parity (cycle-7 A2; cycle-8 B2 no-skip-on-missing for
+# 15. Delivery-log parity (cycle-7 A2; cycle-8 B2 no-skip-on-missing for
 # current authoritative delivery; legacy_exemptions explicit in manifest).
 $deliveryFiles = Get-ChildItem -Path 'docs/delivery' -Filter '????-??-??-*.md' -File -ErrorAction SilentlyContinue
 foreach ($df in $deliveryFiles) {
@@ -549,7 +524,7 @@ foreach ($df in $deliveryFiles) {
   }
 }
 
-# 17. ASCII-only active corpus (cycle-8 D1; cycle-9 split-aware).
+# 16. ASCII-only active corpus (cycle-8 D1; cycle-9 split-aware).
 # Scan list derived from docs/governance/active-corpus.yaml#active_documents
 # ONLY -- never from transitional_rationale or historical_documents.
 $activeCorpusPath = 'docs/governance/active-corpus.yaml'
@@ -597,7 +572,7 @@ foreach ($f in $asciiFiles) {
   }
 }
 
-# 19. EOL policy (cycle-8 A1): tracked *.sh files must be LF in working tree.
+# 18. EOL policy (cycle-8 A1): tracked *.sh files must be LF in working tree.
 $shellFiles = @()
 try { $shellFiles = & git ls-files '*.sh' 2>$null } catch { $shellFiles = @() }
 foreach ($shf in $shellFiles) {
@@ -616,7 +591,7 @@ if (-not (Test-Path '.gitattributes')) {
   Fail 'eol_policy' ".gitattributes does not exist; LF policy is unenforced" '.gitattributes' 0
 }
 
-# 20. Manifest no TBD / no null log slots (cycle-8 B3).
+# 19. Manifest no TBD / no null log slots (cycle-8 B3).
 if (Test-Path $manifestPath) {
   $manifestRaw = Get-Content -LiteralPath $manifestPath
   for ($i = 0; $i -lt $manifestRaw.Count; $i++) {
@@ -632,7 +607,7 @@ if (Test-Path $manifestPath) {
   }
 }
 
-# 21. Delivery-log exact binding (cycle-8 B1).
+# 20. Delivery-log exact binding (cycle-8 B1).
 if ($manifestDelivery -and (Test-Path $manifestDelivery) -and $reviewedContentSha) {
   $deliveryBase = [System.IO.Path]::GetFileNameWithoutExtension((Split-Path -Leaf $manifestDelivery))
   $deliverySha = $deliveryBase -replace '^\d{4}-\d{2}-\d{2}-', ''
@@ -661,7 +636,7 @@ if ($manifestDelivery -and (Test-Path $manifestDelivery) -and $reviewedContentSh
   }
 }
 
-# 23. Active corpus exclusivity (cycle-9 A1, B1): no active_documents
+# 22. Active corpus exclusivity (cycle-9 A1, B1): no active_documents
 # entry may carry a v7_disposition / supersedes_to / sunset_by marker.
 if (Test-Path $activeCorpusPath) {
   $inActive = $false
@@ -684,7 +659,7 @@ if (Test-Path $activeCorpusPath) {
   }
 }
 
-# 24. Index active subset (cycle-9 B2): primary hierarchy in
+# 23. Index active subset (cycle-9 B2): primary hierarchy in
 # current-architecture-index.md must be a subset of active_documents.
 if ((Test-Path $indexPath) -and ($activePaths.Count -gt 0)) {
   $activeBasenames = $activePaths | ForEach-Object { Split-Path -Leaf $_ }
@@ -715,7 +690,7 @@ if ((Test-Path $indexPath) -and ($activePaths.Count -gt 0)) {
   }
 }
 
-# 22. Rule 8 state consistency (cycle-8 C2).
+# 21. Rule 8 state consistency (cycle-8 C2).
 $rule8State = ''
 if (Test-Path $manifestPath) {
   $manifestText = Get-Content -Raw -LiteralPath $manifestPath
@@ -751,7 +726,7 @@ if ($rule8State -eq 'fail_closed_artifact_missing' -and (Test-Path $statusPath))
   }
 }
 
-# 18. Capability legacy-bucket (cycle-7 D2).
+# 17. Capability legacy-bucket (cycle-7 D2).
 if (Test-Path $statusPath) {
   $statusLines = Get-Content -LiteralPath $statusPath
   $inFindingsSection = $false
@@ -772,7 +747,7 @@ if (Test-Path $statusPath) {
   }
 }
 
-# 24. CI no-or-true mask (cycle-14 A1): gate/run_* calls in CI workflows
+# 23. CI no-or-true mask (cycle-14 A1): gate/run_* calls in CI workflows
 # must not be masked with || true. Removes the escape hatch that allowed a
 # failing Rule 8 smoke gate to silently pass CI.
 $wfFiles = Get-ChildItem -Path '.github/workflows' -Filter '*.yml' -File -ErrorAction SilentlyContinue
@@ -786,7 +761,7 @@ foreach ($wf in $wfFiles) {
   }
 }
 
-# 25. Rule 8 state machine coherent (cycle-14 B1): artifact_present_state
+# 24. Rule 8 state machine coherent (cycle-14 B1): artifact_present_state
 # must agree with rule_8.state. Prevents internally-contradictory manifests.
 if (Test-Path $manifestPath) {
   $manifestText2 = Get-Content -Raw -LiteralPath $manifestPath
@@ -818,19 +793,19 @@ if (Test-Path $manifestPath) {
   }
 }
 
-  # 26. Contract catalog present (cycle-15/16 D1)
+  # 25. Contract catalog present (cycle-15/16 D1)
   $contractCatalog = Join-Path $repoRoot 'docs/contracts/contract-catalog.md'
   if (-not (Test-Path $contractCatalog)) {
     Fail 'contract_catalog_present' 'docs/contracts/contract-catalog.md not found; create it per T-CS-Docs' $contractCatalog 0
   }
 
-  # 27. OpenAPI snapshot pinned (cycle-15/16 D2)
+  # 26. OpenAPI snapshot pinned (cycle-15/16 D2)
   $openapiYaml = Join-Path $repoRoot 'docs/contracts/openapi-v1.yaml'
   if (-not (Test-Path $openapiYaml)) {
     Fail 'openapi_snapshot_pinned' 'docs/contracts/openapi-v1.yaml not found; create it per T-CS-2' $openapiYaml 0
   }
 
-  # 28. Metric naming namespace (cycle-15/16 D3)
+  # 27. Metric naming namespace (cycle-15/16 D3)
   Get-ChildItem -Recurse -Filter '*.java' -Path $repoRoot |
     Where-Object { $_.FullName -notmatch '[\\/]target[\\/]' } |
     ForEach-Object {

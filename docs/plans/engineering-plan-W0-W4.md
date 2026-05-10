@@ -66,7 +66,7 @@ behavior gates in sec-2.7 to turn green.**
 
 - Maven multi-module: `spring-ai-fin/` (parent), `agent-platform/`,
   `agent-runtime/`.
-- Spring Boot 3.5.x, Java 21, virtual threads on.
+- Spring Boot 4.0.5, Java 21, virtual threads on.
 - One Spring Boot main class in `agent-platform`.
 - One controller `/v1/health` returning `{"status":"UP","sha":"..."}`.
 - Postgres 16 in `ops/compose.yml`; Flyway with one migration creating
@@ -312,7 +312,7 @@ PASS becomes real.
 
 ### 4.2 Scope (in)
 
-- Spring AI 1.x with `ChatClient` beans for: Anthropic, OpenAI,
+- Spring AI 2.0.0-M5 with `ChatClient` beans for: Anthropic, OpenAI,
   in-memory fake (for CI).
 - `LlmRouter`: chooses provider + model based on a tenant config row.
 - `Run` table: `run_id, tenant_id, status, current_stage, started_at,
@@ -682,7 +682,7 @@ A wave that does not advance the score is rolled back or replanned.
 
 | ID | Risk | Severity | Mitigation owner | Wave |
 |---|---|---|---|---|
-| RP-1 | Spring Boot 3.5 not yet GA at start | M | Pin to 3.4.x if 3.5 not GA | W0 |
+| RP-1 | Spring Boot 4.0.5 is the active baseline (upgraded from 3.5.x in cycle-13) | M | Baseline confirmed; no pin action needed | W0 |
 | RP-2 | LLM provider terms-of-service for stored tenant prompts | H | Document data-handling per provider; per-tenant provider lock | W2 |
 | RP-3 | Postgres scale ceiling at single instance | M | Read replicas + partitioning W4+; v1 customer < 500 RPS | W4+ |
 | RP-4 | Temporal operational complexity | M | Single-node v1; managed Temporal Cloud as upgrade path | W4 |

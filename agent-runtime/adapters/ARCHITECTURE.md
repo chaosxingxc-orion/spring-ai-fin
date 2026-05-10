@@ -27,7 +27,7 @@ It does NOT own:
 - Run lifecycle persistence (delegated to `../server/`).
 - Skill registry / tool registration (delegated to `../skill/`).
 - Capability registry (delegated to `../capability/`).
-- The agent frameworks themselves -- Spring AI 1.1+ is an upstream dependency; LangChain4j is a customer-opt-in dependency; Python frameworks are customer-chosen sidecar containers.
+- The agent frameworks themselves -- Spring AI 2.0.0-M5 is an upstream dependency; LangChain4j is a customer-opt-in dependency; Python frameworks are customer-chosen sidecar containers.
 
 ---
 
@@ -336,7 +336,7 @@ If the Python sidecar overhead exceeds 100ms p95, we defer Python-sidecar GA to 
 |---|---|---|
 | **AD-1: Single `FrameworkAdapter` interface** | All frameworks dispatched via one interface | Customer's "support multiple frameworks" requirement; refusal to maintain per-framework dispatch logic |
 | **AD-2: Python OUT-OF-PROCESS only** | gRPC sidecar; no in-process Python | Rule 5 catastrophic failure mode if shared event loop |
-| **AD-3: SpringAiAdapter is the default** | Spring AI 1.1+ is in-process default | JVM-native; lowest latency; Spring Boot ecosystem |
+| **AD-3: SpringAiAdapter is the default** | Spring AI 2.0.0-M5 is in-process default | JVM-native; lowest latency; Spring Boot ecosystem |
 | **AD-4: LangChain4j discovered via `@ConditionalOnClass`** | Auto-loaded if classpath contains LangChain4j | Customer opt-in via Maven dependency only; no platform-level config |
 | **AD-5: PySidecar via reference Docker image, pinned by digest** | `springaifin/py-sidecar@sha256:...`; SBOM published | Customers don't roll their own Python framework hosting; digest pin closes supply-chain gap |
 | **AD-6: Adapter failover with Rule 7 four-prong** | Every fallback Countable + Attributable + Inspectable + Gate-asserted | Silent fallback would mean customers think framework X is working when actually Y is being used |
@@ -374,7 +374,7 @@ If the Python sidecar overhead exceeds 100ms p95, we defer Python-sidecar GA to 
 |---|---|
 | Python sidecar p95 > 100ms | Defer Python sidecar to v1.1 |
 | LangChain4j upstream churn | Track LangChain4j 1.x stability; may add deprecation shim |
-| Spring AI 1.1+ Advisor API churn | Track Spring AI changelogs; absorb in `SpringAiAdapter` |
+| Spring AI 2.0.0-M5 Advisor API churn | Track Spring AI changelogs; absorb in `SpringAiAdapter` |
 | gRPC stream cancellation propagation across JVM/Python boundary | Tested at chaos gate; cancellation is best-effort with deadline |
 | Per-customer Python framework version pinning | Customer pins `springaifin/py-sidecar@sha256:<digest>`; no tag-based pin permitted under research/prod |
 | Cross-adapter spine propagation | TenantContext + RunContext threaded through every adapter via gRPC metadata; sidecar metadata is rebound from JVM side |
@@ -392,7 +392,7 @@ If the Python sidecar overhead exceeds 100ms p95, we defer Python-sidecar GA to 
 - Action-guard (sidecar tool calls route through ActionGuard): [`../action-guard/ARCHITECTURE.md`](../action-guard/ARCHITECTURE.md)
 - Sidecar security profile: [`../../docs/sidecar-security-profile.md`](../../docs/sidecar-security-profile.md)
 - Supply-chain controls: [`../../docs/supply-chain-controls.md`](../../docs/supply-chain-controls.md)
-- Spring AI 1.1+ official docs: https://docs.spring.io/spring-ai/reference/1.1/
+- Spring AI 2.0.0-M5 official docs: https://docs.spring.io/spring-ai/reference/2.0/
 - LangChain4j: https://github.com/langchain4j/langchain4j
 - Python sidecar reference: planned at `tools/py-sidecar/` (Dockerfile + Python service)
 - SPIFFE: https://spiffe.io/

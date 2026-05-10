@@ -204,6 +204,6 @@ Both gates are mandatory. Removing the load-time gate would let malformed regist
 - Capability registry: [`../capability/ARCHITECTURE.md`](../capability/ARCHITECTURE.md)
 - Action-guard (runtime authorization): [`../action-guard/ARCHITECTURE.md`](../action-guard/ARCHITECTURE.md)
 - Hi-agent prior art: `D:/chao_workspace/hi-agent/hi_agent/skill/ARCHITECTURE.md`
-- Spring AI Advisors: https://docs.spring.io/spring-ai/reference/1.1/api/advisors.html
+- Spring AI Advisors: https://docs.spring.io/spring-ai/reference/2.0/api/advisors.html
 - MCP: https://modelcontextprotocol.io/
 - Systematic-architecture-remediation-plan: [`../../docs/systematic-architecture-remediation-plan-2026-05-08.en.md`](../../docs/systematic-architecture-remediation-plan-2026-05-08.en.md) sec-7.2
