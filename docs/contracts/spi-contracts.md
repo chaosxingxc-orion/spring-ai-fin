@@ -9,6 +9,7 @@ All SPI interfaces share these cross-cutting contracts:
 - **Null returns**: SPI methods must never return null. Return Optional.empty() or an empty collection instead.
 - **Tenant scope**: every method that has a `tenantId` parameter must scope its effect to that tenant. Operations must not leak data across tenant boundaries.
 - **ArchUnit enforcement**: SPI packages (`fin.springai.runtime.spi.*`) import only `java.*` types. No Spring, Micrometer, or platform imports in SPI packages.
+- **Binary API compatibility**: japicmp configured in spring-ai-fin-dependencies (BoM). Enforcement enabled from W1 onward when baseline JARs are available.
 
 ---
 

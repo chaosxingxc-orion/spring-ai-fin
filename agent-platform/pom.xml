@@ -130,6 +130,42 @@
       <artifactId>archunit-junit5</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-yaml</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- ArchUnit SPI freeze: SPI starters on test-classpath so spi_* rules are non-vacuous. -->
+    <dependency>
+      <groupId>fin.springai</groupId>
+      <artifactId>spring-ai-fin-memory-starter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>fin.springai</groupId>
+      <artifactId>spring-ai-fin-skills-starter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>fin.springai</groupId>
+      <artifactId>spring-ai-fin-knowledge-starter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>fin.springai</groupId>
+      <artifactId>spring-ai-fin-governance-starter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>fin.springai</groupId>
+      <artifactId>spring-ai-fin-persistence-starter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>fin.springai</groupId>
+      <artifactId>spring-ai-fin-resilience-starter</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

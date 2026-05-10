@@ -301,4 +301,25 @@
     </dependencies>
   </dependencyManagement>
 
+  <build>
+    <pluginManagement>
+      <plugins>
+        <!-- API compatibility check: compares SPI JARs against previous version.
+             Configured skip=true in W0; enforcement starts W1 when a 0.1.0 release is cut.
+             Run: mvn japicmp:cmp -Pverify-api-compat -->
+        <plugin>
+          <groupId>com.github.siom79.japicmp</groupId>
+          <artifactId>japicmp-maven-plugin</artifactId>
+          <version>0.23.0</version>
+          <configuration>
+            <skip>true</skip>
+            <breakBuildOnBinaryIncompatibleModifications>false</breakBuildOnBinaryIncompatibleModifications>
+            <breakBuildOnSourceIncompatibleModifications>false</breakBuildOnSourceIncompatibleModifications>
+            <ignoreMissingClassesByDefault>true</ignoreMissingClassesByDefault>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
 </project>

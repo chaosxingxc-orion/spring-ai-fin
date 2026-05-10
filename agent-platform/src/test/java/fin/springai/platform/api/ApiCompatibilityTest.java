@@ -47,12 +47,10 @@ class ApiCompatibilityTest {
     void spi_packages_have_no_platform_dependency() {
         // SPI layer must not depend on platform (northbound) code.
         // Platform may depend on SPI (via adapters); never the reverse.
-        // allowEmptyShould: SPI classes live in separate starter modules not on this module's classpath.
         ArchRule rule = noClasses()
                 .that().resideInAPackage("fin.springai.runtime.spi..")
                 .should().dependOnClassesThat()
-                .resideInAPackage("fin.springai.platform..")
-                .allowEmptyShould(true);
+                .resideInAPackage("fin.springai.platform..");
         rule.check(FIN_SPRINGAI_CLASSES);
     }
 
@@ -60,12 +58,10 @@ class ApiCompatibilityTest {
     void spi_packages_import_only_java_sdk_types() {
         // SPI interfaces are pure Java (no Spring, no third-party frameworks).
         // This keeps the contract stable across Boot major upgrades.
-        // allowEmptyShould: SPI classes live in separate starter modules not on this module's classpath.
         ArchRule rule = noClasses()
                 .that().resideInAPackage("fin.springai.runtime.spi..")
                 .should().dependOnClassesThat()
-                .resideInAPackage("org.springframework..")
-                .allowEmptyShould(true);
+                .resideInAPackage("org.springframework..");
         rule.check(FIN_SPRINGAI_CLASSES);
     }
 }
