@@ -58,12 +58,12 @@ schema_capabilities:
 # of cycle-8's remediation. The gate derives it from HEAD when verifying
 # audit_trail_shape.
 
-reviewed_content_sha: 8505f7d                       # cycle-15/16 defect closure: ASCII + gate + doc fixes
-evidence_commit_parent_sha: 8505f7d                 # MUST equal reviewed_content_sha (gate enforced)
+reviewed_content_sha: e622d7d                       # cycle-15/16 closure extension: contracts + cross-cutting docs + gate rules 26-28
+evidence_commit_parent_sha: e622d7d                 # MUST equal reviewed_content_sha (gate enforced)
 evidence_commit_classification: audit_trail_only    # one of: direct_reviewed_content | audit_trail_only
 
 # Backward compatibility with v1/v2 readers (cycle-5/cycle-6/cycle-7).
-reviewed_sha: 8505f7d
+reviewed_sha: e622d7d
 
 current_head_policy:
   accepted_shapes:
@@ -78,7 +78,7 @@ current_head_policy:
 
 # ---- Delivery and logs (cycle-8 sec-B1, sec-B2, sec-B3) ----
 
-delivery_file: docs/delivery/2026-05-10-8505f7d.md   # cycle-15/16 closure (SPI + posture + docs + ledger + ASCII fixes)
+delivery_file: docs/delivery/2026-05-10-e622d7d.md   # cycle-15/16 closure extension (edge contracts + contract spine + cross-cutting docs)
 
 # Per cycle-8 sec-B3: log slots use the explicit state enum, never null.
 # Per cycle-8 sec-B1: when state == pass, path MUST exist and the log's
@@ -86,9 +86,10 @@ delivery_file: docs/delivery/2026-05-10-8505f7d.md   # cycle-15/16 closure (SPI 
 
 architecture_sync_logs:
   posix:
-    state: pass
-    path: gate/log/64748f1-posix.json
-    log_sha: 64748f1
+    state: missing_blocker
+    path: null
+    reason: "Local-only gate run at e622d7d (gate/log/local/e622d7d-posix.json) shows semantic_pass=false: audit_trail_shape expects reviewed_content_sha=e622d7d which is set in this commit 8. Clean delivery-valid gate run at final HEAD (commit 8) is pending CI."
+    prior_local_log: gate/log/local/e622d7d-posix.json
   windows:
     state: missing_blocker
     path: null
@@ -240,6 +241,20 @@ status_findings_addressed:
     - REM-2026-05-09-C14-7   # D1: build_verification field added; capability stays L0 until CI green
     - REM-2026-05-09-C14-8   # D2: W0 acceptance criteria revised to behavior gates; step-1 label
     - REM-2026-05-09-C14-9   # E1: Dockerfile dependency:go-offline no longer masks failure
+  cycle_15_16_closure_extension_contracts:
+    - D1-idempotency-key-filter           # T1: IdempotencyHeaderFilter + posture matrix
+    - D2-tenant-context-filter            # T2: TenantContextFilter + ThreadLocal lifetime
+    - D3-resilience-starter               # T3: spring-ai-fin-resilience-starter + ResilienceContract SPI
+    - D4-document-source-connector-registry  # T4: DocumentSourceConnectorRegistry fan-out
+    - D5-configuration-properties         # T-CS-A: @ConfigurationProperties per core starter
+    - D6-openapi-v1-snapshot              # T-CS-2: docs/contracts/openapi-v1.yaml + OpenApiContractIT
+    - D7-starter-readmes                  # T5: 10 module READMEs
+    - D8-root-quickstart                  # T6: 5-min quickstart in root README
+    - D9-cross-cutting-policy-docs        # T7: integration-guide + statelessness + contract-evolution + middleware + eval-ci-hook
+    - D10-contract-spine-docs             # T-CS-Docs: contract-catalog + spi/config/telemetry/http-api contracts
+    - D11-diagram-refresh                 # T8: mermaid filter chain + OSS matrix resilience row
+    - D12-architecture-status-rows        # T9: 20 new capability rows in ledger
+    - D13-gate-rules-26-28               # T-CS-Audit: contract_catalog_present + openapi_snapshot_pinned + metric_naming_namespace
   cycle_8:
     - REM-2026-05-08-C8-1   # A1: CRLF + .gitattributes + eol_policy gate rule
     - REM-2026-05-08-C8-2   # A2: self-test required for delivery
