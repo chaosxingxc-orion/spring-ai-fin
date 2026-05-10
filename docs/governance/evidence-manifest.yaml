@@ -58,12 +58,12 @@ schema_capabilities:
 # of cycle-8's remediation. The gate derives it from HEAD when verifying
 # audit_trail_shape.
 
-reviewed_content_sha: a7756cd                       # architecture-review-readiness pass (T-AR-0..T-AR-13): status-yaml + README v6.1 + ARCHITECTURE.md v6.1
-evidence_commit_parent_sha: a7756cd                 # MUST equal reviewed_content_sha (gate enforced)
+reviewed_content_sha: 391cd6e                       # cycle-17 Phase 1: class-based reviewer response + cycle-17 review record committed
+evidence_commit_parent_sha: 391cd6e                 # MUST equal reviewed_content_sha (gate enforced)
 evidence_commit_classification: audit_trail_only    # one of: direct_reviewed_content | audit_trail_only
 
 # Backward compatibility with v1/v2 readers (cycle-5/cycle-6/cycle-7).
-reviewed_sha: a7756cd
+reviewed_sha: 391cd6e
 
 current_head_policy:
   accepted_shapes:
@@ -78,7 +78,7 @@ current_head_policy:
 
 # ---- Delivery and logs (cycle-8 sec-B1, sec-B2, sec-B3) ----
 
-delivery_file: docs/delivery/2026-05-11-a7756cd.md   # cycle-18 Phase 0: Maven build unblocked; Spring Boot 4.x API compatibility (authoritative)
+delivery_file: docs/delivery/2026-05-11-391cd6e.md   # cycle-17 Phase 1: class-based reviewer response; Phase 0 build evidence in 2026-05-11-a7756cd.md (authoritative)
 
 # Per cycle-8 sec-B3: log slots use the explicit state enum, never null.
 # Per cycle-8 sec-B1: when state == pass, path MUST exist and the log's
@@ -86,14 +86,14 @@ delivery_file: docs/delivery/2026-05-11-a7756cd.md   # cycle-18 Phase 0: Maven b
 
 architecture_sync_logs:
   posix:
-    state: missing_blocker
-    path: null
-    reason: "No delivery-valid gate run yet at a7756cd. Local semantic run pending next CI push. Clean gate/log/a7756cd-posix.json produced after CI green at final HEAD."
-    prior_local_log: gate/log/local/bc82ab0-posix.json
+    state: local_semantic_pass
+    path: gate/log/391cd6e-posix.json
+    reason: "Local semantic pass at 391cd6e (clean tree, --local-only equivalent; audit_trail_shape will pass once governance-only commit closes). Delivery-valid gate pending CI push."
+    prior_local_log: gate/log/local/391cd6e-posix.json
   windows:
     state: missing_blocker
     path: null
-    reason: "pwsh not available in W0 author environment. CI matrix (W1 deliverable) will produce gate/log/18d637e-windows.json."
+    reason: "pwsh not available in W0 author environment. CI matrix (W1 deliverable) will produce Windows gate log."
   prior_delivery_valid_logs:
     - gate/log/81ff802-posix.json     # cycle-6 architectural
     - gate/log/302337f-posix.json     # cycle-5 architectural

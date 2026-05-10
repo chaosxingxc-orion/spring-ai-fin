@@ -123,8 +123,9 @@
 ## Delivery evidence
 
 - [`docs/delivery/README.md`](../delivery/README.md) -- delivery rules.
-- [`docs/delivery/2026-05-11-a7756cd.md`](../delivery/2026-05-11-a7756cd.md) -- cycle-18 Phase 0: Maven build unblocked; Spring Boot 4.x API compatibility (authoritative).
-- [`docs/delivery/2026-05-10-8505f7d.md`](../delivery/2026-05-10-8505f7d.md) -- cycle-15/16 defect closure: SPI Rule 11 spine, posture fail-fast, doc refresh, ledger sync, ASCII gate fixes (superseded -- see 2026-05-11-a7756cd.md).
+- [`docs/delivery/2026-05-11-391cd6e.md`](../delivery/2026-05-11-391cd6e.md) -- cycle-17 Phase 1: class-based reviewer response; 8 fix streams; gate rules deleted; review record (authoritative).
+- [`docs/delivery/2026-05-11-a7756cd.md`](../delivery/2026-05-11-a7756cd.md) -- cycle-17 Phase 0: Maven build unblocked; Spring Boot 4.x API compatibility; first BUILD SUCCESS (superseded -- see 2026-05-11-391cd6e.md).
+- [`docs/delivery/2026-05-10-8505f7d.md`](../delivery/2026-05-10-8505f7d.md) -- cycle-15/16 defect closure: SPI Rule 11 spine, posture fail-fast, doc refresh, ledger sync, ASCII gate fixes (superseded -- see 2026-05-11-391cd6e.md).
 - [`docs/delivery/2026-05-10-ae60414.md`](../delivery/2026-05-10-ae60414.md) -- cycle-15/16 architecture-review-readiness pass T-AR-11..T-AR-13 (historical -- was on detached branch fix/cycle-15-defect-closure, never merged; superseded by 2026-05-11-a7756cd.md).
 - [`docs/delivery/2026-05-10-97b0827.md`](../delivery/2026-05-10-97b0827.md) -- cycle-15/16 interim delivery (superseded by 8505f7d delivery; see 2026-05-11-a7756cd.md for current authoritative).
 - [`docs/delivery/2026-05-10-68c07f1.md`](../delivery/2026-05-10-68c07f1.md) -- W0: milestone gate grep-P locale fix; build_verification.state: green.
