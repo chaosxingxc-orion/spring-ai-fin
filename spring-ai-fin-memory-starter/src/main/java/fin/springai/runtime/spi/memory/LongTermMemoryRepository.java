@@ -45,6 +45,7 @@ public interface LongTermMemoryRepository {
     ) {}
 
     record MemoryMetadata(
+            String tenantId,
             String sessionId,
             String runId,
             java.time.Instant createdAt

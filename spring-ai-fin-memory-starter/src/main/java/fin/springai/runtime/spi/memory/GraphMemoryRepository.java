@@ -22,7 +22,7 @@ public interface GraphMemoryRepository {
     /** Full-text + graph search over the tenant's knowledge graph. */
     List<GraphEdge> search(String tenantId, String queryText, int topK);
 
-    record GraphEdge(String subject, String relation, String object) {}
+    record GraphEdge(String tenantId, String subject, String relation, String object) {}
 
-    record GraphMetadata(String sessionId, String runId, java.time.Instant createdAt) {}
+    record GraphMetadata(String tenantId, String sessionId, String runId, java.time.Instant createdAt) {}
 }

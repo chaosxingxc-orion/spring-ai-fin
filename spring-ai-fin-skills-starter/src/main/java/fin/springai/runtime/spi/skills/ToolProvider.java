@@ -26,6 +26,7 @@ public interface ToolProvider {
     String invoke(String tenantId, String toolName, String argumentsJson);
 
     record ToolDescriptor(
+            String tenantId,
             String name,
             String description,
             String inputSchemaJson,

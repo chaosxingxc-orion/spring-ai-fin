@@ -29,6 +29,8 @@ public interface LayoutParser {
         }
     }
 
+    // scope: process-internal — ContentBlock and BoundingBox are intermediate parse
+    // artifacts bounded to a single document parse call; never persisted or transmitted across tenants.
     record ContentBlock(
             BlockType type,
             String text,
@@ -40,5 +42,6 @@ public interface LayoutParser {
         PARAGRAPH, HEADING, TABLE_ROW, LIST_ITEM, CAPTION, FOOTER, OTHER
     }
 
+    // scope: process-internal (see ContentBlock above)
     record BoundingBox(double x, double y, double width, double height) {}
 }

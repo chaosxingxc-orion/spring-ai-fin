@@ -25,6 +25,8 @@ public interface PolicyEvaluator {
     EvaluationResult evaluate(String tenantId, String policyId, Map<String, Object> input);
 
     record EvaluationResult(
+            String tenantId,
+            String runId,
             Decision decision,
             String reason,
             Map<String, Object> details
