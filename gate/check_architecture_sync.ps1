@@ -818,6 +818,34 @@ if (Test-Path $manifestPath) {
   }
 }
 
+  # 26. Contract catalog present (cycle-15/16 D1)
+  $contractCatalog = Join-Path $repoRoot 'docs/contracts/contract-catalog.md'
+  if (-not (Test-Path $contractCatalog)) {
+    Fail 'contract_catalog_present' 'docs/contracts/contract-catalog.md not found; create it per T-CS-Docs' $contractCatalog 0
+  }
+
+  # 27. OpenAPI snapshot pinned (cycle-15/16 D2)
+  $openapiYaml = Join-Path $repoRoot 'docs/contracts/openapi-v1.yaml'
+  if (-not (Test-Path $openapiYaml)) {
+    Fail 'openapi_snapshot_pinned' 'docs/contracts/openapi-v1.yaml not found; create it per T-CS-2' $openapiYaml 0
+  }
+
+  # 28. Metric naming namespace (cycle-15/16 D3)
+  Get-ChildItem -Recurse -Filter '*.java' -Path $repoRoot |
+    Where-Object { $_.FullName -notmatch '[\\/]target[\\/]' } |
+    ForEach-Object {
+      $jFile = $_.FullName
+      Select-String -LiteralPath $jFile -Pattern '\.counter\("([^"]+)"' -AllMatches |
+        ForEach-Object {
+          foreach ($m in $_.Matches) {
+            $name = $m.Groups[1].Value
+            if ($name -ne '' -and -not $name.StartsWith('springai_fin')) {
+              Fail 'metric_naming_namespace' "Counter name '$name' does not use springai_fin_ prefix" $jFile 0
+            }
+          }
+        }
+    }
+
 } catch {
   $ruleBodySucceeded = $false
   $runtimeErrorMessage = $_.Exception.Message

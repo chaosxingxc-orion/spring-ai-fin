@@ -853,6 +853,35 @@ runtime_error_message=""
       esac
     fi
   fi
+  # 26. Contract catalog present (cycle-15/16 D1): docs/contracts/contract-catalog.md
+  # must exist. Created in T-CS-Docs; indexes all external contract types.
+  _contract_catalog="docs/contracts/contract-catalog.md"
+  if [[ ! -f "$_contract_catalog" ]]; then
+    fail "contract_catalog_present" "docs/contracts/contract-catalog.md not found; create it per T-CS-Docs" "$_contract_catalog" 0
+  fi
+
+  # 27. OpenAPI snapshot pinned (cycle-15/16 D2): docs/contracts/openapi-v1.yaml
+  # must exist. Created in T-CS-2; pins the W0 public surface.
+  _openapi_yaml="docs/contracts/openapi-v1.yaml"
+  if [[ ! -f "$_openapi_yaml" ]]; then
+    fail "openapi_snapshot_pinned" "docs/contracts/openapi-v1.yaml not found; create it per T-CS-2" "$_openapi_yaml" 0
+  fi
+
+  # 28. Metric naming namespace (cycle-15/16 D3): all .counter("...") calls in
+  # Java sources must use the springai_fin_ prefix. Catches namespace drift.
+  while IFS= read -r _mf; do
+    [[ -f "$_mf" ]] || continue
+    while IFS= read -r _ml; do
+      if [[ "$_ml" == *'.counter("'* ]]; then
+        _n="${_ml#*.counter(\"}"
+        _n="${_n%%\"*}"
+        if [[ -n "$_n" && "${_n:0:12}" != "springai_fin" ]]; then
+          fail "metric_naming_namespace" "Counter name '$_n' does not use springai_fin_ prefix" "$_mf" 0
+        fi
+      fi
+    done < "$_mf"
+  done < <(find . -name '*.java' -not -path '*/target/*' -not -path '*/.git/*' 2>/dev/null || true)
+
 } || {
   rule_body_succeeded=false
   runtime_error_message="rule body failed"

@@ -1558,3 +1558,250 @@ findings:
       - agent-platform/src/test/java/fin/springai/platform/api/ApiCompatibilityTest.java
     latest_delivery_valid_sha: 8505f7d
     allowed_claim: "ArchUnit 4 rules GREEN: no spring-ai-alibaba import; platform/runtime/SPI separation."
+
+  # ---- cycle-15/16 closure extension: W0 contracts + contract spine ----
+
+  idempotency_key_filter:
+    maturity: L1
+    status: implemented_unverified
+    evidence_state: implemented_unverified
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - agent-platform/src/main/java/fin/springai/platform/idempotency/IdempotencyHeaderFilter.java
+      - agent-platform/src/main/java/fin/springai/platform/idempotency/IdempotencyFilterAutoConfiguration.java
+    tests:
+      - agent-platform/src/test/java/fin/springai/platform/idempotency/IdempotencyHeaderFilterTest.java
+      - agent-platform/src/test/java/fin/springai/platform/idempotency/IdempotencyHeaderFilterIT.java
+    latest_delivery_valid_sha: c000b73
+    allowed_claim: "L1: OncePerRequestFilter order 30; dev tolerates missing; research/prod returns 400; counters emitted."
+
+  tenant_context_filter:
+    maturity: L1
+    status: implemented_unverified
+    evidence_state: implemented_unverified
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - agent-platform/src/main/java/fin/springai/platform/tenant/TenantContextFilter.java
+      - agent-platform/src/main/java/fin/springai/platform/tenant/TenantFilterAutoConfiguration.java
+    tests:
+      - agent-platform/src/test/java/fin/springai/platform/tenant/TenantContextFilterTest.java
+      - agent-platform/src/test/java/fin/springai/platform/tenant/TenantContextFilterIT.java
+    latest_delivery_valid_sha: c000b73
+    allowed_claim: "L1: OncePerRequestFilter order 20; ThreadLocal cleared in finally; dev uses DEV_DEFAULT on missing; research/prod returns 400."
+
+  spring_ai_fin_resilience_starter:
+    maturity: L1
+    status: implemented_unverified
+    evidence_state: implemented_unverified
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - spring-ai-fin-resilience-starter/src/main/java/fin/springai/runtime/spi/resilience/ResilienceContract.java
+      - spring-ai-fin-resilience-starter/src/main/java/fin/springai/runtime/resilience/ResilienceAutoConfiguration.java
+    tests:
+      - spring-ai-fin-resilience-starter/src/test/java/fin/springai/runtime/resilience/ResilienceAutoConfigurationTest.java
+    latest_delivery_valid_sha: c000b73
+    allowed_claim: "L1: ResilienceContract SPI; sentinel fails fast in research/prod; both auto-config registrations present."
+
+  document_source_connector_registry:
+    maturity: L1
+    status: implemented_unverified
+    evidence_state: implemented_unverified
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - spring-ai-fin-knowledge-starter/src/main/java/fin/springai/runtime/knowledge/DocumentSourceConnectorRegistry.java
+    tests:
+      - spring-ai-fin-knowledge-starter/src/test/java/fin/springai/runtime/knowledge/KnowledgeAutoConfigurationTest.java
+    latest_delivery_valid_sha: c000b73
+    allowed_claim: "L1: immutable registry; duplicate-id rejection at construction; wired via List<DocumentSourceConnector> in KnowledgeAutoConfiguration."
+
+  memory_configuration_properties:
+    maturity: L1
+    status: implemented_unverified
+    evidence_state: implemented_unverified
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - spring-ai-fin-memory-starter/src/main/java/fin/springai/runtime/memory/MemoryProperties.java
+    tests:
+      - spring-ai-fin-memory-starter/src/test/java/fin/springai/runtime/memory/MemoryAutoConfigurationTest.java
+    latest_delivery_valid_sha: c000b73
+    allowed_claim: "L1: @ConfigurationProperties(springai.fin.memory); IDE auto-complete via configuration-processor."
+
+  skills_configuration_properties:
+    maturity: L1
+    status: implemented_unverified
+    evidence_state: implemented_unverified
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - spring-ai-fin-skills-starter/src/main/java/fin/springai/runtime/skills/SkillsProperties.java
+    tests:
+      - spring-ai-fin-skills-starter/src/test/java/fin/springai/runtime/skills/SkillsAutoConfigurationTest.java
+    latest_delivery_valid_sha: c000b73
+    allowed_claim: "L1: @ConfigurationProperties(springai.fin.skills)."
+
+  knowledge_configuration_properties:
+    maturity: L1
+    status: implemented_unverified
+    evidence_state: implemented_unverified
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - spring-ai-fin-knowledge-starter/src/main/java/fin/springai/runtime/knowledge/KnowledgeProperties.java
+    tests:
+      - spring-ai-fin-knowledge-starter/src/test/java/fin/springai/runtime/knowledge/KnowledgeAutoConfigurationTest.java
+    latest_delivery_valid_sha: c000b73
+    allowed_claim: "L1: @ConfigurationProperties(springai.fin.knowledge)."
+
+  governance_configuration_properties:
+    maturity: L1
+    status: implemented_unverified
+    evidence_state: implemented_unverified
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - spring-ai-fin-governance-starter/src/main/java/fin/springai/runtime/governance/GovernanceProperties.java
+    tests:
+      - spring-ai-fin-governance-starter/src/test/java/fin/springai/runtime/governance/GovernanceAutoConfigurationTest.java
+    latest_delivery_valid_sha: c000b73
+    allowed_claim: "L1: @ConfigurationProperties(springai.fin.governance)."
+
+  persistence_configuration_properties:
+    maturity: L1
+    status: implemented_unverified
+    evidence_state: implemented_unverified
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - spring-ai-fin-persistence-starter/src/main/java/fin/springai/runtime/persistence/PersistenceProperties.java
+    tests:
+      - spring-ai-fin-persistence-starter/src/test/java/fin/springai/runtime/persistence/PersistenceAutoConfigurationTest.java
+    latest_delivery_valid_sha: c000b73
+    allowed_claim: "L1: @ConfigurationProperties(springai.fin.persistence)."
+
+  openapi_v1_snapshot:
+    maturity: L2
+    status: test_verified
+    evidence_state: test_verified
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - docs/contracts/openapi-v1.yaml
+    tests:
+      - agent-platform/src/test/java/fin/springai/platform/contracts/OpenApiContractIT.java
+    latest_delivery_valid_sha: c000b73
+    allowed_claim: "L2: OpenAPI 3.0.1 snapshot pinning /v1/health surface; OpenApiContractIT verifies live spec contains declared paths."
+
+  integration_guide:
+    maturity: L2
+    status: design_accepted
+    evidence_state: design_accepted
+    l0_decision: ARCHITECTURE.md
+    l2_documents:
+      - docs/cross-cutting/integration-guide.md
+    implementation: null
+    tests: []
+    latest_delivery_valid_sha: c000b73
+    allowed_claim: "L2: integration guide covering 3 paths (drop-in @Bean / sidecar / external BoM)."
+
+  statelessness_partition_policy:
+    maturity: L2
+    status: design_accepted
+    evidence_state: design_accepted
+    l0_decision: ARCHITECTURE.md
+    l2_documents:
+      - docs/cross-cutting/statelessness-and-partition-policy.md
+    implementation: null
+    tests: []
+    latest_delivery_valid_sha: c000b73
+    allowed_claim: "L2: state ownership map, RLS GUC, horizontal scale story."
+
+  contract_evolution_policy:
+    maturity: L2
+    status: design_accepted
+    evidence_state: design_accepted
+    l0_decision: ARCHITECTURE.md
+    l2_documents:
+      - docs/cross-cutting/contract-evolution-policy.md
+    implementation: null
+    tests: []
+    latest_delivery_valid_sha: c000b73
+    allowed_claim: "L2: versioning rules per contract type; L1-L4 compatibility matrix."
+
+  middleware_pattern_guide:
+    maturity: L2
+    status: design_accepted
+    evidence_state: design_accepted
+    l0_decision: ARCHITECTURE.md
+    l2_documents:
+      - docs/cross-cutting/middleware-pattern-guide.md
+    implementation: null
+    tests: []
+    latest_delivery_valid_sha: c000b73
+    allowed_claim: "L2: sidecar adapter pattern end-to-end walkthrough."
+
+  eval_ci_hook:
+    maturity: L2
+    status: design_accepted
+    evidence_state: design_accepted
+    l0_decision: ARCHITECTURE.md
+    l2_documents:
+      - docs/cross-cutting/eval-ci-hook.md
+    implementation: null
+    tests: []
+    latest_delivery_valid_sha: c000b73
+    allowed_claim: "L2: agent-eval role documented; nightly CI hook intent (W4); cost-counter intent (W2)."
+
+  contract_catalog:
+    maturity: L2
+    status: design_accepted
+    evidence_state: design_accepted
+    l0_decision: ARCHITECTURE.md
+    l2_documents:
+      - docs/contracts/contract-catalog.md
+    implementation: null
+    tests: []
+    latest_delivery_valid_sha: c000b73
+    allowed_claim: "L2: single source of truth for all external contracts; indexes HTTP/SPI/config/telemetry/BoM."
+
+  spi_contracts_doc:
+    maturity: L2
+    status: design_accepted
+    evidence_state: design_accepted
+    l0_decision: ARCHITECTURE.md
+    l2_documents:
+      - docs/contracts/spi-contracts.md
+    implementation: null
+    tests: []
+    latest_delivery_valid_sha: c000b73
+    allowed_claim: "L2: per-SPI semantic guarantee, error contract, threading model."
+
+  configuration_contracts_doc:
+    maturity: L2
+    status: design_accepted
+    evidence_state: design_accepted
+    l0_decision: ARCHITECTURE.md
+    l2_documents:
+      - docs/contracts/configuration-contracts.md
+    implementation: null
+    tests: []
+    latest_delivery_valid_sha: c000b73
+    allowed_claim: "L2: all springai.fin.* properties declared; deprecation N+2 rule."
+
+  telemetry_contracts_doc:
+    maturity: L2
+    status: design_accepted
+    evidence_state: design_accepted
+    l0_decision: ARCHITECTURE.md
+    l2_documents:
+      - docs/contracts/telemetry-contracts.md
+    implementation: null
+    tests: []
+    latest_delivery_valid_sha: c000b73
+    allowed_claim: "L2: metric naming pattern; required tags; cardinality budget; structured log schema."
+
+  http_api_contracts_doc:
+    maturity: L2
+    status: design_accepted
+    evidence_state: design_accepted
+    l0_decision: ARCHITECTURE.md
+    l2_documents:
+      - docs/contracts/http-api-contracts.md
+    implementation: null
+    tests: []
+    latest_delivery_valid_sha: c000b73
+    allowed_claim: "L2: per-route stability tier; mandatory header conventions; status code conventions."
