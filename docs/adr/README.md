@@ -1,0 +1,39 @@
+# Architecture Decision Records
+
+> Owner: architecture | Format: MADR 4.0 | Last refreshed: 2026-05-10
+
+This directory contains Architecture Decision Records (ADRs) for spring-ai-fin.
+Each ADR documents a significant architectural decision with its context,
+options considered, decision, and consequences.
+
+## Index
+
+| ADR | Title | Status |
+|-----|-------|--------|
+| [0001](0001-java-21-spring-boot-runtime.md) | Java 21 + Spring Boot 4.0.5 as the runtime baseline | accepted |
+| [0002](0002-spring-ai-llm-gateway.md) | Spring AI 2.0.0-M5 as the LLM gateway, not LangChain4j | accepted |
+| [0003](0003-temporal-durable-workflows.md) | Temporal Java SDK 1.35.0 for durable workflows, not Airflow / Step Functions | accepted |
+| [0004](0004-postgres-primary-data-store.md) | PostgreSQL 16 with RLS + pgvector, not separate vector DB | accepted |
+| [0005](0005-tenant-isolation-guc-set-local.md) | Row-level security with SET LOCAL transaction-scoped GUC, not per-connection reset | accepted |
+| [0006](0006-posture-model-dev-research-prod.md) | ActionGuard 5-stage chain (cycle-9 truth-cut), not 11-stage | accepted |
+| [0007](0007-spi-first-extensibility.md) | At-least-once outbox in Postgres, not Kafka, for v1 | accepted |
+| [0008](0008-resilience4j-circuit-breaker.md) | OPA sidecar for authorization, not in-process Cedar / custom | accepted |
+| [0009](0009-micrometer-observability.md) | HashiCorp Vault (OSS) for secrets, not env vars / K8s Secrets only | accepted |
+| [0010](0010-spring-security-oauth2.md) | Keycloak (OSS) as default IdP, but customer can BYO | accepted |
+| [0011](0011-flyway-schema-migration.md) | Spring Cloud Gateway as ingress, not Kong / Traefik | accepted |
+| [0012](0012-valkey-session-cache.md) | Maven multi-module, not Gradle | accepted |
+| [0013](0013-vault-secrets-management.md) | UUIDv7 for surrogate IDs, not snowflake / sequence | accepted |
+| [0014](0014-contract-spine-versioning-policy.md) | 3-posture model (dev/research/prod), not 5 or 2 | accepted |
+| [0015](0015-layered-architecture-capability-model.md) | Defer multi-framework dispatch (Python sidecar, LangChain4j) to W4+ | accepted |
+
+## Process
+
+New ADRs are proposed by opening a PR that adds a new file to this directory.
+The file must use the MADR 4.0 template (see any existing ADR for reference).
+ADR numbers are sequential; never reuse a number.
+Superseded ADRs remain in the directory with Status: superseded, linking to the successor.
+
+## References
+
+- `ARCHITECTURE.md` sec-2 (OSS matrix)
+- `docs/cross-cutting/contract-evolution-policy.md`
