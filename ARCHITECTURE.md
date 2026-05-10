@@ -215,7 +215,7 @@ architecture-design self-audit (`docs/architecture-design-self-audit.md`).
 ```
 spring-ai-fin/
   pom.xml                                   # parent (Maven; Java 21; Spring Boot 3.5 BOM)
-  agent-platform/                           # northbound facade (L1 — HealthEndpointIT GREEN)
+  agent-platform/                           # northbound facade (L1 -- HealthEndpointIT GREEN)
     pom.xml
     src/main/java/fin/springai/platform/
       AgentPlatformApplication.java         # Spring Boot main
@@ -224,7 +224,7 @@ spring-ai-fin/
     src/test/java/fin/springai/platform/
       api/ApiCompatibilityTest.java         # ArchUnit 4 rules (SPI separation)
       health/HealthEndpointIT.java          # /v1/health integration test
-  agent-runtime/                            # cognitive runtime kernel (L0 — shell only)
+  agent-runtime/                            # cognitive runtime kernel (L0 -- shell only)
     pom.xml
     src/main/java/fin/springai/runtime/
       probe/OssApiProbe.java
@@ -273,13 +273,13 @@ spring-ai-fin/
       spi/persistence/IdempotencyRepository.java
       spi/persistence/ArtifactRepository.java
     src/test/...
-  spring-ai-fin-mem0-starter/              # sidecar — Mem0 REST (enabled=false, L0)
+  spring-ai-fin-mem0-starter/              # sidecar -- Mem0 REST (enabled=false, L0)
     pom.xml
     src/main/java/fin/springai/runtime/mem0/
-  spring-ai-fin-graphmemory-starter/       # sidecar — Graphiti REST (enabled=false, L0)
+  spring-ai-fin-graphmemory-starter/       # sidecar -- Graphiti REST (enabled=false, L0)
     pom.xml
     src/main/java/fin/springai/runtime/graphmemory/
-  spring-ai-fin-docling-starter/           # sidecar — Docling REST (enabled=false, L0)
+  spring-ai-fin-docling-starter/           # sidecar -- Docling REST (enabled=false, L0)
     pom.xml
     src/main/java/fin/springai/runtime/docling/
   spring-ai-fin-langchain4j-profile/       # alternate framework profile (enabled=false, L0)
@@ -318,7 +318,7 @@ build boundaries.
       |                                    IdempotencyRepository,
       |                                    ArtifactRepository)
       |
-      |  @ConditionalOnMissingBean — real impl replaces sentinel
+      |  @ConditionalOnMissingBean -- real impl replaces sentinel
       v
 [agent-runtime]  --consumes-->  SPI interfaces (via Spring DI)
       |
@@ -339,7 +339,7 @@ Rules:
    Platform calls runtime via the SPI contract only. Enforced by
    `ApiCompatibilityTest.platform_does_not_depend_on_runtime`.
 3. Sidecar starters may depend on the core starter that owns their SPI
-   (e.g. `graphmemory` → `memory`). Core starters must not depend on sidecar starters.
+   (e.g. `graphmemory` -> `memory`). Core starters must not depend on sidecar starters.
 4. `spring-ai-fin-dependencies` BoM pins all starter coordinates and
    OSS transitive deps; modules declare version-free `<dependency>` entries.
 

@@ -58,12 +58,12 @@ schema_capabilities:
 # of cycle-8's remediation. The gate derives it from HEAD when verifying
 # audit_trail_shape.
 
-reviewed_content_sha: 97b0827                       # cycle-15/16 defect closure: SPI records, posture fail-fast, doc refresh
-evidence_commit_parent_sha: 97b0827                 # MUST equal reviewed_content_sha (gate enforced)
+reviewed_content_sha: placeholder_sha               # updated to HEAD after ASCII-fix commit (see below)
+evidence_commit_parent_sha: placeholder_sha         # MUST equal reviewed_content_sha (gate enforced)
 evidence_commit_classification: audit_trail_only    # one of: direct_reviewed_content | audit_trail_only
 
 # Backward compatibility with v1/v2 readers (cycle-5/cycle-6/cycle-7).
-reviewed_sha: 97b0827
+reviewed_sha: placeholder_sha
 
 current_head_policy:
   accepted_shapes:
@@ -78,7 +78,7 @@ current_head_policy:
 
 # ---- Delivery and logs (cycle-8 sec-B1, sec-B2, sec-B3) ----
 
-delivery_file: docs/delivery/2026-05-10-97b0827.md   # cycle-15/16 defect closure (SPI + posture + docs + ledger)
+delivery_file: docs/delivery/2026-05-10-placeholder_sha.md   # updated after ASCII-fix commit
 
 # Per cycle-8 sec-B3: log slots use the explicit state enum, never null.
 # Per cycle-8 sec-B1: when state == pass, path MUST exist and the log's

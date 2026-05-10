@@ -152,7 +152,7 @@ W0 scaffold landed at commit `97b0827`. Current maturity per capability:
 - `spring_ai_fin_*_starter` (5 core + 4 sidecar): **L0** -- sentinel impls; W1 lands real impls
 - All other capabilities from the 2026-05-08 architecture refresh: **L0** (design accepted)
 
-Promotion L0 → L1 requires code + Rule 4 three-layer tests (per `docs/plans/engineering-plan-W0-W4.md` acceptance gates per wave). Promotion L1 → L2 requires a stable public contract + snapshot test. L3 requires posture-aware default-on + operator-shape gate PASS. L4 requires third-party extension evidence.
+Promotion L0 -> L1 requires code + Rule 4 three-layer tests (per `docs/plans/engineering-plan-W0-W4.md` acceptance gates per wave). Promotion L1 -> L2 requires a stable public contract + snapshot test. L3 requires posture-aware default-on + operator-shape gate PASS. L4 requires third-party extension evidence.
 
 Real readiness is measured by the 32-dim scoring framework (`docs/architecture-meta-reflection-2026-05-08.en.md`); W0 scaffold moved the score from ~0/32 to ~5/32 (R1/R2/R4/R5 partial).
 
