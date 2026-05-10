@@ -4,15 +4,18 @@ import fin.springai.runtime.spi.knowledge.DocumentSourceConnector;
 import fin.springai.runtime.spi.knowledge.LayoutParser;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.util.List;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
 
 @AutoConfiguration
 @ConditionalOnClass(LayoutParser.class)
+@EnableConfigurationProperties(KnowledgeProperties.class)
 public class KnowledgeAutoConfiguration {
 
     @Bean
@@ -33,6 +36,11 @@ public class KnowledgeAutoConfiguration {
     DocumentSourceConnector documentSourceConnector(MeterRegistry registry, Environment env) {
         rejectIfNonDevPosture(env, "DocumentSourceConnector");
         return new NotConfiguredDocumentSourceConnector(registry);
+    }
+
+    @Bean
+    DocumentSourceConnectorRegistry documentSourceConnectorRegistry(List<DocumentSourceConnector> connectors) {
+        return new DocumentSourceConnectorRegistry(connectors);
     }
 
     private static void rejectIfNonDevPosture(Environment env, String beanName) {

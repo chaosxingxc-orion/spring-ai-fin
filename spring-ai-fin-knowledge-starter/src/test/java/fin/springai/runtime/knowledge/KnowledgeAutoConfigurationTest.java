@@ -1,6 +1,8 @@
 package fin.springai.runtime.knowledge;
 
 import fin.springai.runtime.spi.knowledge.DocumentSourceConnector;
+import fin.springai.runtime.spi.knowledge.DocumentSourceConnector.RawDocument;
+import fin.springai.runtime.spi.knowledge.DocumentSourceConnector.SourceConfig;
 import fin.springai.runtime.spi.knowledge.LayoutParser;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
@@ -54,5 +56,38 @@ class KnowledgeAutoConfigurationTest {
     void sentinelRejectedInProdPosture() {
         runner.withPropertyValues("app.posture=prod")
                 .run(ctx -> assertThat(ctx).hasFailed());
+    }
+
+    @Test
+    void registryContainsSingleDefaultConnector() {
+        runner.run(ctx -> {
+            assertThat(ctx).hasSingleBean(DocumentSourceConnectorRegistry.class);
+            DocumentSourceConnectorRegistry reg = ctx.getBean(DocumentSourceConnectorRegistry.class);
+            assertThat(reg.all()).hasSize(1);
+        });
+    }
+
+    @Test
+    void registryThrowsOnDuplicateConnectorId() {
+        DocumentSourceConnector stub1 = new DocumentSourceConnector() {
+            @Override public String connectorId() { return "dup"; }
+            @Override public java.util.Iterator<RawDocument> fetch(String t, SourceConfig c) { throw new UnsupportedOperationException(); }
+        };
+        DocumentSourceConnector stub2 = new DocumentSourceConnector() {
+            @Override public String connectorId() { return "dup"; }
+            @Override public java.util.Iterator<RawDocument> fetch(String t, SourceConfig c) { throw new UnsupportedOperationException(); }
+        };
+        runner.withBean(DocumentSourceConnector.class, () -> stub1)
+              .withBean("stub2", DocumentSourceConnector.class, () -> stub2)
+              .run(ctx -> assertThat(ctx).hasFailed());
+    }
+
+    @Test
+    void propertiesBindWithDefaults() {
+        runner.run(ctx -> {
+            assertThat(ctx).hasSingleBean(KnowledgeProperties.class);
+            KnowledgeProperties props = ctx.getBean(KnowledgeProperties.class);
+            assertThat(props.enabled()).isTrue();
+        });
     }
 }

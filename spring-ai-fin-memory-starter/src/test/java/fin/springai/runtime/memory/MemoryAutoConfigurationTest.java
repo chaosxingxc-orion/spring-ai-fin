@@ -56,4 +56,13 @@ class MemoryAutoConfigurationTest {
         runner.withPropertyValues("app.posture=prod")
                 .run(ctx -> assertThat(ctx).hasFailed());
     }
+
+    @Test
+    void propertiesBindWithDefaults() {
+        runner.run(ctx -> {
+            assertThat(ctx).hasSingleBean(MemoryProperties.class);
+            MemoryProperties props = ctx.getBean(MemoryProperties.class);
+            assertThat(props.enabled()).isTrue();
+        });
+    }
 }

@@ -55,4 +55,13 @@ class GovernanceAutoConfigurationTest {
         runner.withPropertyValues("app.posture=prod")
                 .run(ctx -> assertThat(ctx).hasFailed());
     }
+
+    @Test
+    void propertiesBindWithDefaults() {
+        runner.run(ctx -> {
+            assertThat(ctx).hasSingleBean(GovernanceProperties.class);
+            GovernanceProperties props = ctx.getBean(GovernanceProperties.class);
+            assertThat(props.enabled()).isTrue();
+        });
+    }
 }

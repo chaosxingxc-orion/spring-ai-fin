@@ -57,4 +57,13 @@ class PersistenceAutoConfigurationTest {
         runner.withPropertyValues("app.posture=prod")
                 .run(ctx -> assertThat(ctx).hasFailed());
     }
+
+    @Test
+    void propertiesBindWithDefaults() {
+        runner.run(ctx -> {
+            assertThat(ctx).hasSingleBean(PersistenceProperties.class);
+            PersistenceProperties props = ctx.getBean(PersistenceProperties.class);
+            assertThat(props.enabled()).isTrue();
+        });
+    }
 }

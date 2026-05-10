@@ -53,4 +53,13 @@ class SkillsAutoConfigurationTest {
         runner.withPropertyValues("app.posture=prod")
                 .run(ctx -> assertThat(ctx).hasFailed());
     }
+
+    @Test
+    void propertiesBindWithDefaults() {
+        runner.run(ctx -> {
+            assertThat(ctx).hasSingleBean(SkillsProperties.class);
+            SkillsProperties props = ctx.getBean(SkillsProperties.class);
+            assertThat(props.enabled()).isTrue();
+        });
+    }
 }
