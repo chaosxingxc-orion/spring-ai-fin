@@ -1,111 +1,52 @@
-﻿# Contract Catalog
+# Contract Catalog
 
 > Single source of truth for all public contracts in the spring-ai-ascend platform.
-> Version: 0.1.0-SNAPSHOT | Last refreshed: 2026-05-10
+> Version: 0.1.0-SNAPSHOT | Last refreshed: 2026-05-12
 
 ---
 
 ## 1. HTTP API contracts
 
-| Route | Method | Stability | Wave | Required headers |
-|-------|--------|-----------|------|-----------------|
-| /v1/health | GET | stable | W0 | none (exempt) |
-| /v1/runs | POST | planned | W1 | X-Tenant-Id, Idempotency-Key |
-| /v1/runs/{id} | GET | planned | W1 | X-Tenant-Id |
-| /v1/runs/{id}/cancel | POST | planned | W1 | X-Tenant-Id, Idempotency-Key |
-| /actuator/health | GET | stable | W0 | none (exempt) |
-| /actuator/prometheus | GET | stable | W0 | none (exempt) |
+Stable W0 routes: `GET /v1/health`, `GET /actuator/health`, `GET /actuator/prometheus` (no auth headers). Planned W1 routes: `POST /v1/runs`, `GET /v1/runs/{id}`, `POST /v1/runs/{id}/cancel` — all require `X-Tenant-Id`; POST routes also require `Idempotency-Key`. Full per-route spec: [http-api-contracts.md](http-api-contracts.md) + `docs/contracts/openapi-v1.yaml`.
 
-Routes marked "planned" are specified in `docs/contracts/http-api-contracts.md` and in the OpenAPI snapshot at `docs/contracts/openapi-v1.yaml`. They are not yet implemented (W1 deliverable).
+**API conventions** (absorbed from `api-conventions.md`): URL major-versioned (`/v1/`); plural nouns; RFC 7807 `application/problem+json` errors with stable `code`; cursor pagination (`?limit=20&cursor=`); `GET`=200, POST-create=201, async=202, DELETE=204; `Idempotency-Key` required on POST in research/prod; `OpenApiContractIT` snapshot-tests spec; SSE streaming reserved W3+.
 
 ---
 
-## 2. SPI contracts
+## 2. SPI contracts (10 interfaces, all L1)
 
-| SPI interface | Owner module | Version pin mechanism | Stability tier |
-|---|---|---|---|
-| LongTermMemoryRepository | spring-ai-ascend-memory-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
-| GraphMemoryRepository | spring-ai-ascend-memory-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
-| ToolProvider | spring-ai-ascend-skills-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
-| LayoutParser | spring-ai-ascend-knowledge-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
-| DocumentSourceConnector | spring-ai-ascend-knowledge-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
-| PolicyEvaluator | spring-ai-ascend-governance-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
-| RunRepository | spring-ai-ascend-persistence-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
-| IdempotencyRepository | spring-ai-ascend-persistence-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
-| ArtifactRepository | spring-ai-ascend-persistence-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
-| ResilienceContract | spring-ai-ascend-resilience-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
+All impls: thread-safe, no null returns, tenant-scoped. L0 sentinel throws `IllegalStateException`; research/prod raises `BeanCreationException` at startup. SPI packages import only `java.*` (ArchUnit `ApiCompatibilityTest`). japicmp binary-compat from W1.
 
-All SPI packages (`ascend.springai.runtime.spi.*`) import only `java.*` types. Spring, Micrometer, and platform classes are forbidden in SPI packages. Enforced by `ApiCompatibilityTest.spi_packages_import_only_java_sdk_types`.
+Interfaces by module: `LongTermMemoryRepository` + `GraphMemoryRepository` (memory-starter) · `ToolProvider` (skills-starter) · `LayoutParser` + `DocumentSourceConnector` (knowledge-starter) · `PolicyEvaluator` (governance-starter) · `RunRepository` + `IdempotencyRepository` + `ArtifactRepository` (persistence-starter) · `ResilienceContract` (resilience-starter).
 
-Full per-SPI semantic contracts are in [spi-contracts.md](spi-contracts.md).
+Absorbed from `spi-contracts.md`: per-SPI method signatures, error contracts, and posture-aware sentinel behavior.
 
 ---
 
 ## 3. Configuration contracts
 
-All platform configuration properties use the `springai.ascend.*` prefix. Property details (type, default, posture impact, owning starter) are in [configuration-contracts.md](configuration-contracts.md).
+**Absorbed from `configuration-contracts.md`**: All properties under `springai.ascend.*`; `app.posture={dev,research,prod}` read once at boot (dev=permissive, research/prod=fail-closed). Each starter exposes `springai.ascend.<domain>.enabled`. Sidecar adapters (`mem0`, `graphmemory`, `docling`) default `enabled=false`; require `base-url` when enabled.
 
-| Prefix | Owner starter | Summary |
-|--------|---------------|---------|
-| springai.ascend.memory.* | spring-ai-ascend-memory-starter | Memory SPI toggle and config |
-| springai.ascend.mem0.* | spring-ai-ascend-mem0-starter | Mem0 sidecar adapter; enabled=false default |
-| springai.ascend.graphmemory.* | spring-ai-ascend-graphmemory-starter | Graphiti sidecar adapter; enabled=false default |
-| springai.ascend.docling.* | spring-ai-ascend-docling-starter | Docling sidecar adapter; enabled=false default |
-| springai.ascend.skills.* | spring-ai-ascend-skills-starter | Skills SPI toggle |
-| springai.ascend.knowledge.* | spring-ai-ascend-knowledge-starter | Knowledge SPI toggle |
-| springai.ascend.governance.* | spring-ai-ascend-governance-starter | Governance SPI toggle |
-| springai.ascend.persistence.* | spring-ai-ascend-persistence-starter | Persistence SPI toggle |
-| springai.ascend.resilience.* | spring-ai-ascend-resilience-starter | Resilience SPI toggle |
-| app.posture | agent-platform | dev/research/prod posture; read at boot |
+**Absorbed from `contract-evolution-policy.md`**: Config deprecation = N+2 release cycle. HTTP /v1 stays active after /v2 (research: 90 days, prod: 180 days). SPI surface frozen at 10 interfaces. Breaking-change checklist required before any contract-surface PR merges.
 
 ---
 
-## 4. Telemetry contract
+## 4. Telemetry contract (absorbed from `telemetry-contracts.md`)
 
-All platform-emitted Prometheus counters use the namespace `SPRINGAI_ASCEND_*`. Cardinality rules and structured log field schema are in [telemetry-contracts.md](telemetry-contracts.md).
-
-Counter naming pattern: `SPRINGAI_ASCEND_<domain>_<subject>_total`
-
-Examples:
-- `SPRINGAI_ASCEND_memory_default_impl_not_configured_total` tagged `spi, method`
-- `SPRINGAI_ASCEND_idempotency_claimed_total`
-- `SPRINGAI_ASCEND_filter_errors_total` tagged `filter, reason`
+Counter: `SPRINGAI_ASCEND_<domain>_<subject>_total`. Timer: `SPRINGAI_ASCEND_<domain>_<operation>_seconds`. High-cardinality labels (`tenant_id`, `run_id`, `user_id`) forbidden on Prometheus; use structured JSON logs. Cardinality cap: 1 000 (research) / 10 000 (prod). Key counters: `*_default_impl_not_configured_total{spi, method}`, `filter_errors_total{filter, reason}`, `idempotency_{claimed,replayed,conflict,error}_total`.
 
 ---
 
-## 5. Maven BoM coordinates
+## 5. SDK versioning (absorbed from `sdk-versioning.md`)
 
-| Artifact | GroupId | ArtifactId | Version |
-|---|---|---|---|
-| BoM | ascend.springai | spring-ai-ascend-dependencies | 0.1.0-SNAPSHOT |
-| Memory starter | ascend.springai | spring-ai-ascend-memory-starter | 0.1.0-SNAPSHOT |
-| Skills starter | ascend.springai | spring-ai-ascend-skills-starter | 0.1.0-SNAPSHOT |
-| Knowledge starter | ascend.springai | spring-ai-ascend-knowledge-starter | 0.1.0-SNAPSHOT |
-| Governance starter | ascend.springai | spring-ai-ascend-governance-starter | 0.1.0-SNAPSHOT |
-| Persistence starter | ascend.springai | spring-ai-ascend-persistence-starter | 0.1.0-SNAPSHOT |
-| Mem0 starter | ascend.springai | spring-ai-ascend-mem0-starter | 0.1.0-SNAPSHOT |
-| GraphMemory starter | ascend.springai | spring-ai-ascend-graphmemory-starter | 0.1.0-SNAPSHOT |
-| Docling starter | ascend.springai | spring-ai-ascend-docling-starter | 0.1.0-SNAPSHOT |
-| LangChain4j profile | ascend.springai | spring-ai-ascend-langchain4j-profile | 0.1.0-SNAPSHOT |
-| Resilience starter | ascend.springai | spring-ai-ascend-resilience-starter | 0.1.0-SNAPSHOT |
+SemVer from 1.0.0: PATCH=fix, MINOR=additive, MAJOR=breaking. Stable surface: starter artifacts, SPI interfaces, Spring Boot property keys. Deprecate with `@Deprecated` in current MINOR; remove in next MAJOR. All deps pinned to exact patch in `spring-ai-ascend-dependencies` BoM. Spring AI 2.0.0-M5; CI forces upgrade after 2026-08-01. Current maturity: SPI=L1, HTTP /v1=L2, Config=L1, Telemetry=L1.
 
 ---
 
-## 6. HTTP header conventions
+## 6. Maven BoM
 
-| Header | Format | Scope | Exempt paths |
-|--------|--------|-------|--------------|
-| X-Tenant-Id | UUID (RFC 4122) | Required on all mutable routes | /v1/health, /actuator/** |
-| Idempotency-Key | UUID (RFC 4122) | Required on all POST routes | /v1/health, /actuator/**, GET routes |
-
-Validation: `TenantContextFilter` (order 20) validates `X-Tenant-Id` format; 400 on malformed UUID. `IdempotencyHeaderFilter` (order 30) validates `Idempotency-Key` format; 400 on malformed UUID.
+`ascend.springai:spring-ai-ascend-dependencies:0.1.0-SNAPSHOT` — starters: `-memory`, `-skills`, `-knowledge`, `-governance`, `-persistence`, `-resilience`, `-mem0`, `-graphmemory`, `-docling`, `-langchain4j-profile` (all `0.1.0-SNAPSHOT`).
 
 ---
 
-## Related documents
-
-- [spi-contracts.md](spi-contracts.md) for per-SPI semantic contracts
-- [configuration-contracts.md](configuration-contracts.md) for property reference
-- [telemetry-contracts.md](telemetry-contracts.md) for metric and log field schema
-- [http-api-contracts.md](http-api-contracts.md) for per-route HTTP contracts
-- [docs/cross-cutting/contract-evolution-policy.md](../cross-cutting/contract-evolution-policy.md) for versioning rules
+*See also*: `docs/cross-cutting/observability-policy.md` · `docs/cross-cutting/posture-model.md` · `docs/cross-cutting/data-model-conventions.md`
