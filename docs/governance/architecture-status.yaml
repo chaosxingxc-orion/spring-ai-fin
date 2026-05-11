@@ -1411,32 +1411,6 @@ findings:
     allowed_claim: "BoM publishes 9 starter coordinates + 13 transitive OSS pins."
 
 
-  spring_ai_ascend_skills_starter:
-    maturity: L0
-    status: implemented_unverified
-    evidence_state: implemented_unverified
-    l0_decision: ARCHITECTURE.md
-    implementation:
-      - spring-ai-ascend-skills-starter/src/main/java/ascend/springai/runtime/skills/SkillsAutoConfiguration.java
-      - spring-ai-ascend-skills-starter/src/main/java/ascend/springai/runtime/spi/skills/ToolProvider.java
-    tests:
-      - spring-ai-ascend-skills-starter/src/test/java/ascend/springai/runtime/skills/SkillsAutoConfigurationTest.java
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L0 sentinel impl + frozen SPI; W1 lands MCP ToolProvider."
-
-  spring_ai_ascend_knowledge_starter:
-    maturity: L0
-    status: implemented_unverified
-    evidence_state: implemented_unverified
-    l0_decision: ARCHITECTURE.md
-    implementation:
-      - spring-ai-ascend-knowledge-starter/src/main/java/ascend/springai/runtime/knowledge/KnowledgeAutoConfiguration.java
-      - spring-ai-ascend-knowledge-starter/src/main/java/ascend/springai/runtime/spi/knowledge/LayoutParser.java
-      - spring-ai-ascend-knowledge-starter/src/main/java/ascend/springai/runtime/spi/knowledge/DocumentSourceConnector.java
-    tests:
-      - spring-ai-ascend-knowledge-starter/src/test/java/ascend/springai/runtime/knowledge/KnowledgeAutoConfigurationTest.java
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L0 sentinel impl + frozen SPI; W1 lands Tika LayoutParser."
 
   spring_ai_ascend_governance_starter:
     maturity: L0
@@ -1523,44 +1497,6 @@ findings:
     allowed_claim: "L1: OncePerRequestFilter order 20; ThreadLocal cleared in finally; dev uses DEV_DEFAULT on missing; research/prod returns 400."
 
 
-  document_source_connector_registry:
-    maturity: L1
-    status: implemented_unverified
-    evidence_state: implemented_unverified
-    l0_decision: ARCHITECTURE.md
-    implementation:
-      - spring-ai-ascend-knowledge-starter/src/main/java/ascend/springai/runtime/knowledge/DocumentSourceConnectorRegistry.java
-    tests:
-      - spring-ai-ascend-knowledge-starter/src/test/java/ascend/springai/runtime/knowledge/KnowledgeAutoConfigurationTest.java
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    non_sentinel_connectors: 0
-    notes: "non_sentinel_connectors=0 (W2+). Registry structure complete; real connector impls (S3, docling) deferred."
-    allowed_claim: "L1: immutable registry; duplicate-id rejection at construction; wired via List<DocumentSourceConnector> in KnowledgeAutoConfiguration. Zero real connector impls (W2+)."
-
-
-  skills_configuration_properties:
-    maturity: L1
-    status: implemented_unverified
-    evidence_state: implemented_unverified
-    l0_decision: ARCHITECTURE.md
-    implementation:
-      - spring-ai-ascend-skills-starter/src/main/java/ascend/springai/runtime/skills/SkillsProperties.java
-    tests:
-      - spring-ai-ascend-skills-starter/src/test/java/ascend/springai/runtime/skills/SkillsAutoConfigurationTest.java
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L1: @ConfigurationProperties(springai.ascend.skills) + @ConditionalOnProperty wiring real; starterBeansAbsentWhenDisabled test GREEN."
-
-  knowledge_configuration_properties:
-    maturity: L1
-    status: implemented_unverified
-    evidence_state: implemented_unverified
-    l0_decision: ARCHITECTURE.md
-    implementation:
-      - spring-ai-ascend-knowledge-starter/src/main/java/ascend/springai/runtime/knowledge/KnowledgeProperties.java
-    tests:
-      - spring-ai-ascend-knowledge-starter/src/test/java/ascend/springai/runtime/knowledge/KnowledgeAutoConfigurationTest.java
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L1: @ConfigurationProperties(springai.ascend.knowledge) + @ConditionalOnProperty wiring real; starterBeansAbsentWhenDisabled test GREEN."
 
   governance_configuration_properties:
     maturity: L1

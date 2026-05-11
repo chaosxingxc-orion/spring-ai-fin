@@ -68,16 +68,7 @@
 
       <!-- Capability starters (embedded defaults) -->
 
-      <dependency>
-        <groupId>ascend.springai</groupId>
-        <artifactId>spring-ai-ascend-skills-starter</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>ascend.springai</groupId>
-        <artifactId>spring-ai-ascend-knowledge-starter</artifactId>
-        <version>${project.version}</version>
-      </dependency>
+
       <dependency>
         <groupId>ascend.springai</groupId>
         <artifactId>spring-ai-ascend-governance-starter</artifactId>

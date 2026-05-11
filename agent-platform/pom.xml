@@ -138,16 +138,6 @@
     <!-- ArchUnit SPI freeze: SPI starters on test-classpath so spi_* rules are non-vacuous. -->
     <dependency>
       <groupId>ascend.springai</groupId>
-      <artifactId>spring-ai-ascend-skills-starter</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>ascend.springai</groupId>
-      <artifactId>spring-ai-ascend-knowledge-starter</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>ascend.springai</groupId>
       <artifactId>spring-ai-ascend-governance-starter</artifactId>
       <scope>test</scope>
     </dependency>
