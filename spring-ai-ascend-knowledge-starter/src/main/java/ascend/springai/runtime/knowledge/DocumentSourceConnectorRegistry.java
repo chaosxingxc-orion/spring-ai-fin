@@ -11,6 +11,13 @@ public class DocumentSourceConnectorRegistry {
     private final Map<String, DocumentSourceConnector> byId;
 
     public DocumentSourceConnectorRegistry(List<DocumentSourceConnector> connectors) {
+        connectors.forEach(c -> {
+            String id = c.connectorId();
+            if (id == null || id.isBlank()) {
+                throw new IllegalArgumentException(
+                        "DocumentSourceConnector " + c.getClass().getSimpleName() + " returned a null or blank connectorId");
+            }
+        });
         this.byId = connectors.stream().collect(
             Collectors.toUnmodifiableMap(
                 DocumentSourceConnector::connectorId,

@@ -68,6 +68,26 @@ class KnowledgeAutoConfigurationTest {
     }
 
     @Test
+    void registryRejectsNullConnectorId() {
+        DocumentSourceConnector nullId = new DocumentSourceConnector() {
+            @Override public String connectorId() { return null; }
+            @Override public java.util.Iterator<RawDocument> fetch(String t, SourceConfig c) { throw new UnsupportedOperationException(); }
+        };
+        runner.withBean("nullId", DocumentSourceConnector.class, () -> nullId)
+              .run(ctx -> assertThat(ctx).hasFailed());
+    }
+
+    @Test
+    void registryRejectsBlankConnectorId() {
+        DocumentSourceConnector blankId = new DocumentSourceConnector() {
+            @Override public String connectorId() { return "   "; }
+            @Override public java.util.Iterator<RawDocument> fetch(String t, SourceConfig c) { throw new UnsupportedOperationException(); }
+        };
+        runner.withBean("blankId", DocumentSourceConnector.class, () -> blankId)
+              .run(ctx -> assertThat(ctx).hasFailed());
+    }
+
+    @Test
     void registryThrowsOnDuplicateConnectorId() {
         DocumentSourceConnector stub1 = new DocumentSourceConnector() {
             @Override public String connectorId() { return "dup"; }
