@@ -1927,3 +1927,26 @@ findings:
       - agent-platform/src/test/java/ascend/springai/platform/posture/PostureBindingIT.java
     latest_delivery_valid_sha: null
     allowed_claim: "L0: APP_POSTURE env-var bridges to app.posture property via application.yml placeholder. PostureBindingIT proves the bridge. AppPosture class, PostureBootGuard, RequiredConfig, and all associated ITs deferred to W1."
+
+  openapi_response_schema_check:
+    maturity: L1
+    status: test_verified
+    evidence_state: test_verified
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - agent-platform/src/test/java/ascend/springai/platform/contracts/OpenApiSnapshotComparator.java
+      - agent-platform/src/test/java/ascend/springai/platform/contracts/OpenApiContractIT.java
+    tests:
+      - agent-platform/src/test/java/ascend/springai/platform/contracts/OpenApiContractIT.java
+    latest_delivery_valid_sha: null
+    allowed_claim: "L1: OpenApiSnapshotComparator.compareResponseSchemas() walks required fields and types in all 200 response schemas in the pinned spec. Catches shape drift that path-only comparison misses (see F7 post-mortem)."
+
+  health_endpoint_liveness_split:
+    maturity: L0
+    status: deferred_w2
+    evidence_state: design_only
+    l0_decision: ARCHITECTURE.md
+    implementation: []
+    tests: []
+    latest_delivery_valid_sha: null
+    allowed_claim: "L0: /v1/health serves as liveness probe at W0. Dedicated liveness (/actuator/health/liveness) and readiness (/actuator/health/readiness) split deferred to W2 per reviewer F2. See http-api-contracts.md sec GET /v1/health note."

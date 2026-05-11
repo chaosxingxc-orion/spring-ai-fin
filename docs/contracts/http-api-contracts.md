@@ -75,7 +75,7 @@ Response body (200 OK):
 }
 ```
 
-This route is the primary liveness probe. Kubernetes liveness and readiness probes should point to `/actuator/health/liveness` and `/actuator/health/readiness` respectively (Spring Boot Actuator probes).
+This route is the W0 operator probe. Kubernetes-native liveness and readiness split (`/actuator/health/liveness`, `/actuator/health/readiness`) is deferred to W2 — see `architecture-status.yaml` capability `health_endpoint_liveness_split` (L0).
 
 ---
 
