@@ -1,4 +1,4 @@
-# Observability Policy -- cross-cutting policy
+# Observability Policy
 
 > Owner: observability | Wave: W0 (logs + metrics) + W1 (traces) + W2 (cardinality + dashboards) | Maturity: L0
 > Last refreshed: 2026-05-09
@@ -130,5 +130,5 @@ JSON encoder emits:
 
 ## 10. References
 
-- `agent-runtime/observability/ARCHITECTURE.md`
-- `docs/cross-cutting/security-control-matrix.md` C17
+- `agent-runtime/ARCHITECTURE.md`
+- `docs/v6-rationale/v6-security-control-matrix.md` (archived 2026-05-12)
