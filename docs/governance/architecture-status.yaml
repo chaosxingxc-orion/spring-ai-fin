@@ -1569,20 +1569,6 @@ findings:
     latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L1: OncePerRequestFilter order 20; ThreadLocal cleared in finally; dev uses DEV_DEFAULT on missing; research/prod returns 400."
 
-  spring_ai_ascend_resilience_starter:
-    maturity: L1
-    status: implemented_unverified
-    evidence_state: implemented_unverified
-    l0_decision: ARCHITECTURE.md
-    implementation:
-      - spring-ai-ascend-resilience-starter/src/main/java/ascend/springai/runtime/spi/resilience/ResilienceContract.java
-      - spring-ai-ascend-resilience-starter/src/main/java/ascend/springai/runtime/resilience/ResilienceAutoConfiguration.java
-    tests:
-      - spring-ai-ascend-resilience-starter/src/test/java/ascend/springai/runtime/resilience/ResilienceAutoConfigurationTest.java
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    caller_users: 0
-    notes: "caller_users=0 (W2). SPI is contract-only; @CircuitBreaker annotation wiring deferred to W2 when host code exists."
-    allowed_claim: "L1: ResilienceContract SPI; sentinel fails fast in research/prod; both auto-config registrations present. No call-site users yet (W2)."
 
   document_source_connector_registry:
     maturity: L1

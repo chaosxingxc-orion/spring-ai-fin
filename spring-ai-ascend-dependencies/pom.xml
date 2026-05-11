@@ -92,11 +92,6 @@
         <artifactId>spring-ai-ascend-persistence-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
-      <dependency>
-        <groupId>ascend.springai</groupId>
-        <artifactId>spring-ai-ascend-resilience-starter</artifactId>
-        <version>${project.version}</version>
-      </dependency>
 
       <!-- Optional sidecar adapter starters -->
       <dependency>

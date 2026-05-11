@@ -161,11 +161,6 @@
       <artifactId>spring-ai-ascend-persistence-starter</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>ascend.springai</groupId>
-      <artifactId>spring-ai-ascend-resilience-starter</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>
