@@ -43,25 +43,8 @@ class ApiCompatibilityTest {
         rule.check(FIN_SPRINGAI_CLASSES);
     }
 
-    @Test
-    void spi_packages_have_no_platform_dependency() {
-        // SPI layer must not depend on platform (northbound) code.
-        // Platform may depend on SPI (via adapters); never the reverse.
-        ArchRule rule = noClasses()
-                .that().resideInAPackage("ascend.springai.runtime.spi..")
-                .should().dependOnClassesThat()
-                .resideInAPackage("ascend.springai.platform..");
-        rule.check(FIN_SPRINGAI_CLASSES);
-    }
-
-    @Test
-    void spi_packages_import_only_java_sdk_types() {
-        // SPI interfaces are pure Java (no Spring, no third-party frameworks).
-        // This keeps the contract stable across Boot major upgrades.
-        ArchRule rule = noClasses()
-                .that().resideInAPackage("ascend.springai.runtime.spi..")
-                .should().dependOnClassesThat()
-                .resideInAPackage("org.springframework..");
-        rule.check(FIN_SPRINGAI_CLASSES);
-    }
+    // spi_packages_* rules relocated to agent-runtime/MemorySpiArchTest after
+    // all legacy ascend.springai.runtime.spi.** starters were deleted in C2-C8.
+    // The surviving SPI (GraphMemoryRepository at ascend.springai.runtime.memory.spi)
+    // lives in agent-runtime; its contract rules live there too.
 }

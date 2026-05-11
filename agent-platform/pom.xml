@@ -136,11 +136,6 @@
       <scope>test</scope>
     </dependency>
     <!-- ArchUnit SPI freeze: SPI starters on test-classpath so spi_* rules are non-vacuous. -->
-    <dependency>
-      <groupId>ascend.springai</groupId>
-      <artifactId>spring-ai-ascend-persistence-starter</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>

@@ -35,7 +35,6 @@
     <module>spring-ai-ascend-dependencies</module>
     <module>agent-platform</module>
     <module>agent-runtime</module>
-    <module>spring-ai-ascend-persistence-starter</module>
     <module>spring-ai-ascend-graphmemory-starter</module>
     <module>agent-eval</module>
   </modules>
