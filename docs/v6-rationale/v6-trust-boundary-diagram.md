@@ -1,3 +1,5 @@
+> ARCHIVED 2026-05-12. Pre-refresh design rationale; not active spec. Current state: see docs/STATE.md.
+
 # Trust Boundary Diagram -- cross-cutting policy
 
 > Owner: security | Wave: W1..W3 | Maturity: L0

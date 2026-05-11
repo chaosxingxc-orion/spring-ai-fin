@@ -1,3 +1,5 @@
+> ARCHIVED 2026-05-12. Pre-refresh design rationale; not active spec. Current state: see docs/STATE.md.
+
 # Security Control Matrix -- cross-cutting policy
 
 > Owner: security | Wave: W0..W4 (per-control wave varies) | Maturity: L0

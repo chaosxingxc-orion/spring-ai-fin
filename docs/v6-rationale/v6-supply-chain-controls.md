@@ -1,3 +1,5 @@
+> ARCHIVED 2026-05-12. Pre-refresh design rationale; not active spec. Current state: see docs/STATE.md.
+
 # Supply Chain Controls -- cross-cutting policy
 
 > Owner: security + ops | Wave: W0 (CI) + W2 (image pin) | Maturity: L0

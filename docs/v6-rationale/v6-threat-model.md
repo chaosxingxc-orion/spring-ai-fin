@@ -1,3 +1,5 @@
+> ARCHIVED 2026-05-12. Pre-refresh design rationale; not active spec. Current state: see docs/STATE.md.
+
 # Threat Model -- cross-cutting policy
 
 > Owner: security | Wave: W1 (initial) + iterative per wave | Maturity: L0
