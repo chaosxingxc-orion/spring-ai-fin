@@ -1,6 +1,6 @@
 package ascend.springai.runtime.graphmemory;
 
-import ascend.springai.runtime.spi.memory.GraphMemoryRepository;
+import ascend.springai.runtime.memory.spi.GraphMemoryRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.springframework.beans.factory.BeanCreationException;

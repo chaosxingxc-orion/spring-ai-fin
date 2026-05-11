@@ -25,7 +25,7 @@
   <dependencies>
     <dependency>
       <groupId>ascend.springai</groupId>
-      <artifactId>spring-ai-ascend-memory-starter</artifactId>
+      <artifactId>agent-runtime</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

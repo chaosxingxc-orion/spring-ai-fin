@@ -1,6 +1,6 @@
 package ascend.springai.runtime.graphmemory;
 
-import ascend.springai.runtime.spi.memory.GraphMemoryRepository;
+import ascend.springai.runtime.memory.spi.GraphMemoryRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
