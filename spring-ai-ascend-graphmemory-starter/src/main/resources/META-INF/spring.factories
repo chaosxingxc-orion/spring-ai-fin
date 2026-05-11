@@ -1,2 +1,0 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  ascend.springai.runtime.graphmemory.GraphMemoryAutoConfiguration

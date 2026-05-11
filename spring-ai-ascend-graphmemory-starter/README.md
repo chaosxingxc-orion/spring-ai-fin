@@ -1,55 +1,34 @@
-﻿# spring-ai-ascend-graphmemory-starter
+# spring-ai-ascend-graphmemory-starter
 
-> Optional sidecar adapter that wires GraphMemoryRepository to the Graphiti (Zep OSS) REST API; replaces the sentinel when enabled=true and SPRINGAI_ASCEND_GRAPHITI_BASE_URL is set. Maturity: L0.
+E2 middleware shell for graph-memory integration. This starter contributes an
+`@AutoConfiguration` that registers **no beans by default**. It activates only
+when `springai.ascend.graphmemory.enabled=true` is set — and even then, it
+contributes nothing unless you provide your own `GraphMemoryRepository` bean.
 
-## SPI surface
-
-| Interface | Method | Semantic guarantee |
-|-----------|--------|--------------------|
-| GraphMemoryRepository | addFact / query / search | Delegates to Graphiti REST API; all operations tenant-scoped |
-
-This starter provides no new SPI interfaces. It contributes an alternative implementation of `GraphMemoryRepository` (defined in `spring-ai-ascend-memory-starter`) that forwards calls to the Graphiti sidecar over HTTP.
-
-## Posture defaults
-
-| Posture | Behavior |
-|---------|----------|
-| dev | Adapter disabled by default; memory-starter sentinel remains active |
-| research | Sentinel rejected at context load; BeanCreationException |
-| prod | Sentinel rejected at context load; BeanCreationException |
-
-When `springai.ascend.graphmemory.enabled=true` and `SPRINGAI_ASCEND_GRAPHITI_BASE_URL` is present, the Graphiti adapter bean is registered and overrides the sentinel in all postures.
-
-## Drop-in override (@Bean recipe)
-
-Enable via application property instead of a @Bean override:
-
-```yaml
-springai:
-  fin:
-    graphmemory:
-      enabled: true
-      base-url: ${SPRINGAI_ASCEND_GRAPHITI_BASE_URL}
-```
-
-Custom override if additional client config is required:
+## How to plug in your own implementation
 
 ```java
+// In your @Configuration class:
 @Bean
-GraphMemoryRepository graphitiMemoryRepository(GraphMemoryProperties props, RestClient.Builder builder) {
-    return new GraphitiGraphMemoryRepository(props, builder.build());
+public GraphMemoryRepository graphMemoryRepository(GraphMemoryProperties props) {
+    // Connect to Graphiti (https://github.com/getzep/graphiti):
+    return new GraphitiRestGraphMemoryRepository(props.getBaseUrl(), props.getApiKey());
+
+    // Or Cognee, or a custom Postgres-backed implementation.
 }
 ```
 
-## Counters emitted by sentinel
+Enable the starter:
 
-This starter does not emit its own sentinel counters. When disabled, the memory-starter sentinel counters fire:
+```yaml
+springai:
+  ascend:
+    graphmemory:
+      enabled: true
+      base-url: ${SPRINGAI_ASCEND_GRAPHITI_BASE_URL:http://localhost:8001}
+```
 
-- `SPRINGAI_ASCEND_memory_default_impl_not_configured_total` tagged `spi=GraphMemoryRepository, method=*`
+The SPI contract is at:
+`agent-runtime/src/main/java/ascend/springai/runtime/memory/spi/GraphMemoryRepository.java`
 
-## See also
-
-- [spring-ai-ascend-memory-starter/README.md](../spring-ai-ascend-memory-starter/README.md) for the owning SPI
-- [ARCHITECTURE.md](../ARCHITECTURE.md) for system design
-- [docs/cross-cutting/middleware-pattern-guide.md](../docs/cross-cutting/middleware-pattern-guide.md) for the sidecar adapter pattern
-- [docs/contracts/spi-contracts.md](../docs/contracts/spi-contracts.md) for SPI semantic contracts
+Auto-discovery uses Spring Boot 2.7+ `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.
