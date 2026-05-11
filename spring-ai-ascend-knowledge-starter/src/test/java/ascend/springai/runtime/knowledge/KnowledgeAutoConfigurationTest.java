@@ -40,7 +40,7 @@ class KnowledgeAutoConfigurationTest {
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("LayoutParser");
             assertThat(registry.counter(
-                    "springai_ascend_knowledge_layout_parser_not_configured_total",
+                    "springai_ascend_knowledge_default_impl_not_configured_total",
                     "spi", "LayoutParser", "method", "parse").count())
                     .isEqualTo(1.0);
         });

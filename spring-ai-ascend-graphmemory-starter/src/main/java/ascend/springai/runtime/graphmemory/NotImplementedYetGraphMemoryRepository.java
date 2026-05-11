@@ -14,7 +14,7 @@ import java.util.List;
 class NotImplementedYetGraphMemoryRepository implements GraphMemoryRepository {
 
     private static final Logger LOG = LoggerFactory.getLogger(NotImplementedYetGraphMemoryRepository.class);
-    private static final String METRIC = "springai_ascend_graphmemory_adapter_not_implemented_total";
+    private static final String METRIC = "springai_ascend_graph_memory_adapter_not_implemented_total";
     private static final String MSG =
             "L0: Graphiti adapter enabled but REST client not yet wired. " +
             "W2 will add RestClient wiring. baseUrl=%s";

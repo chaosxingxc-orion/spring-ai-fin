@@ -15,7 +15,7 @@ import java.util.Iterator;
 class NotConfiguredDocumentSourceConnector implements DocumentSourceConnector {
 
     private static final Logger LOG = LoggerFactory.getLogger(NotConfiguredDocumentSourceConnector.class);
-    private static final String METRIC = "springai_ascend_knowledge_connector_not_configured_total";
+    private static final String METRIC = "springai_ascend_knowledge_default_impl_not_configured_total";
     private static final String MSG =
             "L0: DocumentSourceConnector has no default impl yet. " +
             "Provide a @Bean DocumentSourceConnector or wait for the W2 connector impls.";

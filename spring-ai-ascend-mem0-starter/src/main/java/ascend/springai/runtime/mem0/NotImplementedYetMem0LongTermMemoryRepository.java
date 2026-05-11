@@ -31,28 +31,28 @@ class NotImplementedYetMem0LongTermMemoryRepository implements LongTermMemoryRep
 
     @Override
     public MemoryEntry put(String tenantId, String userId, String content, MemoryMetadata metadata) {
-        registry.counter(METRIC, "method", "put").increment();
+        registry.counter(METRIC, "spi", "LongTermMemoryRepository", "method", "put").increment();
         LOG.warn("L0: mem0 adapter PUT called before W2 REST client; tenantId={}", tenantId);
         throw new IllegalStateException(String.format(MSG, properties.getBaseUrl()));
     }
 
     @Override
     public List<MemoryEntry> search(String tenantId, String userId, String query, int topK) {
-        registry.counter(METRIC, "method", "search").increment();
+        registry.counter(METRIC, "spi", "LongTermMemoryRepository", "method", "search").increment();
         LOG.warn("L0: mem0 adapter SEARCH called before W2 REST client; tenantId={}", tenantId);
         throw new IllegalStateException(String.format(MSG, properties.getBaseUrl()));
     }
 
     @Override
     public Optional<MemoryEntry> findById(String tenantId, String entryId) {
-        registry.counter(METRIC, "method", "findById").increment();
+        registry.counter(METRIC, "spi", "LongTermMemoryRepository", "method", "findById").increment();
         LOG.warn("L0: mem0 adapter FIND_BY_ID called before W2 REST client; tenantId={}", tenantId);
         throw new IllegalStateException(String.format(MSG, properties.getBaseUrl()));
     }
 
     @Override
     public void delete(String tenantId, String entryId) {
-        registry.counter(METRIC, "method", "delete").increment();
+        registry.counter(METRIC, "spi", "LongTermMemoryRepository", "method", "delete").increment();
         LOG.warn("L0: mem0 adapter DELETE called before W2 REST client; tenantId={}", tenantId);
         throw new IllegalStateException(String.format(MSG, properties.getBaseUrl()));
     }

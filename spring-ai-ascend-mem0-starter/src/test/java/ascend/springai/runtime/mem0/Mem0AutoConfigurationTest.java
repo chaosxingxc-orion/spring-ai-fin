@@ -59,7 +59,8 @@ class Mem0AutoConfigurationTest {
                             .isInstanceOf(IllegalStateException.class)
                             .hasMessageContaining("mem0");
                     assertThat(registry.counter(
-                            "springai_ascend_mem0_adapter_not_implemented_total", "method", "put").count())
+                            "springai_ascend_mem0_adapter_not_implemented_total",
+                            "spi", "LongTermMemoryRepository", "method", "put").count())
                             .isEqualTo(1.0);
                 });
     }

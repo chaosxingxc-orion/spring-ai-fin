@@ -59,7 +59,7 @@ class GraphMemoryAutoConfigurationTest {
                             .isInstanceOf(IllegalStateException.class)
                             .hasMessageContaining("Graphiti");
                     assertThat(registry.counter(
-                            "springai_ascend_graphmemory_adapter_not_implemented_total",
+                            "springai_ascend_graph_memory_adapter_not_implemented_total",
                             "spi", "GraphMemoryRepository", "method", "query").count())
                             .isEqualTo(1.0);
                 });
