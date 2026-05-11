@@ -1410,19 +1410,6 @@ findings:
     latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "BoM publishes 9 starter coordinates + 13 transitive OSS pins."
 
-  spring_ai_ascend_memory_starter:
-    maturity: L0
-    status: implemented_unverified
-    evidence_state: implemented_unverified
-    l0_decision: ARCHITECTURE.md
-    implementation:
-      - spring-ai-ascend-memory-starter/src/main/java/ascend/springai/runtime/memory/MemoryAutoConfiguration.java
-      - spring-ai-ascend-memory-starter/src/main/java/ascend/springai/runtime/spi/memory/LongTermMemoryRepository.java
-      - spring-ai-ascend-memory-starter/src/main/java/ascend/springai/runtime/spi/memory/GraphMemoryRepository.java
-    tests:
-      - spring-ai-ascend-memory-starter/src/test/java/ascend/springai/runtime/memory/MemoryAutoConfigurationTest.java
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L0 sentinel impl + frozen SPI; W1 lands JDBC default."
 
   spring_ai_ascend_skills_starter:
     maturity: L0
@@ -1550,17 +1537,6 @@ findings:
     notes: "non_sentinel_connectors=0 (W2+). Registry structure complete; real connector impls (S3, docling) deferred."
     allowed_claim: "L1: immutable registry; duplicate-id rejection at construction; wired via List<DocumentSourceConnector> in KnowledgeAutoConfiguration. Zero real connector impls (W2+)."
 
-  memory_configuration_properties:
-    maturity: L1
-    status: implemented_unverified
-    evidence_state: implemented_unverified
-    l0_decision: ARCHITECTURE.md
-    implementation:
-      - spring-ai-ascend-memory-starter/src/main/java/ascend/springai/runtime/memory/MemoryProperties.java
-    tests:
-      - spring-ai-ascend-memory-starter/src/test/java/ascend/springai/runtime/memory/MemoryAutoConfigurationTest.java
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L1: @ConfigurationProperties(springai.ascend.memory) + @ConditionalOnProperty wiring real; starterBeansAbsentWhenDisabled test GREEN."
 
   skills_configuration_properties:
     maturity: L1

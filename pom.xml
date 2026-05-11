@@ -35,7 +35,6 @@
     <module>spring-ai-ascend-dependencies</module>
     <module>agent-platform</module>
     <module>agent-runtime</module>
-    <module>spring-ai-ascend-memory-starter</module>
     <module>spring-ai-ascend-skills-starter</module>
     <module>spring-ai-ascend-knowledge-starter</module>
     <module>spring-ai-ascend-governance-starter</module>
