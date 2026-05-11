@@ -1503,29 +1503,6 @@ findings:
     latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "Sidecar adapter scaffold; disabled by default; W1 wires real Graphiti REST client."
 
-  spring_ai_ascend_docling_starter:
-    maturity: L0
-    status: implemented_unverified
-    evidence_state: implemented_unverified
-    l0_decision: ARCHITECTURE.md
-    implementation:
-      - spring-ai-ascend-docling-starter/src/main/java/ascend/springai/runtime/docling/DoclingAutoConfiguration.java
-    tests:
-      - spring-ai-ascend-docling-starter/src/test/java/ascend/springai/runtime/docling/DoclingAutoConfigurationTest.java
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "Sidecar adapter scaffold; disabled by default; W1 wires real Docling REST client."
-
-  spring_ai_ascend_langchain4j_profile:
-    maturity: L0
-    status: implemented_unverified
-    evidence_state: implemented_unverified
-    l0_decision: ARCHITECTURE.md
-    implementation:
-      - spring-ai-ascend-langchain4j-profile/src/main/java/ascend/springai/runtime/langchain4j/LangChain4jAutoConfiguration.java
-    tests:
-      - spring-ai-ascend-langchain4j-profile/src/test/java/ascend/springai/runtime/langchain4j/LangChain4jAutoConfigurationTest.java
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "Alternate framework profile scaffold; disabled by default; W2+ wires LangChain4j ChatModel."
 
   spi_compatibility_freeze:
     maturity: L1

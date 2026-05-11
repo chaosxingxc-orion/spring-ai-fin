@@ -42,8 +42,6 @@
     <module>spring-ai-ascend-persistence-starter</module>
     <module>spring-ai-ascend-mem0-starter</module>
     <module>spring-ai-ascend-graphmemory-starter</module>
-    <module>spring-ai-ascend-docling-starter</module>
-    <module>spring-ai-ascend-langchain4j-profile</module>
     <module>agent-eval</module>
   </modules>
 
