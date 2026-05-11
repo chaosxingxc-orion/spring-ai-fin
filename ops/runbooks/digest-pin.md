@@ -1,4 +1,4 @@
-# Image Digest Re-pin Runbook
+﻿# Image Digest Re-pin Runbook
 
 > Owner: platform-engineering | Maturity: L0 | Posture: all | Last refreshed: 2026-05-10
 
@@ -28,7 +28,7 @@ Dockerfile base image. Helm chart image tag. CI build cache.
 
 ## Verification
 
-CI green. Trivy scan (`trivy image springaifin/agent-platform:<tag>`) shows no CRITICAL CVEs.
+CI green. Trivy scan (`trivy image springaiascend/agent-platform:<tag>`) shows no CRITICAL CVEs.
 
 ## Rollback
 

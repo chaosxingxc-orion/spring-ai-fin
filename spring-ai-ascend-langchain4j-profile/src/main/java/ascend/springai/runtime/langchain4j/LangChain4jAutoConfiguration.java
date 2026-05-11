@@ -1,4 +1,4 @@
-package ascend.springai.runtime.langchain4j;
+﻿package ascend.springai.runtime.langchain4j;
 
 import ascend.springai.runtime.spi.knowledge.LayoutParser;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -19,7 +19,7 @@ public class LangChain4jAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(MeterRegistry.class)
-    SimpleMeterRegistry springAiFinLangChain4jFallbackMeterRegistry() {
+    SimpleMeterRegistry springAiAscendLangChain4jFallbackMeterRegistry() {
         return new SimpleMeterRegistry();
     }
 
@@ -34,7 +34,7 @@ public class LangChain4jAutoConfiguration {
 
         @Override
         public void afterPropertiesSet() {
-            registry.counter("springai_fin_langchain4j_profile_loaded_total").increment();
+            registry.counter("springai_ascend_langchain4j_profile_loaded_total").increment();
             LOG.info("spring-ai-ascend-langchain4j-profile activated at L0; " +
                      "alternate ChatClient route wiring pending W2.");
         }

@@ -1,4 +1,4 @@
-> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
+﻿> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
 > DEFERRED in the refresh. The refresh uses Spring Boot's main class + dependency injection directly; no separate runtime-binding layer.
 > The authoritative L0 is `ARCHITECTURE.md`; the
 > systems-engineering plan is `docs/plans/architecture-systems-engineering-plan.md`.
@@ -114,7 +114,7 @@ public class LifespanController {
 }
 ```
 
-Each tick method is wrapped in try/catch + spine emitter; failure is recorded as `springaifin_lifespan_tick_errors_total{loop, reason}` (Rule 7 four-prong).
+Each tick method is wrapped in try/catch + spine emitter; failure is recorded as `springAiAscend_lifespan_tick_errors_total{loop, reason}` (Rule 7 four-prong).
 
 ---
 

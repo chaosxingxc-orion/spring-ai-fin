@@ -1,4 +1,4 @@
-> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
+﻿> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
 > RENAMED to `agent-runtime/action/ARCHITECTURE.md` in the refresh. The 11-stage v6 design is collapsed to the 5-stage refresh design.
 > The authoritative L0 is `ARCHITECTURE.md`; the
 > systems-engineering plan is `docs/plans/architecture-systems-engineering-plan.md`.
@@ -185,7 +185,7 @@ Sends envelope to OPA red-line policy engine. Policies are versioned in `agent-p
 
 ```rego
 # Example: deny PII decode without dual approval evidence
-package springaifin.actions.pii_decode
+package springAiAscend.actions.pii_decode
 
 default allow = false
 
@@ -196,7 +196,7 @@ allow {
 }
 
 # Example: deny non-idempotent action without idempotency key
-package springaifin.actions.idempotency
+package springAiAscend.actions.idempotency
 
 default allow = false
 

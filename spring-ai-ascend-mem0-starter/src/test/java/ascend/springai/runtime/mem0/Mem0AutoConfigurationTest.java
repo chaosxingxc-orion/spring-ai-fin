@@ -1,4 +1,4 @@
-package ascend.springai.runtime.mem0;
+﻿package ascend.springai.runtime.mem0;
 
 import ascend.springai.runtime.spi.memory.LongTermMemoryRepository;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -29,7 +29,7 @@ class Mem0AutoConfigurationTest {
 
     @Test
     void whenEnabledSentinelBeanThrowsWithCounter() {
-        runner.withPropertyValues("springai.fin.mem0.enabled=true")
+        runner.withPropertyValues("springai.ascend.mem0.enabled=true")
                 .run(ctx -> {
                     assertThat(ctx).hasNotFailed();
                     LongTermMemoryRepository repo = ctx.getBean(LongTermMemoryRepository.class);
@@ -38,7 +38,7 @@ class Mem0AutoConfigurationTest {
                             .isInstanceOf(IllegalStateException.class)
                             .hasMessageContaining("mem0");
                     assertThat(registry.counter(
-                            "springai_fin_mem0_adapter_not_implemented_total", "method", "put").count())
+                            "springai_ascend_mem0_adapter_not_implemented_total", "method", "put").count())
                             .isEqualTo(1.0);
                 });
     }

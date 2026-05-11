@@ -1,4 +1,4 @@
-package ascend.springai.runtime.persistence;
+﻿package ascend.springai.runtime.persistence;
 
 import ascend.springai.runtime.spi.persistence.RunRepository;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -14,7 +14,7 @@ import java.util.Optional;
 class NotConfiguredRunRepository implements RunRepository {
 
     private static final Logger LOG = LoggerFactory.getLogger(NotConfiguredRunRepository.class);
-    private static final String METRIC = "springai_fin_persistence_default_impl_not_configured_total";
+    private static final String METRIC = "springai_ascend_persistence_default_impl_not_configured_total";
     private static final String MSG =
             "L0: RunRepository has no default impl yet. " +
             "Provide a @Bean RunRepository or wait for the W1 Spring Data JDBC impl.";

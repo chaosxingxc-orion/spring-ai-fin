@@ -1,4 +1,4 @@
-package ascend.springai.platform.contracts;
+﻿package ascend.springai.platform.contracts;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -36,9 +36,9 @@ class OpenApiContractIT {
 
     @Container
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine")
-            .withDatabaseName("springaifin")
-            .withUsername("springaifin")
-            .withPassword("springaifin");
+            .withDatabaseName("springAiAscend")
+            .withUsername("springAiAscend")
+            .withPassword("springAiAscend");
 
     @DynamicPropertySource
     static void datasourceProperties(DynamicPropertyRegistry registry) {

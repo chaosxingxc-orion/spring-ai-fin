@@ -1,4 +1,4 @@
-package ascend.springai.runtime.docling;
+﻿package ascend.springai.runtime.docling;
 
 import ascend.springai.runtime.spi.knowledge.LayoutParser;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -29,7 +29,7 @@ class DoclingAutoConfigurationTest {
 
     @Test
     void whenEnabledSentinelBeanThrowsWithCounter() {
-        runner.withPropertyValues("springai.fin.docling.enabled=true")
+        runner.withPropertyValues("springai.ascend.docling.enabled=true")
                 .run(ctx -> {
                     assertThat(ctx).hasNotFailed();
                     LayoutParser parser = ctx.getBean(LayoutParser.class);
@@ -38,7 +38,7 @@ class DoclingAutoConfigurationTest {
                             .isInstanceOf(IllegalStateException.class)
                             .hasMessageContaining("Docling");
                     assertThat(registry.counter(
-                            "springai_fin_docling_adapter_not_implemented_total",
+                            "springai_ascend_docling_adapter_not_implemented_total",
                             "spi", "LayoutParser", "method", "parse").count())
                             .isEqualTo(1.0);
                 });

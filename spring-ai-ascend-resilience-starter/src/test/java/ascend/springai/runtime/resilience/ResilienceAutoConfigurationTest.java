@@ -1,4 +1,4 @@
-package ascend.springai.runtime.resilience;
+﻿package ascend.springai.runtime.resilience;
 
 import ascend.springai.runtime.spi.resilience.ResilienceContract;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -36,7 +36,7 @@ class ResilienceAutoConfigurationTest {
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("ResilienceContract");
             assertThat(registry.counter(
-                    "springai_fin_resilience_default_impl_not_configured_total",
+                    "springai_ascend_resilience_default_impl_not_configured_total",
                     "spi", "ResilienceContract", "method", "resolve").count())
                     .isEqualTo(1.0);
         });

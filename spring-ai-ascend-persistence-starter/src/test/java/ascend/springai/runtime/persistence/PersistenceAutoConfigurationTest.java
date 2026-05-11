@@ -1,4 +1,4 @@
-package ascend.springai.runtime.persistence;
+﻿package ascend.springai.runtime.persistence;
 
 import ascend.springai.runtime.spi.persistence.ArtifactRepository;
 import ascend.springai.runtime.spi.persistence.IdempotencyRepository;
@@ -40,7 +40,7 @@ class PersistenceAutoConfigurationTest {
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("RunRepository");
             assertThat(registry.counter(
-                    "springai_fin_persistence_default_impl_not_configured_total",
+                    "springai_ascend_persistence_default_impl_not_configured_total",
                     "spi", "RunRepository", "method", "findById").count())
                     .isEqualTo(1.0);
         });
@@ -69,7 +69,7 @@ class PersistenceAutoConfigurationTest {
 
     @Test
     void starterBeansAbsentWhenDisabled() {
-        runner.withPropertyValues("springai.fin.persistence.enabled=false")
+        runner.withPropertyValues("springai.ascend.persistence.enabled=false")
             .run(ctx -> {
                 assertThat(ctx).doesNotHaveBean(RunRepository.class);
                 assertThat(ctx).doesNotHaveBean(IdempotencyRepository.class);

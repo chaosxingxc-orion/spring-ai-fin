@@ -1,4 +1,4 @@
-package ascend.springai.runtime.graphmemory;
+﻿package ascend.springai.runtime.graphmemory;
 
 import ascend.springai.runtime.spi.memory.GraphMemoryRepository;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -29,7 +29,7 @@ class GraphMemoryAutoConfigurationTest {
 
     @Test
     void whenEnabledSentinelBeanThrowsWithCounter() {
-        runner.withPropertyValues("springai.fin.graphmemory.enabled=true")
+        runner.withPropertyValues("springai.ascend.graphmemory.enabled=true")
                 .run(ctx -> {
                     assertThat(ctx).hasNotFailed();
                     GraphMemoryRepository repo = ctx.getBean(GraphMemoryRepository.class);
@@ -38,7 +38,7 @@ class GraphMemoryAutoConfigurationTest {
                             .isInstanceOf(IllegalStateException.class)
                             .hasMessageContaining("Graphiti");
                     assertThat(registry.counter(
-                            "springai_fin_graphmemory_adapter_not_implemented_total",
+                            "springai_ascend_graphmemory_adapter_not_implemented_total",
                             "spi", "GraphMemoryRepository", "method", "query").count())
                             .isEqualTo(1.0);
                 });

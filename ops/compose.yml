@@ -8,17 +8,17 @@ version: "3.9"
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: springaifin-postgres
+    container_name: springaiascend-postgres
     environment:
-      POSTGRES_DB: springaifin
-      POSTGRES_USER: springaifin
-      POSTGRES_PASSWORD: springaifin
+      POSTGRES_DB: springaiascend
+      POSTGRES_USER: springaiascend
+      POSTGRES_PASSWORD: springaiascend
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U springaifin"]
+      test: ["CMD-SHELL", "pg_isready -U springaiascend"]
       interval: 5s
       timeout: 3s
       retries: 12
@@ -27,16 +27,16 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
-    container_name: springaifin-platform
+    container_name: springaiascend-platform
     depends_on:
       postgres:
         condition: service_healthy
     environment:
       APP_POSTURE: dev
       APP_SHA: dev
-      DB_URL: jdbc:postgresql://postgres:5432/springaifin
-      DB_USER: springaifin
-      DB_PASS: springaifin
+      DB_URL: jdbc:postgresql://postgres:5432/springaiascend
+      DB_USER: springaiascend
+      DB_PASS: springaiascend
     ports:
       - "8080:8080"
     healthcheck:

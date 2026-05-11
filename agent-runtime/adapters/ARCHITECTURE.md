@@ -1,4 +1,4 @@
-> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
+﻿> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
 > DEFERRED in the refresh to wave W4+. Multi-framework dispatch (LangChain4j / Python sidecar) is not in W0..W4 scope.
 > The authoritative L0 is `ARCHITECTURE.md`; the
 > systems-engineering plan is `docs/plans/architecture-systems-engineering-plan.md`.
@@ -180,7 +180,7 @@ enum FrameworkChoice {
 }
 ```
 
-The Python sidecar Docker image (published as `springaifin/py-sidecar:1.0.0`) contains all 5 framework SDKs. Per-tenant deployments can pin a sidecar version.
+The Python sidecar Docker image (published as `springaiascend/py-sidecar:1.0.0`) contains all 5 framework SDKs. Per-tenant deployments can pin a sidecar version.
 
 ---
 
@@ -190,7 +190,7 @@ The sidecar is a separate process whose JVM-side caller cannot independently ver
 
 ### 5.1 Default transport
 
-The default sidecar transport is **Unix Domain Socket (UDS)** at `/var/run/springaifin/sidecar.sock`, with the socket file owned by a dedicated UID and the JVM running as the same UID (the only caller). UDS is the default because:
+The default sidecar transport is **Unix Domain Socket (UDS)** at `/var/run/springaiascend/sidecar.sock`, with the socket file owned by a dedicated UID and the JVM running as the same UID (the only caller). UDS is the default because:
 
 - It is unreachable from the network without explicit forwarding.
 - It tightly binds the sidecar to its co-located JVM (one JVM per UDS path).
@@ -202,9 +202,9 @@ When the sidecar must run on a different host (e.g., GPU node), the platform fal
 
 When the sidecar runs on a non-loopback transport, **SPIFFE workload identity** is mandatory:
 
-- The sidecar presents a SPIFFE SVID (e.g., `spiffe://springaifin/py-sidecar/<tenant-class>`).
+- The sidecar presents a SPIFFE SVID (e.g., `spiffe://springaiascend/py-sidecar/<tenant-class>`).
 - The JVM-side `SpiffeIdentityVerifier` validates the SVID against a trust bundle at every gRPC call (cached for 5 minutes, refreshed on TTL or on validation failure).
-- Mismatch -> connection refused; counter `springaifin_sidecar_identity_mismatch_total{reason}` + WARN.
+- Mismatch -> connection refused; counter `springAiAscend_sidecar_identity_mismatch_total{reason}` + WARN.
 
 Under `APP_POSTURE=prod`, SPIFFE is mandatory regardless of transport. Under `research`, SPIFFE is mandatory for non-loopback transport. Under `dev` loopback UDS, SPIFFE is optional.
 
@@ -223,7 +223,7 @@ public class SidecarMetadataValidator {
             // Mismatch is a security event, not just a warning.
             auditFacade.write(AuditEntry.securityEvent(jvmTenantId, ctx.runId(),
                 "sidecar_tenant_metadata_mismatch", reply.tenantId()));
-            counters.increment("springaifin_sidecar_tenant_metadata_mismatch_total",
+            counters.increment("springAiAscend_sidecar_tenant_metadata_mismatch_total",
                 "expected", jvmTenantId, "received", reply.tenantId());
             // Under research/prod, abort the run.
             if (posture.requiresStrict()) {
@@ -251,7 +251,7 @@ The sidecar dispatch enforces the following bounds (configurable per deployment,
 | Cancellation propagation latency | <= 1s after JVM cancel signal | always |
 | Stream-close on JVM-side error | mandatory; gRPC `cancel()` issued | always |
 
-Violations produce `springaifin_sidecar_bound_violation_total{bound, action}` and abort the stream. The JVM does not retry an aborted stream by default; retry is `framework-controlled` (the framework decides whether the partial work is salvageable).
+Violations produce `springAiAscend_sidecar_bound_violation_total{bound, action}` and abort the stream. The JVM does not retry an aborted stream by default; retry is `framework-controlled` (the framework decides whether the partial work is salvageable).
 
 ### 5.5 Image digest + supply-chain evidence
 
@@ -265,7 +265,7 @@ Image digests are SBOM-tagged and the SBOM is stored alongside the Docker image 
 
 ### 5.6 Sidecar fallback is not a success path
 
-Adapter failover (`PySidecar -> SpringAi`) is recorded with the Rule 7 four-prong (counter, log, runMetadata, gate-asserted). The operator-shape gate at W2/W4 asserts `springaifin_adapter_fallback_total{from=PYSIDECAR, ...} == 0` over N>=3 sequential runs. A non-zero fallback count blocks ship for the wave that introduced it.
+Adapter failover (`PySidecar -> SpringAi`) is recorded with the Rule 7 four-prong (counter, log, runMetadata, gate-asserted). The operator-shape gate at W2/W4 asserts `springAiAscend_adapter_fallback_total{from=PYSIDECAR, ...} == 0` over N>=3 sequential runs. A non-zero fallback count blocks ship for the wave that introduced it.
 
 ---
 
@@ -282,7 +282,7 @@ flowchart TD
     SECCHK["sidecar adapter? validate transport + SPIFFE + image digest"]
     FALLBACK["FrameworkAdapter not healthy or security fail"]
     DISPATCH["adapter.start(task, ctx)"]
-    EMIT_FALLBACK["emit springaifin_adapter_fallback_total{from, to, reason}"]
+    EMIT_FALLBACK["emit springAiAscend_adapter_fallback_total{from, to, reason}"]
     NEXT["pick next adapter by capability"]
 
     START --> READ_PREF
@@ -302,16 +302,16 @@ flowchart TD
 
 **Failover semantics**:
 
-- An adapter failing (e.g., LangChain4j ClassNotFoundException, PySidecar gRPC unavailable, SPIFFE mismatch, image-digest mismatch) -> emit `springaifin_adapter_fallback_total{from, to, reason}` and try the next adapter.
-- All adapters failed -> fail the run with `RunResult.failed(NoHealthyAdapter)` and emit `springaifin_run_failed_total{reason=no_healthy_adapter}`.
+- An adapter failing (e.g., LangChain4j ClassNotFoundException, PySidecar gRPC unavailable, SPIFFE mismatch, image-digest mismatch) -> emit `springAiAscend_adapter_fallback_total{from, to, reason}` and try the next adapter.
+- All adapters failed -> fail the run with `RunResult.failed(NoHealthyAdapter)` and emit `springAiAscend_run_failed_total{reason=no_healthy_adapter}`.
 - Sidecar security failures (SPIFFE mismatch, image digest mismatch, tenant metadata mismatch under research/prod) emit a `SECURITY_EVENT` audit row and a structured alarm.
 
 **Rule 7 four-prong** for adapter fallback:
 
-- [x] Countable: `springaifin_adapter_fallback_total{from, to, reason}` Micrometer counter.
+- [x] Countable: `springAiAscend_adapter_fallback_total{from, to, reason}` Micrometer counter.
 - [x] Attributable: structured `WARNING+` log with `runId`, `tenantId`, `from`, `to`, `reason`.
 - [x] Inspectable: `runMetadata.fallbackEvents` list carries `{at: ts, from: ..., to: ..., reason: ...}` per fallback.
-- [x] Gate-asserted: operator-shape gate asserts `springaifin_adapter_fallback_total == 0` over N>=3 sequential real-LLM runs.
+- [x] Gate-asserted: operator-shape gate asserts `springAiAscend_adapter_fallback_total == 0` over N>=3 sequential real-LLM runs.
 
 ---
 
@@ -338,7 +338,7 @@ If the Python sidecar overhead exceeds 100ms p95, we defer Python-sidecar GA to 
 | **AD-2: Python OUT-OF-PROCESS only** | gRPC sidecar; no in-process Python | Rule 5 catastrophic failure mode if shared event loop |
 | **AD-3: SpringAiAdapter is the default** | Spring AI 2.0.0-M5 is in-process default | JVM-native; lowest latency; Spring Boot ecosystem |
 | **AD-4: LangChain4j discovered via `@ConditionalOnClass`** | Auto-loaded if classpath contains LangChain4j | Customer opt-in via Maven dependency only; no platform-level config |
-| **AD-5: PySidecar via reference Docker image, pinned by digest** | `springaifin/py-sidecar@sha256:...`; SBOM published | Customers don't roll their own Python framework hosting; digest pin closes supply-chain gap |
+| **AD-5: PySidecar via reference Docker image, pinned by digest** | `springaiascend/py-sidecar@sha256:...`; SBOM published | Customers don't roll their own Python framework hosting; digest pin closes supply-chain gap |
 | **AD-6: Adapter failover with Rule 7 four-prong** | Every fallback Countable + Attributable + Inspectable + Gate-asserted | Silent fallback would mean customers think framework X is working when actually Y is being used |
 | **AD-7: AdapterRunHandle is opaque** | Adapters own their runtime state | Lets adapter implementations evolve without changing public interface |
 | **AD-8: TaskContract.frameworkPreference is hint, not contract** | RunExecutor may override (e.g., for capability mismatch) | Capability matching is a deeper invariant than user preference |
@@ -346,7 +346,7 @@ If the Python sidecar overhead exceeds 100ms p95, we defer Python-sidecar GA to 
 | **AD-10: Sidecar metadata is untrusted; tenant rebinds from JVM RunContext** | `SidecarMetadataValidator` rejects mismatched tenant_id and emits SECURITY_EVENT | addresses P0-7 (status: design_accepted); Attack Path B is sidecar metadata loss / tampering |
 | **AD-11: SPIFFE workload identity mandatory for non-loopback** | `SpiffeIdentityVerifier` validates SVID per call (with caching) | Cross-host sidecar deployments need cryptographic identity |
 | **AD-12: Sidecar payload + timeout + cancellation bounds enforced** | Per-deployment defaults; allowlist for overrides | Prevents resource exhaustion + cancellation leak |
-| **AD-13: Sidecar fallback gate-asserted to zero** | W2/W4 operator-shape gate asserts `springaifin_adapter_fallback_total == 0` | Sidecar fallback is not a success path |
+| **AD-13: Sidecar fallback gate-asserted to zero** | W2/W4 operator-shape gate asserts `springAiAscend_adapter_fallback_total == 0` | Sidecar fallback is not a success path |
 
 ---
 
@@ -376,7 +376,7 @@ If the Python sidecar overhead exceeds 100ms p95, we defer Python-sidecar GA to 
 | LangChain4j upstream churn | Track LangChain4j 1.x stability; may add deprecation shim |
 | Spring AI 2.0.0-M5 Advisor API churn | Track Spring AI changelogs; absorb in `SpringAiAdapter` |
 | gRPC stream cancellation propagation across JVM/Python boundary | Tested at chaos gate; cancellation is best-effort with deadline |
-| Per-customer Python framework version pinning | Customer pins `springaifin/py-sidecar@sha256:<digest>`; no tag-based pin permitted under research/prod |
+| Per-customer Python framework version pinning | Customer pins `springaiascend/py-sidecar@sha256:<digest>`; no tag-based pin permitted under research/prod |
 | Cross-adapter spine propagation | TenantContext + RunContext threaded through every adapter via gRPC metadata; sidecar metadata is rebound from JVM side |
 | SPIFFE infrastructure dependency | Reference deployment provides SPIRE; customer can swap with equivalent issuer |
 | SBOM availability for sidecar image | Tracked in `docs/supply-chain-controls.md`; image without SBOM cannot be referenced under prod |

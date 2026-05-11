@@ -1,4 +1,4 @@
-package ascend.springai.runtime.memory;
+﻿package ascend.springai.runtime.memory;
 
 import ascend.springai.runtime.spi.memory.LongTermMemoryRepository;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -15,7 +15,7 @@ import java.util.Optional;
 class NotConfiguredLongTermMemoryRepository implements LongTermMemoryRepository {
 
     private static final Logger LOG = LoggerFactory.getLogger(NotConfiguredLongTermMemoryRepository.class);
-    private static final String METRIC = "springai_fin_memory_default_impl_not_configured_total";
+    private static final String METRIC = "springai_ascend_memory_default_impl_not_configured_total";
     private static final String MSG =
             "L0: LongTermMemoryRepository has no default impl yet. " +
             "Provide a @Bean LongTermMemoryRepository or wait for the W1 JDBC default impl.";

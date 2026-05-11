@@ -1,4 +1,4 @@
-package ascend.springai.runtime.memory;
+﻿package ascend.springai.runtime.memory;
 
 import ascend.springai.runtime.spi.memory.GraphMemoryRepository;
 import ascend.springai.runtime.spi.memory.LongTermMemoryRepository;
@@ -20,13 +20,13 @@ public class MemoryAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(MeterRegistry.class)
-    SimpleMeterRegistry springAiFinMemoryFallbackMeterRegistry() {
+    SimpleMeterRegistry springAiAscendMemoryFallbackMeterRegistry() {
         return new SimpleMeterRegistry();
     }
 
     @Bean
     @ConditionalOnMissingBean(LongTermMemoryRepository.class)
-    @ConditionalOnProperty(prefix = "springai.fin.memory", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "springai.ascend.memory", name = "enabled", havingValue = "true", matchIfMissing = true)
     LongTermMemoryRepository longTermMemoryRepository(MeterRegistry registry, Environment env) {
         rejectIfNonDevPosture(env, "LongTermMemoryRepository");
         return new NotConfiguredLongTermMemoryRepository(registry);
@@ -34,7 +34,7 @@ public class MemoryAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(GraphMemoryRepository.class)
-    @ConditionalOnProperty(prefix = "springai.fin.memory", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "springai.ascend.memory", name = "enabled", havingValue = "true", matchIfMissing = true)
     GraphMemoryRepository graphMemoryRepository(MeterRegistry registry, Environment env) {
         rejectIfNonDevPosture(env, "GraphMemoryRepository");
         return new NotConfiguredGraphMemoryRepository(registry);

@@ -1,4 +1,4 @@
-package ascend.springai.runtime.skills;
+﻿package ascend.springai.runtime.skills;
 
 import ascend.springai.runtime.spi.skills.ToolProvider;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -14,7 +14,7 @@ import java.util.List;
 class NotConfiguredToolProvider implements ToolProvider {
 
     private static final Logger LOG = LoggerFactory.getLogger(NotConfiguredToolProvider.class);
-    private static final String METRIC = "springai_fin_skills_default_impl_not_configured_total";
+    private static final String METRIC = "springai_ascend_skills_default_impl_not_configured_total";
     private static final String MSG =
             "L0: ToolProvider has no default impl yet. " +
             "Provide a @Bean ToolProvider or wait for the W2 MCP + @Tool registry impl.";

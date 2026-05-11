@@ -1,4 +1,4 @@
-# Python Sidecar Security Profile
+﻿# Python Sidecar Security Profile
 
 **Status**: v1 -- created 2026-05-08 in response to security review sec-P0-7
 **Owner**: Platform team (RO) + Customer infrastructure team
@@ -42,7 +42,7 @@ Failure modes:
   - JVM verifies SVID at every gRPC connection
   - Identity carries `spiffe://platform/sidecar/<tenant-or-shared>`
 - **Static service account fallback**:
-  - Sidecar runs as `springaifin-sidecar` user (non-root)
+  - Sidecar runs as `springAiAscend-sidecar` user (non-root)
   - JVM verifies process identity via Unix socket peer-cred check
   - Single shared sidecar across tenants requires payload-level tenant validation (sec-2.4)
 
@@ -75,11 +75,11 @@ Both modes MUST validate `tenantId` in payload, not just metadata (Attack Path B
 
 ### 2.6 Container runtime
 
-- **Image source**: `springaifin/py-sidecar:<version>` from official platform registry; verified at deployment
+- **Image source**: `springaiascend/py-sidecar:<version>` from official platform registry; verified at deployment
 - **Read-only container filesystem**: writable only `/tmp` (with size limit) and explicit volume mounts
 - **No default host filesystem mount**: customer explicitly mounts only what's needed
 - **Drop all Linux capabilities**: add only required ones (none for typical workloads)
-- **AppArmor profile**: `springaifin-sidecar-restricted` (LSM enforcement); seccomp profile applied
+- **AppArmor profile**: `springAiAscend-sidecar-restricted` (LSM enforcement); seccomp profile applied
 - **User**: non-root (`uid=10001`, `gid=10001`)
 - **Network policy**: egress allowlist (default deny; allow only LLM provider domains + tool servers documented in customer's egress-policy.yaml)
 
@@ -157,10 +157,10 @@ public Flux<StageEvent> events(AdapterRunHandle handle) {
 
 For BYOC customers adopting Python sidecar:
 
-- [ ] Deploy sidecar container with `springaifin/py-sidecar:<pinned-version>`
+- [ ] Deploy sidecar container with `springaiascend/py-sidecar:<pinned-version>`
 - [ ] Configure mTLS or UDS transport (no plain TCP)
 - [ ] Configure SPIFFE workload identity OR static service account
-- [ ] Apply AppArmor profile `springaifin-sidecar-restricted`
+- [ ] Apply AppArmor profile `springAiAscend-sidecar-restricted`
 - [ ] Apply Kubernetes NetworkPolicy with egress allowlist
 - [ ] Configure read-only filesystem with explicit mounts only
 - [ ] Verify image signature with cosign

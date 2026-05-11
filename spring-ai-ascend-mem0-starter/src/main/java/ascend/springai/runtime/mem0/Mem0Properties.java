@@ -1,8 +1,8 @@
-package ascend.springai.runtime.mem0;
+﻿package ascend.springai.runtime.mem0;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties("springai.fin.mem0")
+@ConfigurationProperties("springai.ascend.mem0")
 public class Mem0Properties {
 
     private boolean enabled = false;

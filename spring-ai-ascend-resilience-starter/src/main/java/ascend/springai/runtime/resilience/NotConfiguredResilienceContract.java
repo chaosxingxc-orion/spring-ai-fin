@@ -1,4 +1,4 @@
-package ascend.springai.runtime.resilience;
+﻿package ascend.springai.runtime.resilience;
 
 import ascend.springai.runtime.spi.resilience.ResilienceContract;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 class NotConfiguredResilienceContract implements ResilienceContract {
 
     private static final Logger LOG = LoggerFactory.getLogger(NotConfiguredResilienceContract.class);
-    private static final String METRIC = "springai_fin_resilience_default_impl_not_configured_total";
+    private static final String METRIC = "springai_ascend_resilience_default_impl_not_configured_total";
     private static final String MSG =
             "L0: ResilienceContract has no default impl yet. " +
             "Provide a @Bean ResilienceContract or wait for the W2 @CircuitBreaker default impl.";

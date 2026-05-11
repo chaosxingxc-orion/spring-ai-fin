@@ -1,4 +1,4 @@
-> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
+﻿> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
 > MOVED to `agent-platform/auth/ARCHITECTURE.md` in the refresh. Auth is a platform-edge concern; runtime trusts the upstream binding.
 > The authoritative L0 is `ARCHITECTURE.md`; the
 > systems-engineering plan is `docs/plans/architecture-systems-engineering-plan.md`.
@@ -161,11 +161,11 @@ auth:
   issuers:
     - iss: https://idp.bank-a.example.com/
       jwks_url: https://idp.bank-a.example.com/.well-known/jwks.json
-      audiences: [springaifin-prod]
+      audiences: [springAiAscend-prod]
       permitted_algs: [RS256, ES256]
     - iss: https://idp.bank-b.example.com/
       jwks_url: https://idp.bank-b.example.com/.well-known/jwks.json
-      audiences: [springaifin-prod]
+      audiences: [springAiAscend-prod]
       permitted_algs: [RS256]
 ```
 
@@ -222,9 +222,9 @@ public class HmacValidator {
 
 - **Posture (Rule 11)**: dev permits HS256 + anonymous on loopback only; research SaaS / prod require JWKS validation; research BYOC single-tenant HS256 only with carve-out entry in `docs/governance/allowlists.yaml`
 - **Boot guard (`PostureBootGuard` in `../posture/`)**: asserts `APP_JWT_SECRET` >= 32 bytes when HmacValidator is active; asserts at least one `IssuerRegistry` entry when JwksValidator is active
-- **Rule 7**: validation failures emit `springaifin_jwt_validation_errors_total{reason}` + WARNING (no body of token logged for security); JWKS refresh failures emit `springaifin_jwks_refresh_errors_total{issuer, reason}`
+- **Rule 7**: validation failures emit `springAiAscend_jwt_validation_errors_total{reason}` + WARNING (no body of token logged for security); JWKS refresh failures emit `springAiAscend_jwks_refresh_errors_total{issuer, reason}`
 - **Rule 8**: ActionGuard does not allow side-effects when `AuthClaims.anonymous()`; the operator-shape gate exercises both HS256 and JWKS paths
-- **Audit**: every successful auth emits `springaifin_jwt_validations_total{tenant_id, role, alg, issuer}` for visibility
+- **Audit**: every successful auth emits `springAiAscend_jwt_validations_total{tenant_id, role, alg, issuer}` for visibility
 
 ---
 

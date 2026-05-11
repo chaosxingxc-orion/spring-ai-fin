@@ -1,4 +1,4 @@
-package ascend.springai.platform.tenant;
+﻿package ascend.springai.platform.tenant;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.servlet.FilterChain;
@@ -22,7 +22,7 @@ class TenantContextFilterTest {
         filter.doFilter(req, res, chain);
 
         assertThat(res.getStatus()).isEqualTo(200);
-        assertThat(registry.counter("springai_fin_tenant_header_missing_total", "posture", "dev").count())
+        assertThat(registry.counter("springai_ascend_tenant_header_missing_total", "posture", "dev").count())
                 .isEqualTo(1.0);
     }
 
@@ -37,7 +37,7 @@ class TenantContextFilterTest {
         filter.doFilter(req, res, chain);
 
         assertThat(res.getStatus()).isEqualTo(400);
-        assertThat(registry.counter("springai_fin_tenant_header_missing_total", "posture", "research").count())
+        assertThat(registry.counter("springai_ascend_tenant_header_missing_total", "posture", "research").count())
                 .isEqualTo(1.0);
     }
 
@@ -53,7 +53,7 @@ class TenantContextFilterTest {
         filter.doFilter(req, res, chain);
 
         assertThat(res.getStatus()).isEqualTo(400);
-        assertThat(registry.counter("springai_fin_tenant_header_invalid_total", "posture", "dev").count())
+        assertThat(registry.counter("springai_ascend_tenant_header_invalid_total", "posture", "dev").count())
                 .isEqualTo(1.0);
     }
 

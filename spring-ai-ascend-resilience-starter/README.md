@@ -1,4 +1,4 @@
-# spring-ai-ascend-resilience-starter
+﻿# spring-ai-ascend-resilience-starter
 
 > Provides the SPI surface for mapping operation identifiers to named Resilience4j policy triples (circuit breaker, retry, time limiter); W2 callers apply the names via @CircuitBreaker/@Retry annotations. Maturity: L1.
 
@@ -33,7 +33,7 @@ ResilienceContract myResilienceContract() {
 
 ## Counters emitted by sentinel
 
-- `springai_fin_resilience_default_impl_not_configured_total` tagged `spi=ResilienceContract, method=resolve`
+- `SPRINGAI_ASCEND_resilience_default_impl_not_configured_total` tagged `spi=ResilienceContract, method=resolve`
 
 ## See also
 

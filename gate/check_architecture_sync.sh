@@ -836,20 +836,25 @@ runtime_error_message=""
     fail "openapi_snapshot_pinned" "docs/contracts/openapi-v1.yaml not found; create it per T-CS-2" "$_openapi_yaml" 0
   fi
 
-  # 27. Metric naming namespace (cycle-15/16 D3): all .counter("...") calls in
-  # Java sources must use the springai_fin_ prefix. Catches namespace drift.
+  # 27. Metric naming namespace: all .counter("...") calls in Java sources must
+  # use the springai_ascend_ prefix. Also rejects residual springai_fin_ prefix.
   while IFS= read -r _mf; do
     [[ -f "$_mf" ]] || continue
     while IFS= read -r _ml; do
       if [[ "$_ml" == *'.counter("'* ]]; then
         _n="${_ml#*.counter(\"}"
         _n="${_n%%\"*}"
-        if [[ -n "$_n" && "${_n:0:12}" != "springai_fin" ]]; then
-          fail "metric_naming_namespace" "Counter name '$_n' does not use springai_fin_ prefix" "$_mf" 0
+        if [[ -n "$_n" && "${_n:0:15}" != "springai_ascend" ]]; then
+          fail "metric_naming_namespace" "Counter name '$_n' does not use springai_ascend_ prefix" "$_mf" 0
         fi
       fi
     done < "$_mf"
-  done < <(find . -name '*.java' -not -path '*/target/*' -not -path '*/.git/*' 2>/dev/null || true)
+  done < <(find . -name '*.java' -not -path '*/target/*' -not -path '*/.git/*' -not -path '*/docs/archive/*' 2>/dev/null || true)
+  # Reject residual springai_fin_ in Java sources outside docs/archive.
+  if grep -rn 'springai_fin_\|springai\.fin\.' --include='*.java' . \
+      --exclude-dir=target --exclude-dir=.git 2>/dev/null | grep -qv 'docs/archive'; then
+    fail "namespace_rename_residue" "Residual springai_fin_ or springai.fin. found in Java sources; rename incomplete" "." 0
+  fi
 
 } || {
   rule_body_succeeded=false

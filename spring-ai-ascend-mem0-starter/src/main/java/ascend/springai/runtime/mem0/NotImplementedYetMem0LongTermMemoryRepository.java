@@ -1,4 +1,4 @@
-package ascend.springai.runtime.mem0;
+﻿package ascend.springai.runtime.mem0;
 
 import ascend.springai.runtime.spi.memory.LongTermMemoryRepository;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -9,13 +9,13 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * L0 sentinel for the mem0 adapter. Activated only when springai.fin.mem0.enabled=true.
+ * L0 sentinel for the mem0 adapter. Activated only when springai.ascend.mem0.enabled=true.
  * The REST client wiring (RestClient + Resilience4j) lands in W2.
  */
 class NotImplementedYetMem0LongTermMemoryRepository implements LongTermMemoryRepository {
 
     private static final Logger LOG = LoggerFactory.getLogger(NotImplementedYetMem0LongTermMemoryRepository.class);
-    private static final String METRIC = "springai_fin_mem0_adapter_not_implemented_total";
+    private static final String METRIC = "springai_ascend_mem0_adapter_not_implemented_total";
     private static final String MSG =
             "L0: mem0 adapter enabled but REST client not yet wired. " +
             "W2 will add RestClient + Resilience4j wiring. baseUrl=%s";

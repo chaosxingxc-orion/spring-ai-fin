@@ -1,4 +1,4 @@
-package ascend.springai.runtime.resilience;
+﻿package ascend.springai.runtime.resilience;
 
 import ascend.springai.runtime.spi.resilience.ResilienceContract;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -16,7 +16,7 @@ public class ResilienceAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(MeterRegistry.class)
-    SimpleMeterRegistry springAiFinResilienceFallbackMeterRegistry() {
+    SimpleMeterRegistry springAiAscendResilienceFallbackMeterRegistry() {
         return new SimpleMeterRegistry();
     }
 

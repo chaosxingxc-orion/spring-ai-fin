@@ -1,4 +1,4 @@
-> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
+﻿> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
 > REPLACED in the refresh by OpenTelemetry traces (per `agent-runtime/observability/`) + an `audit_log` table owned by `agent-runtime/action/`. The v6 5-class taxonomy is dropped.
 > The authoritative L0 is `ARCHITECTURE.md`; the
 > systems-engineering plan is `docs/plans/architecture-systems-engineering-plan.md`.
@@ -40,7 +40,7 @@ The 5 classes draw the line between best-effort telemetry and mandatory evidence
 
 | Class | When used | Persistence requirement | Failure behaviour |
 |---|---|---|---|
-| **TELEMETRY** | Run lifecycle counters, performance metrics, run-event log entries that are also already in `EventStore` | Best-effort | Failure: log-only; emit `springaifin_audit_telemetry_lost_total`; action proceeds |
+| **TELEMETRY** | Run lifecycle counters, performance metrics, run-event log entries that are also already in `EventStore` | Best-effort | Failure: log-only; emit `springAiAscend_audit_telemetry_lost_total`; action proceeds |
 | **SECURITY_EVENT** | Auth events, ActionGuard rejections, posture override, cross-tenant attempt, idempotency conflict | MUST persist OR block in research/prod | Failure: emit alarm; in prod, action that triggered the event also blocks |
 | **REGULATORY_AUDIT** | Bias audit findings, MAS FEAT report data, OJK regulator notification, recurrence-ledger entry | MUST persist AND WORM-anchor in prod | Failure: enter safe read-only mode (block all platform writes); compliance alarm |
 | **PII_ACCESS** | PII decode approve, decode execute, decode reveal, decode evict | MUST persist BEFORE reveal | Failure: do NOT reveal plaintext; return error; session ended |

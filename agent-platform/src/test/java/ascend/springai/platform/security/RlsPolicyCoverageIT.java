@@ -1,4 +1,4 @@
-package ascend.springai.platform.security;
+﻿package ascend.springai.platform.security;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -24,9 +24,9 @@ class RlsPolicyCoverageIT {
 
     @Container
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine")
-            .withDatabaseName("springaifin")
-            .withUsername("springaifin")
-            .withPassword("springaifin");
+            .withDatabaseName("springAiAscend")
+            .withUsername("springAiAscend")
+            .withPassword("springAiAscend");
 
     @DynamicPropertySource
     static void datasourceProperties(DynamicPropertyRegistry registry) {

@@ -1,4 +1,4 @@
-package ascend.springai.platform;
+﻿package ascend.springai.platform;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,9 +26,9 @@ class HealthEndpointIT {
 
     @Container
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine")
-            .withDatabaseName("springaifin")
-            .withUsername("springaifin")
-            .withPassword("springaifin");
+            .withDatabaseName("springAiAscend")
+            .withUsername("springAiAscend")
+            .withPassword("springAiAscend");
 
     @DynamicPropertySource
     static void datasourceProperties(DynamicPropertyRegistry registry) {

@@ -1,4 +1,4 @@
-> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
+﻿> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
 > DEFERRED indefinitely in the refresh. Knowledge graph (Apache Jena) requires a customer demand to revive.
 > The authoritative L0 is `ARCHITECTURE.md`; the
 > systems-engineering plan is `docs/plans/architecture-systems-engineering-plan.md`.
@@ -115,7 +115,7 @@ public interface KnowledgeStore {
 
 - **Rule 11**: every record carries tenant_id; spine validator enforces
 - **Posture-aware**: backend factory reads posture
-- **Rule 7**: retrieval failures (e.g., glossary unavailable) emit `springaifin_knowledge_retrieval_errors_total` + WARNING + fallback to grep-only
+- **Rule 7**: retrieval failures (e.g., glossary unavailable) emit `springAiAscend_knowledge_retrieval_errors_total` + WARNING + fallback to grep-only
 - **License (D-15)**: BM25 via Apache Lucene (Apache 2.0); pgvector (PostgreSQL license) when adopted
 
 ---

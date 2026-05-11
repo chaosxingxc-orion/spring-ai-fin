@@ -1,4 +1,4 @@
-package ascend.springai.runtime.graphmemory;
+﻿package ascend.springai.runtime.graphmemory;
 
 import ascend.springai.runtime.spi.memory.GraphMemoryRepository;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -8,13 +8,13 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 /**
- * L0 sentinel for the Graphiti adapter. Activated only when springai.fin.graphmemory.enabled=true.
+ * L0 sentinel for the Graphiti adapter. Activated only when springai.ascend.graphmemory.enabled=true.
  * REST client wiring lands in W2. Cycle-15 confirmed Graphiti over Cognee.
  */
 class NotImplementedYetGraphMemoryRepository implements GraphMemoryRepository {
 
     private static final Logger LOG = LoggerFactory.getLogger(NotImplementedYetGraphMemoryRepository.class);
-    private static final String METRIC = "springai_fin_graphmemory_adapter_not_implemented_total";
+    private static final String METRIC = "springai_ascend_graphmemory_adapter_not_implemented_total";
     private static final String MSG =
             "L0: Graphiti adapter enabled but REST client not yet wired. " +
             "W2 will add RestClient wiring. baseUrl=%s";

@@ -1,4 +1,4 @@
-> ⚠ **HISTORICAL DOCUMENT — DO NOT IMPLEMENT.** This is the 2026-05-08 response to the security assessment. Original closure-style language (`closes P0-N`, `P0-N closure`) is preserved here for traceability but is **forbidden** in current L0/L1/L2 docs per [`docs/governance/closure-taxonomy.md`](governance/closure-taxonomy.md). Closure status of each finding lives in [`docs/governance/architecture-status.yaml`](governance/architecture-status.yaml). The architecture-sync gate excludes this file from its scan because of its historical role. Current authoritative corpus: [`docs/governance/current-architecture-index.md`](governance/current-architecture-index.md).
+﻿> ⚠ **HISTORICAL DOCUMENT — DO NOT IMPLEMENT.** This is the 2026-05-08 response to the security assessment. Original closure-style language (`closes P0-N`, `P0-N closure`) is preserved here for traceability but is **forbidden** in current L0/L1/L2 docs per [`docs/governance/closure-taxonomy.md`](governance/closure-taxonomy.md). Closure status of each finding lives in [`docs/governance/architecture-status.yaml`](governance/architecture-status.yaml). The architecture-sync gate excludes this file from its scan because of its historical role. Current authoritative corpus: [`docs/governance/current-architecture-index.md`](governance/current-architecture-index.md).
 
 # Security Review Response — 2026-05-08
 
@@ -184,13 +184,13 @@ Boot guard decision matrix:
        ALLOW_DEV_WITH_REAL_DB=true  (or similar per concern)
 
   Explicit overrides logged at WARN level + emit metric
-    springaifin_posture_unsafe_override_total{override_name}
+    springAiAscend_posture_unsafe_override_total{override_name}
 
   Posture exposed in:
     - GET /ready (readiness JSON)
     - GET /v1/manifest
     - Startup banner
-    - springaifin_app_posture{posture} metric
+    - springAiAscend_app_posture{posture} metric
 ```
 
 All 4 reviewer acceptance tests adopted as `PostureBootGuardIT`.
@@ -347,7 +347,7 @@ All 6 reviewer acceptance tests adopted as `SidecarSecurityIT`:
 
 | Class | Persistence requirement | Failure behaviour |
 |---|---|---|
-| `TELEMETRY` | best-effort | log-only failure OK; emit `springaifin_audit_telemetry_lost_total` |
+| `TELEMETRY` | best-effort | log-only failure OK; emit `springAiAscend_audit_telemetry_lost_total` |
 | `SECURITY_EVENT` | must persist OR block in research/prod | failure: emit alarm; block action in prod |
 | `REGULATORY_AUDIT` | must persist AND WORM-anchor in prod | failure: enter safe read-only mode (block all writes); compliance alarm |
 | `PII_ACCESS` | must persist BEFORE reveal | failure: do not reveal; return error to caller |
@@ -428,7 +428,7 @@ public TransferReceipt transfer(...) { ... }
 - Compensation failure is NOT ordinary fallback
 - Opens an `OperationalGate` (HITL escalation queue, separate from agent HITL)
 - Creates a `LedgerDiscrepancyRecord` (durable; reconciled with customer's books)
-- Triggers `springaifin_saga_compensation_failure_total` alarm + compliance alert
+- Triggers `springAiAscend_saga_compensation_failure_total` alarm + compliance alert
 - Run cannot reach `COMPLETED`; lifecycle state goes to `FAILED_AWAITING_COMPLIANCE_REVIEW`
 
 All 4 reviewer acceptance tests adopted as `FinancialWriteIT` + `SagaCompensationFailureIT`.
@@ -466,7 +466,7 @@ The reviewer is correct that freezing v1 must coexist with security-driven chang
 - Max key length: 256 chars
 - Replay snapshot size limit: 1MB; over = rejected at write
 - Encrypted snapshot storage for tenants with `app.idempotency.snapshot-encryption=true`
-- Conflict telemetry: `springaifin_idempotency_conflict_total{tenant_id}` alarm if rate > threshold
+- Conflict telemetry: `springAiAscend_idempotency_conflict_total{tenant_id}` alarm if rate > threshold
 - Purge backpressure alarm: backlog > 10K rows = alarm
 
 ### P1-3 Prompt cache privacy: ACCEPT

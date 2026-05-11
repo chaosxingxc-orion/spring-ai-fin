@@ -1,8 +1,8 @@
-package ascend.springai.runtime.docling;
+﻿package ascend.springai.runtime.docling;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties("springai.fin.docling")
+@ConfigurationProperties("springai.ascend.docling")
 public class DoclingProperties {
 
     private boolean enabled = false;

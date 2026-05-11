@@ -1,4 +1,4 @@
-# HTTP API Contracts
+﻿# HTTP API Contracts
 
 > Per-route HTTP contract reference for the spring-ai-ascend platform v1 API.
 > Version: 1.0.0-W0 | Last refreshed: 2026-05-10
@@ -36,7 +36,7 @@ Exempt paths never require these headers. They are always accessible without aut
 | 409 | Conflict; duplicate run within an idempotency scope (run already in progress) |
 | 410 | Gone; endpoint removed or deprecated |
 | 429 | Rate limit exceeded or tenant token budget exhausted |
-| 500 | Internal server error; not expected in normal operation; emits springai_fin_filter_errors_total |
+| 500 | Internal server error; not expected in normal operation; emits SPRINGAI_ASCEND_filter_errors_total |
 | 503 | Service unavailable; dependency health check failed |
 
 All error responses use the `ContractError` JSON envelope:

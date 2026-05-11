@@ -1,4 +1,4 @@
-# spring-ai-ascend-memory-starter
+﻿# spring-ai-ascend-memory-starter
 
 > Provides the SPI surface for durable long-term memory and relationship-aware graph memory, with posture-aware sentinel impls for dev mode. Maturity: L1.
 
@@ -40,13 +40,13 @@ GraphMemoryRepository myGraphMemoryRepository(RestClient graphitiClient) {
 
 ## Counters emitted by sentinel
 
-- `springai_fin_memory_default_impl_not_configured_total` tagged `spi=LongTermMemoryRepository, method=put`
-- `springai_fin_memory_default_impl_not_configured_total` tagged `spi=LongTermMemoryRepository, method=search`
-- `springai_fin_memory_default_impl_not_configured_total` tagged `spi=LongTermMemoryRepository, method=findById`
-- `springai_fin_memory_default_impl_not_configured_total` tagged `spi=LongTermMemoryRepository, method=delete`
-- `springai_fin_memory_default_impl_not_configured_total` tagged `spi=GraphMemoryRepository, method=addFact`
-- `springai_fin_memory_default_impl_not_configured_total` tagged `spi=GraphMemoryRepository, method=query`
-- `springai_fin_memory_default_impl_not_configured_total` tagged `spi=GraphMemoryRepository, method=search`
+- `SPRINGAI_ASCEND_memory_default_impl_not_configured_total` tagged `spi=LongTermMemoryRepository, method=put`
+- `SPRINGAI_ASCEND_memory_default_impl_not_configured_total` tagged `spi=LongTermMemoryRepository, method=search`
+- `SPRINGAI_ASCEND_memory_default_impl_not_configured_total` tagged `spi=LongTermMemoryRepository, method=findById`
+- `SPRINGAI_ASCEND_memory_default_impl_not_configured_total` tagged `spi=LongTermMemoryRepository, method=delete`
+- `SPRINGAI_ASCEND_memory_default_impl_not_configured_total` tagged `spi=GraphMemoryRepository, method=addFact`
+- `SPRINGAI_ASCEND_memory_default_impl_not_configured_total` tagged `spi=GraphMemoryRepository, method=query`
+- `SPRINGAI_ASCEND_memory_default_impl_not_configured_total` tagged `spi=GraphMemoryRepository, method=search`
 
 ## See also
 

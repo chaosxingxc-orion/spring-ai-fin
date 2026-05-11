@@ -1,4 +1,4 @@
-package ascend.springai.runtime.persistence;
+﻿package ascend.springai.runtime.persistence;
 
 import ascend.springai.runtime.spi.persistence.ArtifactRepository;
 import ascend.springai.runtime.spi.persistence.IdempotencyRepository;
@@ -21,13 +21,13 @@ public class PersistenceAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(MeterRegistry.class)
-    SimpleMeterRegistry springAiFinPersistenceFallbackMeterRegistry() {
+    SimpleMeterRegistry springAiAscendPersistenceFallbackMeterRegistry() {
         return new SimpleMeterRegistry();
     }
 
     @Bean
     @ConditionalOnMissingBean(RunRepository.class)
-    @ConditionalOnProperty(prefix = "springai.fin.persistence", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "springai.ascend.persistence", name = "enabled", havingValue = "true", matchIfMissing = true)
     RunRepository runRepository(MeterRegistry registry, Environment env) {
         rejectIfNonDevPosture(env, "RunRepository");
         return new NotConfiguredRunRepository(registry);
@@ -35,7 +35,7 @@ public class PersistenceAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(IdempotencyRepository.class)
-    @ConditionalOnProperty(prefix = "springai.fin.persistence", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "springai.ascend.persistence", name = "enabled", havingValue = "true", matchIfMissing = true)
     IdempotencyRepository idempotencyRepository(MeterRegistry registry, Environment env) {
         rejectIfNonDevPosture(env, "IdempotencyRepository");
         return new NotConfiguredIdempotencyRepository(registry);
@@ -43,7 +43,7 @@ public class PersistenceAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(ArtifactRepository.class)
-    @ConditionalOnProperty(prefix = "springai.fin.persistence", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "springai.ascend.persistence", name = "enabled", havingValue = "true", matchIfMissing = true)
     ArtifactRepository artifactRepository(MeterRegistry registry, Environment env) {
         rejectIfNonDevPosture(env, "ArtifactRepository");
         return new NotConfiguredArtifactRepository(registry);

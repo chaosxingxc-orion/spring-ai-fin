@@ -1,8 +1,8 @@
-package ascend.springai.runtime.persistence;
+﻿package ascend.springai.runtime.persistence;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties("springai.fin.persistence")
+@ConfigurationProperties("springai.ascend.persistence")
 public record PersistenceProperties(
     boolean enabled
 ) {

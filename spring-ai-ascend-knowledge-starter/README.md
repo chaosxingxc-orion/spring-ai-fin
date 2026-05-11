@@ -1,4 +1,4 @@
-# spring-ai-ascend-knowledge-starter
+﻿# spring-ai-ascend-knowledge-starter
 
 > Provides the SPI surface for document layout parsing and multi-source document ingestion, with a registry for fan-out across multiple connectors. Maturity: L1.
 
@@ -40,8 +40,8 @@ Multiple `DocumentSourceConnector` beans may be declared; the registry picks the
 
 ## Counters emitted by sentinel
 
-- `springai_fin_knowledge_default_impl_not_configured_total` tagged `spi=LayoutParser, method=parse`
-- `springai_fin_knowledge_default_impl_not_configured_total` tagged `spi=DocumentSourceConnector, method=fetch`
+- `SPRINGAI_ASCEND_knowledge_default_impl_not_configured_total` tagged `spi=LayoutParser, method=parse`
+- `SPRINGAI_ASCEND_knowledge_default_impl_not_configured_total` tagged `spi=DocumentSourceConnector, method=fetch`
 
 ## See also
 

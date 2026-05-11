@@ -1,4 +1,4 @@
-package ascend.springai.runtime.knowledge;
+﻿package ascend.springai.runtime.knowledge;
 
 import ascend.springai.runtime.spi.knowledge.DocumentSourceConnector;
 import ascend.springai.runtime.spi.knowledge.LayoutParser;
@@ -21,13 +21,13 @@ public class KnowledgeAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(MeterRegistry.class)
-    SimpleMeterRegistry springAiFinKnowledgeFallbackMeterRegistry() {
+    SimpleMeterRegistry springAiAscendKnowledgeFallbackMeterRegistry() {
         return new SimpleMeterRegistry();
     }
 
     @Bean
     @ConditionalOnMissingBean(LayoutParser.class)
-    @ConditionalOnProperty(prefix = "springai.fin.knowledge", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "springai.ascend.knowledge", name = "enabled", havingValue = "true", matchIfMissing = true)
     LayoutParser layoutParser(MeterRegistry registry, Environment env) {
         rejectIfNonDevPosture(env, "LayoutParser");
         return new NotConfiguredLayoutParser(registry);
@@ -35,14 +35,14 @@ public class KnowledgeAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(DocumentSourceConnector.class)
-    @ConditionalOnProperty(prefix = "springai.fin.knowledge", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "springai.ascend.knowledge", name = "enabled", havingValue = "true", matchIfMissing = true)
     DocumentSourceConnector documentSourceConnector(MeterRegistry registry, Environment env) {
         rejectIfNonDevPosture(env, "DocumentSourceConnector");
         return new NotConfiguredDocumentSourceConnector(registry);
     }
 
     @Bean
-    @ConditionalOnProperty(prefix = "springai.fin.knowledge", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "springai.ascend.knowledge", name = "enabled", havingValue = "true", matchIfMissing = true)
     DocumentSourceConnectorRegistry documentSourceConnectorRegistry(List<DocumentSourceConnector> connectors) {
         return new DocumentSourceConnectorRegistry(connectors);
     }

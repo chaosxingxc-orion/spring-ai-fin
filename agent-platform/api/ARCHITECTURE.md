@@ -1,4 +1,4 @@
-> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
+﻿> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
 > MERGED INTO `agent-platform/web/ARCHITECTURE.md`
 > The authoritative L0 is `ARCHITECTURE.md`; the
 > systems-engineering plan is `docs/plans/architecture-systems-engineering-plan.md`.
@@ -192,7 +192,7 @@ Mirrors hi-agent's W35-T8: fail-fast at boot rather than 500 at first request.
 
 - **Posture (Rule 11)**: `JWTAuthFilter` strict in research/prod; passthrough in dev
 - **Spine (Rule 11)**: every `RunRequest` / `MemoryWriteRequest` etc. validated at canonical-constructor; spine completeness enforced
-- **Resilience (Rule 7)**: filter failures emit `springaifin_filter_errors_total{filter, reason}` + WARNING
+- **Resilience (Rule 7)**: filter failures emit `springAiAscend_filter_errors_total{filter, reason}` + WARNING
 - **Operator-shape (Rule 8)**: every route exercised in OperatorShapeGate's N>=3 sequential runs
 
 ---

@@ -1,6 +1,6 @@
-# spring-ai-ascend-graphmemory-starter
+﻿# spring-ai-ascend-graphmemory-starter
 
-> Optional sidecar adapter that wires GraphMemoryRepository to the Graphiti (Zep OSS) REST API; replaces the sentinel when enabled=true and SPRINGAI_FIN_GRAPHITI_BASE_URL is set. Maturity: L0.
+> Optional sidecar adapter that wires GraphMemoryRepository to the Graphiti (Zep OSS) REST API; replaces the sentinel when enabled=true and SPRINGAI_ASCEND_GRAPHITI_BASE_URL is set. Maturity: L0.
 
 ## SPI surface
 
@@ -18,7 +18,7 @@ This starter provides no new SPI interfaces. It contributes an alternative imple
 | research | Sentinel rejected at context load; BeanCreationException |
 | prod | Sentinel rejected at context load; BeanCreationException |
 
-When `springai.fin.graphmemory.enabled=true` and `SPRINGAI_FIN_GRAPHITI_BASE_URL` is present, the Graphiti adapter bean is registered and overrides the sentinel in all postures.
+When `springai.ascend.graphmemory.enabled=true` and `SPRINGAI_ASCEND_GRAPHITI_BASE_URL` is present, the Graphiti adapter bean is registered and overrides the sentinel in all postures.
 
 ## Drop-in override (@Bean recipe)
 
@@ -29,7 +29,7 @@ springai:
   fin:
     graphmemory:
       enabled: true
-      base-url: ${SPRINGAI_FIN_GRAPHITI_BASE_URL}
+      base-url: ${SPRINGAI_ASCEND_GRAPHITI_BASE_URL}
 ```
 
 Custom override if additional client config is required:
@@ -45,7 +45,7 @@ GraphMemoryRepository graphitiMemoryRepository(GraphMemoryProperties props, Rest
 
 This starter does not emit its own sentinel counters. When disabled, the memory-starter sentinel counters fire:
 
-- `springai_fin_memory_default_impl_not_configured_total` tagged `spi=GraphMemoryRepository, method=*`
+- `SPRINGAI_ASCEND_memory_default_impl_not_configured_total` tagged `spi=GraphMemoryRepository, method=*`
 
 ## See also
 

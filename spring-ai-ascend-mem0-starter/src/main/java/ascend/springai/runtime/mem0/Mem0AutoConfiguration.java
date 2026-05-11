@@ -1,4 +1,4 @@
-package ascend.springai.runtime.mem0;
+﻿package ascend.springai.runtime.mem0;
 
 import ascend.springai.runtime.spi.memory.LongTermMemoryRepository;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -12,13 +12,13 @@ import org.springframework.context.annotation.Bean;
 
 @AutoConfiguration
 @ConditionalOnClass(LongTermMemoryRepository.class)
-@ConditionalOnProperty(prefix = "springai.fin.mem0", name = "enabled", havingValue = "true", matchIfMissing = false)
+@ConditionalOnProperty(prefix = "springai.ascend.mem0", name = "enabled", havingValue = "true", matchIfMissing = false)
 @EnableConfigurationProperties(Mem0Properties.class)
 public class Mem0AutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(MeterRegistry.class)
-    SimpleMeterRegistry springAiFinMem0FallbackMeterRegistry() {
+    SimpleMeterRegistry springAiAscendMem0FallbackMeterRegistry() {
         return new SimpleMeterRegistry();
     }
 

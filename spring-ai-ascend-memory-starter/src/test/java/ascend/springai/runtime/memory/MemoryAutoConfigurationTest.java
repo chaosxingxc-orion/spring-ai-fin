@@ -1,4 +1,4 @@
-package ascend.springai.runtime.memory;
+﻿package ascend.springai.runtime.memory;
 
 import ascend.springai.runtime.spi.memory.GraphMemoryRepository;
 import ascend.springai.runtime.spi.memory.LongTermMemoryRepository;
@@ -39,7 +39,7 @@ class MemoryAutoConfigurationTest {
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("LongTermMemoryRepository");
             assertThat(registry.counter(
-                    "springai_fin_memory_default_impl_not_configured_total",
+                    "springai_ascend_memory_default_impl_not_configured_total",
                     "spi", "LongTermMemoryRepository", "method", "put").count())
                     .isEqualTo(1.0);
         });
@@ -68,7 +68,7 @@ class MemoryAutoConfigurationTest {
 
     @Test
     void starterBeansAbsentWhenDisabled() {
-        runner.withPropertyValues("springai.fin.memory.enabled=false")
+        runner.withPropertyValues("springai.ascend.memory.enabled=false")
             .run(ctx -> {
                 assertThat(ctx).doesNotHaveBean(LongTermMemoryRepository.class);
                 assertThat(ctx).doesNotHaveBean(GraphMemoryRepository.class);

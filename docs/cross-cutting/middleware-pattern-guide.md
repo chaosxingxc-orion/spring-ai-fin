@@ -1,4 +1,4 @@
-> Owner: agent-platform | Maturity: L2 | Posture: all | Last refreshed: 2026-05-10
+﻿> Owner: agent-platform | Maturity: L2 | Posture: all | Last refreshed: 2026-05-10
 
 # Middleware Pattern Guide: Sidecar Adapter Pattern
 
@@ -96,7 +96,7 @@ import org.springframework.web.client.RestClient;
 
 @Configuration
 @EnableConfigurationProperties(Mem0Properties.class)
-@ConditionalOnProperty(name = "springai.fin.mem0.enabled", havingValue = "true")
+@ConditionalOnProperty(name = "springai.ascend.mem0.enabled", havingValue = "true")
 public class Mem0AutoConfiguration {
 
     @Bean
@@ -128,7 +128,7 @@ This is the Spring Boot 4.x way to register auto-configurations (replaces `sprin
 
 ---
 
-## Step 4: Enable with springai.fin.mem0.enabled=true
+## Step 4: Enable with springai.ascend.mem0.enabled=true
 
 End-users enable the adapter by setting the property in their `application.yml`:
 
@@ -137,14 +137,14 @@ springai:
   fin:
     mem0:
       enabled: true
-      base-url: ${SPRINGAI_FIN_MEM0_BASE_URL}
+      base-url: ${SPRINGAI_ASCEND_MEM0_BASE_URL}
 ```
 
 Or as environment variables:
 
 ```
-SPRINGAI_FIN_MEM0_ENABLED=true
-SPRINGAI_FIN_MEM0_BASE_URL=http://mem0-sidecar:8001
+SPRINGAI_ASCEND_MEM0_ENABLED=true
+SPRINGAI_ASCEND_MEM0_BASE_URL=http://mem0-sidecar:8001
 ```
 
 The memory-starter's sentinel `NotConfiguredLongTermMemoryRepository` has `@ConditionalOnMissingBean`; it steps aside automatically when the Mem0 bean is present.
@@ -157,9 +157,9 @@ To adapt a new external service `X` to SPI interface `MySpi`:
 
 1. Create `spring-ai-ascend-<x>-starter/` module.
 2. Implement `MySpiXAdapter implements MySpi` with a `RestClient` constructor arg.
-3. Create `XAutoConfiguration` with `@ConditionalOnProperty(name = "springai.fin.<x>.enabled", havingValue = "true")` and `@ConditionalOnMissingBean` on the @Bean method.
+3. Create `XAutoConfiguration` with `@ConditionalOnProperty(name = "springai.ascend.<x>.enabled", havingValue = "true")` and `@ConditionalOnMissingBean` on the @Bean method.
 4. Register `XAutoConfiguration` in `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.
-5. Create `XProperties` record with `@ConfigurationProperties(prefix = "springai.fin.<x>")` carrying at minimum `enabled` (boolean) and `baseUrl` (String).
+5. Create `XProperties` record with `@ConfigurationProperties(prefix = "springai.ascend.<x>")` carrying at minimum `enabled` (boolean) and `baseUrl` (String).
 6. Write a unit test for `XAutoConfiguration` verifying: (a) adapter registered when property is true, (b) sentinel remains when property is false or missing.
 7. Document the property prefix in [docs/contracts/configuration-contracts.md](../contracts/configuration-contracts.md).
 

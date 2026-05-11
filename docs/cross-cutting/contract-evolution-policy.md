@@ -1,4 +1,4 @@
-> Owner: agent-platform | Maturity: L2 | Posture: all | Last refreshed: 2026-05-10
+﻿> Owner: agent-platform | Maturity: L2 | Posture: all | Last refreshed: 2026-05-10
 
 # Contract Evolution Policy
 
@@ -37,7 +37,7 @@ The `OpenApiContractIT` test pins the expected OpenAPI snapshot and fails on any
 
 ### Configuration contracts (deprecation N+2 releases)
 
-Configuration properties under `springai.fin.*` follow a deprecation cycle.
+Configuration properties under `springai.ascend.*` follow a deprecation cycle.
 
 | Change type | Process |
 |---|---|

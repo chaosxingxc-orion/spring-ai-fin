@@ -1,4 +1,4 @@
-# Contract Catalog
+﻿# Contract Catalog
 
 > Single source of truth for all public contracts in the spring-ai-ascend platform.
 > Version: 0.1.0-SNAPSHOT | Last refreshed: 2026-05-10
@@ -43,33 +43,33 @@ Full per-SPI semantic contracts are in [spi-contracts.md](spi-contracts.md).
 
 ## 3. Configuration contracts
 
-All platform configuration properties use the `springai.fin.*` prefix. Property details (type, default, posture impact, owning starter) are in [configuration-contracts.md](configuration-contracts.md).
+All platform configuration properties use the `springai.ascend.*` prefix. Property details (type, default, posture impact, owning starter) are in [configuration-contracts.md](configuration-contracts.md).
 
 | Prefix | Owner starter | Summary |
 |--------|---------------|---------|
-| springai.fin.memory.* | spring-ai-ascend-memory-starter | Memory SPI toggle and config |
-| springai.fin.mem0.* | spring-ai-ascend-mem0-starter | Mem0 sidecar adapter; enabled=false default |
-| springai.fin.graphmemory.* | spring-ai-ascend-graphmemory-starter | Graphiti sidecar adapter; enabled=false default |
-| springai.fin.docling.* | spring-ai-ascend-docling-starter | Docling sidecar adapter; enabled=false default |
-| springai.fin.skills.* | spring-ai-ascend-skills-starter | Skills SPI toggle |
-| springai.fin.knowledge.* | spring-ai-ascend-knowledge-starter | Knowledge SPI toggle |
-| springai.fin.governance.* | spring-ai-ascend-governance-starter | Governance SPI toggle |
-| springai.fin.persistence.* | spring-ai-ascend-persistence-starter | Persistence SPI toggle |
-| springai.fin.resilience.* | spring-ai-ascend-resilience-starter | Resilience SPI toggle |
+| springai.ascend.memory.* | spring-ai-ascend-memory-starter | Memory SPI toggle and config |
+| springai.ascend.mem0.* | spring-ai-ascend-mem0-starter | Mem0 sidecar adapter; enabled=false default |
+| springai.ascend.graphmemory.* | spring-ai-ascend-graphmemory-starter | Graphiti sidecar adapter; enabled=false default |
+| springai.ascend.docling.* | spring-ai-ascend-docling-starter | Docling sidecar adapter; enabled=false default |
+| springai.ascend.skills.* | spring-ai-ascend-skills-starter | Skills SPI toggle |
+| springai.ascend.knowledge.* | spring-ai-ascend-knowledge-starter | Knowledge SPI toggle |
+| springai.ascend.governance.* | spring-ai-ascend-governance-starter | Governance SPI toggle |
+| springai.ascend.persistence.* | spring-ai-ascend-persistence-starter | Persistence SPI toggle |
+| springai.ascend.resilience.* | spring-ai-ascend-resilience-starter | Resilience SPI toggle |
 | app.posture | agent-platform | dev/research/prod posture; read at boot |
 
 ---
 
 ## 4. Telemetry contract
 
-All platform-emitted Prometheus counters use the namespace `springai_fin_*`. Cardinality rules and structured log field schema are in [telemetry-contracts.md](telemetry-contracts.md).
+All platform-emitted Prometheus counters use the namespace `SPRINGAI_ASCEND_*`. Cardinality rules and structured log field schema are in [telemetry-contracts.md](telemetry-contracts.md).
 
-Counter naming pattern: `springai_fin_<domain>_<subject>_total`
+Counter naming pattern: `SPRINGAI_ASCEND_<domain>_<subject>_total`
 
 Examples:
-- `springai_fin_memory_default_impl_not_configured_total` tagged `spi, method`
-- `springai_fin_idempotency_claimed_total`
-- `springai_fin_filter_errors_total` tagged `filter, reason`
+- `SPRINGAI_ASCEND_memory_default_impl_not_configured_total` tagged `spi, method`
+- `SPRINGAI_ASCEND_idempotency_claimed_total`
+- `SPRINGAI_ASCEND_filter_errors_total` tagged `filter, reason`
 
 ---
 

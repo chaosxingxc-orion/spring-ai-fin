@@ -1,4 +1,4 @@
-> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
+﻿> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
 > REPLACED in the refresh by `agent-eval/ARCHITECTURE.md` (eval harness, W4) + skill registry in `agent-runtime/tool/`.
 > The authoritative L0 is `ARCHITECTURE.md`; the
 > systems-engineering plan is `docs/plans/architecture-systems-engineering-plan.md`.
@@ -159,7 +159,7 @@ YAML file `docs/governance/recurrence-ledger.yaml` (mirrors hi-agent):
 
 ## 7. Cross-cutting hooks
 
-- **Rule 7**: every experiment promotion failure emits `springaifin_experiment_promotion_errors_total`
+- **Rule 7**: every experiment promotion failure emits `springAiAscend_experiment_promotion_errors_total`
 - **Rule 11**: spine on every record; PostmortemFinding canonical-constructor-validates
 - **Rule 14**: RecurrenceLedger is part of the manifest scorecard
 - **Rule 15**: defect closure requires recurrence-ledger entry update

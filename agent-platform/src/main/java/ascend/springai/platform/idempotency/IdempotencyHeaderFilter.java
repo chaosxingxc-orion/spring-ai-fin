@@ -1,4 +1,4 @@
-package ascend.springai.platform.idempotency;
+﻿package ascend.springai.platform.idempotency;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.FilterChain;
@@ -34,7 +34,7 @@ public class IdempotencyHeaderFilter extends OncePerRequestFilter {
             FilterChain chain) throws ServletException, IOException {
         String header = request.getHeader(IdempotencyConstants.HEADER_NAME);
         if (header == null || header.isBlank()) {
-            registry.counter("springai_fin_idempotency_header_missing_total", "posture", posture).increment();
+            registry.counter("springai_ascend_idempotency_header_missing_total", "posture", posture).increment();
             if ("dev".equalsIgnoreCase(posture)) {
                 LOG.warn("Idempotency-Key header missing; continuing in posture=dev");
                 chain.doFilter(request, response);
@@ -46,7 +46,7 @@ public class IdempotencyHeaderFilter extends OncePerRequestFilter {
         try {
             IdempotencyKey.parse(header);
         } catch (IllegalArgumentException e) {
-            registry.counter("springai_fin_idempotency_header_invalid_total", "posture", posture).increment();
+            registry.counter("springai_ascend_idempotency_header_invalid_total", "posture", posture).increment();
             response.sendError(400, "Idempotency-Key must be a valid UUID");
             return;
         }

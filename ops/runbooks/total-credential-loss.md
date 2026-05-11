@@ -1,4 +1,4 @@
-# Total Credential Loss Runbook
+﻿# Total Credential Loss Runbook
 
 > Owner: platform-engineering | Maturity: L0 | Posture: prod | Last refreshed: 2026-05-10
 
@@ -21,7 +21,7 @@ All secrets in `secrets/springai-fin/*` Vault path (see docs/cross-cutting/secre
 
 1. Seal Vault immediately: `vault operator seal`
 2. Rotate all secrets at source:
-   - Postgres: `ALTER USER springaifin PASSWORD '<new>';`
+   - Postgres: `ALTER USER springAiAscend PASSWORD '<new>';`
    - OpenAI: regenerate API key in provider portal.
    - JWT signing key: generate new RSA-4096 keypair.
 3. Unseal Vault. Write new secrets: `vault kv put secrets/springai-fin/...`

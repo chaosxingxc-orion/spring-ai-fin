@@ -1,4 +1,4 @@
-package ascend.springai.runtime.graphmemory;
+﻿package ascend.springai.runtime.graphmemory;
 
 import ascend.springai.runtime.spi.memory.GraphMemoryRepository;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -12,13 +12,13 @@ import org.springframework.context.annotation.Bean;
 
 @AutoConfiguration
 @ConditionalOnClass(GraphMemoryRepository.class)
-@ConditionalOnProperty(prefix = "springai.fin.graphmemory", name = "enabled", havingValue = "true", matchIfMissing = false)
+@ConditionalOnProperty(prefix = "springai.ascend.graphmemory", name = "enabled", havingValue = "true", matchIfMissing = false)
 @EnableConfigurationProperties(GraphMemoryProperties.class)
 public class GraphMemoryAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(MeterRegistry.class)
-    SimpleMeterRegistry springAiFinGraphMemoryFallbackMeterRegistry() {
+    SimpleMeterRegistry springAiAscendGraphMemoryFallbackMeterRegistry() {
         return new SimpleMeterRegistry();
     }
 

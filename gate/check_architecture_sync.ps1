@@ -805,20 +805,30 @@ if (Test-Path $manifestPath) {
     Fail 'openapi_snapshot_pinned' 'docs/contracts/openapi-v1.yaml not found; create it per T-CS-2' $openapiYaml 0
   }
 
-  # 27. Metric naming namespace (cycle-15/16 D3)
+  # 27. Metric naming namespace: all .counter("...") calls must use springai_ascend_ prefix.
+  # Also rejects residual springai_fin_ counters outside docs/archive.
   Get-ChildItem -Recurse -Filter '*.java' -Path $repoRoot |
-    Where-Object { $_.FullName -notmatch '[\\/]target[\\/]' } |
+    Where-Object { $_.FullName -notmatch '[\\/]target[\\/]' -and $_.FullName -notmatch '[\\/]docs[\\/]archive[\\/]' } |
     ForEach-Object {
       $jFile = $_.FullName
       Select-String -LiteralPath $jFile -Pattern '\.counter\("([^"]+)"' -AllMatches |
         ForEach-Object {
           foreach ($m in $_.Matches) {
             $name = $m.Groups[1].Value
-            if ($name -ne '' -and -not $name.StartsWith('springai_fin')) {
-              Fail 'metric_naming_namespace' "Counter name '$name' does not use springai_fin_ prefix" $jFile 0
+            if ($name -ne '' -and -not $name.StartsWith('springai_ascend')) {
+              Fail 'metric_naming_namespace' "Counter name '$name' does not use springai_ascend_ prefix" $jFile 0
             }
           }
         }
+    }
+  # Reject residual springai_fin_ or springai.fin. in Java sources outside docs/archive.
+  Get-ChildItem -Recurse -Filter '*.java' -Path $repoRoot |
+    Where-Object { $_.FullName -notmatch '[\\/]target[\\/]' -and $_.FullName -notmatch '[\\/]docs[\\/]archive[\\/]' } |
+    ForEach-Object {
+      $content = Get-Content $_.FullName -Raw
+      if ($content -match 'springai_fin_|springai\.fin\.') {
+        Fail 'namespace_rename_residue' "Residual springai_fin_ or springai.fin. found; rename incomplete" $_.FullName 0
+      }
     }
 
 } catch {

@@ -1,4 +1,4 @@
-package ascend.springai.runtime.governance;
+﻿package ascend.springai.runtime.governance;
 
 import ascend.springai.runtime.spi.governance.PolicyEvaluator;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -14,7 +14,7 @@ import java.util.Map;
 class NotConfiguredPolicyEvaluator implements PolicyEvaluator {
 
     private static final Logger LOG = LoggerFactory.getLogger(NotConfiguredPolicyEvaluator.class);
-    private static final String METRIC = "springai_fin_governance_default_impl_not_configured_total";
+    private static final String METRIC = "springai_ascend_governance_default_impl_not_configured_total";
     private static final String MSG =
             "L0: PolicyEvaluator has no default impl yet. " +
             "Provide a @Bean PolicyEvaluator or wait for the W1 JSR-303 + active-corpus impl.";

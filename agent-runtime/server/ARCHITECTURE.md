@@ -1,4 +1,4 @@
-> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
+﻿> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
 > RENAMED to `agent-runtime/run/ARCHITECTURE.md` in the refresh.
 > The authoritative L0 is `ARCHITECTURE.md`; the
 > systems-engineering plan is `docs/plans/architecture-systems-engineering-plan.md`.
@@ -288,7 +288,7 @@ A tenant-scoped query that finds zero rows because the row belongs to another te
 | **AD-3: Run lease + heartbeat for crash detection** | Lease TTL = 60s; heartbeat every 15s | Mirrors hi-agent's pattern; rehydrate on startup re-claims expired |
 | **AD-4: rehydrate bumps attemptId on re-lease** | Fresh UUID for each attempt; parentRunId links lineage | Hi-agent W35-T9: per-attempt metrics need distinct attemptId |
 | **AD-5: Tenant_id in every store** | Postgres RLS + application-level cross-check | Cross-tenant leak prevented at multiple layers |
-| **AD-6: 24h purge for IdempotencyStore** | `purgeExpired` + lifespan loop + `springaifin_idempotency_purged_total` | Mirrors hi-agent W35-T4; reference shape for all stores |
+| **AD-6: 24h purge for IdempotencyStore** | `purgeExpired` + lifespan loop + `springAiAscend_idempotency_purged_total` | Mirrors hi-agent W35-T4; reference shape for all stores |
 | **AD-7: EventBus is in-process at MVP** | Spring `ApplicationEventPublisher` | Multi-replica federation deferred to v1.1 (Kafka adoption) |
 | **AD-8: TenantBinder is the only entry to tenant-scoped transactions** | Raw `JdbcTemplate.execute` against tenant-scoped tables forbidden by `RlsConnectionAuditTest` | addresses P0-3 (status: design_accepted); tenant binding is structural, not caller-discipline |
 | **AD-9: Transaction-scoped GUC, not `connectionInitSql`, is the per-lease safety mechanism** | `SET LOCAL app.tenant_id` is auto-discarded by Postgres on `COMMIT`/`ROLLBACK`; `TenantBinder` checks the GUC is empty at transaction start as defense-in-depth; `PooledConnectionLeakageIT` proves reuse does not leak | `connectionInitSql` runs only at connection creation (per HikariCP docs), not on every checkout, so it cannot be the reset hook. The transaction-scoped GUC is the property that actually holds. |
@@ -300,7 +300,7 @@ A tenant-scoped query that finds zero rows because the row belongs to another te
 
 - **Rule 5**: stores own connection-pooled `DataSource` (HikariCP); never construct per-request
 - **Rule 6**: `DurableBackends.build` enforced
-- **Rule 7**: store-write failures emit Counter + WARNING + RecoveryAlarm; tenant-binding-missing emits `springaifin_rls_binding_missing_total{posture, store}`
+- **Rule 7**: store-write failures emit Counter + WARNING + RecoveryAlarm; tenant-binding-missing emits `springAiAscend_rls_binding_missing_total{posture, store}`
 - **Rule 11**: every persistent record carries `tenant_id` (RLS-enforced at Postgres + spine validator + RlsConnectionInterceptor at runtime)
 - **Rule 12**: `RunManager` capability targets L3 at v1 RELEASED (long-lived process + real-LLM + posture-default + observable)
 

@@ -1,4 +1,4 @@
-package ascend.springai.runtime.memory;
+﻿package ascend.springai.runtime.memory;
 
 import ascend.springai.runtime.spi.memory.GraphMemoryRepository;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -14,10 +14,10 @@ import java.util.List;
 class NotConfiguredGraphMemoryRepository implements GraphMemoryRepository {
 
     private static final Logger LOG = LoggerFactory.getLogger(NotConfiguredGraphMemoryRepository.class);
-    private static final String METRIC = "springai_fin_graph_memory_default_impl_not_configured_total";
+    private static final String METRIC = "springai_ascend_graph_memory_default_impl_not_configured_total";
     private static final String MSG =
             "L0: GraphMemoryRepository has no in-process default impl. " +
-            "Add spring-ai-ascend-graphmemory-starter and set springai.fin.graphmemory.enabled=true.";
+            "Add spring-ai-ascend-graphmemory-starter and set springai.ascend.graphmemory.enabled=true.";
 
     private final MeterRegistry registry;
 

@@ -1,4 +1,4 @@
-> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
+﻿> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
 > MERGED INTO `agent-runtime/tool/ARCHITECTURE.md` in the refresh.
 > The authoritative L0 is `ARCHITECTURE.md`; the
 > systems-engineering plan is `docs/plans/architecture-systems-engineering-plan.md`.
@@ -175,7 +175,7 @@ Both gates are mandatory. Removing the load-time gate would let malformed regist
 ## 7. Cross-cutting hooks
 
 - **Rule 11**: every `ManagedSkill` and `SkillObservation` carries spine; constructor raises `SpineCompletenessException` under strict posture if missing
-- **Rule 7**: skill-load failures emit `springaifin_skill_load_errors_total` + WARNING + fallback to "skill unavailable; agent uses fallback path"; runtime ActionGuard rejections emit per-stage counters per `../action-guard/` Rule 7 hook
+- **Rule 7**: skill-load failures emit `springAiAscend_skill_load_errors_total` + WARNING + fallback to "skill unavailable; agent uses fallback path"; runtime ActionGuard rejections emit per-stage counters per `../action-guard/` Rule 7 hook
 - **Rule 8**: skill registry warm at boot; `ActionGuardCoverageTest` is part of the operator-shape gate
 - **Posture-aware**: dev permits dangerous capabilities at load with WARN; research/prod fail-closed at load AND fail-closed at runtime via ActionGuard
 

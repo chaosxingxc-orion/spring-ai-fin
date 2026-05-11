@@ -1,4 +1,4 @@
-# agent-platform
+﻿# agent-platform
 
 > Northbound HTTP facade; accepts authenticated tenant requests, runs the filter chain (TenantContextFilter order 20, IdempotencyHeaderFilter order 30), and forwards to agent-runtime via SPI contracts. Maturity: L1.
 
@@ -41,11 +41,11 @@ Platform-level beans are not SPI-overridable. Customization is via starter @Bean
 
 ## Counters emitted
 
-- `springai_fin_filter_errors_total` tagged `filter=<filter-class>, reason=<reason>` -- emitted by each filter on failure (Rule 7)
-- `springai_fin_idempotency_claimed_total` -- new key claimed
-- `springai_fin_idempotency_replayed_total` -- existing key replayed
-- `springai_fin_idempotency_conflict_total` -- key claimed by different run
-- `springai_fin_idempotency_error_total` -- storage error during claim
+- `SPRINGAI_ASCEND_filter_errors_total` tagged `filter=<filter-class>, reason=<reason>` -- emitted by each filter on failure (Rule 7)
+- `SPRINGAI_ASCEND_idempotency_claimed_total` -- new key claimed
+- `SPRINGAI_ASCEND_idempotency_replayed_total` -- existing key replayed
+- `SPRINGAI_ASCEND_idempotency_conflict_total` -- key claimed by different run
+- `SPRINGAI_ASCEND_idempotency_error_total` -- storage error during claim
 
 ## See also
 

@@ -1,4 +1,4 @@
-package ascend.springai.platform.idempotency;
+﻿package ascend.springai.platform.idempotency;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
@@ -21,7 +21,7 @@ class IdempotencyHeaderFilterTest {
         filter.doFilter(req, res, chain);
 
         assertThat(res.getStatus()).isEqualTo(200);
-        assertThat(registry.counter("springai_fin_idempotency_header_missing_total", "posture", "dev").count())
+        assertThat(registry.counter("springai_ascend_idempotency_header_missing_total", "posture", "dev").count())
                 .isEqualTo(1.0);
     }
 
@@ -36,7 +36,7 @@ class IdempotencyHeaderFilterTest {
         filter.doFilter(req, res, chain);
 
         assertThat(res.getStatus()).isEqualTo(400);
-        assertThat(registry.counter("springai_fin_idempotency_header_missing_total", "posture", "research").count())
+        assertThat(registry.counter("springai_ascend_idempotency_header_missing_total", "posture", "research").count())
                 .isEqualTo(1.0);
     }
 
@@ -52,7 +52,7 @@ class IdempotencyHeaderFilterTest {
         filter.doFilter(req, res, chain);
 
         assertThat(res.getStatus()).isEqualTo(400);
-        assertThat(registry.counter("springai_fin_idempotency_header_invalid_total", "posture", "dev").count())
+        assertThat(registry.counter("springai_ascend_idempotency_header_invalid_total", "posture", "dev").count())
                 .isEqualTo(1.0);
     }
 

@@ -1,4 +1,4 @@
-package ascend.springai.runtime.knowledge;
+﻿package ascend.springai.runtime.knowledge;
 
 import ascend.springai.runtime.spi.knowledge.DocumentSourceConnector;
 import ascend.springai.runtime.spi.knowledge.DocumentSourceConnector.RawDocument;
@@ -40,7 +40,7 @@ class KnowledgeAutoConfigurationTest {
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("LayoutParser");
             assertThat(registry.counter(
-                    "springai_fin_knowledge_layout_parser_not_configured_total",
+                    "springai_ascend_knowledge_layout_parser_not_configured_total",
                     "spi", "LayoutParser", "method", "parse").count())
                     .isEqualTo(1.0);
         });
@@ -93,7 +93,7 @@ class KnowledgeAutoConfigurationTest {
 
     @Test
     void starterBeansAbsentWhenDisabled() {
-        runner.withPropertyValues("springai.fin.knowledge.enabled=false")
+        runner.withPropertyValues("springai.ascend.knowledge.enabled=false")
             .run(ctx -> {
                 assertThat(ctx).doesNotHaveBean(DocumentSourceConnector.class);
                 assertThat(ctx).doesNotHaveBean(LayoutParser.class);

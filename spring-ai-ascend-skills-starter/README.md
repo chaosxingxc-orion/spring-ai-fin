@@ -1,4 +1,4 @@
-# spring-ai-ascend-skills-starter
+﻿# spring-ai-ascend-skills-starter
 
 > Provides the SPI surface for the agent's tool registry; bridges MCP server tool lists and local Spring bean tools to the runtime. Maturity: L1.
 
@@ -28,8 +28,8 @@ ToolProvider myToolProvider(McpSyncClient mcpClient) {
 
 ## Counters emitted by sentinel
 
-- `springai_fin_skills_default_impl_not_configured_total` tagged `spi=ToolProvider, method=listTools`
-- `springai_fin_skills_default_impl_not_configured_total` tagged `spi=ToolProvider, method=invoke`
+- `SPRINGAI_ASCEND_skills_default_impl_not_configured_total` tagged `spi=ToolProvider, method=listTools`
+- `SPRINGAI_ASCEND_skills_default_impl_not_configured_total` tagged `spi=ToolProvider, method=invoke`
 
 ## See also
 

@@ -1,4 +1,4 @@
-package ascend.springai.runtime.persistence;
+﻿package ascend.springai.runtime.persistence;
 
 import ascend.springai.runtime.spi.persistence.ArtifactRepository;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -15,7 +15,7 @@ import java.util.Optional;
 class NotConfiguredArtifactRepository implements ArtifactRepository {
 
     private static final Logger LOG = LoggerFactory.getLogger(NotConfiguredArtifactRepository.class);
-    private static final String METRIC = "springai_fin_persistence_default_impl_not_configured_total";
+    private static final String METRIC = "springai_ascend_persistence_default_impl_not_configured_total";
     private static final String MSG =
             "L0: ArtifactRepository has no default impl yet. " +
             "Provide a @Bean ArtifactRepository or wait for the W1 JDBC + MinIO impl.";

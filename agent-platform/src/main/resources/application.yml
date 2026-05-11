@@ -9,9 +9,9 @@ spring:
     virtual:
       enabled: true   # ADR-01 + Loom; HikariCP 5 pool is virtual-thread-friendly.
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/springaifin}
-    username: ${DB_USER:springaifin}
-    password: ${DB_PASS:springaifin}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/springaiascend}
+    username: ${DB_USER:springaiascend}
+    password: ${DB_PASS:springaiascend}
     hikari:
       maximum-pool-size: 20
       minimum-idle: 4

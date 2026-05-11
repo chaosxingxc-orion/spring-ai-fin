@@ -1,8 +1,8 @@
-package ascend.springai.runtime.knowledge;
+﻿package ascend.springai.runtime.knowledge;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties("springai.fin.knowledge")
+@ConfigurationProperties("springai.ascend.knowledge")
 public record KnowledgeProperties(
     boolean enabled
 ) {

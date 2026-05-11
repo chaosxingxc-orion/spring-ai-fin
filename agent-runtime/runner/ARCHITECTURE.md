@@ -1,4 +1,4 @@
-> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
+﻿> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
 > MERGED INTO `agent-runtime/run/ARCHITECTURE.md` in the refresh.
 > The authoritative L0 is `ARCHITECTURE.md`; the
 > systems-engineering plan is `docs/plans/architecture-systems-engineering-plan.md`.
@@ -149,7 +149,7 @@ public record StageEvent(
 ## 6. Cross-cutting hooks
 
 - **Rule 5**: every `Mono.block()` outside CLI/tests is forbidden; StageExecutor is reactive
-- **Rule 7**: stage failures emit `springaifin_stage_failed_total{stage, reason}` + WARNING + run-metadata fallback list + gate-asserted
+- **Rule 7**: stage failures emit `springAiAscend_stage_failed_total{stage, reason}` + WARNING + run-metadata fallback list + gate-asserted
 - **Rule 8 hot-path**: `runner/` is hot-path; T3 evidence required on every commit
 - **Rule 11**: every record in `runner/` carries spine; SpineValidator enforces
 - **Rule 12**: TRACE capability targets L3 at v1 RELEASED

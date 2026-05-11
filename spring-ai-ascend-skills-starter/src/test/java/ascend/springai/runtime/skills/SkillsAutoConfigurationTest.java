@@ -1,4 +1,4 @@
-package ascend.springai.runtime.skills;
+﻿package ascend.springai.runtime.skills;
 
 import ascend.springai.runtime.spi.skills.ToolProvider;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -36,7 +36,7 @@ class SkillsAutoConfigurationTest {
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("ToolProvider");
             assertThat(registry.counter(
-                    "springai_fin_skills_default_impl_not_configured_total",
+                    "springai_ascend_skills_default_impl_not_configured_total",
                     "spi", "ToolProvider", "method", "listTools").count())
                     .isEqualTo(1.0);
         });
@@ -65,7 +65,7 @@ class SkillsAutoConfigurationTest {
 
     @Test
     void starterBeansAbsentWhenDisabled() {
-        runner.withPropertyValues("springai.fin.skills.enabled=false")
+        runner.withPropertyValues("springai.ascend.skills.enabled=false")
             .run(ctx -> {
                 assertThat(ctx).doesNotHaveBean(ToolProvider.class);
             });

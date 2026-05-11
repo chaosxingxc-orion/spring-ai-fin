@@ -1,4 +1,4 @@
-package ascend.springai.runtime.knowledge;
+﻿package ascend.springai.runtime.knowledge;
 
 import ascend.springai.runtime.spi.knowledge.LayoutParser;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -15,7 +15,7 @@ import java.util.List;
 class NotConfiguredLayoutParser implements LayoutParser {
 
     private static final Logger LOG = LoggerFactory.getLogger(NotConfiguredLayoutParser.class);
-    private static final String METRIC = "springai_fin_knowledge_layout_parser_not_configured_total";
+    private static final String METRIC = "springai_ascend_knowledge_layout_parser_not_configured_total";
     private static final String MSG =
             "L0: LayoutParser has no default impl yet. " +
             "Provide a @Bean LayoutParser or wait for the W1 Tika 3.3.0 default impl.";

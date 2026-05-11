@@ -1,4 +1,4 @@
-package ascend.springai.platform.api;
+﻿package ascend.springai.platform.api;
 
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
@@ -26,7 +26,7 @@ class ApiCompatibilityTest {
             .importPackages("ascend.springai");
 
     @Test
-    void no_springai_fin_class_imports_competitor_alibaba_cloud_ai() {
+    void no_springai_ascend_class_imports_competitor_alibaba_cloud_ai() {
         ArchRule rule = noClasses()
                 .that().resideInAPackage("ascend.springai..")
                 .should().dependOnClassesThat()

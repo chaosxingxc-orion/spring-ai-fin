@@ -1,4 +1,4 @@
-> Owner: agent-platform | Maturity: L2 | Posture: all | Last refreshed: 2026-05-10
+﻿> Owner: agent-platform | Maturity: L2 | Posture: all | Last refreshed: 2026-05-10
 
 # Integration Guide
 
@@ -86,12 +86,12 @@ springai:
   fin:
     mem0:
       enabled: true
-      base-url: ${SPRINGAI_FIN_MEM0_BASE_URL}
+      base-url: ${SPRINGAI_ASCEND_MEM0_BASE_URL}
 ```
 
 The sidecar adapter registers a `LongTermMemoryRepository` bean that overrides the sentinel. No @Bean declaration needed. The external service must be reachable at context load time in `research` and `prod` postures.
 
-The same pattern applies to `spring-ai-ascend-graphmemory-starter` (property prefix: `springai.fin.graphmemory`) and `spring-ai-ascend-docling-starter` (property prefix: `springai.fin.docling`).
+The same pattern applies to `spring-ai-ascend-graphmemory-starter` (property prefix: `springai.ascend.graphmemory`) and `spring-ai-ascend-docling-starter` (property prefix: `springai.ascend.docling`).
 
 ---
 

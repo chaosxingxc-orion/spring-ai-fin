@@ -1,4 +1,4 @@
-package ascend.springai.runtime.docling;
+﻿package ascend.springai.runtime.docling;
 
 import ascend.springai.runtime.spi.knowledge.LayoutParser;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -10,13 +10,13 @@ import java.util.List;
 
 /**
  * L0 sentinel for the Docling layout-parser adapter.
- * Activated only when springai.fin.docling.enabled=true.
+ * Activated only when springai.ascend.docling.enabled=true.
  * REST client wiring lands in W2.
  */
 class NotImplementedYetDoclingLayoutParser implements LayoutParser {
 
     private static final Logger LOG = LoggerFactory.getLogger(NotImplementedYetDoclingLayoutParser.class);
-    private static final String METRIC = "springai_fin_docling_adapter_not_implemented_total";
+    private static final String METRIC = "springai_ascend_docling_adapter_not_implemented_total";
     private static final String MSG =
             "L0: Docling adapter enabled but REST client not yet wired. " +
             "W2 will add RestClient wiring. baseUrl=%s";

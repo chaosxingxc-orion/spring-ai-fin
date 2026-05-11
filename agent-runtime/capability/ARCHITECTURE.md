@@ -1,4 +1,4 @@
-> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
+﻿> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
 > MERGED INTO `agent-runtime/tool/` and `agent-runtime/action/` in the refresh.
 > The authoritative L0 is `ARCHITECTURE.md`; the
 > systems-engineering plan is `docs/plans/architecture-systems-engineering-plan.md`.
@@ -151,7 +151,7 @@ sequenceDiagram
 ## 5. Cross-cutting hooks
 
 - **Rule 6**: `CapabilityRegistry` is `@Bean` singleton
-- **Rule 7**: capability invocation failures emit `springaifin_capability_failures_total{capability, reason}` + breaker state changes
+- **Rule 7**: capability invocation failures emit `springAiAscend_capability_failures_total{capability, reason}` + breaker state changes
 - **Rule 11**: `CapabilityDescriptor` is process-internal; documented exception to spine completeness
 - **Rule 12**: every capability declares `MaturityLevel`; manifest reflects
 - **Posture-aware**: hard-fail under prod when capability not `availableInProd`; heuristic fallback under dev

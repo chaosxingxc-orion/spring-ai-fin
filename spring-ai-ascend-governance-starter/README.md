@@ -1,4 +1,4 @@
-# spring-ai-ascend-governance-starter
+﻿# spring-ai-ascend-governance-starter
 
 > Provides the SPI surface for policy evaluation; supports in-process Bean Validation and optional OPA sidecar delegation. Maturity: L1.
 
@@ -27,7 +27,7 @@ PolicyEvaluator myPolicyEvaluator(OpaClient opa) {
 
 ## Counters emitted by sentinel
 
-- `springai_fin_governance_default_impl_not_configured_total` tagged `spi=PolicyEvaluator, method=evaluate`
+- `SPRINGAI_ASCEND_governance_default_impl_not_configured_total` tagged `spi=PolicyEvaluator, method=evaluate`
 
 ## See also
 

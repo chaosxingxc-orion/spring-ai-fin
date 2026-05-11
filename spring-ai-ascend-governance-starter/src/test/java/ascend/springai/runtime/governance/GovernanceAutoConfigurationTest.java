@@ -1,4 +1,4 @@
-package ascend.springai.runtime.governance;
+﻿package ascend.springai.runtime.governance;
 
 import ascend.springai.runtime.spi.governance.PolicyEvaluator;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -38,7 +38,7 @@ class GovernanceAutoConfigurationTest {
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("PolicyEvaluator");
             assertThat(registry.counter(
-                    "springai_fin_governance_default_impl_not_configured_total",
+                    "springai_ascend_governance_default_impl_not_configured_total",
                     "spi", "PolicyEvaluator", "method", "evaluate").count())
                     .isEqualTo(1.0);
         });
@@ -67,7 +67,7 @@ class GovernanceAutoConfigurationTest {
 
     @Test
     void starterBeansAbsentWhenDisabled() {
-        runner.withPropertyValues("springai.fin.governance.enabled=false")
+        runner.withPropertyValues("springai.ascend.governance.enabled=false")
             .run(ctx -> {
                 assertThat(ctx).doesNotHaveBean(PolicyEvaluator.class);
             });

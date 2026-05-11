@@ -1,4 +1,4 @@
-package ascend.springai.runtime.docling;
+﻿package ascend.springai.runtime.docling;
 
 import ascend.springai.runtime.spi.knowledge.LayoutParser;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -12,13 +12,13 @@ import org.springframework.context.annotation.Bean;
 
 @AutoConfiguration
 @ConditionalOnClass(LayoutParser.class)
-@ConditionalOnProperty(prefix = "springai.fin.docling", name = "enabled", havingValue = "true", matchIfMissing = false)
+@ConditionalOnProperty(prefix = "springai.ascend.docling", name = "enabled", havingValue = "true", matchIfMissing = false)
 @EnableConfigurationProperties(DoclingProperties.class)
 public class DoclingAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(MeterRegistry.class)
-    SimpleMeterRegistry springAiFinDoclingFallbackMeterRegistry() {
+    SimpleMeterRegistry springAiAscendDoclingFallbackMeterRegistry() {
         return new SimpleMeterRegistry();
     }
 

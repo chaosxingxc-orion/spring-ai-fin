@@ -1,4 +1,4 @@
-package ascend.springai.runtime.skills;
+﻿package ascend.springai.runtime.skills;
 
 import ascend.springai.runtime.spi.skills.ToolProvider;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -19,13 +19,13 @@ public class SkillsAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(MeterRegistry.class)
-    SimpleMeterRegistry springAiFinSkillsFallbackMeterRegistry() {
+    SimpleMeterRegistry springAiAscendSkillsFallbackMeterRegistry() {
         return new SimpleMeterRegistry();
     }
 
     @Bean
     @ConditionalOnMissingBean(ToolProvider.class)
-    @ConditionalOnProperty(prefix = "springai.fin.skills", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "springai.ascend.skills", name = "enabled", havingValue = "true", matchIfMissing = true)
     ToolProvider toolProvider(MeterRegistry registry, Environment env) {
         String posture = env.getProperty("app.posture", "dev");
         if (!"dev".equalsIgnoreCase(posture)) {

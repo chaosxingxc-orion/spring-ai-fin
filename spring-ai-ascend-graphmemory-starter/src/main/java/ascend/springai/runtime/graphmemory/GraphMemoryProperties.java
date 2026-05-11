@@ -1,8 +1,8 @@
-package ascend.springai.runtime.graphmemory;
+﻿package ascend.springai.runtime.graphmemory;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties("springai.fin.graphmemory")
+@ConfigurationProperties("springai.ascend.graphmemory")
 public class GraphMemoryProperties {
 
     private boolean enabled = false;

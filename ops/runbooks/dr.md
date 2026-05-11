@@ -1,4 +1,4 @@
-# Disaster Recovery Runbook
+﻿# Disaster Recovery Runbook
 
 > Owner: platform-engineering | Maturity: L0 | Posture: research/prod | Last refreshed: 2026-05-10
 
@@ -21,7 +21,7 @@ PostgreSQL (primary data store), Valkey (session cache), agent-platform deployme
 
 1. Assess: confirm primary region unreachable (at least 2 of 3 health probes failing).
 2. Failover DNS: update Route53 weighted record to DR endpoint (weight 100).
-3. Restore Postgres: `aws s3 cp s3://springaifin-wal/<latest-base> - | pg_restore ...`
+3. Restore Postgres: `aws s3 cp s3://springAiAscend-wal/<latest-base> - | pg_restore ...`
    - Target: RPO <= 1 hour (WAL streaming must have been active).
 4. Unseal Vault in DR region. Verify all secrets accessible.
 5. Apply Helm release in DR cluster: `helm upgrade --install spring-ai-ascend ops/helm/spring-ai-ascend/ -f values-prod-dr.yaml`

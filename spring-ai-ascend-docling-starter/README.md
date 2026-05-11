@@ -1,6 +1,6 @@
-# spring-ai-ascend-docling-starter
+﻿# spring-ai-ascend-docling-starter
 
-> Optional sidecar adapter that wires LayoutParser to the Docling REST API (IBM Docling-serve); replaces the sentinel when enabled=true and SPRINGAI_FIN_DOCLING_BASE_URL is set. Maturity: L0.
+> Optional sidecar adapter that wires LayoutParser to the Docling REST API (IBM Docling-serve); replaces the sentinel when enabled=true and SPRINGAI_ASCEND_DOCLING_BASE_URL is set. Maturity: L0.
 
 ## SPI surface
 
@@ -18,7 +18,7 @@ This starter provides no new SPI interfaces. It contributes an alternative imple
 | research | Sentinel rejected at context load; BeanCreationException |
 | prod | Sentinel rejected at context load; BeanCreationException |
 
-When `springai.fin.docling.enabled=true` and `SPRINGAI_FIN_DOCLING_BASE_URL` is present, the Docling adapter bean is registered and overrides the sentinel in all postures.
+When `springai.ascend.docling.enabled=true` and `SPRINGAI_ASCEND_DOCLING_BASE_URL` is present, the Docling adapter bean is registered and overrides the sentinel in all postures.
 
 ## Drop-in override (@Bean recipe)
 
@@ -29,7 +29,7 @@ springai:
   fin:
     docling:
       enabled: true
-      base-url: ${SPRINGAI_FIN_DOCLING_BASE_URL}
+      base-url: ${SPRINGAI_ASCEND_DOCLING_BASE_URL}
 ```
 
 Custom override if additional client config is required:
@@ -45,7 +45,7 @@ LayoutParser doclingLayoutParser(DoclingProperties props, RestClient.Builder bui
 
 This starter does not emit its own sentinel counters. When disabled, the knowledge-starter sentinel counters fire:
 
-- `springai_fin_knowledge_default_impl_not_configured_total` tagged `spi=LayoutParser, method=parse`
+- `SPRINGAI_ASCEND_knowledge_default_impl_not_configured_total` tagged `spi=LayoutParser, method=parse`
 
 ## See also
 

@@ -1,4 +1,4 @@
-# spring-ai-ascend architecture status ledger
+﻿# spring-ai-ascend architecture status ledger
 # Single machine-readable source of truth for capability status.
 # Loaded by docs/governance/decision-sync-matrix.md and gate/check_architecture_sync.*
 #
@@ -1608,7 +1608,7 @@ findings:
     tests:
       - spring-ai-ascend-memory-starter/src/test/java/ascend/springai/runtime/memory/MemoryAutoConfigurationTest.java
     latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L1: @ConfigurationProperties(springai.fin.memory) + @ConditionalOnProperty wiring real; starterBeansAbsentWhenDisabled test GREEN."
+    allowed_claim: "L1: @ConfigurationProperties(springai.ascend.memory) + @ConditionalOnProperty wiring real; starterBeansAbsentWhenDisabled test GREEN."
 
   skills_configuration_properties:
     maturity: L1
@@ -1620,7 +1620,7 @@ findings:
     tests:
       - spring-ai-ascend-skills-starter/src/test/java/ascend/springai/runtime/skills/SkillsAutoConfigurationTest.java
     latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L1: @ConfigurationProperties(springai.fin.skills) + @ConditionalOnProperty wiring real; starterBeansAbsentWhenDisabled test GREEN."
+    allowed_claim: "L1: @ConfigurationProperties(springai.ascend.skills) + @ConditionalOnProperty wiring real; starterBeansAbsentWhenDisabled test GREEN."
 
   knowledge_configuration_properties:
     maturity: L1
@@ -1632,7 +1632,7 @@ findings:
     tests:
       - spring-ai-ascend-knowledge-starter/src/test/java/ascend/springai/runtime/knowledge/KnowledgeAutoConfigurationTest.java
     latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L1: @ConfigurationProperties(springai.fin.knowledge) + @ConditionalOnProperty wiring real; starterBeansAbsentWhenDisabled test GREEN."
+    allowed_claim: "L1: @ConfigurationProperties(springai.ascend.knowledge) + @ConditionalOnProperty wiring real; starterBeansAbsentWhenDisabled test GREEN."
 
   governance_configuration_properties:
     maturity: L1
@@ -1644,7 +1644,7 @@ findings:
     tests:
       - spring-ai-ascend-governance-starter/src/test/java/ascend/springai/runtime/governance/GovernanceAutoConfigurationTest.java
     latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L1: @ConfigurationProperties(springai.fin.governance) + @ConditionalOnProperty wiring real; starterBeansAbsentWhenDisabled test GREEN."
+    allowed_claim: "L1: @ConfigurationProperties(springai.ascend.governance) + @ConditionalOnProperty wiring real; starterBeansAbsentWhenDisabled test GREEN."
 
   persistence_configuration_properties:
     maturity: L1
@@ -1656,7 +1656,7 @@ findings:
     tests:
       - spring-ai-ascend-persistence-starter/src/test/java/ascend/springai/runtime/persistence/PersistenceAutoConfigurationTest.java
     latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L1: @ConfigurationProperties(springai.fin.persistence) + @ConditionalOnProperty wiring real; starterBeansAbsentWhenDisabled test GREEN."
+    allowed_claim: "L1: @ConfigurationProperties(springai.ascend.persistence) + @ConditionalOnProperty wiring real; starterBeansAbsentWhenDisabled test GREEN."
 
   openapi_v1_snapshot:
     maturity: L2
@@ -1764,7 +1764,7 @@ findings:
     implementation: null
     tests: []
     latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L2: all springai.fin.* properties declared; deprecation N+2 rule."
+    allowed_claim: "L2: all springai.ascend.* properties declared; deprecation N+2 rule."
 
   telemetry_contracts_doc:
     maturity: L2

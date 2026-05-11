@@ -1,4 +1,4 @@
-package ascend.springai.runtime.governance;
+﻿package ascend.springai.runtime.governance;
 
 import ascend.springai.runtime.spi.governance.PolicyEvaluator;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -19,13 +19,13 @@ public class GovernanceAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(MeterRegistry.class)
-    SimpleMeterRegistry springAiFinGovernanceFallbackMeterRegistry() {
+    SimpleMeterRegistry springAiAscendGovernanceFallbackMeterRegistry() {
         return new SimpleMeterRegistry();
     }
 
     @Bean
     @ConditionalOnMissingBean(PolicyEvaluator.class)
-    @ConditionalOnProperty(prefix = "springai.fin.governance", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "springai.ascend.governance", name = "enabled", havingValue = "true", matchIfMissing = true)
     PolicyEvaluator policyEvaluator(MeterRegistry registry, Environment env) {
         String posture = env.getProperty("app.posture", "dev");
         if (!"dev".equalsIgnoreCase(posture)) {

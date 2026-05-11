@@ -1,4 +1,4 @@
-# spring-ai-ascend-persistence-starter
+﻿# spring-ai-ascend-persistence-starter
 
 > Provides the SPI surface for durable run records, idempotency key deduplication, and artifact storage; all records carry full contract-spine fields. Maturity: L1.
 
@@ -48,14 +48,14 @@ ArtifactRepository myArtifactRepository(JdbcTemplate jdbc, MinioClient minio) {
 
 ## Counters emitted by sentinel
 
-- `springai_fin_persistence_default_impl_not_configured_total` tagged `spi=RunRepository, method=create`
-- `springai_fin_persistence_default_impl_not_configured_total` tagged `spi=RunRepository, method=findById`
-- `springai_fin_persistence_default_impl_not_configured_total` tagged `spi=RunRepository, method=updateStage`
-- `springai_fin_persistence_default_impl_not_configured_total` tagged `spi=RunRepository, method=markTerminal`
-- `springai_fin_persistence_default_impl_not_configured_total` tagged `spi=IdempotencyRepository, method=claimOrFind`
-- `springai_fin_persistence_default_impl_not_configured_total` tagged `spi=ArtifactRepository, method=store`
-- `springai_fin_persistence_default_impl_not_configured_total` tagged `spi=ArtifactRepository, method=findById`
-- `springai_fin_persistence_default_impl_not_configured_total` tagged `spi=ArtifactRepository, method=findByRunId`
+- `SPRINGAI_ASCEND_persistence_default_impl_not_configured_total` tagged `spi=RunRepository, method=create`
+- `SPRINGAI_ASCEND_persistence_default_impl_not_configured_total` tagged `spi=RunRepository, method=findById`
+- `SPRINGAI_ASCEND_persistence_default_impl_not_configured_total` tagged `spi=RunRepository, method=updateStage`
+- `SPRINGAI_ASCEND_persistence_default_impl_not_configured_total` tagged `spi=RunRepository, method=markTerminal`
+- `SPRINGAI_ASCEND_persistence_default_impl_not_configured_total` tagged `spi=IdempotencyRepository, method=claimOrFind`
+- `SPRINGAI_ASCEND_persistence_default_impl_not_configured_total` tagged `spi=ArtifactRepository, method=store`
+- `SPRINGAI_ASCEND_persistence_default_impl_not_configured_total` tagged `spi=ArtifactRepository, method=findById`
+- `SPRINGAI_ASCEND_persistence_default_impl_not_configured_total` tagged `spi=ArtifactRepository, method=findByRunId`
 
 ## See also
 
