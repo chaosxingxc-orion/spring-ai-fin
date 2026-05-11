@@ -65,10 +65,11 @@
         <artifactId>agent-runtime</artifactId>
         <version>${project.version}</version>
       </dependency>
-
-      <!-- Capability starters (embedded defaults) -->
-
-
+      <dependency>
+        <groupId>ascend.springai</groupId>
+        <artifactId>agent-eval</artifactId>
+        <version>${project.version}</version>
+      </dependency>
 
       <!-- Optional sidecar adapter starters -->
       <dependency>

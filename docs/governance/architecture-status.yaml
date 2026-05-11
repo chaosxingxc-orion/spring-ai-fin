@@ -14,16 +14,16 @@ generated_at: 2026-05-12
 generated_by: project rename spring-ai-fin -> spring-ai-ascend (2026-05-12); archived prior plans under docs/archive/spring-ai-fin/
 supersedes: version 1 (2026-05-08 morning)
 
-# Source: root pom.xml <modules> list at commit a7756cd
+# Source: root pom.xml <modules> list updated 2026-05-12 Occam pass (C1-C11)
 repository_counts:
   note: "Canonical counts -- derived from root pom.xml modules list. All documents reference these; no document may claim a different count without updating this block."
-  reactor_modules: 14
-  sdk_spi_starters: 6
-  sidecar_adapter_starters: 3
-  alternate_framework_profiles: 1
+  reactor_modules: 6
+  sdk_spi_starters: 0
+  sidecar_adapter_starters: 1
+  alternate_framework_profiles: 0
   internal_modules: 3
   bom_module: 1
-  total_reactor_modules: 14
+  total_reactor_modules: 6
 
 # Cycle-7 sec-D1: maturity (L0..L4) is the primary status field for capabilities;
 # the lifecycle field below is `evidence_state` (formerly `status`). The two
