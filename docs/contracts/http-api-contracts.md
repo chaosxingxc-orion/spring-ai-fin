@@ -70,8 +70,8 @@ Response body (200 OK):
 {
   "status": "UP",
   "sha": "<git-sha>",
-  "posture": "dev",
-  "timestamp": "2026-05-10T08:00:00Z"
+  "db_ping_ns": 12345,
+  "ts": "2026-05-10T08:00:00Z"
 }
 ```
 

@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
-import java.util.Map;
 
 /**
  * /v1/health -- returns 200 with status + sha + db round-trip evidence.
@@ -28,13 +27,8 @@ public class HealthController {
     }
 
     @GetMapping("/health")
-    public Map<String, Object> health() {
+    public HealthResponse health() {
         long ping = repo.pingDb();
-        return Map.of(
-                "status", "UP",
-                "sha", sha,
-                "db_ping_ns", ping,
-                "ts", Instant.now().toString()
-        );
+        return new HealthResponse("UP", sha, ping, Instant.now().toString());
     }
 }
