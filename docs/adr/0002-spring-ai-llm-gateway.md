@@ -72,3 +72,5 @@ medium (LlmRouter is the only adapter; provider beans isolate vendor surface)
 
 - `agent-runtime/llm/ARCHITECTURE.md`
 - `docs/cross-cutting/oss-bill-of-materials.md` sec-3.1
+
+> NOTE 2026-05-12: `agent-runtime/llm/ARCHITECTURE.md` moved to `docs/v6-rationale/v6-llm.md` in 2026-05-12 Occam pass.

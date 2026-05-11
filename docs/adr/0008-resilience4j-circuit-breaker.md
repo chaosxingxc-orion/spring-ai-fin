@@ -80,3 +80,5 @@ medium (one decision adapter; Cedar Java SDK could replace if it matures)
 
 - `agent-runtime/action/ARCHITECTURE.md`
 - `docs/cross-cutting/deployment-topology.md`
+
+> NOTE 2026-05-12: `agent-runtime/action/ARCHITECTURE.md` moved to `docs/v6-rationale/v6-action.md` in 2026-05-12 Occam pass.

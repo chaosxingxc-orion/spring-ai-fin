@@ -81,3 +81,5 @@ medium (sync-mode RunOrchestrator is still in tree as fallback for short runs)
 
 - `agent-runtime/temporal/ARCHITECTURE.md`
 - `docs/cross-cutting/oss-bill-of-materials.md` sec-3.2
+
+> NOTE 2026-05-12: `agent-runtime/temporal/ARCHITECTURE.md` moved to `docs/v6-rationale/v6-temporal.md` in 2026-05-12 Occam pass.

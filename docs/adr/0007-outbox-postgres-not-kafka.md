@@ -71,3 +71,5 @@ low (sink adapter swap)
 
 - `agent-runtime/outbox/ARCHITECTURE.md`
 - `docs/cross-cutting/deployment-topology.md` sec-4
+
+> NOTE 2026-05-12: `agent-runtime/outbox/ARCHITECTURE.md` moved to `docs/v6-rationale/v6-outbox.md` in 2026-05-12 Occam pass.

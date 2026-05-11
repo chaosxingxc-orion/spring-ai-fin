@@ -78,3 +78,5 @@ high (every table's primary key + every Java record DTO)
 ## References
 
 - `docs/cross-cutting/data-model-conventions.md` sec-3
+
+> NOTE 2026-05-12: `docs/cross-cutting/data-model-conventions.md` moved to `docs/v6-rationale/v6-data-model-conventions.md` in 2026-05-12 Occam pass.

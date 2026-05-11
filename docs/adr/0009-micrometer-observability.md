@@ -79,3 +79,5 @@ medium (Spring Cloud Vault config swap to alternative provider)
 
 - `docs/cross-cutting/secrets-lifecycle.md`
 - `docs/cross-cutting/deployment-topology.md`
+
+> NOTE 2026-05-12: `docs/cross-cutting/secrets-lifecycle.md` moved to `docs/v6-rationale/v6-secrets-lifecycle.md` in 2026-05-12 Occam pass.

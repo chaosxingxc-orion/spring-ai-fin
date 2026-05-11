@@ -69,3 +69,5 @@ medium (chain class structure; OPA policies; tests)
 
 - `agent-runtime/action/ARCHITECTURE.md`
 - cycle-9 response sec-C1
+
+> NOTE 2026-05-12: `agent-runtime/action/ARCHITECTURE.md` moved to `docs/v6-rationale/v6-action.md` in 2026-05-12 Occam pass.

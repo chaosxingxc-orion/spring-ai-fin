@@ -72,3 +72,5 @@ medium (changing isolation strategy means rewriting TenantBinder and every asser
 
 - `agent-platform/tenant/ARCHITECTURE.md`
 - `docs/cross-cutting/security-control-matrix.md` C3-C5
+
+> NOTE 2026-05-12: `docs/cross-cutting/security-control-matrix.md` moved to `docs/v6-rationale/v6-security-control-matrix.md` in 2026-05-12 Occam pass.
