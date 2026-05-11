@@ -1,4 +1,4 @@
-﻿package ascend.springai.runtime.persistence;
+package ascend.springai.runtime.persistence;
 
 import ascend.springai.runtime.spi.persistence.RunRepository;
 import io.micrometer.core.instrument.MeterRegistry;

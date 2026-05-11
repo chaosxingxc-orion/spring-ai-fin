@@ -1,4 +1,4 @@
-﻿package ascend.springai.runtime.persistence;
+package ascend.springai.runtime.persistence;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

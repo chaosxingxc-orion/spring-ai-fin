@@ -1,4 +1,4 @@
-﻿package ascend.springai.platform.idempotency;
+package ascend.springai.platform.idempotency;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;

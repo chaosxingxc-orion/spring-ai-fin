@@ -1,4 +1,4 @@
-﻿package ascend.springai.runtime.governance;
+package ascend.springai.runtime.governance;
 
 import ascend.springai.runtime.spi.governance.PolicyEvaluator;
 import io.micrometer.core.instrument.MeterRegistry;

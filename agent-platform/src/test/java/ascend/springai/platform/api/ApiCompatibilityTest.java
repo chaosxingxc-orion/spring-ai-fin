@@ -1,4 +1,4 @@
-﻿package ascend.springai.platform.api;
+package ascend.springai.platform.api;
 
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;

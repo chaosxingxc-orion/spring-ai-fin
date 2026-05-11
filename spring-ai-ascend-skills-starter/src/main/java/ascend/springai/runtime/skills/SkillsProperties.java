@@ -1,4 +1,4 @@
-﻿package ascend.springai.runtime.skills;
+package ascend.springai.runtime.skills;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

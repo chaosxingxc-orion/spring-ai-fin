@@ -1,4 +1,4 @@
-﻿package ascend.springai.runtime.knowledge;
+package ascend.springai.runtime.knowledge;
 
 import ascend.springai.runtime.spi.knowledge.DocumentSourceConnector;
 import ascend.springai.runtime.spi.knowledge.DocumentSourceConnector.RawDocument;

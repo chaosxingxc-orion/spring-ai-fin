@@ -1,4 +1,4 @@
-﻿package ascend.springai.runtime.langchain4j;
+package ascend.springai.runtime.langchain4j;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;

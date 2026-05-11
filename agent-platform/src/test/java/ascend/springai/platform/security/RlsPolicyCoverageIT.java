@@ -1,4 +1,4 @@
-﻿package ascend.springai.platform.security;
+package ascend.springai.platform.security;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;

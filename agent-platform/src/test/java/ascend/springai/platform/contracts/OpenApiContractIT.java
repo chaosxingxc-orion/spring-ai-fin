@@ -1,4 +1,4 @@
-﻿package ascend.springai.platform.contracts;
+package ascend.springai.platform.contracts;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;

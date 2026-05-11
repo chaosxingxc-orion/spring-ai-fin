@@ -1,4 +1,4 @@
-﻿package ascend.springai.runtime.skills;
+package ascend.springai.runtime.skills;
 
 import ascend.springai.runtime.spi.skills.ToolProvider;
 import io.micrometer.core.instrument.MeterRegistry;

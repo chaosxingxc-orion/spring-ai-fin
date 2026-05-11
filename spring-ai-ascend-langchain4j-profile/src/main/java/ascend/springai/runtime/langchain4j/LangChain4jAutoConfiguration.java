@@ -1,4 +1,4 @@
-﻿package ascend.springai.runtime.langchain4j;
+package ascend.springai.runtime.langchain4j;
 
 import ascend.springai.runtime.spi.knowledge.LayoutParser;
 import io.micrometer.core.instrument.MeterRegistry;
