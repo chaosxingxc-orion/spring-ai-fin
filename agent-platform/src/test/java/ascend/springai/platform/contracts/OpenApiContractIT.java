@@ -78,6 +78,29 @@ class OpenApiContractIT {
 
     @Test
     @SuppressWarnings("unchecked")
+    void liveSpecResponseSchemasMatchPinnedRequiredFields() throws Exception {
+        InputStream pinned = getClass().getResourceAsStream("/contracts/openapi-v1-pinned.yaml");
+        assertThat(pinned).as("pinned spec on classpath").isNotNull();
+        Map<String, Object> pinnedSpec = YAML_MAPPER.readValue(pinned, Map.class);
+
+        Map<String, Object> liveSpec = given()
+                .port(port)
+                .when()
+                .get("/v3/api-docs")
+                .then()
+                .statusCode(200)
+                .extract()
+                .as(Map.class);
+
+        OpenApiSnapshotComparator.ComparisonResult result =
+                OpenApiSnapshotComparator.compareResponseSchemas(pinnedSpec, liveSpec);
+        assertThat(result.violations())
+                .as("Response schema drift detected: required fields or types changed")
+                .isEmpty();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     void liveSpecInfoIsPresent() {
         Map<String, Object> spec = given()
                 .port(port)
