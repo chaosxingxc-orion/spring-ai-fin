@@ -53,4 +53,10 @@ class ResilienceAutoConfigurationTest {
         runner.withPropertyValues("app.posture=prod")
                 .run(ctx -> assertThat(ctx).hasFailed());
     }
+
+    @Test
+    void starterBeansAbsentWhenDisabled() {
+        runner.withPropertyValues("springai.ascend.resilience.enabled=false")
+            .run(ctx -> assertThat(ctx).doesNotHaveBean(ResilienceContract.class));
+    }
 }
