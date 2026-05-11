@@ -58,12 +58,12 @@ schema_capabilities:
 # of cycle-8's remediation. The gate derives it from HEAD when verifying
 # audit_trail_shape.
 
-reviewed_content_sha: 9b5368a                       # project rename spring-ai-fin → spring-ai-ascend (2026-05-12); full identity rename commit
-evidence_commit_parent_sha: 9b5368a                 # MUST equal reviewed_content_sha (gate enforced)
+reviewed_content_sha: c0cf562                        # project rename spring-ai-fin → spring-ai-ascend content commit (2026-05-12); paired with 9b5368a (git mv renames)
+evidence_commit_parent_sha: c0cf562                 # MUST equal reviewed_content_sha (gate enforced)
 evidence_commit_classification: audit_trail_only    # one of: direct_reviewed_content | audit_trail_only
 
 # Backward compatibility with v1/v2 readers (cycle-5/cycle-6/cycle-7).
-reviewed_sha: 9b5368a
+reviewed_sha: c0cf562
 
 current_head_policy:
   accepted_shapes:
@@ -79,7 +79,7 @@ current_head_policy:
 
 # ---- Delivery and logs (cycle-8 sec-B1, sec-B2, sec-B3) ----
 
-delivery_file: docs/delivery/2026-05-12-9b5368a.md   # spring-ai-ascend: project rename delivery record at rename SHA
+delivery_file: docs/delivery/2026-05-12-c0cf562.md   # spring-ai-ascend: project rename delivery record at content-rename SHA (c0cf562 content + 9b5368a git-mv)
 prior_delivery_file: docs/archive/spring-ai-fin/delivery/2026-05-11-391cd6e.md   # last delivery under spring-ai-fin identity (archived)
 
 # Per cycle-8 sec-B3: log slots use the explicit state enum, never null.

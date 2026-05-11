@@ -123,7 +123,7 @@
 ## Delivery evidence
 
 - [`docs/delivery/README.md`](../delivery/README.md) -- delivery rules.
-- [`docs/delivery/2026-05-12-9b5368a.md`](../delivery/2026-05-12-9b5368a.md) -- **(current)** spring-ai-ascend: project rename delivery record; all prior gate SHAs reset.
+- [`docs/delivery/2026-05-12-c0cf562.md`](../delivery/2026-05-12-c0cf562.md) -- **(current)** spring-ai-ascend: project rename delivery record (c0cf562 content + 9b5368a git-mv); all prior gate SHAs reset.
 - [`docs/archive/spring-ai-fin/delivery/2026-05-11-391cd6e.md`](../archive/spring-ai-fin/delivery/2026-05-11-391cd6e.md) -- last delivery under spring-ai-fin identity; cycle-17 Phase 1 (archived).
 - [`docs/archive/spring-ai-fin/delivery/2026-05-11-a7756cd.md`](../archive/spring-ai-fin/delivery/2026-05-11-a7756cd.md) -- cycle-17 Phase 0: Maven build unblocked; Spring Boot 4.x API compatibility; first BUILD SUCCESS (superseded -- see 2026-05-11-391cd6e.md).
 - [`docs/archive/spring-ai-fin/delivery/2026-05-10-8505f7d.md`](../archive/spring-ai-fin/delivery/2026-05-10-8505f7d.md) -- cycle-15/16 defect closure: SPI Rule 11 spine, posture fail-fast, doc refresh, ledger sync, ASCII gate fixes (superseded -- see 2026-05-11-391cd6e.md).
