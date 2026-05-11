@@ -1,4 +1,6 @@
-﻿> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
+> ARCHIVED 2026-05-12. Pre-refresh design rationale; not active spec. Current state: see docs/STATE.md.
+
+> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
 > REPLACED in the refresh by OpenTelemetry traces (per `agent-runtime/observability/`) + an `audit_log` table owned by `agent-runtime/action/`. The v6 5-class taxonomy is dropped.
 > The authoritative L0 is `ARCHITECTURE.md`; the
 > systems-engineering plan is `docs/plans/architecture-systems-engineering-plan.md`.

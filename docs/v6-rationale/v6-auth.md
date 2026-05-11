@@ -1,4 +1,6 @@
-﻿> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
+> ARCHIVED 2026-05-12. Pre-refresh design rationale; not active spec. Current state: see docs/STATE.md.
+
+> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
 > MOVED to `agent-platform/auth/ARCHITECTURE.md` in the refresh. Auth is a platform-edge concern; runtime trusts the upstream binding.
 > The authoritative L0 is `ARCHITECTURE.md`; the
 > systems-engineering plan is `docs/plans/architecture-systems-engineering-plan.md`.

@@ -1,3 +1,5 @@
+> ARCHIVED 2026-05-12. Pre-refresh design rationale; not active spec. Current state: see docs/STATE.md.
+
 # agent-runtime/action -- L2 architecture (2026-05-08 refresh)
 
 > Owner: runtime | Wave: W3 | Maturity: L0 | Reads: tool_registry, OPA policies | Writes: audit_log, outbox_event

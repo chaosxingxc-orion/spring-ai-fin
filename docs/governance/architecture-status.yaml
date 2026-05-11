@@ -85,7 +85,7 @@ capabilities:
     evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md#d-block
     l2_documents:
-      - agent-runtime/action-guard/ARCHITECTURE.md
+      - agent-runtime/ARCHITECTURE.md
     implementation: null
     tests: []
     operator_gate: null
@@ -98,7 +98,7 @@ capabilities:
     evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md#d-block
     l2_documents:
-      - agent-runtime/audit/ARCHITECTURE.md
+      - docs/v6-rationale/v6-audit.md
     implementation: null
     tests: []
     operator_gate: null
@@ -111,7 +111,7 @@ capabilities:
     evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md#d-6-three-posture-model-rule-11
     l2_documents:
-      - agent-runtime/posture/ARCHITECTURE.md
+      - agent-runtime/ARCHITECTURE.md
     implementation: null
     tests: []
     operator_gate: null
@@ -124,7 +124,7 @@ capabilities:
     evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md#contract-spine
     l2_documents:
-      - agent-runtime/server/ARCHITECTURE.md
+      - agent-runtime/ARCHITECTURE.md
       - agent-platform/api/ARCHITECTURE.md
     implementation: null
     tests: []
@@ -138,8 +138,8 @@ capabilities:
     evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md#d-block-a3
     l2_documents:
-      - agent-runtime/auth/ARCHITECTURE.md
-      - agent-runtime/posture/ARCHITECTURE.md
+      - docs/v6-rationale/v6-auth.md
+      - agent-runtime/ARCHITECTURE.md
     implementation: null
     tests: []
     operator_gate: null
@@ -152,7 +152,7 @@ capabilities:
     evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md
     l2_documents:
-      - agent-runtime/llm/ARCHITECTURE.md
+      - docs/v6-rationale/v6-llm.md
     implementation: null
     tests: []
     operator_gate: null
@@ -165,8 +165,8 @@ capabilities:
     evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md#d-block
     l2_documents:
-      - agent-runtime/llm/ARCHITECTURE.md
-      - agent-runtime/observability/ARCHITECTURE.md
+      - docs/v6-rationale/v6-llm.md
+      - agent-runtime/ARCHITECTURE.md
     implementation: null
     tests: []
     operator_gate: null
@@ -179,9 +179,9 @@ capabilities:
     evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md#d-block
     l2_documents:
-      - agent-runtime/skill/ARCHITECTURE.md
-      - agent-runtime/capability/ARCHITECTURE.md
-      - agent-runtime/action-guard/ARCHITECTURE.md
+      - agent-runtime/ARCHITECTURE.md
+      - agent-runtime/ARCHITECTURE.md
+      - agent-runtime/ARCHITECTURE.md
     implementation: null
     tests: []
     operator_gate: null
@@ -194,7 +194,7 @@ capabilities:
     evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md
     l2_documents:
-      - agent-runtime/outbox/ARCHITECTURE.md
+      - docs/v6-rationale/v6-outbox.md
     implementation: null
     tests: []
     operator_gate: null
@@ -207,7 +207,7 @@ capabilities:
     evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md
     l2_documents:
-      - agent-runtime/adapters/ARCHITECTURE.md
+      - docs/v6-rationale/v6-adapters.md
     implementation: null
     tests: []
     operator_gate: null
@@ -220,7 +220,7 @@ capabilities:
     evidence_state: design_accepted
     l0_decision: docs/sidecar-security-profile.md
     l2_documents:
-      - agent-runtime/adapters/ARCHITECTURE.md
+      - docs/v6-rationale/v6-adapters.md
     implementation: null
     tests: []
     operator_gate: null
@@ -233,7 +233,7 @@ capabilities:
     evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md#contract-spine
     l2_documents:
-      - agent-runtime/server/ARCHITECTURE.md
+      - agent-runtime/ARCHITECTURE.md
     implementation: null
     tests: []
     operator_gate: null
@@ -246,7 +246,7 @@ capabilities:
     evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md
     l2_documents:
-      - agent-runtime/observability/ARCHITECTURE.md
+      - agent-runtime/ARCHITECTURE.md
     implementation: null
     tests: []
     operator_gate: null
@@ -325,7 +325,7 @@ capabilities:
     status: design_accepted
     evidence_state: design_accepted
     l2_documents:
-      - agent-runtime/run/ARCHITECTURE.md
+      - docs/v6-rationale/v6-run.md
     target_wave: W2
     refresh_role: run-lifecycle-sync
     supersedes: [agent_runtime_kernel]
@@ -336,7 +336,7 @@ capabilities:
     status: design_accepted
     evidence_state: design_accepted
     l2_documents:
-      - agent-runtime/tool/ARCHITECTURE.md
+      - docs/v6-rationale/v6-tool.md
     target_wave: W3
     refresh_role: mcp-tool-registry
     supersedes: [skill_runtime_authz]
@@ -347,7 +347,7 @@ capabilities:
     status: design_accepted
     evidence_state: design_accepted
     l2_documents:
-      - agent-runtime/memory/ARCHITECTURE.md
+      - agent-runtime/ARCHITECTURE.md
     target_wave: W2/W3
     refresh_role: tiered-memory
     allowed_claim: "Design accepted; W2 lands L0/L1, W3 lands L2 pgvector."
@@ -357,7 +357,7 @@ capabilities:
     status: design_accepted
     evidence_state: design_accepted
     l2_documents:
-      - agent-runtime/temporal/ARCHITECTURE.md
+      - docs/v6-rationale/v6-temporal.md
     target_wave: W4
     refresh_role: durable-workflows
     allowed_claim: "Design accepted; W4 lands Temporal workflow + activities."
@@ -367,7 +367,7 @@ capabilities:
     status: design_accepted
     evidence_state: design_accepted
     l2_documents:
-      - agent-runtime/action/ARCHITECTURE.md
+      - docs/v6-rationale/v6-action.md
     target_wave: W3
     refresh_role: actionguard-5-stage
     supersedes: [action_guard]
@@ -1737,7 +1737,7 @@ findings:
     l0_decision: ARCHITECTURE.md
     l2_documents:
       - docs/cross-cutting/posture-model.md
-      - agent-runtime/posture/ARCHITECTURE.md
+      - agent-runtime/ARCHITECTURE.md
     implementation: []
     tests:
       - agent-platform/src/test/java/ascend/springai/platform/posture/PostureBindingIT.java

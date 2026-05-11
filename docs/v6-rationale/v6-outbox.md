@@ -1,3 +1,5 @@
+> ARCHIVED 2026-05-12. Pre-refresh design rationale; not active spec. Current state: see docs/STATE.md.
+
 # agent-runtime/outbox -- L2 architecture (2026-05-08 refresh)
 
 > Owner: runtime | Wave: W2 | Maturity: L0 | Reads: outbox_event | Writes: outbox_event, downstream sink

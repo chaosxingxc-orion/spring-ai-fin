@@ -1,4 +1,6 @@
-﻿> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
+> ARCHIVED 2026-05-12. Pre-refresh design rationale; not active spec. Current state: see docs/STATE.md.
+
+> **Pre-refresh design rationale (DEFERRED in 2026-05-08 refresh)**
 > DEFERRED in the refresh to wave W4+. Multi-framework dispatch (LangChain4j / Python sidecar) is not in W0..W4 scope.
 > The authoritative L0 is `ARCHITECTURE.md`; the
 > systems-engineering plan is `docs/plans/architecture-systems-engineering-plan.md`.

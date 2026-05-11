@@ -1,3 +1,5 @@
+> ARCHIVED 2026-05-12. Pre-refresh design rationale; not active spec. Current state: see docs/STATE.md.
+
 # agent-runtime/temporal -- L2 architecture (2026-05-08 refresh)
 
 > Owner: runtime | Wave: W4 | Maturity: L0 | Reads: run, tool_registry | Writes: run (status updates), outbox_event

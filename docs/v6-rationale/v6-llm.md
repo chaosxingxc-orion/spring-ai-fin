@@ -1,3 +1,5 @@
+> ARCHIVED 2026-05-12. Pre-refresh design rationale; not active spec. Current state: see docs/STATE.md.
+
 # agent-runtime/llm -- L2 architecture (2026-05-08 refresh)
 
 > Owner: runtime | Wave: W2 | Maturity: L0 | Reads: tenant_budget, prompt_version | Writes: cost metric, run.cost_usd
