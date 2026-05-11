@@ -1,18 +1,11 @@
-﻿# spring-ai-ascend architecture status ledger
-# Single machine-readable source of truth for capability status.
-# Loaded by docs/governance/decision-sync-matrix.md and gate/check_architecture_sync.*
+# spring-ai-ascend architecture status ledger -- 2026-05-12 Occam pass (C22)
+# Single source of truth for capability status. Updated by commits, not manually.
 #
-# Status enum (see docs/governance/closure-taxonomy.md):
-#   proposed | design_accepted | implemented_unverified | test_verified | operator_gated | released
-# "closed" and the forbidden shortcuts in closure-taxonomy.md are NOT permitted.
-#
-# Maturity enum (Rule 12):
-#   L0 demo | L1 tested component | L2 public contract | L3 production default | L4 ecosystem ready
+# status enum: design_accepted | implemented_unverified | test_verified | deferred_w1 | deferred_w2
+# shipped: true = implementation exists + at least 1 test GREEN; false = not yet
 
-version: 2
+version: 3
 generated_at: 2026-05-12
-generated_by: project rename spring-ai-fin -> spring-ai-ascend (2026-05-12); archived prior plans under docs/archive/spring-ai-fin/
-supersedes: version 1 (2026-05-08 morning)
 
 # Source: root pom.xml <modules> list updated 2026-05-12 Occam pass (C1-C11)
 repository_counts:
@@ -25,32 +18,19 @@ repository_counts:
   bom_module: 1
   total_reactor_modules: 6
 
-# Cycle-7 sec-D1: maturity (L0..L4) is the primary status field for capabilities;
-# the lifecycle field below is `evidence_state` (formerly `status`). The two
-# track different things:
-#   - maturity: how far the capability has progressed toward L4 (Rule 12)
-#   - status / evidence_state: which evidence-stage gate it currently passes
-# Both are present during the cycle-7 -> W1 migration. W1 will fully rename
-# `status` to `evidence_state` and add `maturity` as a required first-class
-# field on every capability row.
-
 capabilities:
 
   l0_architecture:
-    maturity: L1
     status: design_accepted
-    evidence_state: design_accepted
+    shipped: false
     l0_decision: ARCHITECTURE.md
     l2_documents: []
     implementation: null
     tests: []
-    operator_gate: null
-    open_findings: []
 
   agent_platform_facade:
-    maturity: L1
     status: implemented_unverified
-    evidence_state: implemented_unverified
+    shipped: true
     l0_decision: ARCHITECTURE.md
     l2_documents:
       - agent-platform/ARCHITECTURE.md
@@ -60,14 +40,11 @@ capabilities:
     tests:
       - agent-platform/src/test/java/ascend/springai/platform/health/HealthEndpointIT.java
       - agent-platform/src/test/java/ascend/springai/platform/api/ApiCompatibilityTest.java
-    operator_gate: null
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L1: /v1/health GREEN; ArchUnit 4 rules GREEN. SPI contracts frozen."
 
   agent_runtime_kernel:
-    maturity: L1
     status: design_accepted
-    evidence_state: design_accepted
+    shipped: true
     l0_decision: ARCHITECTURE.md
     l2_documents:
       - agent-runtime/ARCHITECTURE.md
@@ -75,1377 +52,60 @@ capabilities:
       - agent-runtime/src/main/java/ascend/springai/runtime/probe/OssApiProbe.java
     tests:
       - agent-runtime/src/test/java/ascend/springai/runtime/probe/OssApiProbeTest.java
-    operator_gate: null
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L1: OssApiProbe shell + OssApiProbeTest (3 tests GREEN). No kernel logic yet. W2 delivers run lifecycle."
 
-  action_guard:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    l0_decision: ARCHITECTURE.md#d-block
-    l2_documents:
-      - agent-runtime/ARCHITECTURE.md
-    implementation: null
-    tests: []
-    operator_gate: null
-    open_findings: [P0-1, REM-2026-05-08-1, REM-2026-05-08-2]
-    allowed_claim: "Accepted security design"
-
-  audit_class_model:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    l0_decision: ARCHITECTURE.md#d-block
-    l2_documents:
-      - docs/v6-rationale/v6-audit.md
-    implementation: null
-    tests: []
-    operator_gate: null
-    open_findings: [P0-8]
-    allowed_claim: "Accepted security design"
-
-  posture_model:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    l0_decision: ARCHITECTURE.md#d-6-three-posture-model-rule-11
-    l2_documents:
-      - agent-runtime/ARCHITECTURE.md
-    implementation: null
-    tests: []
-    operator_gate: null
-    open_findings: [P0-4]
-    allowed_claim: "Accepted design with PostureBootGuard codified; no implementation evidence yet"
-
-  tenant_context_spine:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    l0_decision: ARCHITECTURE.md#contract-spine
-    l2_documents:
-      - agent-runtime/ARCHITECTURE.md
-      - agent-platform/api/ARCHITECTURE.md
-    implementation: null
-    tests: []
-    operator_gate: null
-    open_findings: [P0-3, REM-2026-05-08-3]
-    allowed_claim: "Accepted design with TenantBinder + transaction-scoped SET LOCAL + GUC-empty validation at transaction start codified; no implementation evidence yet"
-
-  identity_jwt_validation:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    l0_decision: ARCHITECTURE.md#d-block-a3
-    l2_documents:
-      - docs/v6-rationale/v6-auth.md
-      - agent-runtime/ARCHITECTURE.md
-    implementation: null
-    tests: []
-    operator_gate: null
-    open_findings: [P0-2]
-    allowed_claim: "Accepted design (RS256/JWKS for research SaaS + prod; HS256 carve-outs documented). No implementation evidence."
-
-  llm_gateway:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    l0_decision: ARCHITECTURE.md
-    l2_documents:
-      - docs/v6-rationale/v6-llm.md
-    implementation: null
-    tests: []
-    operator_gate: null
-    open_findings: [REM-2026-05-08-5]
-    allowed_claim: "Proposed design with prompt-section taxonomy + taint propagation codified"
-
-  llm_prompt_security:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    l0_decision: ARCHITECTURE.md#d-block
-    l2_documents:
-      - docs/v6-rationale/v6-llm.md
-      - agent-runtime/ARCHITECTURE.md
-    implementation: null
-    tests: []
-    operator_gate: null
-    open_findings: [P0-5, REM-2026-05-08-5]
-    allowed_claim: "Accepted prompt-section + taint propagation; no implementation evidence"
-
-  skill_runtime_authz:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    l0_decision: ARCHITECTURE.md#d-block
-    l2_documents:
-      - agent-runtime/ARCHITECTURE.md
-      - agent-runtime/ARCHITECTURE.md
-      - agent-runtime/ARCHITECTURE.md
-    implementation: null
-    tests: []
-    operator_gate: null
-    open_findings: [P0-6, REM-2026-05-08-4]
-    allowed_claim: "Accepted load-time-vs-runtime split; load-time is registry hygiene, runtime authorization is ActionGuard"
-
-  outbox_saga_directdb:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    l0_decision: ARCHITECTURE.md
-    l2_documents:
-      - docs/v6-rationale/v6-outbox.md
-    implementation: null
-    tests: []
-    operator_gate: null
-    open_findings: [P0-10]
-    allowed_claim: "Proposed design with FinancialWriteClass + saga-not-ACID semantics codified"
-
-  multi_framework_dispatch:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    l0_decision: ARCHITECTURE.md
-    l2_documents:
-      - docs/v6-rationale/v6-adapters.md
-    implementation: null
-    tests: []
-    operator_gate: null
-    open_findings: [REM-2026-05-08-6]
-    allowed_claim: "Proposed design with sidecar security binding codified"
-
-  sidecar_runtime_security:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    l0_decision: docs/sidecar-security-profile.md
-    l2_documents:
-      - docs/v6-rationale/v6-adapters.md
-    implementation: null
-    tests: []
-    operator_gate: null
-    open_findings: [P0-7, REM-2026-05-08-6]
-    allowed_claim: "Accepted UDS default + SPIFFE workload identity + tenant metadata untrusted policy"
-
-  server_rls_protocol:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    l0_decision: ARCHITECTURE.md#contract-spine
-    l2_documents:
-      - agent-runtime/ARCHITECTURE.md
-    implementation: null
-    tests: []
-    operator_gate: null
-    open_findings: [P0-3, REM-2026-05-08-3]
-    allowed_claim: "Accepted SET LOCAL transaction-scoped GUC (auto-discarded by Postgres on COMMIT/ROLLBACK) + RlsConnectionInterceptor protocol; no implementation evidence"
-
-  observability_emitter_health:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    l0_decision: ARCHITECTURE.md
-    l2_documents:
-      - agent-runtime/ARCHITECTURE.md
-    implementation: null
-    tests: []
-    operator_gate: null
-    open_findings: [REM-2026-05-08-7]
-    allowed_claim: "Accepted emitter-failure-counter + readiness-degraded rule + cardinality budget"
-
-  # Cycle-6 A4: split into two distinct sub-capabilities with independent tracking.
   architecture_sync_gate:
-    maturity: L0
     status: implemented_unverified
-    evidence_state: implemented_unverified
+    shipped: true
     l0_decision: CLAUDE.md (Rule 8)
     l2_documents:
       - docs/plans/W0-evidence-skeleton.md
       - docs/governance/evidence-manifest.yaml
     implementation:
-      - gate/check_architecture_sync.ps1   # cycle-6-expanded
+      - gate/check_architecture_sync.ps1
       - gate/check_architecture_sync.sh
     tests: []
-    operator_gate: null
-    open_findings: []
-    latest_semantic_pass_sha: 68c07f1        # W0 SHA: milestone gate grep-P locale fix
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
+    latest_semantic_pass_sha: 68c07f1
     latest_delivery_file: docs/delivery/2026-05-10-68c07f1.md
-    notes: "Updated by the W0 audit-trail commit. W0 delivers: Java 21 + Maven Wrapper 3.9.15 + Boot 4.0.5 + AI 2.0.0-M5 + MCP 1.0.0 GA + Tika 3.3.0 + Flyway 11.19.1 + OSS BoM U2 at cd13612 + Tier C manifest (16 entries). build_verification.state: green (mvn verify LOCAL at 18d637e)."
     allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml."
 
-  # ---- 2026-05-08 refresh capability rows (per refresh L2 modules) ----
-  # These rows correspond to the L2 docs created in the 2026-05-08
-  # architectural refresh. All maturity L0 by design (no code yet); each
-  # advances to L1 only after Rule 4 three-layer tests + a wave's
-  # Acceptance gate passes per docs/plans/engineering-plan-W0-W4.md.
-
-  refresh_web:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    l2_documents:
-      - agent-platform/web/ARCHITECTURE.md
-    target_wave: W0
-    refresh_role: northbound-controllers
-    allowed_claim: "Design accepted; W0 lands controllers + OpenAPI."
-
-  refresh_idempotency:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    l2_documents:
-      - agent-platform/idempotency/ARCHITECTURE.md
-    target_wave: W1
-    refresh_role: idempotency-key-dedup
-    allowed_claim: "Design accepted; W1 lands the filter + dedup table."
-
-  refresh_bootstrap:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    l2_documents:
-      - agent-platform/bootstrap/ARCHITECTURE.md
-    target_wave: W0
-    refresh_role: posture-boot-guard
-    allowed_claim: "Design accepted; W0 lands main class + PostureBootGuard."
-
-  refresh_config:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    l2_documents:
-      - agent-platform/config/ARCHITECTURE.md
-    target_wave: W2
-    refresh_role: per-tenant-config-overrides
-    allowed_claim: "Design accepted; W2 lands tenant_config + Spring Cloud Config."
-
-  refresh_run:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    l2_documents:
-      - docs/v6-rationale/v6-run.md
-    target_wave: W2
-    refresh_role: run-lifecycle-sync
-    supersedes: [agent_runtime_kernel]
-    allowed_claim: "Design accepted; W2 lands RunController + sync orchestrator."
-
-  refresh_tool:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    l2_documents:
-      - docs/v6-rationale/v6-tool.md
-    target_wave: W3
-    refresh_role: mcp-tool-registry
-    supersedes: [skill_runtime_authz]
-    allowed_claim: "Design accepted; W3 lands MCP registry + 2 reference tools."
-
-  refresh_memory:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    l2_documents:
-      - agent-runtime/ARCHITECTURE.md
-    target_wave: W2/W3
-    refresh_role: tiered-memory
-    allowed_claim: "Design accepted; W2 lands L0/L1, W3 lands L2 pgvector."
-
-  refresh_temporal:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    l2_documents:
-      - docs/v6-rationale/v6-temporal.md
-    target_wave: W4
-    refresh_role: durable-workflows
-    allowed_claim: "Design accepted; W4 lands Temporal workflow + activities."
-
-  refresh_action:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    l2_documents:
-      - docs/v6-rationale/v6-action.md
-    target_wave: W3
-    refresh_role: actionguard-5-stage
-    supersedes: [action_guard]
-    allowed_claim: "Design accepted; W3 lands 5-stage chain + OPA bridge + audit_log."
-
-  refresh_eval:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    l2_documents:
-      - agent-eval/ARCHITECTURE.md
-    target_wave: W4
-    refresh_role: eval-harness
-    allowed_claim: "Design accepted; W4 lands canonical suite + nightly regression."
-
-  refresh_cross_cutting:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    l2_documents:
-      - docs/cross-cutting/posture-model.md
-      - docs/cross-cutting/security-control-matrix.md
-      - docs/cross-cutting/trust-boundary-diagram.md
-      - docs/cross-cutting/secrets-lifecycle.md
-      - docs/cross-cutting/supply-chain-controls.md
-      - docs/cross-cutting/observability-policy.md
-    target_wave: W0..W4
-    refresh_role: cross-cutting-policies
-    allowed_claim: "Design accepted; cross-cutting docs published under docs/cross-cutting/."
-
-  operator_shape_smoke_gate:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    l0_decision: CLAUDE.md (Rule 8)
-    l2_documents:
-      - docs/plans/W0-evidence-skeleton.md
-    implementation:
-      - gate/run_operator_shape_smoke.ps1  # cycle-4-fail-closed
-      - gate/run_operator_shape_smoke.sh
-    tests: []
-    operator_gate: null
-    open_findings: []
-    rule_8_pass_sha: null
-    notes: "Scripts exist in fail-closed form; produce FAIL_ARTIFACT_MISSING until W0 lands a runnable artifact (Maven multi-module + minimal Spring Boot). Fail-closed output is honest absence-evidence, not Rule 8 PASS evidence. rule_8_pass_sha advances only when real-flow PASS exists."
-    allowed_claim: "Operator-shape smoke scripts exist in fail-closed form; not Rule 8 PASS evidence."
-
-# ---- finding ledger ----
-findings:
-  P0-1:
-    source: docs/deep-architecture-security-assessment-2026-05-07.en.md
-    status: design_accepted
-    target_wave: W2
-    capability: action_guard
-  P0-2:
-    source: docs/deep-architecture-security-assessment-2026-05-07.en.md
-    status: design_accepted
-    target_wave: W2
-    capability: identity_jwt_validation
-  P0-3:
-    source: docs/deep-architecture-security-assessment-2026-05-07.en.md
-    status: design_accepted
-    target_wave: W2
-    capability: server_rls_protocol
-  P0-4:
-    source: docs/deep-architecture-security-assessment-2026-05-07.en.md
-    status: design_accepted
-    target_wave: W2
-    capability: posture_model
-  P0-5:
-    source: docs/deep-architecture-security-assessment-2026-05-07.en.md
-    status: design_accepted
-    target_wave: W2
-    capability: llm_prompt_security
-  P0-6:
-    source: docs/deep-architecture-security-assessment-2026-05-07.en.md
-    status: design_accepted
-    target_wave: W2
-    capability: skill_runtime_authz
-  P0-7:
-    source: docs/deep-architecture-security-assessment-2026-05-07.en.md
-    status: design_accepted
-    target_wave: W2
-    capability: sidecar_runtime_security
-  P0-8:
-    source: docs/deep-architecture-security-assessment-2026-05-07.en.md
-    status: design_accepted
-    target_wave: W2
-    capability: audit_class_model
-  P0-9:
-    source: docs/deep-architecture-security-assessment-2026-05-07.en.md
-    status: design_accepted
-    target_wave: W2
-    capability: agent_platform_facade
-  P0-10:
-    source: docs/deep-architecture-security-assessment-2026-05-07.en.md
-    status: design_accepted
-    target_wave: W3
-    capability: outbox_saga_directdb
-
-  # Findings introduced by the 2026-05-08 systematic remediation review.
-  REM-2026-05-08-1:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08.en.md
-    description: "Closure-language drift: L0 must reference findings via the addresses-style wording defined in docs/governance/closure-taxonomy.md, never the closure-style wording forbidden by that taxonomy. Status remains the source of truth in this ledger."
-    status: design_accepted
-    target_wave: W0
-    capability: action_guard
-
-  REM-2026-05-08-2:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08.en.md
-    description: "ActionGuard L0/L2 pipeline drift: 11 stages everywhere; PreActionEvidenceWriter before side effects; PostActionEvidenceWriter after success or failure."
-    status: design_accepted
-    target_wave: W0
-    capability: action_guard
-
-  REM-2026-05-08-3:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08.en.md
-    description: "Tenant RLS connection protocol must be specified in server L2: SET LOCAL (transaction-scoped; auto-discarded on COMMIT/ROLLBACK), GUC-empty validation at transaction start, RlsConnectionInterceptor, fail-closed under research/prod. HikariCP connectionInitSql is NOT a per-checkout reset hook (cycle-2 + cycle-3 correction)."
-    status: design_accepted
-    target_wave: W2
-    capability: server_rls_protocol
-
-  REM-2026-05-08-4:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08.en.md
-    description: "Skill / capability authorization: load-time validation is registry hygiene; runtime authorization is ActionGuard. Every side-effectful invocation must construct an ActionEnvelope."
-    status: design_accepted
-    target_wave: W2
-    capability: skill_runtime_authz
-
-  REM-2026-05-08-5:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08.en.md
-    description: "LLM prompt-security control plane: PromptSection taxonomy, taint propagation, prompt-cache classification, raw-prompt leakage tests, tool-output-taint goes through ActionGuard."
-    status: design_accepted
-    target_wave: W2
-    capability: llm_prompt_security
-
-  REM-2026-05-08-6:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08.en.md
-    description: "Python sidecar security binding: bind dispatch to docs/sidecar-security-profile.md; tenant metadata from sidecar is untrusted; UDS default; SPIFFE for non-loopback; image digest required."
-    status: design_accepted
-    target_wave: W2
-    capability: sidecar_runtime_security
-
-  REM-2026-05-08-7:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08.en.md
-    description: "Observability emitter failure counter + readiness-degraded rule + tenant_id cardinality budget. Default labels are bucketed/hashed unless cardinality-policy permits raw."
-    status: design_accepted
-    target_wave: W2
-    capability: observability_emitter_health
-
-  REM-2026-05-08-8:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08.en.md
-    description: "Operator gate scripts must exist and align: gate/check_architecture_sync.{ps1,sh}; gate/run_operator_shape_smoke.{ps1,sh}; log extension .json across gate/README.md and docs/delivery/README.md."
-    status: implemented_unverified
-    target_wave: W0
-    capability: architecture_sync_gate
-    legacy_capability: operator_shape_gate
-    notes: "Architecture-sync script created in remediation cycle 1; operator-shape smoke remains W0 deliverable."
-
-  # Findings introduced by the 2026-05-08 cycle-2 remediation review.
-  REM-2026-05-08-C2-1:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-2.en.md
-    description: "L0 ARCHITECTURE.md said ActionGuard is a 10-stage pipeline while the L2 + decision matrix require 11 stages (with PreActionEvidenceWriter and PostActionEvidenceWriter as separate stages). Fixed in cycle-2."
-    status: design_accepted
-    target_wave: W0/W2
-    capability: action_guard
-
-  REM-2026-05-08-C2-2:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-2.en.md
-    description: "agent-platform/ARCHITECTURE.md L1 carried the old auth/posture/cardinality model (Environment.getProperty in contracts; APP_JWT_SECRET as standard research/prod path; raw tenant_id labels). Fixed in cycle-2 to align with contracts/auth/posture/observability L2s."
-    status: design_accepted
-    target_wave: W0/W2
-    capability: agent_platform_facade
-
-  REM-2026-05-08-C2-3:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-2.en.md
-    description: "server/ARCHITECTURE.md claimed HikariCP connectionInitSql resets app.tenant_id on every checkout. That is incorrect: connectionInitSql runs only at connection creation. The actual safety property is that SET LOCAL is transaction-scoped and Postgres auto-discards on COMMIT/ROLLBACK. Server doc updated; PooledConnectionLeakageIT remains the proof."
-    status: design_accepted
-    target_wave: W0/W2
-    capability: server_rls_protocol
-
-  REM-2026-05-08-C2-4:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-2.en.md
-    description: "Architecture sync gate scope was too narrow (root L0 + docs/*.md only). Cycle-2 expanded scan to agent-platform/**/ARCHITECTURE.md and agent-runtime/**/ARCHITECTURE.md and added rule classes: actionguard_stage_drift, contract_posture_purity, auth_algorithm_policy, rls_pool_lifecycle, dirty_tree, plus line numbers in failure objects."
-    status: implemented_unverified
-    target_wave: W0
-    capability: architecture_sync_gate
-    legacy_capability: operator_shape_gate
-    notes: "Architecture-sync portion only. Operator-shape smoke remains design_accepted (REM-2026-05-08-C2-6)."
-
-  REM-2026-05-08-C2-5:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-2.en.md
-    description: "Sync gate did not protect against dirty-tree evidence. Cycle-2 added git status --porcelain check; default mode fails on dirty tree; --local-only flag permits local runs but writes evidence_valid_for_delivery=false. Delivery README updated to forbid dirty-tree logs."
-    status: implemented_unverified
-    target_wave: W0
-    capability: architecture_sync_gate
-    legacy_capability: operator_shape_gate
-    notes: "Architecture-sync portion only."
-
-  REM-2026-05-08-C2-6:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-2.en.md
-    description: "gate/run_operator_shape_smoke.{ps1,sh} does not exist. The Rule 8 operator-shape gate (long-lived process, real dependencies, sequential runs, cancellation, lifecycle, fallback-zero) is a W0 deliverable and remains explicitly pending. Architecture-sync PASS is not Rule 8 evidence."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-    legacy_capability: operator_shape_gate
-    notes: "Explicitly pending. Architecture-sync gate is documented as such, not as Rule 8 evidence."
-
-  # Findings introduced by the 2026-05-08 cycle-3 remediation review.
-  REM-2026-05-08-C3-1:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-3.en.md
-    description: "PowerShell architecture-sync gate threw on Windows because the scan-list mixed relative ('ARCHITECTURE.md') and absolute (Get-ChildItem FullName) paths. Cycle-3 normalizes via Resolve-Path into a single ArrayList and adds a self-check assertion."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-    legacy_capability: operator_shape_gate
-    notes: "Architecture-sync portion only. Operator-shape smoke remains design_accepted."
-
-  REM-2026-05-08-C3-2:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-3.en.md
-    description: "Current HEAD had no matching delivery evidence (latest delivery file was for an older SHA). Cycle-3 generates a fresh log + delivery file at the new HEAD after the cycle-3 commit lands and labels them architecture-sync evidence (not Rule 8)."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-    legacy_capability: operator_shape_gate
-
-  REM-2026-05-08-C3-3:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-3.en.md
-    description: "docs/security-control-matrix.md still listed HikariCP connectionInitSql as the connection check-in reset control. That row contradicted the cycle-2 server L2 fix. Cycle-3 replaces it with three rows aligned to server L2: TenantBinder SET LOCAL, transaction-scoped GUC auto-discard + PooledConnectionLeakageIT, RlsPolicyCoverageTest."
-    status: design_accepted
-    target_wave: W0/W2
-    capability: server_rls_protocol
-
-  REM-2026-05-08-C3-4:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-3.en.md
-    description: "Closure-language enforcement was too narrow. Cycle-3 added a case-insensitive regex set; cycle-4 found the bash gate's grep -P silently failed in non-UTF-8 locales (Windows GBK), bypassing the regex check. Cycle-4 fix exports LC_ALL=C in bash so grep -P works."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-    legacy_capability: operator_shape_gate
-    notes: "Downgraded by cycle-4 finding A4 until current HEAD passes the gate cleanly with the locale fix applied. Architecture-sync portion only."
-    last_validated_sha: null
-
-  REM-2026-05-08-C3-5:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-3.en.md
-    description: "gate/README.md described the directory as if Rule 8 operator-shape scripts existed. Cycle-3 splits the README into 'Implemented now' (architecture-sync only) and 'W0 deliverables' (operator-shape smoke) with explicit non-Rule-8 disclaimer. Cycle-5 corrected README wording after operator-shape scripts landed in fail-closed form."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-    legacy_capability: operator_shape_gate
-
-  # Findings introduced by the 2026-05-08 cycle-4 remediation review.
-  REM-2026-05-08-C4-1:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-4.en.md
-    description: "Cycle-3 delivery file embedded raw forbidden phrase examples that triggered the gate's own closure-language regex. Cycle-4 replaced examples with rule identifiers; cycle-4 also discovered the bash gate's grep -P silently failed in Windows GBK locale. Bash gate now exports LC_ALL=C."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-    legacy_capability: operator_shape_gate
-    last_validated_sha: a070a77
-
-  REM-2026-05-08-C4-2:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-4.en.md
-    description: "After cycle-3 commit chain, current HEAD lacked SHA-bound delivery evidence. Cycle-4 produced docs/delivery/2026-05-08-a070a77.md plus gate/log/a070a77.json."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-    legacy_capability: operator_shape_gate
-    last_validated_sha: a070a77
-
-  REM-2026-05-08-C4-3:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-4.en.md
-    description: "Failed gate runs wrote to gate/log/<sha>.json contaminating the next delivery-evidence run. Cycle-4 split: delivery-valid logs go to gate/log/<sha>.json (committed); non-delivery (local-only / dirty / failed) go to gate/log/local/<sha>.json (gitignored)."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-    legacy_capability: operator_shape_gate
-    last_validated_sha: a070a77
-
-  REM-2026-05-08-C4-4:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-4.en.md
-    description: "Status ledger overstated cycle-3 architecture-sync portion. Cycle-4 downgraded REM-C3-4 to design_accepted with last_validated_sha=null until current HEAD passed."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-    legacy_capability: operator_shape_gate
-    last_validated_sha: a070a77
-
-  REM-2026-05-08-C4-5:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-4.en.md
-    description: "Platform submodule L2 docs (bootstrap, cli, config) carried old auth/posture model (APP_JWT_SECRET as research/prod standard; posture mirrored via Environment.getProperty). Cycle-4 aligned all three with the JWKS-first identity posture from the auth L2."
-    status: design_accepted
-    target_wave: W2
-    capability: agent_platform_facade
-    last_validated_sha: a070a77
-
-  REM-2026-05-08-C4-6:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-4.en.md
-    description: "Gate auth/posture rules scoped to L1 only, missing submodule L2 drift. Cycle-4 expanded contract_posture_purity and auth_algorithm_policy rules to scan all agent-platform/**/ARCHITECTURE.md."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-    legacy_capability: operator_shape_gate
-    last_validated_sha: a070a77
-
-  REM-2026-05-08-C4-7:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-4.en.md
-    description: "Stale RLS reset vocabulary (HikariCP reset, HikariConnectionResetPolicy, reset on connection check-in) lingered in governance ledger, decision-sync-matrix, and trust-boundary-diagram. Cycle-4 rewrote those lines with transaction-scoped SET LOCAL discard semantics; new rls_reset_vocabulary gate rule enforces."
-    status: design_accepted
-    target_wave: W0/W2
-    capability: server_rls_protocol
-    last_validated_sha: a070a77
-
-  REM-2026-05-08-C4-8:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-4.en.md
-    description: "Rule 8 operator-shape gate did not exist. Cycle-4 added gate/run_operator_shape_smoke.{ps1,sh} that fail closed with structured FAIL_ARTIFACT_MISSING JSON (exit 1) until W0 lands a runnable artifact. Architecture-sync evidence does not substitute for Rule 8."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-    legacy_capability: operator_shape_gate
-    last_validated_sha: null
-    notes: "Operator-shape smoke remains design_accepted; fail-closed scripts are absence-evidence, not Rule 8 PASS."
-
-  REM-2026-05-08-C4-9:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-4.en.md
-    description: "Historical review/response docs were easy to confuse with current architecture. Cycle-4 added 'HISTORICAL DOCUMENT - DO NOT IMPLEMENT' banners to 5 docs and created docs/governance/current-architecture-index.md as the single index of authoritative files."
-    status: design_accepted
-    target_wave: W0
-    capability: l0_architecture
-    last_validated_sha: a070a77
-
-  # Findings introduced by the 2026-05-08 cycle-5 remediation review.
-  REM-2026-05-08-C5-1:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md
-    description: "Cycle-4 left HEAD 291c635 without a committed delivery file (delivery was for a070a77). Cycle-5 produces final-SHA delivery + log after all cycle-5 fixes land."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-    legacy_capability: operator_shape_gate
-
-  REM-2026-05-08-C5-2:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md
-    description: "Delivery file 2026-05-08-a070a77.md reported scan_files_count as 44 while gate/log/a070a77.json reported 42. Hand-copied values drifted from the JSON. Cycle-5 fix: new delivery file uses values that match the JSON; full delivery_log_parity gate rule deferred to W1."
-    status: design_accepted
-    target_wave: W0/W1
-    capability: architecture_sync_gate
-    legacy_capability: operator_shape_gate
-
-  REM-2026-05-08-C5-3:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md
-    description: "Gate logs from PowerShell and POSIX runs overwrote each other (both wrote to gate/log/<sha>.json). Cycle-5 fix: bash writes <sha>-posix.json; PowerShell writes <sha>-windows.json. Both platforms' evidence is now durable for the same SHA."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-    legacy_capability: operator_shape_gate
-
-  REM-2026-05-08-C5-4:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md
-    description: "gate/README.md and docs/delivery/README.md still said operator-shape scripts did not exist after cycle-4 added them. Cycle-5 corrected both READMEs to say the scripts exist in fail-closed form and produce FAIL_ARTIFACT_MISSING until W0."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-    legacy_capability: operator_shape_gate
-
-  REM-2026-05-08-C5-5:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md
-    description: "Governance ledger omitted cycle-4 findings entirely (ended at REM-C3-5). Cycle-5 added REM-C4-1..C4-9 and REM-C5-1..C5-9 entries with last_validated_sha fields where applicable."
-    status: design_accepted
-    target_wave: W0
-    capability: l0_architecture
-
-  REM-2026-05-08-C5-6:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md
-    description: "Server L2 line 20 still listed HikariConnectionResetPolicy as an active component, contradicting the cycle-2 RLS protocol fix. Cycle-5 replaced with TransactionStartGucValidator (named without implying reset) and pointers to the actual safety property (transaction-scoped SET LOCAL auto-discard)."
-    status: design_accepted
-    target_wave: W0/W2
-    capability: server_rls_protocol
-
-  REM-2026-05-08-C5-7:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md
-    description: "rls_reset_vocabulary gate rule scoped to governance/diagram/matrix files only, missing server L2 line 20. Cycle-5 expanded scope to all L0/L1/L2 ARCHITECTURE.md files."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-    legacy_capability: operator_shape_gate
-
-  REM-2026-05-08-C5-8:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md
-    description: "docs/security-control-matrix.md HS256 row Posture column was ambiguous ('research/prod: required (BYOC HS256 carve-out)'). Could be read as requiring HS256 in prod. Cycle-5 rewrote per-posture explicit: dev loopback allowed; research BYOC single-tenant carve-out only; research SaaS multi-tenant + prod rejected. Matches auth L2 verbatim."
-    status: design_accepted
-    target_wave: W0/W2
-    capability: identity_jwt_validation
-
-  REM-2026-05-08-C5-9:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-5.en.md
-    description: "Architecture-sync gate is pattern-driven. Reviewer recommends machine-readable evidence-manifest.yaml binding reviewed_sha + delivery_file + per-platform logs + status findings + index version + Rule 8 state. Cycle-5 delivers manifest skeleton; cycle-6 adds basic manifest_freshness + readme_to_files + delivery_log_parity rules; full graph validation (ledger_coverage, current_architecture_index_freshness, rule_8_state_consistency) remains W1."
-    status: design_accepted
-    target_wave: W1
-    capability: architecture_sync_gate
-
-  # Findings introduced by the 2026-05-08 cycle-6 remediation review.
-  REM-2026-05-08-C6-1:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-6.en.md
-    description: "HEAD lacked committed delivery evidence after cycle-5 audit-trail commits. Cycle-6 documents the audit-trail commit pattern: manifest's reviewed_sha tracks the last delivery-valid log (the architectural commit), HEAD is one commit ahead (the audit-trail commit). Strict HEAD==reviewed_sha requires content-addressable amend which contradicts post-hoc gate generation."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-
-  REM-2026-05-08-C6-2:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-6.en.md
-    description: "Evidence manifest pointed to a070a77 instead of current. Cycle-6 updated manifest to 302337f, added basic manifest_freshness gate rule (verifies reviewed_sha names a delivery file + log that exist; warns if HEAD differs)."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-    last_validated_sha: 81ff802
-
-  REM-2026-05-08-C6-3:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-6.en.md
-    description: "current-architecture-index.md still said cycle-5 delivery file would be added. Cycle-6 added 302337f delivery + manifest pointer note; cycle-6 final SHA delivery file added in audit-trail commit."
-    status: design_accepted
-    target_wave: W0
-    capability: l0_architecture
-
-  REM-2026-05-08-C6-4:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-6.en.md
-    description: "operator_shape_gate single capability conflated architecture-sync vs operator-shape smoke. Cycle-6 split into architecture_sync_gate (implemented_unverified; latest_delivery_valid_sha tracks current) and operator_shape_smoke_gate (design_accepted; rule_8_pass_sha=null until W0)."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-
-  REM-2026-05-08-C6-5:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-6.en.md
-    description: "Cross-platform evidence at 302337f recorded POSIX only (Windows PowerShell not available in cycle-6 author's environment). Cycle-6 documents this explicitly in manifest and delivery file rather than implying both platforms ran. W1 will add a cross-platform parity rule."
-    status: design_accepted
-    target_wave: W0/W1
-    capability: architecture_sync_gate
-
-  REM-2026-05-08-C6-6:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-6.en.md
-    description: "gate/README.md status section said operator-shape smoke 'does not exist' while line 35-40 said scripts exist. Cycle-6 rewrote status section truthfully and added readme_to_files gate rule."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-
-  REM-2026-05-08-C6-7:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-6.en.md
-    description: "Delivery-log parity remained deferred to W1 while drift kept recurring. Cycle-6 implemented basic parity rule: extract sha + semantic_pass + evidence_valid_for_delivery from each delivery file's table and compare to the matching gate/log/<sha>-{posix,windows}.json or legacy <sha>.json. Full structural validation = W1."
-    status: design_accepted
-    target_wave: W0/W1
-    capability: architecture_sync_gate
-
-  REM-2026-05-08-C6-8:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-6.en.md
-    description: "auth L2 line 234 weak-HMAC test row implied APP_JWT_SECRET is a prod boot input. Cycle-6 rewrote: weak HMAC secret rejected only when HmacValidator is active (DEV loopback or research BYOC carve-out); prod rejects HmacValidator activation entirely. Extended hs256_prod_conflict gate to scan auth L2 docs."
-    status: design_accepted
-    target_wave: W0/W2
-    capability: identity_jwt_validation
-
-  REM-2026-05-08-C6-9:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-6.en.md
-    description: "Architecture-sync remains regex-heavy. Cycle-6 added 3 manifest-aware rules (manifest_freshness, readme_to_files, delivery_log_parity) and split status YAML capabilities. Full manifest-driven graph validation (ledger_coverage, index_freshness, rule_8_state_consistency) remains W1."
-    status: design_accepted
-    target_wave: W1
-    capability: architecture_sync_gate
-
-  # Findings introduced by the 2026-05-08 cycle-7 remediation review.
-  REM-2026-05-08-C7-1:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-7.en.md
-    description: "PowerShell architecture-sync gate crashed before structured output: $gateReadme used at line 335 but assigned at line 382. Cycle-7 fix: shared variable initialization moved above all rules; rule body wrapped in try/catch emitting gate_runtime_error JSON; both scripts version-bumped to cycle-7-expanded."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-
-  REM-2026-05-08-C7-2:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-7.en.md
-    description: "PowerShell delivery_log_parity rule only checked log SHA; POSIX checked sha + semantic_pass + evidence_valid_for_delivery. Cycle-7 extended PowerShell to match POSIX semantics and synchronized header comments."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-
-  REM-2026-05-08-C7-3:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-7.en.md
-    description: "Evidence model accepted HEAD lag from manifest as a prose convention. Cycle-7 introduced two-SHA model: reviewed_content_sha + evidence_commit_sha + evidence_commit_parent_sha + evidence_commit_classification + allowed_audit_trail_paths. New audit_trail_shape gate rule enforces parent equality and changed-paths subset via git rev-parse and git diff --name-only."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-
-  REM-2026-05-08-C7-4:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-7.en.md
-    description: "Manifest freshness was presence-based, not graph-complete. Cycle-7 added manifest_edge_consistency rule: architecture-status.yaml must reference manifest.reviewed_content_sha; current-architecture-index.md must reference manifest.delivery_file. Full graph (Rule 8 state, ledger_coverage, schema_capabilities) remains W1."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-
-  REM-2026-05-08-C7-5:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-7.en.md
-    description: "Manifest schema_version still said cycle-5-skeleton even after cycle-6 added enforcement; authoritative_index_last_updated_in_cycle still said cycle-5. Cycle-7 bumped to evidence-manifest/v2 with schema_capabilities booleans (head_coverage, delivery_log_parity, status_ledger_parity, index_freshness, rule_8_state_parity, ledger_coverage_finding_to_capability)."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-
-  REM-2026-05-08-C7-6:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-7.en.md
-    description: "Capability status language (design_accepted, implemented_unverified) competed with L0-L4 maturity. Cycle-7 added a header note that maturity is the primary status field; the lifecycle field is evidence_state. Full rename of status to evidence_state is W1 to avoid breaking existing tooling mid-cycle."
-    status: design_accepted
-    target_wave: W1
-    capability: architecture_sync_gate
-
-  REM-2026-05-08-C7-7:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-7.en.md
-    description: "Historical findings used the old operator_shape_gate capability bucket even after cycle-6 split into architecture_sync_gate and operator_shape_smoke_gate. Cycle-7 re-keyed all 19 historical findings: capability re-pointed; legacy_capability: operator_shape_gate preserved for traceability. New capability_legacy_bucket gate rule rejects new findings using the deprecated bucket without legacy_capability marker."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-
-  REM-2026-05-08-C7-8:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-7.en.md
-    description: "Active governance files contained UTF-8 special characters (sec-, --, ->, <->, <=) that some reviewer tooling renders as mojibake. Cycle-7 replaced them with ASCII equivalents across 7 active governance files. New ascii_only_governance gate rule scans those files and fails on any non-ASCII byte."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-
-  REM-2026-05-08-C7-9:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-7.en.md
-    description: "Gate scripts had no self-tests; cycle-6 PowerShell crash shipped because no harness validated structured JSON output. Cycle-7 added gate/test_architecture_sync_gate.sh: runs the available platform script(s) on the current tree and asserts exit code semantics + parseable JSON output. PowerShell parity test runs only when pwsh is available."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-
-  # Findings introduced by the 2026-05-08 cycle-8 remediation review and the
-  # systemic-remediation-operating-plan (Phases 0-4 + W0.1-W0.5). Cycle-8 is
-  # an evidence-hardening cycle: every finding has a structural rule, not a
-  # prose edit.
-  REM-2026-05-08-C8-1:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
-    description: "POSIX architecture-sync gate broken by CRLF line endings in gate/check_architecture_sync.sh on Windows checkouts. Cycle-8 added .gitattributes (LF for *.sh / *.md / *.yaml / *.json; LF in index for *.ps1) and a new eol_policy gate rule that fails when any tracked *.sh contains CR bytes. Working tree renormalized."
-    maturity: L1
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-  REM-2026-05-08-C8-2:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
-    description: "Gate self-test existed (cycle-7 sec-E1) but was not a delivery gate. Cycle-8 made test_architecture_sync_gate.sh emit a structured self-test result JSON with mode (local-smoke / delivery-required), and the manifest carries self_test.{state, pass_sha, log_path}. Delivery is invalid if self-test was not run at the evidence commit SHA."
-    maturity: L1
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-  REM-2026-05-08-C8-3:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
-    description: "PowerShell parity was optional in the self-test. Cycle-8 introduced --mode=delivery-required: missing pwsh produces an explicit missing_blocker state. The manifest's architecture_sync_logs.windows.state encodes the closed enum: pass / fail / missing_blocker / not_applicable / historical_only / pre_audit_trail."
-    maturity: L1
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0/W1
-    capability: architecture_sync_gate
-    notes: "Full CI matrix that runs both platforms is W1 (Phase 2.4)."
-  REM-2026-05-08-C8-4:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
-    description: "Cycle-7 delivery file 2026-05-08-ba4bcd5.md named gate/log/ba4bcd5-posix.json but the audit-trail commit actually contained gate/log/868dc85-posix.json. Cycle-8 added delivery_log_exact_binding rule: the manifest's delivery_file MUST have an existing matching log AND that log's sha field MUST equal reviewed_content_sha or evidence_commit_sha (HEAD). The stale 868dc85 log is removed by the cycle-8 architectural commit."
-    maturity: L1
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-  REM-2026-05-08-C8-5:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
-    description: "delivery_log_parity skipped missing per-SHA logs silently. Cycle-8 made it FAIL when the delivery file is the current authoritative one (manifest.delivery_file). Pre-platform-suffix legacy deliveries (cycles 1-3) get explicit legacy_exemption entries in the manifest's architecture_sync_logs.legacy_exemptions[]."
-    maturity: L1
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-  REM-2026-05-08-C8-6:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
-    description: "Manifest v2 still permitted TBD and null in authoritative evidence fields. Cycle-8 bumped schema to evidence-manifest/v3, removed evidence_commit_sha and authoritative_index_sha (HEAD-derived; not stored), replaced null log slots with explicit states from a closed enum, and added manifest_no_tbd + manifest_no_null_log_slots gate rules."
-    maturity: L1
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-  REM-2026-05-08-C8-7:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
-    description: "Manifest claimed gate stdout PASS as canonical evidence. Cycle-8 demoted stdout to a human convenience; the canonical evidence is the committed gate/log/<sha>-posix.json (and -windows.json when produced). The manifest no longer contains stdout-canonical comments."
-    maturity: L1
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-  REM-2026-05-08-C8-8:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
-    description: "Rule 8 state parity was unenforced (manifest carried rule_8_state_parity: false). Cycle-8 added rule_8_state_consistency rule: when manifest.rule_8.state == fail_closed_artifact_missing, no capability has maturity L3/L4 or evidence_state operator_gated/released, and no delivery file claims Rule 8 PASS. Architecture-sync evidence cannot be misread as runtime readiness."
-    maturity: L1
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-  REM-2026-05-08-C8-9:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
-    description: "Active L1/L2/cross-cutting docs still contained encoding corruption (mojibake from cycle-2 onward). Cycle-8 created docs/governance/active-corpus.yaml as the registry of active vs historical documents, replaced ascii_only_governance with ascii_only_active_corpus (registry-driven scan list), and converted ~35 active docs to ASCII (2611 characters replaced)."
-    maturity: L1
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: l0_architecture
-    notes: "Implements Phase 3 of docs/systemic-remediation-operating-plan-2026-05-08.en.md."
-  REM-2026-05-08-C8-10:
-    source: docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
-    description: "Status ledger and README still led with status (design_accepted/implemented_unverified) rather than maturity (L0..L4). Cycle-8 reordered every capability row to put maturity first and added evidence_state alias mirroring status. The gate accepts either field name when applying rule_8_state_consistency."
-    maturity: L1
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0/W1
-    capability: l0_architecture
-    notes: "Full rename of status -> evidence_state and capability-registry.yaml separation are W1 (Phase 4.1)."
-
-  # ---- Findings introduced by the 2026-05-08 systemic-remediation-operating-plan ----
-  # Phase 0..4 are accepted and landed in cycle-8 architectural commit.
-  # Phase 5 (W0 runtime) and Phase 6 (security implementation waves) are
-  # explicitly deferred per the systemic plan's own sequencing.
-  REM-2026-05-08-SYS-1:
-    source: docs/systemic-remediation-operating-plan-2026-05-08.en.md
-    description: "Phase 0 stop-the-line stabilization. Cycle-8 lands .gitattributes, LF normalization, gate self-test as delivery requirement, and explicit pre_audit_trail/missing_blocker manifest states. The temporary 'no L2+ promotion during stabilization' rule is enforced via rule_8_state_consistency."
-    maturity: L1
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-  REM-2026-05-08-SYS-2:
-    source: docs/systemic-remediation-operating-plan-2026-05-08.en.md
-    description: "Phase 1 evidence graph v3. Manifest schema bumped to evidence-manifest/v3 with reviewed_content_sha, evidence_commit_parent_sha, evidence_commit_classification, delivery_file, per-platform architecture_sync_logs and operator_shape_logs with state from a closed enum, self_test block, rule_8 block, active_corpus_path, capability_registry_path, current_index_path."
-    maturity: L1
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-  REM-2026-05-08-SYS-3:
-    source: docs/systemic-remediation-operating-plan-2026-05-08.en.md
-    description: "Phase 2 gate productization PARTIAL. Cycle-8 lands the delivery contract that requires the self-test PASS at the evidence commit SHA. CI matrix (Phase 2.4) and fixture test suite (Phase 2.3) are W1 because they require a CI runner not present in the cycle-8 author's environment; the manifest records gate_ci_matrix and fixture_test_suite as schema_capabilities=false to make the gap explicit."
-    maturity: L1
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0/W1
-    capability: architecture_sync_gate
-    notes: "schema_capabilities.cross_platform_ci_matrix and fixture_test_suite remain false until W1."
-  REM-2026-05-08-SYS-4:
-    source: docs/systemic-remediation-operating-plan-2026-05-08.en.md
-    description: "Phase 3 active corpus registry. docs/governance/active-corpus.yaml is the single source of truth for active vs historical documents. The ascii_only_active_corpus gate rule derives its scan list from this registry. Filename-pattern skips remain in the gate as a defensive second line until W1 removes them."
-    maturity: L1
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: l0_architecture
-  REM-2026-05-08-SYS-5:
-    source: docs/systemic-remediation-operating-plan-2026-05-08.en.md
-    description: "Phase 4 capability registry + maturity reset PARTIAL. Cycle-8 reorders the existing status ledger (maturity first; evidence_state alias). The full separation into capability-registry.yaml is W1: introducing it now would require also migrating every consumer (matrix, READMEs, gate). Roadmap-W0-W4.md documents the W1 migration."
-    maturity: L1
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0/W1
-    capability: l0_architecture
-  REM-2026-05-08-SYS-6:
-    source: docs/systemic-remediation-operating-plan-2026-05-08.en.md
-    description: "Phase 5 minimal W0 runtime vertical slice DEFERRED. Both the systemic plan and the cycle-8 review explicitly sequence W0 runtime AFTER control-plane stabilization (Phases 0-4). Cycle-8 keeps rule_8.state = fail_closed_artifact_missing and the rule_8_state_consistency gate rule. The W0 runtime sprint is the next deliverable after cycle-8."
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: operator_shape_smoke_gate
-    notes: "Explicit deferral; not a rejection. The deferral aligns with the systemic plan's own ordering."
-  REM-2026-05-08-SYS-7:
-    source: docs/systemic-remediation-operating-plan-2026-05-08.en.md
-    description: "Phase 6 security control implementation waves DEFERRED. Each wave depends on a runnable artifact (Phase 5). Cycle-8 keeps every security capability at L0/L1 so no wave can falsely claim closure. Each wave will land as a separate vertical slice after W0."
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W2+
-    capability: l0_architecture
-    notes: "Tracks the wave order: tenant identity/RLS, auth posture/JWT, run lifecycle/cancellation, ActionGuard, audit/evidence chain, prompt-security taint, sidecar trust profile, observability failure signals."
-
-  # ---- Cycle-9 truth-cut findings ----
-  REM-2026-05-09-C9-1:
-    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
-    description: "Architecture-sync passed while active corpus held entries with disposition markers. Cycle-9 split active-corpus.yaml into active_documents (no disposition markers; gate-enforced via active_corpus_no_disposition_in_active), transitional_rationale (sunset_by field; pre-W0 archive), and historical_documents."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-  REM-2026-05-09-C9-2:
-    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
-    description: "Local gate evidence over-readable as delivery. Cycle-9 added local_semantic_pass vs delivery_valid_pass distinction in manifest self_test.pass_type. Delivery files now quote evidence_valid_for_delivery explicitly."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-  REM-2026-05-09-C9-3:
-    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
-    description: "Active-corpus mixed registry (cycle-9 B1; same fix as C9-1). The split into 3 sections is the truth-cut."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-  REM-2026-05-09-C9-4:
-    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
-    description: "current-architecture-index.md primary hierarchy was contaminated with pre-refresh L2 docs. Cycle-9 restructured: one active hierarchy listing only refresh-active docs; pre-refresh hierarchy moved to a Historical Rationale section. Gate rule index_active_subset enforces."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-  REM-2026-05-09-C9-5:
-    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
-    description: "ActionGuard had two active designs (5-stage in refresh L2 + cross-cutting matrix; 11-stage in pre-refresh action-guard/ + docs/security-control-matrix.md). Cycle-9 picked 5-stage as authoritative; 11-stage docs moved to transitional_rationale. Gate rule actionguard_5stage_invariants binds to agent-runtime/action/ (not action-guard/) and asserts the 5 stage names + audit-row + outbox-event invariants."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: action_guard
-  REM-2026-05-09-C9-6:
-    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
-    description: "Gate rule actionguard_pre_post_evidence_missing was binding to legacy action-guard/ path. Cycle-9 retired that rule; replaced by actionguard_5stage_invariants on agent-runtime/action/."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-  REM-2026-05-09-C9-7:
-    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
-    description: "No runnable runtime artifact. Per user 2026-05-09 instruction (engineering implementation only needs a plan), W0 stays as plan only this cycle. Rule 8 remains fail-closed; cycle-9 D1 ACCEPT-AS-CORRECT."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: operator_shape_smoke_gate
-    notes: "Plan-only by user instruction; W0 is the next-track deliverable."
-  REM-2026-05-09-C9-8:
-    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
-    description: "Fake-provider smoke vs Rule 8 confusion. Cycle-9 added manifest dependency_mode (fake|real) + rule_8_eligible (true|false). Engineering plan renamed fake-provider sequential smoke to ci_operator_shape_smoke; rule_8_operator_shape reserved for real-dependency runs. Plan-level rule 8 added: no delivery file may claim Rule 8 PASS while dependency_mode=fake."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0/W2
-    capability: operator_shape_smoke_gate
-  REM-2026-05-09-C9-9:
-    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-9.en.md
-    description: "100% design-time cap language created premature closure pressure. Cycle-9 reorganized self-audit headline: maturity ladder is primary (every refresh capability is L0); 240+ dim score is a secondary diagnostic explicitly labeled non-shipping. Index sec-Capability-maturity restated."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: l0_architecture
-
-  # ---- Cycle-10 self-driven systematic review (per docs/architecture-design-systematic-review-2026-05-09.md) ----
-  # 20 issues closed in this cycle; 25 carry-forward items also tracked
-  # under the same source for visibility.
-  REM-2026-05-09-C10-1:
-    source: docs/architecture-design-systematic-review-2026-05-09.md
-    description: "L0 lacked NFRs / SLOs (latency, throughput, availability, durability, cost, capacity per posture). Cycle-10 added docs/cross-cutting/non-functional-requirements.md with concrete numbers + L0 sec-6.6 summary."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0..W4
-    capability: l0_architecture
-  REM-2026-05-09-C10-2:
-    source: docs/architecture-design-systematic-review-2026-05-09.md
-    description: "First-principles (P1/P2/P3) lacked measurable proxies. Cycle-10 added L0 sec-5.4 with 9 measurable proxies (time-to-first-run, helm-install-to-health, default examples count, median run cost, prompt-cache hit rate, budget breach count, eval pass rate, feedback collection rate, prompt A/B rollout count)."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0..W4
-    capability: l0_architecture
-  REM-2026-05-09-C10-3:
-    source: docs/architecture-design-systematic-review-2026-05-09.md
-    description: "Module dependency graph was implicit. Cycle-10 added L0 sec-3.1 explicit graph + acyclic rule + ArchUnit CI test."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: l0_architecture
-  REM-2026-05-09-C10-4:
-    source: docs/architecture-design-systematic-review-2026-05-09.md
-    description: "Threat model missing as a coherent doc. Cycle-10 added docs/cross-cutting/threat-model.md with STRIDE per trust boundary (TB-1..TB-4) + cross-cutting threats."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W1+
-    capability: identity_jwt_validation
-  REM-2026-05-09-C10-5:
-    source: docs/architecture-design-systematic-review-2026-05-09.md
-    description: "API conventions missing. Cycle-10 added docs/cross-cutting/api-conventions.md (URL versioning, methods + idempotency, naming, status codes, RFC-7807 error body, error code taxonomy, pagination, headers, OpenAPI, deprecation)."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: agent_platform_facade
-  REM-2026-05-09-C10-6:
-    source: docs/architecture-design-systematic-review-2026-05-09.md
-    description: "Data model conventions missing. Cycle-10 added docs/cross-cutting/data-model-conventions.md (naming, UUIDv7 IDs, required columns, multi-tenant patterns, timestamps, soft vs hard delete, indexes, jsonb usage, migrations, schema spine, Java type ownership)."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0..W4
-    capability: server_rls_protocol
-  REM-2026-05-09-C10-7:
-    source: docs/architecture-design-systematic-review-2026-05-09.md
-    description: "Deployment topology missing. Cycle-10 added docs/cross-cutting/deployment-topology.md (dev compose, single-region K8s, multi-region option, replica counts, scaling assumptions, network policies, rollout strategy, DR, cost model)."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0..W4
-    capability: l0_architecture
-  REM-2026-05-09-C10-8:
-    source: docs/architecture-design-systematic-review-2026-05-09.md
-    description: "Failure modes catalog missing. Cycle-10 added docs/cross-cutting/failure-modes-catalog.md (per-module runtime failure modes + Detect / Mitigation / Outcome per row + cross-cutting failure modes)."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0..W4
-    capability: l0_architecture
-  REM-2026-05-09-C10-9:
-    source: docs/architecture-design-systematic-review-2026-05-09.md
-    description: "Tenant lifecycle (create / suspend / delete / export / impersonate) was not specified. Cycle-10 added agent-platform/tenant L2 sec-10 with state machine + per-action procedure + admin API."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W1+
-    capability: tenant_context_spine
-  REM-2026-05-09-C10-10:
-    source: docs/architecture-design-systematic-review-2026-05-09.md
-    description: "Memory eviction + per-tenant quota not specified. Cycle-10 added agent-runtime/memory L2 sec-10 with per-tier eviction + tenant quota table + PII tagging."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W2/W3
-    capability: l0_architecture
-  REM-2026-05-09-C10-11:
-    source: docs/architecture-design-systematic-review-2026-05-09.md
-    description: "Tool versioning + per-tenant quota + sandbox levels not specified. Cycle-10 added agent-runtime/tool L2 sec-10 with SemVer versioning + dual quota + 5-level sandbox table."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W3
-    capability: skill_runtime_authz
-  REM-2026-05-09-C10-12:
-    source: docs/architecture-design-systematic-review-2026-05-09.md
-    description: "Parallel run handling + timeout escalation not specified. Cycle-10 added agent-runtime/run L2 sec-10 with per-tenant cap + 6-level timeout table + cancellation across sync/Temporal boundary."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W2
-    capability: l0_architecture
-  REM-2026-05-09-C10-13:
-    source: docs/architecture-design-systematic-review-2026-05-09.md
-    description: "Workflow versioning + signal discipline + namespace strategy not specified. Cycle-10 added agent-runtime/temporal L2 sec-10 with getVersion pattern + signal contract + namespace pattern + activity catalog."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W4
-    capability: l0_architecture
-  REM-2026-05-09-C10-14:
-    source: docs/architecture-design-systematic-review-2026-05-09.md
-    description: "Outbox per-tenant ordering + DLQ procedure not specified. Cycle-10 added agent-runtime/outbox L2 sec-10 with per-tenant batch ordering + DLQ table + replay API + DLQ alerts."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W2/W3
-    capability: outbox_saga_directdb
-  REM-2026-05-09-C10-15:
-    source: docs/architecture-design-systematic-review-2026-05-09.md
-    description: "Cross-module Java type ownership unclear. Cycle-10 documented in data-model-conventions sec-13: agent-platform/contracts is the single shared-type module; no cycles."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: l0_architecture
-
-  # 25 carry-forward items tracked as design_accepted P1/P2 with target_wave > W0.
-  # See docs/architecture-design-systematic-review-2026-05-09.md sec-4.2 for the
-  # full table; not duplicated here. They will become individual REM rows when
-  # closed in their respective waves.
-  REM-2026-05-09-C10-CF:
-    source: docs/architecture-design-systematic-review-2026-05-09.md
-    description: "25 systematic-review carry-forward items tracked in sec-4.2 of the source doc. Categories: P-A (token-binding, alerting, cross-region tracing, sandboxing, audit chain validate, eval cost budget); P-B (token revocation, stepped-up auth, idempotency body storage, config hot-reload, run timeout escalation, LLM streaming, tool-calling protocol, prompt templates, action retry, signal contract, eval human-loop); P-C (error propagation, inter-module timeouts, retry budgets); P-D (per-wave score lift, per-feature business KPI); P-E (cycle-11 closes the version-pin + integration-contract subset; the remaining P-E items below). Each becomes its own REM row when closed."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W1..W4+
-    capability: l0_architecture
-    notes: "Carry-forward items per cycle-10 self-driven review. Cycle-11 closed the OSS version-pin subset of P-E; remaining items still defer."
-
-  # ---- Cycle-11 OSS-integration verification ----
-  REM-2026-05-09-C11-1:
-    source: user-question-2026-05-09 (OSS-integration correctness)
-    description: "Cycle-10 P-E was carry-forward; user pointed out that without local OSS dep resolution, architecture correctness is API-plausible only. Cycle-11 adds docs/cross-cutting/oss-bill-of-materials.md with exact version pins per dep, U0..U4 verification ladder (parallel to L0..L4 maturity), per-dep API surface citations, integration contract, and risks. Spring AI 1.0.7 + Temporal Java SDK 1.34.0 + MCP Java SDK 2.0.0-M2 verified at U1 via upstream release notes / Maven Central. All other deps remain at U0 until W0 probe code lands them at U2."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0..W4
-    capability: l0_architecture
-  REM-2026-05-09-C11-2:
-    source: user-question-2026-05-09
-    description: "Stale version refs corrected: agent-runtime/llm Spring AI 1.0.x -> 1.0.7; agent-runtime/temporal Temporal SDK 1.25.x -> 1.34.0; agent-runtime/tool MCP latest 0.x -> 2.0.0-M2 (milestone). L0 sec-2 OSS matrix updated. L0 sec-2.1.5 OSS verification ladder added."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: l0_architecture
-  REM-2026-05-09-C11-3:
-    source: user-question-2026-05-09
-    description: "Per-wave OSS verification advancement plan (BoM sec-6): W0 promotes Spring Boot / Postgres / HikariCP / etc. to U2 via probe code; W1 promotes Spring Security / Keycloak to U3 via Testcontainers; W2 promotes Spring AI to U2/U3; W3 promotes OPA / MCP / pgvector; W4 promotes Temporal SDK to U3."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0..W4
-    capability: l0_architecture
-  REM-2026-05-09-C11-CF:
-    source: user-question-2026-05-09
-    description: "Remaining P-E carry-forward (after cycle-11): pgvector vs Qdrant trigger criteria (W2); Temporal vs simpler durable-execution alternative for v1 single-customer (W4); MCP 2.0.0-M2 -> 2.0.0 GA upgrade contingency in W3; Spring AI 1.0.x vs 1.1.x branch decision at W4 close."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W2..W4
-    capability: l0_architecture
-    notes: "Carry-forward; tracked but not blocking pre-W0 work."
-
-  # ---- Cycle-12 Phase A close ----
-  REM-2026-05-09-C12-1:
-    source: user-decision-2026-05-09 (2-phase model adopted)
-    description: "Phase A item 1: end-to-end interaction sequence diagrams. Cycle-12 added docs/cross-cutting/interaction-sequences.md with 6 flows: happy-path POST /v1/runs sync; LLM-provider outage; Postgres tx fail mid-run; tenant suspended mid-run; long-running via Temporal; idempotent retry with cached body."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: l0_architecture
-  REM-2026-05-09-C12-2:
-    source: user-decision-2026-05-09
-    description: "Phase A item 2: v1 reference customer profile pinned. Cycle-12 added docs/cross-cutting/v1-customer-profile.md (Tier-1 financial-services operator: 5 logical tenants, 500 internal users, 20k runs/day, 50 RPS sustained, 7-year audit retention, on-prem K8s single-region with DR). Anchors NFR doc's prod targets to concrete numbers."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: l0_architecture
-  REM-2026-05-09-C12-3:
-    source: user-decision-2026-05-09
-    description: "Phase A item 3: design-decision register (ADR-style). Cycle-12 added docs/cross-cutting/design-decisions.md with 15 ADRs covering: Java 21 + Spring Boot 3.5; Spring AI 1.0.7 vs LangChain4j; Temporal 1.34 vs Airflow; Postgres + pgvector vs Qdrant; SET LOCAL RLS GUC vs per-checkout reset; ActionGuard 5-stage vs 11-stage; Postgres outbox vs Kafka v1; OPA sidecar vs Cedar/custom; Vault OSS vs K8s Secrets; Keycloak default + BYO IdP; Spring Cloud Gateway vs Kong; Maven vs Gradle; UUIDv7 vs sequence; 3-posture model; multi-framework dispatch deferred. Plus 5 deferred decisions tracked."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: l0_architecture
-  REM-2026-05-09-C12-4:
-    source: user-decision-2026-05-09
-    description: "Phase A is complete at cycle-12 close. L0 sec-11.5 records this. Phase B trigger: pull OSS deps to local Maven cache (per user instruction: after Phase A complete, core work is to download OSS components locally). Phase B's first action is mvn -B dependency:resolve against the cycle-11 BoM; advances U1 -> U2; then proceeds module-by-module starting with W0."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: l0_architecture
-    notes: "Phase A closed. Phase B trigger pending."
-
-  # REM entries record remediation tasks. They do NOT carry capability `maturity`
-  # -- only capability rows do. Use `status` for REM lifecycle.
-  # Cycle-14 B2: removed maturity field from REM entries below (it mixed task
-  # recording with capability progression; L1 on design_accepted entries was incorrect).
-
-  # ---- Cycle-13 Phase B step 1: Maven scaffolding + W0 skeleton ----
-  REM-2026-05-09-C13-1:
-    source: user-decision-2026-05-09 (Option A autonomous)
-    description: "Maven multi-module scaffold added: root pom.xml (parent inheriting Spring Boot 3.5.0 + spring-ai-bom 1.0.7 + spring-cloud BOM 2024.0.0 + temporal 1.34.0 + mcp 2.0.0-M2 + Resilience4j 2.2.0 + Caffeine 3.1.8 + Flyway 10.21.0 + Testcontainers 1.20.4 + WireMock 3.9.1 + RestAssured 5.5.0 + OTel agent 2.10.0 + logstash-logback 8.0 + springdoc 2.6.0 + Tika 2.9.2 + ArchUnit 1.3.0); agent-platform/pom.xml; agent-runtime/pom.xml; agent-eval/pom.xml. All version pins traceable to docs/cross-cutting/oss-bill-of-materials.md."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: agent_platform_facade
-  REM-2026-05-09-C13-2:
-    source: user-decision-2026-05-09 (Option A autonomous)
-    description: "W0 minimal Spring Boot skeleton: PlatformApplication.java; HealthController returning UP + sha + db_ping_ns + ts; HealthCheckRepository proving JdbcTemplate reaches Postgres; V1__init.sql Flyway migration creating health_check singleton; application.yml with virtual threads on + HikariCP + Flyway + posture marker; WebSecurityConfig permitting /v1/health + actuator only (Swagger removed in cycle-14 C2); HealthEndpointIT.java Testcontainers-based E2E test."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: agent_platform_facade
-  REM-2026-05-09-C13-3:
-    source: user-decision-2026-05-09 (Option A autonomous)
-    description: "Probe code committed for U1 -> U2 promotion. agent-platform/.../probe/OssApiProbe.java imports cited APIs from Spring Web, Spring Security oauth2-resource-server, JdbcTemplate, Flyway, Resilience4j (CircuitBreaker + RateLimiter), Caffeine, Spring Cloud Vault, Hibernate Validator, springdoc, Micrometer, logstash-logback. agent-runtime/.../probe/OssApiProbe.java imports Spring AI (ChatClient, ChatModel, EmbeddingModel, VectorStore), Temporal Java SDK (Workflow, WorkflowInterface, WorkflowMethod, ActivityInterface, ActivityMethod, WorkflowClient + Workflow.getVersion compile-time signature check), Apache Tika (AutoDetectParser, Metadata). MCP class names deliberately not cited in probe (2.0.0-M2 milestone; W3 wave commits the real surface)."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: l0_architecture
-    notes: "U2 promotion pending user's mvn -B compile run. Author env lacks Java + Maven; user verifies."
-  REM-2026-05-09-C13-4:
-    source: user-decision-2026-05-09 (Option A autonomous)
-    description: "Operations scaffolding: Dockerfile (Maven 3.9 + Eclipse Temurin 21 build stage; distroless Java 21 runtime; layer-cached dependency fetch; cycle-14 E1 removed || true from prefetch step); ops/compose.yml (Postgres 16-alpine + agent-platform with health-checks + APP_POSTURE=dev); .github/workflows/ci.yml (Java 21 setup + mvn verify + architecture-sync gate + self-test + test-results upload; cycle-14 A1 removed operator-shape smoke step until W0 acceptance)."
-    status: design_accepted
-    evidence_state: design_accepted
-    target_wave: W0
-    capability: agent_platform_facade
-  REM-2026-05-09-C13-5:
-    source: user-decision-2026-05-09 (Option A autonomous)
-    description: "Operator-shape smoke gate advanced from FAIL_ARTIFACT_MISSING to tri-state: FAIL_ARTIFACT_MISSING (no pom + no src) | FAIL_NEEDS_BUILD (pom + src present; no JAR; cycle-13 state) | FAIL_NEEDS_REAL_FLOW (JAR present; no real Rule 8 flow yet, W4 deliverable). Manifest rule_8.state advanced from fail_closed_artifact_missing to fail_closed_needs_build; unblocks_at W4. Gate scripts both POSIX + PowerShell."
-    status: implemented_unverified
-    evidence_state: implemented_unverified
-    target_wave: W4
-    capability: operator_shape_smoke_gate
-
-  # ---- Cycle-14: response to cycle-14 reviewer findings ----
-  REM-2026-05-09-C14-1:
-    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-14.en.md
-    description: "A1: CI bypass eliminated. Operator-shape smoke step removed from .github/workflows/ci.yml until W0 build acceptance lands. New gate rule ci_no_or_true_mask scans .github/workflows/*.yml for forbidden || true masks on gate/run_* lines. Reintroduce smoke as blocking step when agent-platform/target/agent-platform-*.jar is produced."
-    status: design_accepted
-    target_wave: W0
-    capability: operator_shape_smoke_gate
-  REM-2026-05-09-C14-2:
-    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-14.en.md
-    description: "A2: local-only architecture-sync can no longer emit delivery-valid evidence. Both check_architecture_sync.{sh,ps1} force evidence_valid_for_delivery=false when local_only is set, and always write under gate/log/local/. New self-test fixture verifies this. New schema capability local_only_log_path_enforced."
-    status: design_accepted
-    target_wave: W0
-    capability: architecture_sync_gate
-  REM-2026-05-09-C14-3:
-    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-14.en.md
-    description: "B1: Rule 8 evidence state machine reconciled. operator_shape_logs.*.reason updated to FAIL_NEEDS_BUILD; unblocks_at changed to W4; operator_shape_evidence.reason updated; artifact_present: false replaced by artifact_present_state: source_only. New gate rule rule_8_state_machine_coherent enforces cross-field agreement."
-    status: design_accepted
-    target_wave: W0
-    capability: operator_shape_smoke_gate
-  REM-2026-05-09-C14-4:
-    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-14.en.md
-    description: "B2: maturity field removed from cycle-13 REM entries (C13-1 through C13-5). REM entries record remediation tasks, not capabilities; only capability rows carry maturity (L0..L4 per Rule 12). Comment added to REM section header."
-    status: design_accepted
-    target_wave: W0
-    capability: l0_architecture
-  REM-2026-05-09-C14-5:
-    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-14.en.md
-    description: "C1: W0 posture guard re-scoped to W1. agent-platform/bootstrap/ARCHITECTURE.md narrowed to W0 lite (posture marker only; no required-config validation). PostureBootGuard.java + RequiredConfig.java + per-posture ITs move to W1 acceptance."
-    status: design_accepted
-    target_wave: W1
-    capability: posture_model
-  REM-2026-05-09-C14-6:
-    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-14.en.md
-    description: "C2: W0 SecurityFilterChain Swagger permits removed (1-line WebSecurityConfig.java trim). WebSecurityConfig.java now permits only /v1/health and /actuator/**. agent-platform/web/ARCHITECTURE.md updated: W0 does not expose Swagger; W1 adds posture-aware exposure."
-    status: design_accepted
-    target_wave: W0
-    capability: agent_platform_facade
-  REM-2026-05-09-C14-7:
-    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-14.en.md
-    description: "D1: build_verification field added to evidence-manifest.yaml (state: pending_ci). Capability agent_platform_facade stays L0 until CI mvn verify green AND HealthEndpointIT green on the recorded SHA. Maven Wrapper deferred (cycle-13 documented Apache mirror 404)."
-    status: design_accepted
-    target_wave: W0
-    capability: agent_platform_facade
-  REM-2026-05-09-C14-8:
-    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-14.en.md
-    description: "D2: W0 acceptance criteria revised. engineering-plan-W0-W4.md sec-2.7 replaces R2/R3 LOC gates with behavior gates B1..B4 (mvn verify green; HealthEndpointIT green; FlywayMigrationIT green or W1; posture guard tests deferred to W1 per C14-5). Current cycle-13 state renamed 'W0 skeleton step 1'."
-    status: design_accepted
-    target_wave: W0
-    capability: agent_platform_facade
-  REM-2026-05-09-C14-9:
-    source: docs/systematic-architecture-remediation-plan-2026-05-09-cycle-14.en.md
-    description: "E1: Dockerfile dependency:go-offline no longer masks failure. || true removed from line 17. Image build fails fast on supply-chain / artifact-resolution / checksum errors."
-    status: design_accepted
-    target_wave: W0
-    capability: agent_platform_facade
-
-  # ---- 2026-05-10 cycle-15/16 W0 scaffolding ----
-
   spring_ai_ascend_dependencies_bom:
-    maturity: L1
     status: implemented_unverified
-    evidence_state: implemented_unverified
+    shipped: false
     l0_decision: docs/cross-cutting/oss-bill-of-materials.md
-    implementation: spring-ai-ascend-dependencies/pom.xml
+    implementation:
+      - spring-ai-ascend-dependencies/pom.xml
     tests: []
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "BoM publishes 9 starter coordinates + 13 transitive OSS pins."
 
-
-
-
-
+  sdk_spi_starters:
+    status: deleted
+    shipped: false
+    note: "9 SDK SPI starters deleted in 2026-05-12 Occam pass (C2-C8). All replaced by direct OSS use."
 
   spring_ai_ascend_graphmemory_starter:
-    maturity: L0
     status: implemented_unverified
-    evidence_state: implemented_unverified
+    shipped: false
     l0_decision: ARCHITECTURE.md
     implementation:
       - spring-ai-ascend-graphmemory-starter/src/main/java/ascend/springai/runtime/graphmemory/GraphMemoryAutoConfiguration.java
     tests:
       - spring-ai-ascend-graphmemory-starter/src/test/java/ascend/springai/runtime/graphmemory/GraphMemoryAutoConfigurationTest.java
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "Sidecar adapter scaffold; disabled by default; W1 wires real Graphiti REST client."
 
-
   spi_compatibility_freeze:
-    maturity: L1
     status: test_verified
-    evidence_state: test_verified
+    shipped: true
     l0_decision: ARCHITECTURE.md (sec.3.2)
     implementation:
       - agent-platform/src/test/java/ascend/springai/platform/api/ApiCompatibilityTest.java
     tests:
       - agent-platform/src/test/java/ascend/springai/platform/api/ApiCompatibilityTest.java
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L1: ArchUnit 4 rules GREEN; rules 3+4 now non-vacuous (SPI starters on test-classpath); japicmp baseline configured (skip=true; enforcement W1+)."
 
-  # ---- cycle-15/16 closure extension: W0 contracts + contract spine ----
-
-  idempotency_key_filter:
-    maturity: L1
+  idempotency_header_filter:
     status: implemented_unverified
-    evidence_state: implemented_unverified
+    shipped: true
     l0_decision: ARCHITECTURE.md
     implementation:
       - agent-platform/src/main/java/ascend/springai/platform/idempotency/IdempotencyHeaderFilter.java
@@ -1453,13 +113,11 @@ findings:
     tests:
       - agent-platform/src/test/java/ascend/springai/platform/idempotency/IdempotencyHeaderFilterTest.java
       - agent-platform/src/test/java/ascend/springai/platform/idempotency/IdempotencyHeaderFilterIT.java
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L1: OncePerRequestFilter order 30; dev tolerates missing; research/prod returns 400; counters emitted."
 
   tenant_context_filter:
-    maturity: L1
     status: implemented_unverified
-    evidence_state: implemented_unverified
+    shipped: true
     l0_decision: ARCHITECTURE.md
     implementation:
       - agent-platform/src/main/java/ascend/springai/platform/tenant/TenantContextFilter.java
@@ -1467,189 +125,51 @@ findings:
     tests:
       - agent-platform/src/test/java/ascend/springai/platform/tenant/TenantContextFilterTest.java
       - agent-platform/src/test/java/ascend/springai/platform/tenant/TenantContextFilterIT.java
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L1: OncePerRequestFilter order 20; ThreadLocal cleared in finally; dev uses DEV_DEFAULT on missing; research/prod returns 400."
 
-
-
-
-
   openapi_v1_snapshot:
-    maturity: L2
     status: test_verified
-    evidence_state: test_verified
+    shipped: true
     l0_decision: ARCHITECTURE.md
     implementation:
       - docs/contracts/openapi-v1.yaml
     tests:
       - agent-platform/src/test/java/ascend/springai/platform/contracts/OpenApiContractIT.java
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L2: OpenAPI 3.0.1 snapshot pinning /v1/health surface; OpenApiContractIT runs actual snapshot diff via OpenApiSnapshotComparator (pinned YAML vs live /v3/api-docs)."
+    allowed_claim: "L2: OpenAPI 3.0.1 snapshot pinning /v1/health surface; OpenApiContractIT runs actual snapshot diff via OpenApiSnapshotComparator."
 
-  integration_guide:
-    maturity: L2
-    status: design_accepted
-    evidence_state: design_accepted
+  openapi_response_schema_check:
+    status: test_verified
+    shipped: true
     l0_decision: ARCHITECTURE.md
-    l2_documents:
-      - docs/cross-cutting/integration-guide.md
-    implementation: null
-    tests: []
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L2: integration guide covering 3 paths (drop-in @Bean / sidecar / external BoM)."
-
-  statelessness_partition_policy:
-    maturity: L2
-    status: design_accepted
-    evidence_state: design_accepted
-    l0_decision: ARCHITECTURE.md
-    l2_documents:
-      - docs/cross-cutting/statelessness-and-partition-policy.md
-    implementation: null
-    tests: []
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L2: state ownership map, RLS GUC, horizontal scale story."
-
-  contract_evolution_policy:
-    maturity: L2
-    status: design_accepted
-    evidence_state: design_accepted
-    l0_decision: ARCHITECTURE.md
-    l2_documents:
-      - docs/cross-cutting/contract-evolution-policy.md
-    implementation: null
-    tests: []
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L2: versioning rules per contract type; L1-L4 compatibility matrix."
-
-  middleware_pattern_guide:
-    maturity: L2
-    status: design_accepted
-    evidence_state: design_accepted
-    l0_decision: ARCHITECTURE.md
-    l2_documents:
-      - docs/cross-cutting/middleware-pattern-guide.md
-    implementation: null
-    tests: []
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L2: sidecar adapter pattern end-to-end walkthrough."
-
-  eval_ci_hook:
-    maturity: L2
-    status: design_accepted
-    evidence_state: design_accepted
-    l0_decision: ARCHITECTURE.md
-    l2_documents:
-      - docs/cross-cutting/eval-ci-hook.md
-    implementation: null
-    tests: []
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L2: agent-eval role documented; nightly CI hook intent (W4); cost-counter intent (W2)."
-
-  contract_catalog:
-    maturity: L2
-    status: design_accepted
-    evidence_state: design_accepted
-    l0_decision: ARCHITECTURE.md
-    l2_documents:
-      - docs/contracts/contract-catalog.md
-    implementation: null
-    tests: []
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L2: single source of truth for all external contracts; indexes HTTP/SPI/config/telemetry/BoM."
-
-  spi_contracts_doc:
-    maturity: L2
-    status: design_accepted
-    evidence_state: design_accepted
-    l0_decision: ARCHITECTURE.md
-    l2_documents:
-      - docs/contracts/spi-contracts.md
-    implementation: null
-    tests: []
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L2: per-SPI semantic guarantee, error contract, threading model."
-
-  configuration_contracts_doc:
-    maturity: L2
-    status: design_accepted
-    evidence_state: design_accepted
-    l0_decision: ARCHITECTURE.md
-    l2_documents:
-      - docs/contracts/configuration-contracts.md
-    implementation: null
-    tests: []
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L2: all springai.ascend.* properties declared; deprecation N+2 rule."
-
-  telemetry_contracts_doc:
-    maturity: L2
-    status: design_accepted
-    evidence_state: design_accepted
-    l0_decision: ARCHITECTURE.md
-    l2_documents:
-      - docs/contracts/telemetry-contracts.md
-    implementation: null
-    tests: []
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L2: metric naming pattern; required tags; cardinality budget; structured log schema."
-
-  http_api_contracts_doc:
-    maturity: L2
-    status: design_accepted
-    evidence_state: design_accepted
-    l0_decision: ARCHITECTURE.md
-    l2_documents:
-      - docs/contracts/http-api-contracts.md
-    implementation: null
-    tests: []
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L2: per-route stability tier; mandatory header conventions; status code conventions."
-
-  # ---- architecture-review-readiness pass (T-AR-1..T-AR-10) 2026-05-10 ----
+    implementation:
+      - agent-platform/src/test/java/ascend/springai/platform/contracts/OpenApiSnapshotComparator.java
+      - agent-platform/src/test/java/ascend/springai/platform/contracts/OpenApiContractIT.java
+    tests:
+      - agent-platform/src/test/java/ascend/springai/platform/contracts/OpenApiContractIT.java
+    allowed_claim: "L1: OpenApiSnapshotComparator.compareResponseSchemas() walks required fields and types in all 200 response schemas in the pinned spec."
 
   japicmp_configured:
-    maturity: L1
     status: implemented_unverified
-    evidence_state: implemented_unverified
+    shipped: false
     l0_decision: ARCHITECTURE.md (sec.3.2)
     implementation:
       - spring-ai-ascend-dependencies/pom.xml
     tests:
       - agent-platform/src/test/java/ascend/springai/platform/api/ApiCompatibilityTest.java
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L1: japicmp-maven-plugin 0.23.0 wired in BoM pluginManagement; skip=true for W0 baseline; enforcement activates W1+ on first version diff."
+    allowed_claim: "L1: japicmp-maven-plugin 0.23.0 wired in BoM pluginManagement; skip=true for W0 baseline; enforcement activates W1+."
 
   rls_policy_sql:
-    maturity: L0
     status: design_accepted
-    evidence_state: design_accepted
+    shipped: false
     l0_decision: ARCHITECTURE.md
     implementation:
       - docs/security/rls-policy.sql
     tests: []
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    note: "L0: SQL artifact present; runtime isolation tests @Disabled until W2 real Postgres migration"
-    allowed_claim: "L0: PostgreSQL RLS DDL + assert_tenant_guc_set() trigger in-tree; runtime isolation unverified. Maturity downgraded from L1: all three RLS integration tests (TenantIsolationIT, RlsPolicyCoverageIT, GucEmptyAtTxStartIT) are @Disabled UnsupportedOperationException scaffolds; @Disabled tests cannot count as L1 evidence. Advances to L1 when W2 removes @Disabled and tests pass. See delivery/2026-05-11-a7756cd.md."
-
-  tenant_isolation_it_scaffold:
-    maturity: L0
-    status: design_accepted
-    evidence_state: design_accepted
-    l0_decision: ARCHITECTURE.md
-    implementation:
-      - docs/security/rls-policy.sql
-    tests:
-      - agent-platform/src/test/java/ascend/springai/platform/security/TenantIsolationIT.java
-      - agent-platform/src/test/java/ascend/springai/platform/security/RlsPolicyCoverageIT.java
-      - agent-platform/src/test/java/ascend/springai/platform/security/GucEmptyAtTxStartIT.java
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L0: three RLS IT skeletons present (@Disabled); W2 wires real persistence layer and removes @Disabled."
+    note: "L0: SQL artifact present; runtime isolation tests @Disabled until W2 real Postgres migration. Advances to L1 when W2 removes @Disabled."
 
   ops_runbooks_skeleton:
-    maturity: L0
     status: design_accepted
-    evidence_state: design_accepted
+    shipped: false
     l0_decision: ARCHITECTURE.md
     implementation:
       - ops/runbooks/README.md
@@ -1659,13 +179,11 @@ findings:
       - ops/runbooks/total-credential-loss.md
       - ops/runbooks/incident-response.md
     tests: []
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L0: 5 runbooks present with trigger/scope/procedure/verification sections; all marked Maturity: L0."
+    allowed_claim: "L0: 5 runbooks present with trigger/scope/procedure/verification sections."
 
   helm_chart_skeleton:
-    maturity: L0
     status: design_accepted
-    evidence_state: design_accepted
+    shipped: false
     l0_decision: ARCHITECTURE.md
     implementation:
       - ops/helm/spring-ai-ascend/Chart.yaml
@@ -1675,38 +193,32 @@ findings:
       - ops/helm/spring-ai-ascend/templates/networkpolicy.yaml
       - ops/helm/spring-ai-ascend/templates/configmap.yaml
     tests: []
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L0: Helm chart skeleton present; not deployment-tested. W4 deployment-tested."
 
   doctor_script:
-    maturity: L0
     status: implemented_unverified
-    evidence_state: implemented_unverified
+    shipped: false
     l0_decision: ARCHITECTURE.md
     implementation:
       - gate/doctor.sh
       - gate/doctor.ps1
     tests: []
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L0: doctor scripts check APP_POSTURE, required env vars, gate log presence, mvnw exec bit, Java availability; exit 0/1."
 
   adr_per_file:
-    maturity: L1
     status: design_accepted
-    evidence_state: design_accepted
+    shipped: false
     l0_decision: ARCHITECTURE.md
     l2_documents:
       - docs/adr/README.md
     implementation:
       - docs/adr/
     tests: []
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L1: 15 per-file MADR 4.0 ADRs in docs/adr/; version refs current (Spring AI 2.0.0-M5, Temporal 1.35.0, Boot 4.0.5); README index present."
+    allowed_claim: "L1: 15 per-file MADR 4.0 ADRs in docs/adr/; version refs current; README index present."
 
   perf_evidence_path:
-    maturity: L0
     status: design_accepted
-    evidence_state: design_accepted
+    shipped: false
     l0_decision: ARCHITECTURE.md
     implementation:
       - perf/README.md
@@ -1714,26 +226,21 @@ findings:
       - perf/jmh/pom.xml
       - perf/jmh/src/main/java/ascend/springai/perf/FilterBench.java
     tests: []
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L0: JMH skeleton + baseline doc present; no captured numbers (W4 cadence). Strategy and regression policy documented."
 
   agent_runtime_smoke_test:
-    maturity: L1
     status: implemented_unverified
-    evidence_state: implemented_unverified
+    shipped: true
     l0_decision: ARCHITECTURE.md
     implementation:
       - agent-runtime/src/main/java/ascend/springai/runtime/probe/OssApiProbe.java
     tests:
       - agent-runtime/src/test/java/ascend/springai/runtime/probe/OssApiProbeTest.java
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L1: OssApiProbeTest 3 tests (classIsLoadable, probeReturnsNonNullString, temporalGetVersionShapeReturnsMinusOne) GREEN."
 
-
   posture_module_bootstrap:
-    maturity: L0
     status: deferred_w1
-    evidence_state: design_only
+    shipped: false
     l0_decision: ARCHITECTURE.md
     l2_documents:
       - docs/cross-cutting/posture-model.md
@@ -1741,28 +248,12 @@ findings:
     implementation: []
     tests:
       - agent-platform/src/test/java/ascend/springai/platform/posture/PostureBindingIT.java
-    latest_delivery_valid_sha: null
     allowed_claim: "L0: APP_POSTURE env-var bridges to app.posture property via application.yml placeholder. PostureBindingIT proves the bridge. AppPosture class, PostureBootGuard, RequiredConfig, and all associated ITs deferred to W1."
 
-  openapi_response_schema_check:
-    maturity: L1
-    status: test_verified
-    evidence_state: test_verified
+  idempotency_store:
+    status: deferred_w1
+    shipped: false
     l0_decision: ARCHITECTURE.md
-    implementation:
-      - agent-platform/src/test/java/ascend/springai/platform/contracts/OpenApiSnapshotComparator.java
-      - agent-platform/src/test/java/ascend/springai/platform/contracts/OpenApiContractIT.java
-    tests:
-      - agent-platform/src/test/java/ascend/springai/platform/contracts/OpenApiContractIT.java
-    latest_delivery_valid_sha: null
-    allowed_claim: "L1: OpenApiSnapshotComparator.compareResponseSchemas() walks required fields and types in all 200 response schemas in the pinned spec. Catches shape drift that path-only comparison misses (see F7 post-mortem)."
-
-  health_endpoint_liveness_split:
-    maturity: L0
-    status: deferred_w2
-    evidence_state: design_only
-    l0_decision: ARCHITECTURE.md
-    implementation: []
+    implementation: null
     tests: []
-    latest_delivery_valid_sha: null
-    allowed_claim: "L0: /v1/health serves as liveness probe at W0. Dedicated liveness (/actuator/health/liveness) and readiness (/actuator/health/readiness) split deferred to W2 per reviewer F2. See http-api-contracts.md sec GET /v1/health note."
+    allowed_claim: "L0: deferred to W1; no implementation yet."
