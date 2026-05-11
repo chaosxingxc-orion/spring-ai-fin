@@ -1479,17 +1479,6 @@ findings:
     latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L0 sentinel impl + frozen SPI; W1 lands Spring Data JDBC RunRepository."
 
-  spring_ai_ascend_mem0_starter:
-    maturity: L0
-    status: implemented_unverified
-    evidence_state: implemented_unverified
-    l0_decision: ARCHITECTURE.md
-    implementation:
-      - spring-ai-ascend-mem0-starter/src/main/java/ascend/springai/runtime/mem0/Mem0AutoConfiguration.java
-    tests:
-      - spring-ai-ascend-mem0-starter/src/test/java/ascend/springai/runtime/mem0/Mem0AutoConfigurationTest.java
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "Sidecar adapter scaffold; disabled by default (enabled=false); W1 wires real Mem0 REST client."
 
   spring_ai_ascend_graphmemory_starter:
     maturity: L0

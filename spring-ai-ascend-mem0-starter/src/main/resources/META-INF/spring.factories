@@ -1,2 +1,0 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  ascend.springai.runtime.mem0.Mem0AutoConfiguration

@@ -40,7 +40,6 @@
     <module>spring-ai-ascend-knowledge-starter</module>
     <module>spring-ai-ascend-governance-starter</module>
     <module>spring-ai-ascend-persistence-starter</module>
-    <module>spring-ai-ascend-mem0-starter</module>
     <module>spring-ai-ascend-graphmemory-starter</module>
     <module>agent-eval</module>
   </modules>
