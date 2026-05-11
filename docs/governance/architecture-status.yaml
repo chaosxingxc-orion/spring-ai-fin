@@ -1412,18 +1412,6 @@ findings:
 
 
 
-  spring_ai_ascend_governance_starter:
-    maturity: L0
-    status: implemented_unverified
-    evidence_state: implemented_unverified
-    l0_decision: ARCHITECTURE.md
-    implementation:
-      - spring-ai-ascend-governance-starter/src/main/java/ascend/springai/runtime/governance/GovernanceAutoConfiguration.java
-      - spring-ai-ascend-governance-starter/src/main/java/ascend/springai/runtime/spi/governance/PolicyEvaluator.java
-    tests:
-      - spring-ai-ascend-governance-starter/src/test/java/ascend/springai/runtime/governance/GovernanceAutoConfigurationTest.java
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L0 sentinel impl + frozen SPI; W1 lands JSR-303 PolicyEvaluator."
 
   spring_ai_ascend_persistence_starter:
     maturity: L0
@@ -1498,17 +1486,6 @@ findings:
 
 
 
-  governance_configuration_properties:
-    maturity: L1
-    status: implemented_unverified
-    evidence_state: implemented_unverified
-    l0_decision: ARCHITECTURE.md
-    implementation:
-      - spring-ai-ascend-governance-starter/src/main/java/ascend/springai/runtime/governance/GovernanceProperties.java
-    tests:
-      - spring-ai-ascend-governance-starter/src/test/java/ascend/springai/runtime/governance/GovernanceAutoConfigurationTest.java
-    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
-    allowed_claim: "L1: @ConfigurationProperties(springai.ascend.governance) + @ConditionalOnProperty wiring real; starterBeansAbsentWhenDisabled test GREEN."
 
   persistence_configuration_properties:
     maturity: L1
