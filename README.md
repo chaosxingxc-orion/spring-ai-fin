@@ -207,3 +207,11 @@ This architecture inherits 32 release waves of operational learnings from a Pyth
 - 14 Maven modules (reactor); 7 SPI starters; 4 sidecar/profile modules; SPI surface frozen. `ApiCompatibilityTest` compile-verified at a7756cd; HealthEndpointIT CI-expected.
 - `@ConditionalOnProperty` wired in all 5 starters; `OpenApiContractIT` runs actual snapshot diff
 - Next milestone: W1 default impls (Spring Data JDBC `RunRepository`, JDBC `LongTermMemoryRepository`, Tika `LayoutParser`)
+
+## Integration paths
+
+| Path | When to use | Entry point |
+|------|-------------|-------------|
+| Drop-in `@Bean` override | Provide your own `GraphMemoryRepository` impl; starter auto-config wires it | `spring-ai-ascend-graphmemory-starter` |
+| Direct Spring AI / Spring Data | Use `ChatMemory`, `VectorStore`, `CrudRepository` directly without starters | No starter needed |
+| BoM import only | Pin all SDK versions; manage wiring yourself | `spring-ai-ascend-dependencies` BoM |
