@@ -125,6 +125,8 @@ Every silent-degradation path emits a **loud, structured, ship-gate-visible** si
 
 Introducing or touching a fallback requires all four. A fallback without an alarm bell is a defect disguised as resilience.
 
+**L0 hard-fail sentinels are not soft fallbacks.** The `NotConfigured*` and `NotImplementedYet*` sentinel classes satisfy (1) Countable and (2) Attributable — they increment a counter and emit a `WARNING+` log. They are **exempt from (3) Inspectable and (4) Gate-asserted** because they do not degrade silently: they raise `IllegalStateException` unconditionally. There is no run-metadata `fallback_events` entry to inspect because there is no run (the call aborts). The `fallback_events` / `RunMetadata` carrier for soft-fallback compliance is deferred to W2 when the run-metadata sink lands.
+
 ---
 
 ### Rule 8 — Operator-Shape Readiness Gate
