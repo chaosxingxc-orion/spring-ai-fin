@@ -1,3 +1,5 @@
+> ARCHIVED 2026-05-12. Pre-refresh design rationale; not active spec. Current state: see docs/STATE.md.
+
 ﻿> Owner: agent-platform | Maturity: L2 | Posture: all | Last refreshed: 2026-05-10
 
 # Middleware Pattern Guide: Sidecar Adapter Pattern

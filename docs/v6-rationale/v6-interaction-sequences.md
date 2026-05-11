@@ -1,3 +1,5 @@
+> ARCHIVED 2026-05-12. Pre-refresh design rationale; not active spec. Current state: see docs/STATE.md.
+
 # Interaction Sequences -- cross-cutting policy
 
 > Owner: architecture | Wave: W0 anchor; per-wave updates | Maturity: L0

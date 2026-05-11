@@ -1,3 +1,5 @@
+> ARCHIVED 2026-05-12. Pre-refresh design rationale; not active spec. Current state: see docs/STATE.md.
+
 # Failure Modes Catalog -- cross-cutting policy
 
 > Owner: architecture | Wave: W0..W4 (per-mode owner wave varies) | Maturity: L0

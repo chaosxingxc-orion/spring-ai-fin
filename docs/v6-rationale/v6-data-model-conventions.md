@@ -1,3 +1,5 @@
+> ARCHIVED 2026-05-12. Pre-refresh design rationale; not active spec. Current state: see docs/STATE.md.
+
 # Data Model Conventions -- cross-cutting policy
 
 > Owner: platform + runtime | Wave: W0 (schema spine) + per-wave per-table | Maturity: L0

@@ -1,3 +1,5 @@
+> ARCHIVED 2026-05-12. Pre-refresh design rationale; not active spec. Current state: see docs/STATE.md.
+
 > Owner: agent-eval | Maturity: L1 | Posture: research | Last refreshed: 2026-05-10
 
 # Eval CI Hook
