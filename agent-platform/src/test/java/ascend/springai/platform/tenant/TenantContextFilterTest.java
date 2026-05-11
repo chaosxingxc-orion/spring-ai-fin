@@ -91,6 +91,18 @@ class TenantContextFilterTest {
     }
 
     @Test
+    void missingHeader_counterAccumulatesAcrossRequests() throws Exception {
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        TenantContextFilter filter = new TenantContextFilter(registry, "research");
+        for (int i = 0; i < 3; i++) {
+            MockHttpServletRequest req = new MockHttpServletRequest("GET", "/v1/runs");
+            filter.doFilter(req, new MockHttpServletResponse(), new MockFilterChain());
+        }
+        assertThat(registry.counter("springai_ascend_tenant_header_missing_total", "posture", "research").count())
+                .isEqualTo(3.0);
+    }
+
+    @Test
     void healthPath_notFiltered() throws Exception {
         SimpleMeterRegistry registry = new SimpleMeterRegistry();
         TenantContextFilter filter = new TenantContextFilter(registry, "research");

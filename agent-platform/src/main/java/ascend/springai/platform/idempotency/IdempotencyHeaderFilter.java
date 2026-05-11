@@ -1,5 +1,6 @@
 package ascend.springai.platform.idempotency;
 
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -15,12 +16,16 @@ public class IdempotencyHeaderFilter extends OncePerRequestFilter {
 
     private static final Logger LOG = LoggerFactory.getLogger(IdempotencyHeaderFilter.class);
 
-    private final MeterRegistry registry;
     private final String posture;
+    private final Counter missingCounter;
+    private final Counter invalidCounter;
 
     public IdempotencyHeaderFilter(MeterRegistry registry, String posture) {
-        this.registry = registry;
         this.posture = posture;
+        this.missingCounter = Counter.builder("springai_ascend_idempotency_header_missing_total")
+                .tag("posture", posture).register(registry);
+        this.invalidCounter = Counter.builder("springai_ascend_idempotency_header_invalid_total")
+                .tag("posture", posture).register(registry);
     }
 
     @Override
@@ -34,7 +39,7 @@ public class IdempotencyHeaderFilter extends OncePerRequestFilter {
             FilterChain chain) throws ServletException, IOException {
         String header = request.getHeader(IdempotencyConstants.HEADER_NAME);
         if (header == null || header.isBlank()) {
-            registry.counter("springai_ascend_idempotency_header_missing_total", "posture", posture).increment();
+            missingCounter.increment();
             if ("dev".equalsIgnoreCase(posture)) {
                 LOG.warn("Idempotency-Key header missing; continuing in posture=dev");
                 chain.doFilter(request, response);
@@ -46,7 +51,8 @@ public class IdempotencyHeaderFilter extends OncePerRequestFilter {
         try {
             IdempotencyKey.parse(header);
         } catch (IllegalArgumentException e) {
-            registry.counter("springai_ascend_idempotency_header_invalid_total", "posture", posture).increment();
+            invalidCounter.increment();
+            LOG.warn("Idempotency-Key header failed UUID validation; request rejected; posture={}", posture);
             response.sendError(400, "Idempotency-Key must be a valid UUID");
             return;
         }

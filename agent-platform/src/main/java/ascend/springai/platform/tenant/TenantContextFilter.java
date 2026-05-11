@@ -1,5 +1,6 @@
 package ascend.springai.platform.tenant;
 
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -16,12 +17,16 @@ public class TenantContextFilter extends OncePerRequestFilter {
 
     private static final Logger LOG = LoggerFactory.getLogger(TenantContextFilter.class);
 
-    private final MeterRegistry registry;
     private final String posture;
+    private final Counter missingCounter;
+    private final Counter invalidCounter;
 
     public TenantContextFilter(MeterRegistry registry, String posture) {
-        this.registry = registry;
         this.posture = posture;
+        this.missingCounter = Counter.builder("springai_ascend_tenant_header_missing_total")
+                .tag("posture", posture).register(registry);
+        this.invalidCounter = Counter.builder("springai_ascend_tenant_header_invalid_total")
+                .tag("posture", posture).register(registry);
     }
 
     @Override
@@ -35,7 +40,7 @@ public class TenantContextFilter extends OncePerRequestFilter {
             FilterChain chain) throws ServletException, IOException {
         String header = request.getHeader(TenantConstants.HEADER_NAME);
         if (header == null || header.isBlank()) {
-            registry.counter("springai_ascend_tenant_header_missing_total", "posture", posture).increment();
+            missingCounter.increment();
             if ("dev".equalsIgnoreCase(posture)) {
                 LOG.warn("X-Tenant-Id header missing; using dev default tenant in posture=dev");
                 TenantContextHolder.set(
@@ -54,7 +59,8 @@ public class TenantContextFilter extends OncePerRequestFilter {
         try {
             uuid = UUID.fromString(header.strip());
         } catch (IllegalArgumentException e) {
-            registry.counter("springai_ascend_tenant_header_invalid_total", "posture", posture).increment();
+            invalidCounter.increment();
+            LOG.warn("X-Tenant-Id header failed UUID validation; request rejected; posture={}", posture);
             response.sendError(400, "X-Tenant-Id must be a valid UUID");
             return;
         }
