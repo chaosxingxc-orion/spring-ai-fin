@@ -16,7 +16,7 @@ options considered, decision, and consequences.
 | [0004](0004-postgres-primary-data-store.md) | PostgreSQL 16 with RLS + pgvector, not separate vector DB | accepted |
 | [0005](0005-tenant-isolation-guc-set-local.md) | Row-level security with SET LOCAL transaction-scoped GUC, not per-connection reset | accepted |
 | [0006](0006-posture-model-dev-research-prod.md) | ActionGuard 5-stage chain (cycle-9 truth-cut), not 11-stage | accepted |
-| [0007](0007-spi-first-extensibility.md) | At-least-once outbox in Postgres, not Kafka, for v1 | accepted |
+| [0007](0007-outbox-postgres-not-kafka.md) | At-least-once outbox in Postgres, not Kafka, for v1 | accepted |
 | [0008](0008-resilience4j-circuit-breaker.md) | OPA sidecar for authorization, not in-process Cedar / custom | accepted |
 | [0009](0009-micrometer-observability.md) | HashiCorp Vault (OSS) for secrets, not env vars / K8s Secrets only | accepted |
 | [0010](0010-spring-security-oauth2.md) | Keycloak (OSS) as default IdP, but customer can BYO | accepted |
