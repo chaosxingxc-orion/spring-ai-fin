@@ -79,7 +79,7 @@ capabilities:
     allowed_claim: "BoM publishes 9 starter coordinates + 13 transitive OSS pins."
 
   sdk_spi_starters:
-    status: deleted
+    status: design_accepted
     shipped: false
     note: "9 SDK SPI starters deleted in 2026-05-12 Occam pass (C2-C8). All replaced by direct OSS use."
 
