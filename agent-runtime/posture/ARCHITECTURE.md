@@ -5,6 +5,12 @@
 > This file is retained as v6 design rationale and will be
 > archived under `docs/v6-rationale/` at W0 close.
 
+> **STATUS: NOT BUILT — Deferred to W1.** The `AppPosture`, `PostureBootGuard`, `DeploymentShape`,
+> and `RequiredConfig` classes described in this document do not exist in the current codebase.
+> The `posture.requires*()` helpers, `APP_DEPLOYMENT_SHAPE` env var, and all IT tests listed
+> here are W1 design intent. See `docs/governance/architecture-status.yaml` capability
+> `posture_module_bootstrap` (L0, advances to L1 in W1).
+
 # posture -- AppPosture + PostureBootGuard (L2)
 
 > **L2 sub-architecture of `agent-runtime/`.** Up: [`../ARCHITECTURE.md`](../ARCHITECTURE.md) . L0: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)

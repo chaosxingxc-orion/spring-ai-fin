@@ -17,17 +17,23 @@ by every L1 / L2 module's `Posture-aware defaults` table.
 | `research` | Single-tenant or low-volume multi-tenant production-equivalent | Strict: required config must be present; real Postgres; real LLM provider; rate limits on; HS256 only via explicit BYOC carve-out |
 | `prod` | High-volume multi-tenant production | Strict + harder: Vault required; OPA enforced; lower rate limits; OTel sample rate 1%; full audit |
 
-Posture is set by a single env var `APP_POSTURE`, default `dev`. Read
-once at boot. Never branched on at call sites; consumers use
-`AppPosture.requiresStrict()` or specific predicates.
+Posture is set by a single env var `APP_POSTURE`, default `dev`. Read once at boot via
+`application.yml` placeholder `app.posture: ${APP_POSTURE:dev}`. Call sites read
+`env.getProperty("app.posture", "dev")` directly; a dedicated `AppPosture` helper is
+**deferred to W1** — see `architecture-status.yaml` capability `posture_module_bootstrap`.
 
-## 3. Boot guard
+## 3. Boot guard — Deferred to W1
 
-`agent-platform/bootstrap/PostureBootGuard.java` runs at
-`ApplicationStartedEvent`. It refuses to start (exit 1, structured log
-+ Prometheus increment) if any required key for the active posture is
-missing. The required-key matrix lives in
-`agent-platform/bootstrap/RequiredConfig.java`.
+> **STATUS: NOT BUILT.** The classes `PostureBootGuard`, `RequiredConfig`, and `AppPosture`
+> described below are design intent for W1, not shipped code. Current enforcement: each
+> L0 sentinel throws `BeanCreationException` at context load when `app.posture != dev` and the
+> starter is enabled. See `architecture-status.yaml` capability `posture_module_bootstrap` (L0).
+
+**Planned (W1):** `agent-platform/bootstrap/PostureBootGuard.java` will run at
+`ApplicationStartedEvent` and refuse to start (exit 1) if required keys for the active posture
+are missing. The required-key matrix will live in `agent-platform/bootstrap/RequiredConfig.java`.
+
+Planned required-key matrix:
 
 | Key | dev | research | prod |
 |---|---|---|---|
@@ -42,28 +48,44 @@ missing. The required-key matrix lives in
 
 ## 4. Enforced-by-posture rules
 
-Per L1 / L2 module's own posture table. Consolidated examples:
+Currently enforced (as of W0):
 
 | Aspect | Module | dev | research | prod |
 |---|---|---|---|---|
-| HS256 JWT | `agent-platform/auth` | accept w/ warn | reject (unless BYOC carve-out) | reject (unless BYOC carve-out) |
-| Missing tenant_id claim | `agent-platform/tenant` | warn | reject 401 | reject 401 |
+| Missing tenant_id claim | `agent-platform/tenant` | warn + dev default | reject 400 | reject 400 |
 | Missing Idempotency-Key on POST | `agent-platform/idempotency` | accept | reject 400 | reject 400 |
-| Mock LLM provider | `agent-runtime/llm` | yes | no | no |
-| OPA outage | `agent-runtime/action` | warn-allow | fail-closed deny | fail-closed deny |
-| Outbox sink mock | `agent-runtime/outbox` | log only | real bus | real bus |
-| Run > 30s without Temporal | `agent-runtime/run` | warn | reject | reject |
-| Cardinality budget | `agent-runtime/observability` | unbounded | <= 50 | <= 50 |
+| L0 sentinel active (sidecar enabled) | all `*-starter` modules | allow | `BeanCreationException` at boot | `BeanCreationException` at boot |
+
+Deferred (W3-W4, not yet implemented):
+
+| Aspect | Module | Target posture |
+|---|---|---|
+| HS256 JWT carve-out | `agent-platform/auth` | research/prod |
+| OPA outage fail-closed | `agent-runtime/action` | research/prod |
+| Mock LLM provider rejection | `agent-runtime/llm` | research/prod |
+| Run > 30s without Temporal | `agent-runtime/run` | research/prod |
+| Cardinality budget | `agent-runtime/observability` | research/prod |
 
 ## 5. Tests
 
+Currently shipped:
+
 | Test | Layer | Asserts |
 |---|---|---|
-| `PostureBootGuardDevIT` | Integration | `dev` starts with sparse env |
-| `PostureBootGuardResearchIT` | Integration | `research` exits 1 on missing key |
-| `PostureBootGuardProdIT` | Integration | `prod` exits 1 on missing key |
-| `RequiredConfigContractIT` | Integration | Per-posture required-key matrix matches `RequiredConfig.java` table |
-| `PostureBranchingLintIT` | CI | No call site branches on `APP_POSTURE` directly |
+| `PostureBindingIT` | Integration | `APP_POSTURE=research` env-var → `app.posture=research` Spring property |
+| `TenantContextFilterTest` | Unit | dev/research/prod posture behaviours for missing/invalid header |
+| `IdempotencyHeaderFilterTest` | Unit | dev/research/prod posture behaviours for missing/invalid header |
+| `*AutoConfigurationTest` (per starter) | Unit | dev allows sentinel; research/prod reject at context load |
+
+Deferred to W1 (class does not exist):
+
+| Test | Blocked on |
+|---|---|
+| `PostureBootGuardDevIT` | `PostureBootGuard` class (W1) |
+| `PostureBootGuardResearchIT` | `PostureBootGuard` class (W1) |
+| `PostureBootGuardProdIT` | `PostureBootGuard` class (W1) |
+| `RequiredConfigContractIT` | `RequiredConfig` class (W1) |
+| `PostureBranchingLintIT` | `AppPosture` class (W1) |
 
 ## 6. Open issues / deferred
 

@@ -1912,3 +1912,18 @@ findings:
       - agent-runtime/src/test/java/ascend/springai/runtime/probe/OssApiProbeTest.java
     latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L1: OssApiProbeTest 3 tests (classIsLoadable, probeReturnsNonNullString, temporalGetVersionShapeReturnsMinusOne) GREEN."
+
+
+  posture_module_bootstrap:
+    maturity: L0
+    status: deferred_w1
+    evidence_state: design_only
+    l0_decision: ARCHITECTURE.md
+    l2_documents:
+      - docs/cross-cutting/posture-model.md
+      - agent-runtime/posture/ARCHITECTURE.md
+    implementation: []
+    tests:
+      - agent-platform/src/test/java/ascend/springai/platform/posture/PostureBindingIT.java
+    latest_delivery_valid_sha: null
+    allowed_claim: "L0: APP_POSTURE env-var bridges to app.posture property via application.yml placeholder. PostureBindingIT proves the bridge. AppPosture class, PostureBootGuard, RequiredConfig, and all associated ITs deferred to W1."

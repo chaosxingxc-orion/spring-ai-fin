@@ -6,9 +6,9 @@ import java.util.Optional;
 /**
  * SPI: durable agent run record store.
  *
- * Default impl: Spring Data JDBC over Postgres.
+ * Current impl: L0 sentinel rejects every call; Spring Data JDBC over Postgres deferred to W2.
  * Rule 11: every RunRecord carries tenantId, userId, sessionId.
- * Rule 10: research/prod posture enforces durable Postgres; dev may use in-memory.
+ * Rule 10: research/prod posture rejects the L0 sentinel; durable Postgres impl deferred to W2 persistence track.
  */
 public interface RunRepository {
 
