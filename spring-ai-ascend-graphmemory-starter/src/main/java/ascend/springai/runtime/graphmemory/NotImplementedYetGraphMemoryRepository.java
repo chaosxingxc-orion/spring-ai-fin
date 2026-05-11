@@ -1,6 +1,6 @@
-package fin.springai.runtime.graphmemory;
+package ascend.springai.runtime.graphmemory;
 
-import fin.springai.runtime.spi.memory.GraphMemoryRepository;
+import ascend.springai.runtime.spi.memory.GraphMemoryRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +25,7 @@ class NotImplementedYetGraphMemoryRepository implements GraphMemoryRepository {
     NotImplementedYetGraphMemoryRepository(MeterRegistry registry, GraphMemoryProperties properties) {
         this.registry = registry;
         this.properties = properties;
-        LOG.info("spring-ai-fin-graphmemory-starter activated at L0; REST client pending W2; baseUrl={}", properties.getBaseUrl());
+        LOG.info("spring-ai-ascend-graphmemory-starter activated at L0; REST client pending W2; baseUrl={}", properties.getBaseUrl());
     }
 
     @Override

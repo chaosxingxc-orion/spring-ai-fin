@@ -1,4 +1,4 @@
-package fin.springai.perf;
+package ascend.springai.perf;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;

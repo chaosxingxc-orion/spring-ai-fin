@@ -13,11 +13,11 @@
 
 ## Authoritative core (read these first)
 
-- [`ARCHITECTURE.md`](../../ARCHITECTURE.md) -- L0 platform architecture (continuous v6 line; 2026-05-08 refresh; cycle-9 truth-cut). OSS-first; nine quality attributes; three first-principles.
+- [`ARCHITECTURE.md`](../../ARCHITECTURE.md) -- L0 platform architecture (continuous v6 line; refreshed 2026-05-12 as spring-ai-ascend). OSS-first; nine quality attributes; three first-principles.
 - [`docs/plans/engineering-plan-W0-W4.md`](../plans/engineering-plan-W0-W4.md) -- the only document that schedules work and defines acceptance.
 - [`docs/plans/architecture-systems-engineering-plan.md`](../plans/architecture-systems-engineering-plan.md) -- doc-set drill-down; surviving / deferred mapping.
-- [`docs/architecture-design-self-audit.md`](../architecture-design-self-audit.md) -- 240+ dim audit rubric + scoring cadence.
-- [`docs/architecture-meta-reflection-2026-05-08.en.md`](../architecture-meta-reflection-2026-05-08.en.md) -- root-cause analysis + 32-dim scoring framework.
+- [`docs/governance/evidence-manifest.yaml`](evidence-manifest.yaml) -- delivery evidence and gate pointers.
+- *(Prior audit rubric and scoring framework docs archived under `docs/archive/spring-ai-fin/` on 2026-05-12 project rename.)*
 
 ## Active hierarchy (refresh authoritative)
 
@@ -32,19 +32,19 @@
 
 ### Capability starters (W0 scaffold; SPI frozen)
 
-- `spring-ai-fin-dependencies/` -- BoM (L1; pins 9 starter coordinates + 13 OSS deps)
-- `spring-ai-fin-memory-starter/` -- SPI: LongTermMemoryRepository, GraphMemoryRepository (L0 sentinel)
-- `spring-ai-fin-skills-starter/` -- SPI: ToolProvider (L0 sentinel)
-- `spring-ai-fin-knowledge-starter/` -- SPI: LayoutParser, DocumentSourceConnector (L0 sentinel)
-- `spring-ai-fin-governance-starter/` -- SPI: PolicyEvaluator (L0 sentinel)
-- `spring-ai-fin-persistence-starter/` -- SPI: RunRepository, IdempotencyRepository, ArtifactRepository (L0 sentinel)
+- `spring-ai-ascend-dependencies/` -- BoM (L1; pins 9 starter coordinates + 13 OSS deps)
+- `spring-ai-ascend-memory-starter/` -- SPI: LongTermMemoryRepository, GraphMemoryRepository (L0 sentinel)
+- `spring-ai-ascend-skills-starter/` -- SPI: ToolProvider (L0 sentinel)
+- `spring-ai-ascend-knowledge-starter/` -- SPI: LayoutParser, DocumentSourceConnector (L0 sentinel)
+- `spring-ai-ascend-governance-starter/` -- SPI: PolicyEvaluator (L0 sentinel)
+- `spring-ai-ascend-persistence-starter/` -- SPI: RunRepository, IdempotencyRepository, ArtifactRepository (L0 sentinel)
 
 ### Sidecar adapter starters (enabled=false by default; L0)
 
-- `spring-ai-fin-mem0-starter/` -- Mem0 REST adapter for LongTermMemoryRepository
-- `spring-ai-fin-graphmemory-starter/` -- Graphiti REST adapter for GraphMemoryRepository
-- `spring-ai-fin-docling-starter/` -- Docling REST adapter for LayoutParser
-- `spring-ai-fin-langchain4j-profile/` -- LangChain4j alternate framework profile
+- `spring-ai-ascend-mem0-starter/` -- Mem0 REST adapter for LongTermMemoryRepository
+- `spring-ai-ascend-graphmemory-starter/` -- Graphiti REST adapter for GraphMemoryRepository
+- `spring-ai-ascend-docling-starter/` -- Docling REST adapter for LayoutParser
+- `spring-ai-ascend-langchain4j-profile/` -- LangChain4j alternate framework profile
 
 ### Supporting directories
 
@@ -111,7 +111,7 @@
 
 - [`docs/plans/engineering-plan-W0-W4.md`](../plans/engineering-plan-W0-W4.md)
 - [`docs/plans/architecture-systems-engineering-plan.md`](../plans/architecture-systems-engineering-plan.md)
-- [`docs/architecture-design-self-audit.md`](../architecture-design-self-audit.md)
+- *(Self-audit rubric archived under `docs/archive/spring-ai-fin/` on 2026-05-12 project rename.)*
 
 ## Gates
 
@@ -123,22 +123,23 @@
 ## Delivery evidence
 
 - [`docs/delivery/README.md`](../delivery/README.md) -- delivery rules.
-- [`docs/delivery/2026-05-11-391cd6e.md`](../delivery/2026-05-11-391cd6e.md) -- cycle-17 Phase 1: class-based reviewer response; 8 fix streams; gate rules deleted; review record (authoritative).
-- [`docs/delivery/2026-05-11-a7756cd.md`](../delivery/2026-05-11-a7756cd.md) -- cycle-17 Phase 0: Maven build unblocked; Spring Boot 4.x API compatibility; first BUILD SUCCESS (superseded -- see 2026-05-11-391cd6e.md).
-- [`docs/delivery/2026-05-10-8505f7d.md`](../delivery/2026-05-10-8505f7d.md) -- cycle-15/16 defect closure: SPI Rule 11 spine, posture fail-fast, doc refresh, ledger sync, ASCII gate fixes (superseded -- see 2026-05-11-391cd6e.md).
-- [`docs/delivery/2026-05-10-ae60414.md`](../delivery/2026-05-10-ae60414.md) -- cycle-15/16 architecture-review-readiness pass T-AR-11..T-AR-13 (historical -- was on detached branch fix/cycle-15-defect-closure, never merged; superseded by 2026-05-11-a7756cd.md).
-- [`docs/delivery/2026-05-10-97b0827.md`](../delivery/2026-05-10-97b0827.md) -- cycle-15/16 interim delivery (superseded by 8505f7d delivery; see 2026-05-11-a7756cd.md for current authoritative).
-- [`docs/delivery/2026-05-10-68c07f1.md`](../delivery/2026-05-10-68c07f1.md) -- W0: milestone gate grep-P locale fix; build_verification.state: green.
-- [`docs/delivery/2026-05-10-ec8daca.md`](../delivery/2026-05-10-ec8daca.md) -- W0: Steps 9-12 finishing work (BoM starters + SPI freeze + milestone gate + dev docs); build_verification.state: green.
-- [`docs/delivery/2026-05-10-18d637e.md`](../delivery/2026-05-10-18d637e.md) -- W0: Maven Wrapper + Boot 4.0.5 / AI 2.0.0-M5 upgrade + OSS BoM U2 (verified at cd13612) + Tier C manifest (16 entries); build_verification.state: green.
-- [`docs/delivery/2026-05-09-c863c2b.md`](../delivery/2026-05-09-c863c2b.md) -- cycle-14 (A1+A2+B1+B2+C1+C2+D1+D2+E1; ASCII fix; two new gate rules; build_verification.state: pending_ci).
-- [`docs/delivery/2026-05-08-f98dbae.md`](../delivery/2026-05-08-f98dbae.md) -- cycle-13 Phase B step 1.
-- [`docs/delivery/2026-05-08-71b77c6.md`](../delivery/2026-05-08-71b77c6.md) -- cycle-12 Phase A close.
-- [`docs/delivery/2026-05-08-2a29eb5.md`](../delivery/2026-05-08-2a29eb5.md) -- cycle-11 OSS BoM + verification ladder.
-- [`docs/delivery/2026-05-08-7b1fa8c.md`](../delivery/2026-05-08-7b1fa8c.md) -- cycle-10 self-driven systematic review.
-- [`docs/delivery/2026-05-08-e9a692d.md`](../delivery/2026-05-08-e9a692d.md) -- cycle-9 truth-cut evidence.
-- [`docs/delivery/2026-05-08-4260a48.md`](../delivery/2026-05-08-4260a48.md) -- 2026-05-08 architecture refresh evidence.
-- [`docs/delivery/2026-05-08-cc2e1e3.md`](../delivery/2026-05-08-cc2e1e3.md) -- cycle-8 evidence-graph-v3 evidence.
+- [`docs/delivery/2026-05-12-9b5368a.md`](../delivery/2026-05-12-9b5368a.md) -- **(current)** spring-ai-ascend: project rename delivery record; all prior gate SHAs reset.
+- [`docs/archive/spring-ai-fin/delivery/2026-05-11-391cd6e.md`](../archive/spring-ai-fin/delivery/2026-05-11-391cd6e.md) -- last delivery under spring-ai-fin identity; cycle-17 Phase 1 (archived).
+- [`docs/archive/spring-ai-fin/delivery/2026-05-11-a7756cd.md`](../archive/spring-ai-fin/delivery/2026-05-11-a7756cd.md) -- cycle-17 Phase 0: Maven build unblocked; Spring Boot 4.x API compatibility; first BUILD SUCCESS (superseded -- see 2026-05-11-391cd6e.md).
+- [`docs/archive/spring-ai-fin/delivery/2026-05-10-8505f7d.md`](../archive/spring-ai-fin/delivery/2026-05-10-8505f7d.md) -- cycle-15/16 defect closure: SPI Rule 11 spine, posture fail-fast, doc refresh, ledger sync, ASCII gate fixes (superseded -- see 2026-05-11-391cd6e.md).
+- [`docs/archive/spring-ai-fin/delivery/2026-05-10-ae60414.md`](../archive/spring-ai-fin/delivery/2026-05-10-ae60414.md) -- cycle-15/16 architecture-review-readiness pass T-AR-11..T-AR-13 (historical -- was on detached branch fix/cycle-15-defect-closure, never merged; superseded by 2026-05-11-a7756cd.md).
+- [`docs/archive/spring-ai-fin/delivery/2026-05-10-97b0827.md`](../archive/spring-ai-fin/delivery/2026-05-10-97b0827.md) -- cycle-15/16 interim delivery (superseded by 8505f7d delivery; see 2026-05-11-a7756cd.md for current authoritative).
+- [`docs/archive/spring-ai-fin/delivery/2026-05-10-68c07f1.md`](../archive/spring-ai-fin/delivery/2026-05-10-68c07f1.md) -- W0: milestone gate grep-P locale fix; build_verification.state: green.
+- [`docs/archive/spring-ai-fin/delivery/2026-05-10-ec8daca.md`](../archive/spring-ai-fin/delivery/2026-05-10-ec8daca.md) -- W0: Steps 9-12 finishing work (BoM starters + SPI freeze + milestone gate + dev docs); build_verification.state: green.
+- [`docs/archive/spring-ai-fin/delivery/2026-05-10-18d637e.md`](../archive/spring-ai-fin/delivery/2026-05-10-18d637e.md) -- W0: Maven Wrapper + Boot 4.0.5 / AI 2.0.0-M5 upgrade + OSS BoM U2 (verified at cd13612) + Tier C manifest (16 entries); build_verification.state: green.
+- [`docs/archive/spring-ai-fin/delivery/2026-05-09-c863c2b.md`](../archive/spring-ai-fin/delivery/2026-05-09-c863c2b.md) -- cycle-14 (A1+A2+B1+B2+C1+C2+D1+D2+E1; ASCII fix; two new gate rules; build_verification.state: pending_ci).
+- [`docs/archive/spring-ai-fin/delivery/2026-05-08-f98dbae.md`](../archive/spring-ai-fin/delivery/2026-05-08-f98dbae.md) -- cycle-13 Phase B step 1.
+- [`docs/archive/spring-ai-fin/delivery/2026-05-08-71b77c6.md`](../archive/spring-ai-fin/delivery/2026-05-08-71b77c6.md) -- cycle-12 Phase A close.
+- [`docs/archive/spring-ai-fin/delivery/2026-05-08-2a29eb5.md`](../archive/spring-ai-fin/delivery/2026-05-08-2a29eb5.md) -- cycle-11 OSS BoM + verification ladder.
+- [`docs/archive/spring-ai-fin/delivery/2026-05-08-7b1fa8c.md`](../archive/spring-ai-fin/delivery/2026-05-08-7b1fa8c.md) -- cycle-10 self-driven systematic review.
+- [`docs/archive/spring-ai-fin/delivery/2026-05-08-e9a692d.md`](../archive/spring-ai-fin/delivery/2026-05-08-e9a692d.md) -- cycle-9 truth-cut evidence.
+- [`docs/archive/spring-ai-fin/delivery/2026-05-08-4260a48.md`](../archive/spring-ai-fin/delivery/2026-05-08-4260a48.md) -- 2026-05-08 architecture refresh evidence.
+- [`docs/archive/spring-ai-fin/delivery/2026-05-08-cc2e1e3.md`](../archive/spring-ai-fin/delivery/2026-05-08-cc2e1e3.md) -- cycle-8 evidence-graph-v3 evidence.
 - (Earlier deliveries are listed under "Historical Rationale" below for traceability.)
 
 Per cycle-3 SHA-current rule, a delivery file is evidence for its named
@@ -152,13 +153,13 @@ W0 scaffold landed at commit `97b0827`. Current maturity per capability:
 
 - `agent_platform_facade`: **L1** -- `HealthEndpointIT` + `ApiCompatibilityTest` GREEN
 - `spi_compatibility_freeze`: **L1** -- ArchUnit 4 rules GREEN
-- `spring_ai_fin_dependencies_bom`: **L1** -- BoM resolves all 9 starters
-- `spring_ai_fin_*_starter` (5 core + 4 sidecar): **L0** -- sentinel impls; W1 lands real impls
+- `spring_ai_ascend_dependencies_bom`: **L1** -- BoM resolves all 9 starters
+- `spring_ai_ascend_*_starter` (5 core + 4 sidecar): **L0** -- sentinel impls; W1 lands real impls
 - All other capabilities from the 2026-05-08 architecture refresh: **L0** (design accepted)
 
 Promotion L0 -> L1 requires code + Rule 4 three-layer tests (per `docs/plans/engineering-plan-W0-W4.md` acceptance gates per wave). Promotion L1 -> L2 requires a stable public contract + snapshot test. L3 requires posture-aware default-on + operator-shape gate PASS. L4 requires third-party extension evidence.
 
-Real readiness is measured by the 32-dim scoring framework (`docs/architecture-meta-reflection-2026-05-08.en.md`); W0 scaffold moved the score from ~0/32 to ~5/32 (R1/R2/R4/R5 partial).
+Real readiness was measured at W0 against the 32-dim framework (archived at `docs/archive/spring-ai-fin/architecture-meta-reflection-2026-05-08.en.md`); W0 scaffold moved the score from ~0/32 to ~5/32 (R1/R2/R4/R5 partial).
 
 ## Historical Rationale (NOT authoritative)
 
@@ -193,13 +194,13 @@ Each carries a "Pre-refresh design rationale (DEFERRED IN refresh)" banner with 
 
 ### Earlier delivery evidence (for traceability)
 
-- `docs/delivery/2026-05-08-7025ac9.md` (cycle-1+2)
-- `docs/delivery/2026-05-08-003ed6f.md` (cycle-3)
-- `docs/delivery/2026-05-08-a070a77.md` (cycle-4)
-- `docs/delivery/2026-05-08-302337f.md` (cycle-5)
-- `docs/delivery/2026-05-08-81ff802.md` (cycle-6)
-- `docs/delivery/2026-05-08-ba4bcd5.md` (cycle-7)
-- `docs/delivery/2026-05-08-d284232.md` (older)
+- `docs/archive/spring-ai-fin/delivery/2026-05-08-7025ac9.md` (cycle-1+2)
+- `docs/archive/spring-ai-fin/delivery/2026-05-08-003ed6f.md` (cycle-3)
+- `docs/archive/spring-ai-fin/delivery/2026-05-08-a070a77.md` (cycle-4)
+- `docs/archive/spring-ai-fin/delivery/2026-05-08-302337f.md` (cycle-5)
+- `docs/archive/spring-ai-fin/delivery/2026-05-08-81ff802.md` (cycle-6)
+- `docs/archive/spring-ai-fin/delivery/2026-05-08-ba4bcd5.md` (cycle-7)
+- `docs/archive/spring-ai-fin/delivery/2026-05-08-d284232.md` (older)
 
 ### Banner-marked archives
 

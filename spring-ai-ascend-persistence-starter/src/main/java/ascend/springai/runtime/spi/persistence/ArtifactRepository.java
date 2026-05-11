@@ -1,4 +1,4 @@
-package fin.springai.runtime.spi.persistence;
+package ascend.springai.runtime.spi.persistence;
 
 import java.util.List;
 import java.util.Optional;

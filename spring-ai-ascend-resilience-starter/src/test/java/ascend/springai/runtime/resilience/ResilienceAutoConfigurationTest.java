@@ -1,6 +1,6 @@
-package fin.springai.runtime.resilience;
+package ascend.springai.runtime.resilience;
 
-import fin.springai.runtime.spi.resilience.ResilienceContract;
+import ascend.springai.runtime.spi.resilience.ResilienceContract;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -16,7 +16,7 @@ class ResilienceAutoConfigurationTest {
 
     @Test
     void autoConfigurationClassIsLoadable() throws Exception {
-        Class.forName("fin.springai.runtime.resilience.ResilienceAutoConfiguration");
+        Class.forName("ascend.springai.runtime.resilience.ResilienceAutoConfiguration");
     }
 
     @Test

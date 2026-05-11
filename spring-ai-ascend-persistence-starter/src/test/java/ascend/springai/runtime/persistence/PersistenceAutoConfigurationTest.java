@@ -1,8 +1,8 @@
-package fin.springai.runtime.persistence;
+package ascend.springai.runtime.persistence;
 
-import fin.springai.runtime.spi.persistence.ArtifactRepository;
-import fin.springai.runtime.spi.persistence.IdempotencyRepository;
-import fin.springai.runtime.spi.persistence.RunRepository;
+import ascend.springai.runtime.spi.persistence.ArtifactRepository;
+import ascend.springai.runtime.spi.persistence.IdempotencyRepository;
+import ascend.springai.runtime.spi.persistence.RunRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -18,7 +18,7 @@ class PersistenceAutoConfigurationTest {
 
     @Test
     void autoConfigurationClassIsLoadable() throws Exception {
-        Class.forName("fin.springai.runtime.persistence.PersistenceAutoConfiguration");
+        Class.forName("ascend.springai.runtime.persistence.PersistenceAutoConfiguration");
     }
 
     @Test

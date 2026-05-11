@@ -1,6 +1,6 @@
 # Contract Catalog
 
-> Single source of truth for all public contracts in the spring-ai-fin platform.
+> Single source of truth for all public contracts in the spring-ai-ascend platform.
 > Version: 0.1.0-SNAPSHOT | Last refreshed: 2026-05-10
 
 ---
@@ -24,18 +24,18 @@ Routes marked "planned" are specified in `docs/contracts/http-api-contracts.md` 
 
 | SPI interface | Owner module | Version pin mechanism | Stability tier |
 |---|---|---|---|
-| LongTermMemoryRepository | spring-ai-fin-memory-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
-| GraphMemoryRepository | spring-ai-fin-memory-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
-| ToolProvider | spring-ai-fin-skills-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
-| LayoutParser | spring-ai-fin-knowledge-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
-| DocumentSourceConnector | spring-ai-fin-knowledge-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
-| PolicyEvaluator | spring-ai-fin-governance-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
-| RunRepository | spring-ai-fin-persistence-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
-| IdempotencyRepository | spring-ai-fin-persistence-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
-| ArtifactRepository | spring-ai-fin-persistence-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
-| ResilienceContract | spring-ai-fin-resilience-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
+| LongTermMemoryRepository | spring-ai-ascend-memory-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
+| GraphMemoryRepository | spring-ai-ascend-memory-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
+| ToolProvider | spring-ai-ascend-skills-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
+| LayoutParser | spring-ai-ascend-knowledge-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
+| DocumentSourceConnector | spring-ai-ascend-knowledge-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
+| PolicyEvaluator | spring-ai-ascend-governance-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
+| RunRepository | spring-ai-ascend-persistence-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
+| IdempotencyRepository | spring-ai-ascend-persistence-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
+| ArtifactRepository | spring-ai-ascend-persistence-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
+| ResilienceContract | spring-ai-ascend-resilience-starter | ArchUnit ApiCompatibilityTest | L1 (tested; no semver) |
 
-All SPI packages (`fin.springai.runtime.spi.*`) import only `java.*` types. Spring, Micrometer, and platform classes are forbidden in SPI packages. Enforced by `ApiCompatibilityTest.spi_packages_import_only_java_sdk_types`.
+All SPI packages (`ascend.springai.runtime.spi.*`) import only `java.*` types. Spring, Micrometer, and platform classes are forbidden in SPI packages. Enforced by `ApiCompatibilityTest.spi_packages_import_only_java_sdk_types`.
 
 Full per-SPI semantic contracts are in [spi-contracts.md](spi-contracts.md).
 
@@ -47,15 +47,15 @@ All platform configuration properties use the `springai.fin.*` prefix. Property 
 
 | Prefix | Owner starter | Summary |
 |--------|---------------|---------|
-| springai.fin.memory.* | spring-ai-fin-memory-starter | Memory SPI toggle and config |
-| springai.fin.mem0.* | spring-ai-fin-mem0-starter | Mem0 sidecar adapter; enabled=false default |
-| springai.fin.graphmemory.* | spring-ai-fin-graphmemory-starter | Graphiti sidecar adapter; enabled=false default |
-| springai.fin.docling.* | spring-ai-fin-docling-starter | Docling sidecar adapter; enabled=false default |
-| springai.fin.skills.* | spring-ai-fin-skills-starter | Skills SPI toggle |
-| springai.fin.knowledge.* | spring-ai-fin-knowledge-starter | Knowledge SPI toggle |
-| springai.fin.governance.* | spring-ai-fin-governance-starter | Governance SPI toggle |
-| springai.fin.persistence.* | spring-ai-fin-persistence-starter | Persistence SPI toggle |
-| springai.fin.resilience.* | spring-ai-fin-resilience-starter | Resilience SPI toggle |
+| springai.fin.memory.* | spring-ai-ascend-memory-starter | Memory SPI toggle and config |
+| springai.fin.mem0.* | spring-ai-ascend-mem0-starter | Mem0 sidecar adapter; enabled=false default |
+| springai.fin.graphmemory.* | spring-ai-ascend-graphmemory-starter | Graphiti sidecar adapter; enabled=false default |
+| springai.fin.docling.* | spring-ai-ascend-docling-starter | Docling sidecar adapter; enabled=false default |
+| springai.fin.skills.* | spring-ai-ascend-skills-starter | Skills SPI toggle |
+| springai.fin.knowledge.* | spring-ai-ascend-knowledge-starter | Knowledge SPI toggle |
+| springai.fin.governance.* | spring-ai-ascend-governance-starter | Governance SPI toggle |
+| springai.fin.persistence.* | spring-ai-ascend-persistence-starter | Persistence SPI toggle |
+| springai.fin.resilience.* | spring-ai-ascend-resilience-starter | Resilience SPI toggle |
 | app.posture | agent-platform | dev/research/prod posture; read at boot |
 
 ---
@@ -77,17 +77,17 @@ Examples:
 
 | Artifact | GroupId | ArtifactId | Version |
 |---|---|---|---|
-| BoM | fin.springai | spring-ai-fin-dependencies | 0.1.0-SNAPSHOT |
-| Memory starter | fin.springai | spring-ai-fin-memory-starter | 0.1.0-SNAPSHOT |
-| Skills starter | fin.springai | spring-ai-fin-skills-starter | 0.1.0-SNAPSHOT |
-| Knowledge starter | fin.springai | spring-ai-fin-knowledge-starter | 0.1.0-SNAPSHOT |
-| Governance starter | fin.springai | spring-ai-fin-governance-starter | 0.1.0-SNAPSHOT |
-| Persistence starter | fin.springai | spring-ai-fin-persistence-starter | 0.1.0-SNAPSHOT |
-| Mem0 starter | fin.springai | spring-ai-fin-mem0-starter | 0.1.0-SNAPSHOT |
-| GraphMemory starter | fin.springai | spring-ai-fin-graphmemory-starter | 0.1.0-SNAPSHOT |
-| Docling starter | fin.springai | spring-ai-fin-docling-starter | 0.1.0-SNAPSHOT |
-| LangChain4j profile | fin.springai | spring-ai-fin-langchain4j-profile | 0.1.0-SNAPSHOT |
-| Resilience starter | fin.springai | spring-ai-fin-resilience-starter | 0.1.0-SNAPSHOT |
+| BoM | ascend.springai | spring-ai-ascend-dependencies | 0.1.0-SNAPSHOT |
+| Memory starter | ascend.springai | spring-ai-ascend-memory-starter | 0.1.0-SNAPSHOT |
+| Skills starter | ascend.springai | spring-ai-ascend-skills-starter | 0.1.0-SNAPSHOT |
+| Knowledge starter | ascend.springai | spring-ai-ascend-knowledge-starter | 0.1.0-SNAPSHOT |
+| Governance starter | ascend.springai | spring-ai-ascend-governance-starter | 0.1.0-SNAPSHOT |
+| Persistence starter | ascend.springai | spring-ai-ascend-persistence-starter | 0.1.0-SNAPSHOT |
+| Mem0 starter | ascend.springai | spring-ai-ascend-mem0-starter | 0.1.0-SNAPSHOT |
+| GraphMemory starter | ascend.springai | spring-ai-ascend-graphmemory-starter | 0.1.0-SNAPSHOT |
+| Docling starter | ascend.springai | spring-ai-ascend-docling-starter | 0.1.0-SNAPSHOT |
+| LangChain4j profile | ascend.springai | spring-ai-ascend-langchain4j-profile | 0.1.0-SNAPSHOT |
+| Resilience starter | ascend.springai | spring-ai-ascend-resilience-starter | 0.1.0-SNAPSHOT |
 
 ---
 

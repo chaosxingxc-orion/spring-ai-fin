@@ -8,7 +8,7 @@ This document describes the role of the `agent-eval/` module, the nightly CI hoo
 
 ## agent-eval/ role
 
-`agent-eval/` is the canonical eval suite for the spring-ai-fin platform. It contains:
+`agent-eval/` is the canonical eval suite for the spring-ai-ascend platform. It contains:
 
 - A set of canonical prompt fixtures covering the KYC happy path and known edge cases.
 - A JUnit 5-based test harness that runs those prompts against the deployed platform endpoint (or a test double) and scores the responses.

@@ -1,4 +1,4 @@
-# Performance Benchmarks -- spring-ai-fin
+# Performance Benchmarks -- spring-ai-ascend
 
 > Owner: platform-engineering | Maturity: L0 | Last refreshed: 2026-05-10
 

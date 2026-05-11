@@ -2,7 +2,7 @@
 
 # Contract Evolution Policy
 
-This document defines versioning rules per contract type, the breaking-change checklist, and the maturity-aware compatibility matrix for the spring-ai-fin platform.
+This document defines versioning rules per contract type, the breaking-change checklist, and the maturity-aware compatibility matrix for the spring-ai-ascend platform.
 
 ---
 

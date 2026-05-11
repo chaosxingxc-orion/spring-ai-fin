@@ -1,4 +1,4 @@
-# spring-ai-fin-skills-starter
+# spring-ai-ascend-skills-starter
 
 > Provides the SPI surface for the agent's tool registry; bridges MCP server tool lists and local Spring bean tools to the runtime. Maturity: L1.
 

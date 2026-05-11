@@ -1,6 +1,6 @@
 # Developer Environment Setup
 
-Required toolchain for the spring-ai-fin SDK (W0 baseline; 2026-05-10).
+Required toolchain for the spring-ai-ascend SDK (W0 baseline; 2026-05-10).
 
 ## Tier B toolchain
 

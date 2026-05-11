@@ -1,6 +1,6 @@
-package fin.springai.runtime.docling;
+package ascend.springai.runtime.docling;
 
-import fin.springai.runtime.spi.knowledge.LayoutParser;
+import ascend.springai.runtime.spi.knowledge.LayoutParser;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -16,7 +16,7 @@ class DoclingAutoConfigurationTest {
 
     @Test
     void autoConfigurationClassIsLoadable() throws Exception {
-        Class.forName("fin.springai.runtime.docling.DoclingAutoConfiguration");
+        Class.forName("ascend.springai.runtime.docling.DoclingAutoConfiguration");
     }
 
     @Test

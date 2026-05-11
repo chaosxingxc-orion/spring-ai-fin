@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  spring-ai-fin parent POM.
+  spring-ai-ascend parent POM.
 
   Per docs/cross-cutting/oss-bill-of-materials.md (cycle-11) and the
   ADRs in docs/cross-cutting/design-decisions.md (cycle-12). All
@@ -16,13 +16,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>fin.springai</groupId>
-  <artifactId>spring-ai-fin-parent</artifactId>
+  <groupId>ascend.springai</groupId>
+  <artifactId>spring-ai-ascend-parent</artifactId>
   <version>0.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
-  <name>spring-ai-fin parent</name>
-  <description>Parent POM for the spring-ai-fin agent runtime.</description>
+  <name>spring-ai-ascend parent</name>
+  <description>Parent POM for the spring-ai-ascend agent runtime.</description>
 
   <parent>
     <groupId>org.springframework.boot</groupId>
@@ -32,19 +32,19 @@
   </parent>
 
   <modules>
-    <module>spring-ai-fin-dependencies</module>
+    <module>spring-ai-ascend-dependencies</module>
     <module>agent-platform</module>
     <module>agent-runtime</module>
-    <module>spring-ai-fin-memory-starter</module>
-    <module>spring-ai-fin-skills-starter</module>
-    <module>spring-ai-fin-knowledge-starter</module>
-    <module>spring-ai-fin-governance-starter</module>
-    <module>spring-ai-fin-persistence-starter</module>
-    <module>spring-ai-fin-mem0-starter</module>
-    <module>spring-ai-fin-graphmemory-starter</module>
-    <module>spring-ai-fin-docling-starter</module>
-    <module>spring-ai-fin-langchain4j-profile</module>
-    <module>spring-ai-fin-resilience-starter</module>
+    <module>spring-ai-ascend-memory-starter</module>
+    <module>spring-ai-ascend-skills-starter</module>
+    <module>spring-ai-ascend-knowledge-starter</module>
+    <module>spring-ai-ascend-governance-starter</module>
+    <module>spring-ai-ascend-persistence-starter</module>
+    <module>spring-ai-ascend-mem0-starter</module>
+    <module>spring-ai-ascend-graphmemory-starter</module>
+    <module>spring-ai-ascend-docling-starter</module>
+    <module>spring-ai-ascend-langchain4j-profile</module>
+    <module>spring-ai-ascend-resilience-starter</module>
     <module>agent-eval</module>
   </modules>
 
@@ -213,70 +213,70 @@
         <scope>test</scope>
       </dependency>
 
-      <!-- Local fin.springai modules — managed here so consumers never need inline <version>. -->
+      <!-- Local ascend.springai modules — managed here so consumers never need inline <version>. -->
       <dependency>
-        <groupId>fin.springai</groupId>
+        <groupId>ascend.springai</groupId>
         <artifactId>agent-platform</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>fin.springai</groupId>
+        <groupId>ascend.springai</groupId>
         <artifactId>agent-runtime</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>fin.springai</groupId>
+        <groupId>ascend.springai</groupId>
         <artifactId>agent-eval</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>fin.springai</groupId>
-        <artifactId>spring-ai-fin-memory-starter</artifactId>
+        <groupId>ascend.springai</groupId>
+        <artifactId>spring-ai-ascend-memory-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>fin.springai</groupId>
-        <artifactId>spring-ai-fin-skills-starter</artifactId>
+        <groupId>ascend.springai</groupId>
+        <artifactId>spring-ai-ascend-skills-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>fin.springai</groupId>
-        <artifactId>spring-ai-fin-knowledge-starter</artifactId>
+        <groupId>ascend.springai</groupId>
+        <artifactId>spring-ai-ascend-knowledge-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>fin.springai</groupId>
-        <artifactId>spring-ai-fin-governance-starter</artifactId>
+        <groupId>ascend.springai</groupId>
+        <artifactId>spring-ai-ascend-governance-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>fin.springai</groupId>
-        <artifactId>spring-ai-fin-persistence-starter</artifactId>
+        <groupId>ascend.springai</groupId>
+        <artifactId>spring-ai-ascend-persistence-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>fin.springai</groupId>
-        <artifactId>spring-ai-fin-resilience-starter</artifactId>
+        <groupId>ascend.springai</groupId>
+        <artifactId>spring-ai-ascend-resilience-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>fin.springai</groupId>
-        <artifactId>spring-ai-fin-mem0-starter</artifactId>
+        <groupId>ascend.springai</groupId>
+        <artifactId>spring-ai-ascend-mem0-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>fin.springai</groupId>
-        <artifactId>spring-ai-fin-graphmemory-starter</artifactId>
+        <groupId>ascend.springai</groupId>
+        <artifactId>spring-ai-ascend-graphmemory-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>fin.springai</groupId>
-        <artifactId>spring-ai-fin-docling-starter</artifactId>
+        <groupId>ascend.springai</groupId>
+        <artifactId>spring-ai-ascend-docling-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>fin.springai</groupId>
-        <artifactId>spring-ai-fin-langchain4j-profile</artifactId>
+        <groupId>ascend.springai</groupId>
+        <artifactId>spring-ai-ascend-langchain4j-profile</artifactId>
         <version>${project.version}</version>
       </dependency>
     </dependencies>

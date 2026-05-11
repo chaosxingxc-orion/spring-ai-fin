@@ -1,6 +1,6 @@
-package fin.springai.runtime.mem0;
+package ascend.springai.runtime.mem0;
 
-import fin.springai.runtime.spi.memory.LongTermMemoryRepository;
+import ascend.springai.runtime.spi.memory.LongTermMemoryRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.springframework.boot.autoconfigure.AutoConfiguration;

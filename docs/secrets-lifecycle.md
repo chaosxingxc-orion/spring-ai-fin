@@ -9,7 +9,7 @@
 **Owner**: Platform team (GOV) + Customer security team
 **Companion**: [`security-control-matrix.md`](cross-cutting/security-control-matrix.md) sec-15
 
-This document specifies the full lifecycle of every secret used by spring-ai-fin: source, rotation, revocation, scoping, memory handling, no-logging, break-glass.
+This document specifies the full lifecycle of every secret used by spring-ai-ascend: source, rotation, revocation, scoping, memory handling, no-logging, break-glass.
 
 ---
 
@@ -40,8 +40,8 @@ This document specifies the full lifecycle of every secret used by spring-ai-fin
 - **Why**: license safety per L0 D-15 (BUSL -> MPL 2.0)
 - **Auth**: Spring Boot integration via `spring-cloud-vault` adapter against OpenBao API (compatible)
 - **Path namespace**:
-  - `secret/spring-ai-fin/platform/<env>/<secret-name>` for platform-shared secrets
-  - `secret/spring-ai-fin/tenants/<tenant-id>/<secret-name>` for per-tenant secrets
+  - `secret/spring-ai-ascend/platform/<env>/<secret-name>` for platform-shared secrets
+  - `secret/spring-ai-ascend/tenants/<tenant-id>/<secret-name>` for per-tenant secrets
 - **Lease lifecycle**: short-lived dynamic secrets where supported; static for legacy
 
 ### 2.2 Kubernetes Secrets fallback
@@ -115,7 +115,7 @@ tenant:
     deepseek_api_key: ${OPENBAO_PATH:/tenants/bank-a/deepseek-api-key}
 ```
 
-- Stored in OpenBao at `secret/spring-ai-fin/tenants/bank-a/...`
+- Stored in OpenBao at `secret/spring-ai-ascend/tenants/bank-a/...`
 - `LLMGateway.CredentialPool` resolves at request time based on `tenantId`
 - Customer rotates independently; platform reads on next request
 

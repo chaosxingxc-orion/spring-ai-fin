@@ -1,4 +1,4 @@
-package fin.springai.platform.contracts;
+package ascend.springai.platform.contracts;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,6 +1,6 @@
-package fin.springai.runtime.governance;
+package ascend.springai.runtime.governance;
 
-import fin.springai.runtime.spi.governance.PolicyEvaluator;
+import ascend.springai.runtime.spi.governance.PolicyEvaluator;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.springframework.beans.factory.BeanCreationException;

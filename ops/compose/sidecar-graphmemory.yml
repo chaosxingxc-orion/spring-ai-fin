@@ -4,8 +4,8 @@
 # Version tag tracks third_party/MANIFEST.md Section B Graphiti entry (v0.29.0 / SHA 56cf7b3).
 # Graphiti exposes REST API on port 8000 by default.
 #
-# spring-ai-fin-graphmemory-starter connects via:
-#   fin.springai.graphmemory.base-url=http://localhost:8002
+# spring-ai-ascend-graphmemory-starter connects via:
+#   ascend.springai.graphmemory.base-url=http://localhost:8002
 #
 # Cycle-15 decision: Graphiti vs Cognee. This overlay wires Graphiti; swap
 # Cognee by replacing the image when cycle-15 confirms the alternative.
@@ -13,7 +13,7 @@
 services:
   graphiti:
     image: getzep/graphiti-service:v0.29.0
-    container_name: spring-ai-fin-graphiti
+    container_name: spring-ai-ascend-graphiti
     ports:
       - "8002:8000"
     environment:
@@ -24,24 +24,24 @@ services:
     depends_on:
       - neo4j
     networks:
-      - spring-ai-fin
+      - spring-ai-ascend
     restart: unless-stopped
 
   neo4j:
     image: neo4j:5.20
-    container_name: spring-ai-fin-neo4j
+    container_name: spring-ai-ascend-neo4j
     environment:
       NEO4J_AUTH: "neo4j/${NEO4J_PASSWORD:-graphiti-dev}"
     volumes:
       - neo4j-data:/data
     networks:
-      - spring-ai-fin
+      - spring-ai-ascend
     restart: unless-stopped
 
 volumes:
   neo4j-data:
 
 networks:
-  spring-ai-fin:
-    name: spring-ai-fin
+  spring-ai-ascend:
+    name: spring-ai-ascend
     external: true

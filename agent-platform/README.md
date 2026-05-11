@@ -6,7 +6,7 @@
 
 | Interface | Method | Semantic guarantee |
 |-----------|--------|--------------------|
-| (consumer only) | -- | agent-platform consumes SPI interfaces defined in spring-ai-fin-*-starter modules; it does not define new SPI interfaces |
+| (consumer only) | -- | agent-platform consumes SPI interfaces defined in spring-ai-ascend-*-starter modules; it does not define new SPI interfaces |
 
 The platform calls `RunRepository`, `IdempotencyRepository`, `PolicyEvaluator`, and all other SPI interfaces through the starter contracts. It never imports `agent-runtime` Java types directly (enforced by `ApiCompatibilityTest`).
 

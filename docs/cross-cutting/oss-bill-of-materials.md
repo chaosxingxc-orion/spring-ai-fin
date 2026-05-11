@@ -158,9 +158,9 @@ All Spring Boot 4.x transitive deps (Web, Security, Data JDBC, Actuator, Validat
 |---|---|
 | BOM | `dev.langchain4j:langchain4j-bom:1.14.1` |
 | Status | GA (1.14.1 released 2026-05-07) |
-| Usage | Alternate RAG profile starter (`spring-ai-fin-langchain4j-profile`); not in default path |
+| Usage | Alternate RAG profile starter (`spring-ai-ascend-langchain4j-profile`); not in default path |
 | Verification level | U0 -- BOM declared; no module depends on it yet |
-| Target | U2 when spring-ai-fin-langchain4j-profile scaffolded (Step 11) |
+| Target | U2 when spring-ai-ascend-langchain4j-profile scaffolded (Step 11) |
 
 ## 5. Per-wave verification advancement (revised W0 complete)
 
@@ -213,13 +213,13 @@ full analysis.
 
 ### SPI surface (frozen by ArchUnit at Step 10)
 
-- `fin.springai.runtime.spi.memory.LongTermMemoryRepository` -- default: Spring AI JDBC repo. Sidecar: mem0.
-- `fin.springai.runtime.spi.memory.GraphMemoryRepository` -- sidecar only: Graphiti (cycle-15 confirms vs Cognee).
-- `fin.springai.runtime.spi.knowledge.LayoutParser` -- default: Tika. Sidecar: Docling.
-- `fin.springai.runtime.spi.knowledge.DocumentSourceConnector` -- N implementations, opt-in per source.
-- `fin.springai.runtime.spi.skills.ToolProvider` -- wraps MCP `McpClient` + local `@Tool` registry.
-- `fin.springai.runtime.spi.governance.PolicyEvaluator` -- default: in-process JSR-303 + ArchUnit. External: OPA client.
-- `fin.springai.runtime.spi.persistence.RunRepository`, `IdempotencyRepository`, `ArtifactRepository` -- Spring Data JDBC default impls.
+- `ascend.springai.runtime.spi.memory.LongTermMemoryRepository` -- default: Spring AI JDBC repo. Sidecar: mem0.
+- `ascend.springai.runtime.spi.memory.GraphMemoryRepository` -- sidecar only: Graphiti (cycle-15 confirms vs Cognee).
+- `ascend.springai.runtime.spi.knowledge.LayoutParser` -- default: Tika. Sidecar: Docling.
+- `ascend.springai.runtime.spi.knowledge.DocumentSourceConnector` -- N implementations, opt-in per source.
+- `ascend.springai.runtime.spi.skills.ToolProvider` -- wraps MCP `McpClient` + local `@Tool` registry.
+- `ascend.springai.runtime.spi.governance.PolicyEvaluator` -- default: in-process JSR-303 + ArchUnit. External: OPA client.
+- `ascend.springai.runtime.spi.persistence.RunRepository`, `IdempotencyRepository`, `ArtifactRepository` -- Spring Data JDBC default impls.
 
 ## 7. Tier C: local source clones + Python OSS sidecars
 
@@ -245,10 +245,10 @@ Tracked in `third_party/MANIFEST.md`. All entries gitignored; SHAs captured in t
 
 | Name | Stars | Purpose | SPI |
 |---|---|---|---|
-| **mem0** (`mem0ai/mem0`) | 55.2k | Long-term hierarchical memory | `LongTermMemoryRepository` via `spring-ai-fin-mem0-starter` |
-| **Graphiti** (`getzep/graphiti`) | 25.8k | Knowledge-graph memory | `GraphMemoryRepository` via `spring-ai-fin-graphmemory-starter` |
+| **mem0** (`mem0ai/mem0`) | 55.2k | Long-term hierarchical memory | `LongTermMemoryRepository` via `spring-ai-ascend-mem0-starter` |
+| **Graphiti** (`getzep/graphiti`) | 25.8k | Knowledge-graph memory | `GraphMemoryRepository` via `spring-ai-ascend-graphmemory-starter` |
 | **Cognee** (`topoteretes/cognee`) | 17.1k | Graph memory alternative to Graphiti | Evaluation alternative; cycle-15 picks one |
-| **Docling-serve** (`docling-project/docling-serve`) | IBM/LF AI&Data | Layout-aware PDF parsing | `LayoutParser` via `spring-ai-fin-docling-starter` |
+| **Docling-serve** (`docling-project/docling-serve`) | IBM/LF AI&Data | Layout-aware PDF parsing | `LayoutParser` via `spring-ai-ascend-docling-starter` |
 | **RAGFlow** (`infiniflow/ragflow`) | 80.1k | Alternate full-stack RAG platform | No SDK adapter; consumer integrates via RAGFlow API |
 
 ## 8. Excluded dependencies (competitor code -- never import)
@@ -264,7 +264,7 @@ code does not enter our build.
 
 **ArchUnit enforcement (Step 10):**
 ```java
-noClasses().that().resideInAPackage("fin.springai..")
+noClasses().that().resideInAPackage("ascend.springai..")
            .should().dependOnClassesThat()
            .resideInAPackage("com.alibaba.cloud.ai..");
 ```
@@ -278,8 +278,8 @@ The remaining reference projects (langchain4j, agentscope-java) are NOT on this 
 ## 9. Backward-compatibility strategy (SDK publishing)
 
 1. **Strict version pinning.** Every dep pinned to exact patch in `pom.xml` `<properties>`. No ranges, no `LATEST`.
-2. **BoM module.** `spring-ai-fin-dependencies` (packaging=pom) is the SDK's published version contract.
-3. **SPI freeze via ArchUnit.** `ApiCompatibilityTest` enforces public-package boundary on `fin.springai.runtime.spi.**`. Any change requires editing the test.
+2. **BoM module.** `spring-ai-ascend-dependencies` (packaging=pom) is the SDK's published version contract.
+3. **SPI freeze via ArchUnit.** `ApiCompatibilityTest` enforces public-package boundary on `ascend.springai.runtime.spi.**`. Any change requires editing the test.
 4. **Spring AI milestone gate.** `gate/check_spring_ai_milestone.sh` fails CI past 2026-08-01 if `spring-ai.version` still contains `-M`.
 5. **Sidecar adapter independence.** Sidecar adapter starters live in their own modules; the Python service can break compatibility without affecting the SDK's SPI surface.
 6. **Deprecation policy**: SemVer; minor for additive; major for breaking; downstream gets one minor of deprecation overlap. Documented in `docs/cross-cutting/sdk-versioning.md`.
@@ -298,8 +298,8 @@ The remaining reference projects (langchain4j, agentscope-java) are NOT on this 
 - **WireMock stuck at 3.9.1.** WireMock 4.x is in beta (4.0.0-beta.34 as of 2026-05-10); keeping 3.x until 4.x reaches GA.
 - **RestAssured stuck at 5.5.0.** 6.0.0 is a major version jump; upgrade deferred to W1 wave evaluation.
 - **logstash-logback-encoder stuck at 8.0.** 9.0 is a major version jump; upgrade deferred to W1 evaluation.
-- **Graphiti vs Cognee not yet picked.** Both cloned into `third_party/`; `spring-ai-fin-graphmemory-starter` initially wires Graphiti (higher activity). Cycle-15 confirms or swaps.
-- **langchain4j at U0.** BOM declared; no module depends on it yet. Advances to U2 when `spring-ai-fin-langchain4j-profile` scaffolded at Step 11.
+- **Graphiti vs Cognee not yet picked.** Both cloned into `third_party/`; `spring-ai-ascend-graphmemory-starter` initially wires Graphiti (higher activity). Cycle-15 confirms or swaps.
+- **langchain4j at U0.** BOM declared; no module depends on it yet. Advances to U2 when `spring-ai-ascend-langchain4j-profile` scaffolded at Step 11.
 - **Python sidecar version drift.** mem0 / Graphiti / Docling release independently. Mitigated by SPI layer + `third_party/MANIFEST.md` SHA pinning.
 - **springdoc 3.0.3 Boot 4 runtime behavior.** Compile-verified at W0; runtime auto-configuration verified in W1 IT tests.
 

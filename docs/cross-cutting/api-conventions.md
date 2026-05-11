@@ -67,7 +67,7 @@ Every 4xx / 5xx response uses `application/problem+json`:
 
 ```json
 {
-  "type": "https://errors.spring-ai-fin.example/<error-code>",
+  "type": "https://errors.spring-ai-ascend.example/<error-code>",
   "title": "Short human-readable summary",
   "status": 422,
   "detail": "Concrete explanation of this occurrence",

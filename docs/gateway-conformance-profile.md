@@ -4,7 +4,7 @@
 **Owner**: Platform team (GOV) + Customer infrastructure team
 **Companion**: [`security-control-matrix.md`](cross-cutting/security-control-matrix.md) sec-10
 
-This profile defines the **deployment-time security requirements** that the north-south gateway must implement. spring-ai-fin is gateway-agnostic by design (Higress recommended, but customers may substitute), so the security guarantee is enforced at deployment via this profile.
+This profile defines the **deployment-time security requirements** that the north-south gateway must implement. spring-ai-ascend is gateway-agnostic by design (Higress recommended, but customers may substitute), so the security guarantee is enforced at deployment via this profile.
 
 ---
 
@@ -77,7 +77,7 @@ The platform's `/ready` endpoint refuses `prod` readiness unless either:
 
 ### 3.1 At deployment
 
-The customer's deployment automation (Terraform / Helm / Ansible) must produce a **conformance attestation file** at a known path (`/var/run/spring-ai-fin/gateway-conformance.json`) containing:
+The customer's deployment automation (Terraform / Helm / Ansible) must produce a **conformance attestation file** at a known path (`/var/run/spring-ai-ascend/gateway-conformance.json`) containing:
 
 ```json
 {
@@ -140,7 +140,7 @@ plugins:
     jwks_endpoints:
       - issuer: "https://idp.bank-a.com"
         jwks_uri: "https://idp.bank-a.com/.well-known/jwks.json"
-    audience: "spring-ai-fin"
+    audience: "spring-ai-ascend"
     forward_claims:
       - sub -> X-User-Id
       - tenantId -> X-Tenant-Id

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# spring-ai-fin architecture-sync gate self-test
+# spring-ai-ascend architecture-sync gate self-test
 # (cycle-7 sec-E1; cycle-8 sec-A2 + sec-A3 extended).
 #
 # Runs the available platform script(s) on the current working tree

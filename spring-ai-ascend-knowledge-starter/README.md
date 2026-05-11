@@ -1,4 +1,4 @@
-# spring-ai-fin-knowledge-starter
+# spring-ai-ascend-knowledge-starter
 
 > Provides the SPI surface for document layout parsing and multi-source document ingestion, with a registry for fan-out across multiple connectors. Maturity: L1.
 

@@ -1,4 +1,4 @@
-# spring-ai-fin architecture status ledger
+# spring-ai-ascend architecture status ledger
 # Single machine-readable source of truth for capability status.
 # Loaded by docs/governance/decision-sync-matrix.md and gate/check_architecture_sync.*
 #
@@ -10,8 +10,8 @@
 #   L0 demo | L1 tested component | L2 public contract | L3 production default | L4 ecosystem ready
 
 version: 2
-generated_at: 2026-05-08
-generated_by: docs/systematic-architecture-remediation-plan-2026-05-08.en.md sec-4 + sec-12
+generated_at: 2026-05-12
+generated_by: project rename spring-ai-fin -> spring-ai-ascend (2026-05-12); archived prior plans under docs/archive/spring-ai-fin/
 supersedes: version 1 (2026-05-08 morning)
 
 # Source: root pom.xml <modules> list at commit a7756cd
@@ -55,13 +55,13 @@ capabilities:
     l2_documents:
       - agent-platform/ARCHITECTURE.md
     implementation:
-      - agent-platform/src/main/java/fin/springai/platform/AgentPlatformApplication.java
-      - agent-platform/src/main/java/fin/springai/platform/health/HealthController.java
+      - agent-platform/src/main/java/ascend/springai/platform/AgentPlatformApplication.java
+      - agent-platform/src/main/java/ascend/springai/platform/health/HealthController.java
     tests:
-      - agent-platform/src/test/java/fin/springai/platform/health/HealthEndpointIT.java
-      - agent-platform/src/test/java/fin/springai/platform/api/ApiCompatibilityTest.java
+      - agent-platform/src/test/java/ascend/springai/platform/health/HealthEndpointIT.java
+      - agent-platform/src/test/java/ascend/springai/platform/api/ApiCompatibilityTest.java
     operator_gate: null
-    latest_delivery_valid_sha: 391cd6e   # updated: Phase 1 class-based reviewer response committed; Phase 0 build green at a7756cd
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L1: /v1/health GREEN; ArchUnit 4 rules GREEN. SPI contracts frozen."
 
   agent_runtime_kernel:
@@ -72,11 +72,11 @@ capabilities:
     l2_documents:
       - agent-runtime/ARCHITECTURE.md
     implementation:
-      - agent-runtime/src/main/java/fin/springai/runtime/probe/OssApiProbe.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/probe/OssApiProbe.java
     tests:
-      - agent-runtime/src/test/java/fin/springai/runtime/probe/OssApiProbeTest.java
+      - agent-runtime/src/test/java/ascend/springai/runtime/probe/OssApiProbeTest.java
     operator_gate: null
-    latest_delivery_valid_sha: 154ee30
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L1: OssApiProbe shell + OssApiProbeTest (3 tests GREEN). No kernel logic yet. W2 delivers run lifecycle."
 
   action_guard:
@@ -269,7 +269,7 @@ capabilities:
     operator_gate: null
     open_findings: []
     latest_semantic_pass_sha: 68c07f1        # W0 SHA: milestone gate grep-P locale fix
-    latest_delivery_valid_sha: 68c07f1
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     latest_delivery_file: docs/delivery/2026-05-10-68c07f1.md
     notes: "Updated by the W0 audit-trail commit. W0 delivers: Java 21 + Maven Wrapper 3.9.15 + Boot 4.0.5 + AI 2.0.0-M5 + MCP 1.0.0 GA + Tika 3.3.0 + Flyway 11.19.1 + OSS BoM U2 at cd13612 + Tier C manifest (16 entries). build_verification.state: green (mvn verify LOCAL at 18d637e)."
     allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml."
@@ -1400,131 +1400,131 @@ findings:
 
   # ---- 2026-05-10 cycle-15/16 W0 scaffolding ----
 
-  spring_ai_fin_dependencies_bom:
+  spring_ai_ascend_dependencies_bom:
     maturity: L1
     status: implemented_unverified
     evidence_state: implemented_unverified
     l0_decision: docs/cross-cutting/oss-bill-of-materials.md
-    implementation: spring-ai-fin-dependencies/pom.xml
+    implementation: spring-ai-ascend-dependencies/pom.xml
     tests: []
-    latest_delivery_valid_sha: 97b0827
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "BoM publishes 9 starter coordinates + 13 transitive OSS pins."
 
-  spring_ai_fin_memory_starter:
+  spring_ai_ascend_memory_starter:
     maturity: L0
     status: implemented_unverified
     evidence_state: implemented_unverified
     l0_decision: ARCHITECTURE.md
     implementation:
-      - spring-ai-fin-memory-starter/src/main/java/fin/springai/runtime/memory/MemoryAutoConfiguration.java
-      - spring-ai-fin-memory-starter/src/main/java/fin/springai/runtime/spi/memory/LongTermMemoryRepository.java
-      - spring-ai-fin-memory-starter/src/main/java/fin/springai/runtime/spi/memory/GraphMemoryRepository.java
+      - spring-ai-ascend-memory-starter/src/main/java/ascend/springai/runtime/memory/MemoryAutoConfiguration.java
+      - spring-ai-ascend-memory-starter/src/main/java/ascend/springai/runtime/spi/memory/LongTermMemoryRepository.java
+      - spring-ai-ascend-memory-starter/src/main/java/ascend/springai/runtime/spi/memory/GraphMemoryRepository.java
     tests:
-      - spring-ai-fin-memory-starter/src/test/java/fin/springai/runtime/memory/MemoryAutoConfigurationTest.java
-    latest_delivery_valid_sha: 97b0827
+      - spring-ai-ascend-memory-starter/src/test/java/ascend/springai/runtime/memory/MemoryAutoConfigurationTest.java
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L0 sentinel impl + frozen SPI; W1 lands JDBC default."
 
-  spring_ai_fin_skills_starter:
+  spring_ai_ascend_skills_starter:
     maturity: L0
     status: implemented_unverified
     evidence_state: implemented_unverified
     l0_decision: ARCHITECTURE.md
     implementation:
-      - spring-ai-fin-skills-starter/src/main/java/fin/springai/runtime/skills/SkillsAutoConfiguration.java
-      - spring-ai-fin-skills-starter/src/main/java/fin/springai/runtime/spi/skills/ToolProvider.java
+      - spring-ai-ascend-skills-starter/src/main/java/ascend/springai/runtime/skills/SkillsAutoConfiguration.java
+      - spring-ai-ascend-skills-starter/src/main/java/ascend/springai/runtime/spi/skills/ToolProvider.java
     tests:
-      - spring-ai-fin-skills-starter/src/test/java/fin/springai/runtime/skills/SkillsAutoConfigurationTest.java
-    latest_delivery_valid_sha: 97b0827
+      - spring-ai-ascend-skills-starter/src/test/java/ascend/springai/runtime/skills/SkillsAutoConfigurationTest.java
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L0 sentinel impl + frozen SPI; W1 lands MCP ToolProvider."
 
-  spring_ai_fin_knowledge_starter:
+  spring_ai_ascend_knowledge_starter:
     maturity: L0
     status: implemented_unverified
     evidence_state: implemented_unverified
     l0_decision: ARCHITECTURE.md
     implementation:
-      - spring-ai-fin-knowledge-starter/src/main/java/fin/springai/runtime/knowledge/KnowledgeAutoConfiguration.java
-      - spring-ai-fin-knowledge-starter/src/main/java/fin/springai/runtime/spi/knowledge/LayoutParser.java
-      - spring-ai-fin-knowledge-starter/src/main/java/fin/springai/runtime/spi/knowledge/DocumentSourceConnector.java
+      - spring-ai-ascend-knowledge-starter/src/main/java/ascend/springai/runtime/knowledge/KnowledgeAutoConfiguration.java
+      - spring-ai-ascend-knowledge-starter/src/main/java/ascend/springai/runtime/spi/knowledge/LayoutParser.java
+      - spring-ai-ascend-knowledge-starter/src/main/java/ascend/springai/runtime/spi/knowledge/DocumentSourceConnector.java
     tests:
-      - spring-ai-fin-knowledge-starter/src/test/java/fin/springai/runtime/knowledge/KnowledgeAutoConfigurationTest.java
-    latest_delivery_valid_sha: 97b0827
+      - spring-ai-ascend-knowledge-starter/src/test/java/ascend/springai/runtime/knowledge/KnowledgeAutoConfigurationTest.java
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L0 sentinel impl + frozen SPI; W1 lands Tika LayoutParser."
 
-  spring_ai_fin_governance_starter:
+  spring_ai_ascend_governance_starter:
     maturity: L0
     status: implemented_unverified
     evidence_state: implemented_unverified
     l0_decision: ARCHITECTURE.md
     implementation:
-      - spring-ai-fin-governance-starter/src/main/java/fin/springai/runtime/governance/GovernanceAutoConfiguration.java
-      - spring-ai-fin-governance-starter/src/main/java/fin/springai/runtime/spi/governance/PolicyEvaluator.java
+      - spring-ai-ascend-governance-starter/src/main/java/ascend/springai/runtime/governance/GovernanceAutoConfiguration.java
+      - spring-ai-ascend-governance-starter/src/main/java/ascend/springai/runtime/spi/governance/PolicyEvaluator.java
     tests:
-      - spring-ai-fin-governance-starter/src/test/java/fin/springai/runtime/governance/GovernanceAutoConfigurationTest.java
-    latest_delivery_valid_sha: 97b0827
+      - spring-ai-ascend-governance-starter/src/test/java/ascend/springai/runtime/governance/GovernanceAutoConfigurationTest.java
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L0 sentinel impl + frozen SPI; W1 lands JSR-303 PolicyEvaluator."
 
-  spring_ai_fin_persistence_starter:
+  spring_ai_ascend_persistence_starter:
     maturity: L0
     status: implemented_unverified
     evidence_state: implemented_unverified
     l0_decision: ARCHITECTURE.md
     implementation:
-      - spring-ai-fin-persistence-starter/src/main/java/fin/springai/runtime/persistence/PersistenceAutoConfiguration.java
-      - spring-ai-fin-persistence-starter/src/main/java/fin/springai/runtime/spi/persistence/RunRepository.java
-      - spring-ai-fin-persistence-starter/src/main/java/fin/springai/runtime/spi/persistence/IdempotencyRepository.java
-      - spring-ai-fin-persistence-starter/src/main/java/fin/springai/runtime/spi/persistence/ArtifactRepository.java
+      - spring-ai-ascend-persistence-starter/src/main/java/ascend/springai/runtime/persistence/PersistenceAutoConfiguration.java
+      - spring-ai-ascend-persistence-starter/src/main/java/ascend/springai/runtime/spi/persistence/RunRepository.java
+      - spring-ai-ascend-persistence-starter/src/main/java/ascend/springai/runtime/spi/persistence/IdempotencyRepository.java
+      - spring-ai-ascend-persistence-starter/src/main/java/ascend/springai/runtime/spi/persistence/ArtifactRepository.java
     tests:
-      - spring-ai-fin-persistence-starter/src/test/java/fin/springai/runtime/persistence/PersistenceAutoConfigurationTest.java
-    latest_delivery_valid_sha: 97b0827
+      - spring-ai-ascend-persistence-starter/src/test/java/ascend/springai/runtime/persistence/PersistenceAutoConfigurationTest.java
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L0 sentinel impl + frozen SPI; W1 lands Spring Data JDBC RunRepository."
 
-  spring_ai_fin_mem0_starter:
+  spring_ai_ascend_mem0_starter:
     maturity: L0
     status: implemented_unverified
     evidence_state: implemented_unverified
     l0_decision: ARCHITECTURE.md
     implementation:
-      - spring-ai-fin-mem0-starter/src/main/java/fin/springai/runtime/mem0/Mem0AutoConfiguration.java
+      - spring-ai-ascend-mem0-starter/src/main/java/ascend/springai/runtime/mem0/Mem0AutoConfiguration.java
     tests:
-      - spring-ai-fin-mem0-starter/src/test/java/fin/springai/runtime/mem0/Mem0AutoConfigurationTest.java
-    latest_delivery_valid_sha: 97b0827
+      - spring-ai-ascend-mem0-starter/src/test/java/ascend/springai/runtime/mem0/Mem0AutoConfigurationTest.java
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "Sidecar adapter scaffold; disabled by default (enabled=false); W1 wires real Mem0 REST client."
 
-  spring_ai_fin_graphmemory_starter:
+  spring_ai_ascend_graphmemory_starter:
     maturity: L0
     status: implemented_unverified
     evidence_state: implemented_unverified
     l0_decision: ARCHITECTURE.md
     implementation:
-      - spring-ai-fin-graphmemory-starter/src/main/java/fin/springai/runtime/graphmemory/GraphMemoryAutoConfiguration.java
+      - spring-ai-ascend-graphmemory-starter/src/main/java/ascend/springai/runtime/graphmemory/GraphMemoryAutoConfiguration.java
     tests:
-      - spring-ai-fin-graphmemory-starter/src/test/java/fin/springai/runtime/graphmemory/GraphMemoryAutoConfigurationTest.java
-    latest_delivery_valid_sha: 97b0827
+      - spring-ai-ascend-graphmemory-starter/src/test/java/ascend/springai/runtime/graphmemory/GraphMemoryAutoConfigurationTest.java
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "Sidecar adapter scaffold; disabled by default; W1 wires real Graphiti REST client."
 
-  spring_ai_fin_docling_starter:
+  spring_ai_ascend_docling_starter:
     maturity: L0
     status: implemented_unverified
     evidence_state: implemented_unverified
     l0_decision: ARCHITECTURE.md
     implementation:
-      - spring-ai-fin-docling-starter/src/main/java/fin/springai/runtime/docling/DoclingAutoConfiguration.java
+      - spring-ai-ascend-docling-starter/src/main/java/ascend/springai/runtime/docling/DoclingAutoConfiguration.java
     tests:
-      - spring-ai-fin-docling-starter/src/test/java/fin/springai/runtime/docling/DoclingAutoConfigurationTest.java
-    latest_delivery_valid_sha: 97b0827
+      - spring-ai-ascend-docling-starter/src/test/java/ascend/springai/runtime/docling/DoclingAutoConfigurationTest.java
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "Sidecar adapter scaffold; disabled by default; W1 wires real Docling REST client."
 
-  spring_ai_fin_langchain4j_profile:
+  spring_ai_ascend_langchain4j_profile:
     maturity: L0
     status: implemented_unverified
     evidence_state: implemented_unverified
     l0_decision: ARCHITECTURE.md
     implementation:
-      - spring-ai-fin-langchain4j-profile/src/main/java/fin/springai/runtime/langchain4j/LangChain4jAutoConfiguration.java
+      - spring-ai-ascend-langchain4j-profile/src/main/java/ascend/springai/runtime/langchain4j/LangChain4jAutoConfiguration.java
     tests:
-      - spring-ai-fin-langchain4j-profile/src/test/java/fin/springai/runtime/langchain4j/LangChain4jAutoConfigurationTest.java
-    latest_delivery_valid_sha: 97b0827
+      - spring-ai-ascend-langchain4j-profile/src/test/java/ascend/springai/runtime/langchain4j/LangChain4jAutoConfigurationTest.java
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "Alternate framework profile scaffold; disabled by default; W2+ wires LangChain4j ChatModel."
 
   spi_compatibility_freeze:
@@ -1533,10 +1533,10 @@ findings:
     evidence_state: test_verified
     l0_decision: ARCHITECTURE.md (sec.3.2)
     implementation:
-      - agent-platform/src/test/java/fin/springai/platform/api/ApiCompatibilityTest.java
+      - agent-platform/src/test/java/ascend/springai/platform/api/ApiCompatibilityTest.java
     tests:
-      - agent-platform/src/test/java/fin/springai/platform/api/ApiCompatibilityTest.java
-    latest_delivery_valid_sha: 391cd6e   # updated: Phase 1 committed; ApiCompatibilityTest (ArchUnit, no Docker) passes at Phase 0 (a7756cd)
+      - agent-platform/src/test/java/ascend/springai/platform/api/ApiCompatibilityTest.java
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L1: ArchUnit 4 rules GREEN; rules 3+4 now non-vacuous (SPI starters on test-classpath); japicmp baseline configured (skip=true; enforcement W1+)."
 
   # ---- cycle-15/16 closure extension: W0 contracts + contract spine ----
@@ -1547,12 +1547,12 @@ findings:
     evidence_state: implemented_unverified
     l0_decision: ARCHITECTURE.md
     implementation:
-      - agent-platform/src/main/java/fin/springai/platform/idempotency/IdempotencyHeaderFilter.java
-      - agent-platform/src/main/java/fin/springai/platform/idempotency/IdempotencyFilterAutoConfiguration.java
+      - agent-platform/src/main/java/ascend/springai/platform/idempotency/IdempotencyHeaderFilter.java
+      - agent-platform/src/main/java/ascend/springai/platform/idempotency/IdempotencyFilterAutoConfiguration.java
     tests:
-      - agent-platform/src/test/java/fin/springai/platform/idempotency/IdempotencyHeaderFilterTest.java
-      - agent-platform/src/test/java/fin/springai/platform/idempotency/IdempotencyHeaderFilterIT.java
-    latest_delivery_valid_sha: c000b73
+      - agent-platform/src/test/java/ascend/springai/platform/idempotency/IdempotencyHeaderFilterTest.java
+      - agent-platform/src/test/java/ascend/springai/platform/idempotency/IdempotencyHeaderFilterIT.java
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L1: OncePerRequestFilter order 30; dev tolerates missing; research/prod returns 400; counters emitted."
 
   tenant_context_filter:
@@ -1561,25 +1561,25 @@ findings:
     evidence_state: implemented_unverified
     l0_decision: ARCHITECTURE.md
     implementation:
-      - agent-platform/src/main/java/fin/springai/platform/tenant/TenantContextFilter.java
-      - agent-platform/src/main/java/fin/springai/platform/tenant/TenantFilterAutoConfiguration.java
+      - agent-platform/src/main/java/ascend/springai/platform/tenant/TenantContextFilter.java
+      - agent-platform/src/main/java/ascend/springai/platform/tenant/TenantFilterAutoConfiguration.java
     tests:
-      - agent-platform/src/test/java/fin/springai/platform/tenant/TenantContextFilterTest.java
-      - agent-platform/src/test/java/fin/springai/platform/tenant/TenantContextFilterIT.java
-    latest_delivery_valid_sha: c000b73
+      - agent-platform/src/test/java/ascend/springai/platform/tenant/TenantContextFilterTest.java
+      - agent-platform/src/test/java/ascend/springai/platform/tenant/TenantContextFilterIT.java
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L1: OncePerRequestFilter order 20; ThreadLocal cleared in finally; dev uses DEV_DEFAULT on missing; research/prod returns 400."
 
-  spring_ai_fin_resilience_starter:
+  spring_ai_ascend_resilience_starter:
     maturity: L1
     status: implemented_unverified
     evidence_state: implemented_unverified
     l0_decision: ARCHITECTURE.md
     implementation:
-      - spring-ai-fin-resilience-starter/src/main/java/fin/springai/runtime/spi/resilience/ResilienceContract.java
-      - spring-ai-fin-resilience-starter/src/main/java/fin/springai/runtime/resilience/ResilienceAutoConfiguration.java
+      - spring-ai-ascend-resilience-starter/src/main/java/ascend/springai/runtime/spi/resilience/ResilienceContract.java
+      - spring-ai-ascend-resilience-starter/src/main/java/ascend/springai/runtime/resilience/ResilienceAutoConfiguration.java
     tests:
-      - spring-ai-fin-resilience-starter/src/test/java/fin/springai/runtime/resilience/ResilienceAutoConfigurationTest.java
-    latest_delivery_valid_sha: c000b73
+      - spring-ai-ascend-resilience-starter/src/test/java/ascend/springai/runtime/resilience/ResilienceAutoConfigurationTest.java
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     caller_users: 0
     notes: "caller_users=0 (W2). SPI is contract-only; @CircuitBreaker annotation wiring deferred to W2 when host code exists."
     allowed_claim: "L1: ResilienceContract SPI; sentinel fails fast in research/prod; both auto-config registrations present. No call-site users yet (W2)."
@@ -1590,10 +1590,10 @@ findings:
     evidence_state: implemented_unverified
     l0_decision: ARCHITECTURE.md
     implementation:
-      - spring-ai-fin-knowledge-starter/src/main/java/fin/springai/runtime/knowledge/DocumentSourceConnectorRegistry.java
+      - spring-ai-ascend-knowledge-starter/src/main/java/ascend/springai/runtime/knowledge/DocumentSourceConnectorRegistry.java
     tests:
-      - spring-ai-fin-knowledge-starter/src/test/java/fin/springai/runtime/knowledge/KnowledgeAutoConfigurationTest.java
-    latest_delivery_valid_sha: c000b73
+      - spring-ai-ascend-knowledge-starter/src/test/java/ascend/springai/runtime/knowledge/KnowledgeAutoConfigurationTest.java
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     non_sentinel_connectors: 0
     notes: "non_sentinel_connectors=0 (W2+). Registry structure complete; real connector impls (S3, docling) deferred."
     allowed_claim: "L1: immutable registry; duplicate-id rejection at construction; wired via List<DocumentSourceConnector> in KnowledgeAutoConfiguration. Zero real connector impls (W2+)."
@@ -1604,10 +1604,10 @@ findings:
     evidence_state: implemented_unverified
     l0_decision: ARCHITECTURE.md
     implementation:
-      - spring-ai-fin-memory-starter/src/main/java/fin/springai/runtime/memory/MemoryProperties.java
+      - spring-ai-ascend-memory-starter/src/main/java/ascend/springai/runtime/memory/MemoryProperties.java
     tests:
-      - spring-ai-fin-memory-starter/src/test/java/fin/springai/runtime/memory/MemoryAutoConfigurationTest.java
-    latest_delivery_valid_sha: 25e85ae
+      - spring-ai-ascend-memory-starter/src/test/java/ascend/springai/runtime/memory/MemoryAutoConfigurationTest.java
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L1: @ConfigurationProperties(springai.fin.memory) + @ConditionalOnProperty wiring real; starterBeansAbsentWhenDisabled test GREEN."
 
   skills_configuration_properties:
@@ -1616,10 +1616,10 @@ findings:
     evidence_state: implemented_unverified
     l0_decision: ARCHITECTURE.md
     implementation:
-      - spring-ai-fin-skills-starter/src/main/java/fin/springai/runtime/skills/SkillsProperties.java
+      - spring-ai-ascend-skills-starter/src/main/java/ascend/springai/runtime/skills/SkillsProperties.java
     tests:
-      - spring-ai-fin-skills-starter/src/test/java/fin/springai/runtime/skills/SkillsAutoConfigurationTest.java
-    latest_delivery_valid_sha: 25e85ae
+      - spring-ai-ascend-skills-starter/src/test/java/ascend/springai/runtime/skills/SkillsAutoConfigurationTest.java
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L1: @ConfigurationProperties(springai.fin.skills) + @ConditionalOnProperty wiring real; starterBeansAbsentWhenDisabled test GREEN."
 
   knowledge_configuration_properties:
@@ -1628,10 +1628,10 @@ findings:
     evidence_state: implemented_unverified
     l0_decision: ARCHITECTURE.md
     implementation:
-      - spring-ai-fin-knowledge-starter/src/main/java/fin/springai/runtime/knowledge/KnowledgeProperties.java
+      - spring-ai-ascend-knowledge-starter/src/main/java/ascend/springai/runtime/knowledge/KnowledgeProperties.java
     tests:
-      - spring-ai-fin-knowledge-starter/src/test/java/fin/springai/runtime/knowledge/KnowledgeAutoConfigurationTest.java
-    latest_delivery_valid_sha: 25e85ae
+      - spring-ai-ascend-knowledge-starter/src/test/java/ascend/springai/runtime/knowledge/KnowledgeAutoConfigurationTest.java
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L1: @ConfigurationProperties(springai.fin.knowledge) + @ConditionalOnProperty wiring real; starterBeansAbsentWhenDisabled test GREEN."
 
   governance_configuration_properties:
@@ -1640,10 +1640,10 @@ findings:
     evidence_state: implemented_unverified
     l0_decision: ARCHITECTURE.md
     implementation:
-      - spring-ai-fin-governance-starter/src/main/java/fin/springai/runtime/governance/GovernanceProperties.java
+      - spring-ai-ascend-governance-starter/src/main/java/ascend/springai/runtime/governance/GovernanceProperties.java
     tests:
-      - spring-ai-fin-governance-starter/src/test/java/fin/springai/runtime/governance/GovernanceAutoConfigurationTest.java
-    latest_delivery_valid_sha: 25e85ae
+      - spring-ai-ascend-governance-starter/src/test/java/ascend/springai/runtime/governance/GovernanceAutoConfigurationTest.java
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L1: @ConfigurationProperties(springai.fin.governance) + @ConditionalOnProperty wiring real; starterBeansAbsentWhenDisabled test GREEN."
 
   persistence_configuration_properties:
@@ -1652,10 +1652,10 @@ findings:
     evidence_state: implemented_unverified
     l0_decision: ARCHITECTURE.md
     implementation:
-      - spring-ai-fin-persistence-starter/src/main/java/fin/springai/runtime/persistence/PersistenceProperties.java
+      - spring-ai-ascend-persistence-starter/src/main/java/ascend/springai/runtime/persistence/PersistenceProperties.java
     tests:
-      - spring-ai-fin-persistence-starter/src/test/java/fin/springai/runtime/persistence/PersistenceAutoConfigurationTest.java
-    latest_delivery_valid_sha: 25e85ae
+      - spring-ai-ascend-persistence-starter/src/test/java/ascend/springai/runtime/persistence/PersistenceAutoConfigurationTest.java
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L1: @ConfigurationProperties(springai.fin.persistence) + @ConditionalOnProperty wiring real; starterBeansAbsentWhenDisabled test GREEN."
 
   openapi_v1_snapshot:
@@ -1666,8 +1666,8 @@ findings:
     implementation:
       - docs/contracts/openapi-v1.yaml
     tests:
-      - agent-platform/src/test/java/fin/springai/platform/contracts/OpenApiContractIT.java
-    latest_delivery_valid_sha: 829e633
+      - agent-platform/src/test/java/ascend/springai/platform/contracts/OpenApiContractIT.java
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L2: OpenAPI 3.0.1 snapshot pinning /v1/health surface; OpenApiContractIT runs actual snapshot diff via OpenApiSnapshotComparator (pinned YAML vs live /v3/api-docs)."
 
   integration_guide:
@@ -1679,7 +1679,7 @@ findings:
       - docs/cross-cutting/integration-guide.md
     implementation: null
     tests: []
-    latest_delivery_valid_sha: c000b73
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L2: integration guide covering 3 paths (drop-in @Bean / sidecar / external BoM)."
 
   statelessness_partition_policy:
@@ -1691,7 +1691,7 @@ findings:
       - docs/cross-cutting/statelessness-and-partition-policy.md
     implementation: null
     tests: []
-    latest_delivery_valid_sha: c000b73
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L2: state ownership map, RLS GUC, horizontal scale story."
 
   contract_evolution_policy:
@@ -1703,7 +1703,7 @@ findings:
       - docs/cross-cutting/contract-evolution-policy.md
     implementation: null
     tests: []
-    latest_delivery_valid_sha: c000b73
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L2: versioning rules per contract type; L1-L4 compatibility matrix."
 
   middleware_pattern_guide:
@@ -1715,7 +1715,7 @@ findings:
       - docs/cross-cutting/middleware-pattern-guide.md
     implementation: null
     tests: []
-    latest_delivery_valid_sha: c000b73
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L2: sidecar adapter pattern end-to-end walkthrough."
 
   eval_ci_hook:
@@ -1727,7 +1727,7 @@ findings:
       - docs/cross-cutting/eval-ci-hook.md
     implementation: null
     tests: []
-    latest_delivery_valid_sha: c000b73
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L2: agent-eval role documented; nightly CI hook intent (W4); cost-counter intent (W2)."
 
   contract_catalog:
@@ -1739,7 +1739,7 @@ findings:
       - docs/contracts/contract-catalog.md
     implementation: null
     tests: []
-    latest_delivery_valid_sha: c000b73
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L2: single source of truth for all external contracts; indexes HTTP/SPI/config/telemetry/BoM."
 
   spi_contracts_doc:
@@ -1751,7 +1751,7 @@ findings:
       - docs/contracts/spi-contracts.md
     implementation: null
     tests: []
-    latest_delivery_valid_sha: c000b73
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L2: per-SPI semantic guarantee, error contract, threading model."
 
   configuration_contracts_doc:
@@ -1763,7 +1763,7 @@ findings:
       - docs/contracts/configuration-contracts.md
     implementation: null
     tests: []
-    latest_delivery_valid_sha: c000b73
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L2: all springai.fin.* properties declared; deprecation N+2 rule."
 
   telemetry_contracts_doc:
@@ -1775,7 +1775,7 @@ findings:
       - docs/contracts/telemetry-contracts.md
     implementation: null
     tests: []
-    latest_delivery_valid_sha: c000b73
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L2: metric naming pattern; required tags; cardinality budget; structured log schema."
 
   http_api_contracts_doc:
@@ -1787,7 +1787,7 @@ findings:
       - docs/contracts/http-api-contracts.md
     implementation: null
     tests: []
-    latest_delivery_valid_sha: c000b73
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L2: per-route stability tier; mandatory header conventions; status code conventions."
 
   # ---- architecture-review-readiness pass (T-AR-1..T-AR-10) 2026-05-10 ----
@@ -1798,10 +1798,10 @@ findings:
     evidence_state: implemented_unverified
     l0_decision: ARCHITECTURE.md (sec.3.2)
     implementation:
-      - spring-ai-fin-dependencies/pom.xml
+      - spring-ai-ascend-dependencies/pom.xml
     tests:
-      - agent-platform/src/test/java/fin/springai/platform/api/ApiCompatibilityTest.java
-    latest_delivery_valid_sha: 391cd6e   # updated: Phase 1 committed; ApiCompatibilityTest (ArchUnit, no Docker) passes at Phase 0 (a7756cd)
+      - agent-platform/src/test/java/ascend/springai/platform/api/ApiCompatibilityTest.java
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L1: japicmp-maven-plugin 0.23.0 wired in BoM pluginManagement; skip=true for W0 baseline; enforcement activates W1+ on first version diff."
 
   rls_policy_sql:
@@ -1812,7 +1812,7 @@ findings:
     implementation:
       - docs/security/rls-policy.sql
     tests: []
-    latest_delivery_valid_sha: c7169a5
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     note: "L0: SQL artifact present; runtime isolation tests @Disabled until W2 real Postgres migration"
     allowed_claim: "L0: PostgreSQL RLS DDL + assert_tenant_guc_set() trigger in-tree; runtime isolation unverified. Maturity downgraded from L1: all three RLS integration tests (TenantIsolationIT, RlsPolicyCoverageIT, GucEmptyAtTxStartIT) are @Disabled UnsupportedOperationException scaffolds; @Disabled tests cannot count as L1 evidence. Advances to L1 when W2 removes @Disabled and tests pass. See delivery/2026-05-11-a7756cd.md."
 
@@ -1824,10 +1824,10 @@ findings:
     implementation:
       - docs/security/rls-policy.sql
     tests:
-      - agent-platform/src/test/java/fin/springai/platform/security/TenantIsolationIT.java
-      - agent-platform/src/test/java/fin/springai/platform/security/RlsPolicyCoverageIT.java
-      - agent-platform/src/test/java/fin/springai/platform/security/GucEmptyAtTxStartIT.java
-    latest_delivery_valid_sha: c7169a5
+      - agent-platform/src/test/java/ascend/springai/platform/security/TenantIsolationIT.java
+      - agent-platform/src/test/java/ascend/springai/platform/security/RlsPolicyCoverageIT.java
+      - agent-platform/src/test/java/ascend/springai/platform/security/GucEmptyAtTxStartIT.java
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L0: three RLS IT skeletons present (@Disabled); W2 wires real persistence layer and removes @Disabled."
 
   ops_runbooks_skeleton:
@@ -1843,7 +1843,7 @@ findings:
       - ops/runbooks/total-credential-loss.md
       - ops/runbooks/incident-response.md
     tests: []
-    latest_delivery_valid_sha: 4a79bb5
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L0: 5 runbooks present with trigger/scope/procedure/verification sections; all marked Maturity: L0."
 
   helm_chart_skeleton:
@@ -1852,14 +1852,14 @@ findings:
     evidence_state: design_accepted
     l0_decision: ARCHITECTURE.md
     implementation:
-      - ops/helm/spring-ai-fin/Chart.yaml
-      - ops/helm/spring-ai-fin/values.yaml
-      - ops/helm/spring-ai-fin/templates/deployment.yaml
-      - ops/helm/spring-ai-fin/templates/service.yaml
-      - ops/helm/spring-ai-fin/templates/networkpolicy.yaml
-      - ops/helm/spring-ai-fin/templates/configmap.yaml
+      - ops/helm/spring-ai-ascend/Chart.yaml
+      - ops/helm/spring-ai-ascend/values.yaml
+      - ops/helm/spring-ai-ascend/templates/deployment.yaml
+      - ops/helm/spring-ai-ascend/templates/service.yaml
+      - ops/helm/spring-ai-ascend/templates/networkpolicy.yaml
+      - ops/helm/spring-ai-ascend/templates/configmap.yaml
     tests: []
-    latest_delivery_valid_sha: 4a79bb5
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L0: Helm chart skeleton present; not deployment-tested. W4 deployment-tested."
 
   doctor_script:
@@ -1871,7 +1871,7 @@ findings:
       - gate/doctor.sh
       - gate/doctor.ps1
     tests: []
-    latest_delivery_valid_sha: 4a79bb5
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L0: doctor scripts check APP_POSTURE, required env vars, gate log presence, mvnw exec bit, Java availability; exit 0/1."
 
   adr_per_file:
@@ -1884,7 +1884,7 @@ findings:
     implementation:
       - docs/adr/
     tests: []
-    latest_delivery_valid_sha: 3d34d7b
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L1: 15 per-file MADR 4.0 ADRs in docs/adr/; version refs current (Spring AI 2.0.0-M5, Temporal 1.35.0, Boot 4.0.5); README index present."
 
   perf_evidence_path:
@@ -1896,9 +1896,9 @@ findings:
       - perf/README.md
       - perf/baseline-2026-05-10.md
       - perf/jmh/pom.xml
-      - perf/jmh/src/main/java/fin/springai/perf/FilterBench.java
+      - perf/jmh/src/main/java/ascend/springai/perf/FilterBench.java
     tests: []
-    latest_delivery_valid_sha: 154ee30
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L0: JMH skeleton + baseline doc present; no captured numbers (W4 cadence). Strategy and regression policy documented."
 
   agent_runtime_smoke_test:
@@ -1907,8 +1907,8 @@ findings:
     evidence_state: implemented_unverified
     l0_decision: ARCHITECTURE.md
     implementation:
-      - agent-runtime/src/main/java/fin/springai/runtime/probe/OssApiProbe.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/probe/OssApiProbe.java
     tests:
-      - agent-runtime/src/test/java/fin/springai/runtime/probe/OssApiProbeTest.java
-    latest_delivery_valid_sha: 154ee30
+      - agent-runtime/src/test/java/ascend/springai/runtime/probe/OssApiProbeTest.java
+    latest_delivery_valid_sha: null   # invalidated by project rename to spring-ai-ascend; re-gate required at rename SHA
     allowed_claim: "L1: OssApiProbeTest 3 tests (classIsLoadable, probeReturnsNonNullString, temporalGetVersionShapeReturnsMinusOne) GREEN."

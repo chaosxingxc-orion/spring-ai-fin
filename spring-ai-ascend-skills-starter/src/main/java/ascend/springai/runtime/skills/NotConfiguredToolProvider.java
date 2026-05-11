@@ -1,6 +1,6 @@
-package fin.springai.runtime.skills;
+package ascend.springai.runtime.skills;
 
-import fin.springai.runtime.spi.skills.ToolProvider;
+import ascend.springai.runtime.spi.skills.ToolProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

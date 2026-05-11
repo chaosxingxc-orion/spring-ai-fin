@@ -1,4 +1,4 @@
-# spring-ai-fin-docling-starter
+# spring-ai-ascend-docling-starter
 
 > Optional sidecar adapter that wires LayoutParser to the Docling REST API (IBM Docling-serve); replaces the sentinel when enabled=true and SPRINGAI_FIN_DOCLING_BASE_URL is set. Maturity: L0.
 
@@ -8,7 +8,7 @@
 |-----------|--------|--------------------|
 | LayoutParser | parse(document, options) | Delegates to Docling REST API; returns layout-aware ContentBlock list including table extraction |
 
-This starter provides no new SPI interfaces. It contributes an alternative implementation of `LayoutParser` (defined in `spring-ai-fin-knowledge-starter`) that forwards document bytes to the Docling sidecar over HTTP and deserializes the structured response into `ContentBlock` objects.
+This starter provides no new SPI interfaces. It contributes an alternative implementation of `LayoutParser` (defined in `spring-ai-ascend-knowledge-starter`) that forwards document bytes to the Docling sidecar over HTTP and deserializes the structured response into `ContentBlock` objects.
 
 ## Posture defaults
 
@@ -49,7 +49,7 @@ This starter does not emit its own sentinel counters. When disabled, the knowled
 
 ## See also
 
-- [spring-ai-fin-knowledge-starter/README.md](../spring-ai-fin-knowledge-starter/README.md) for the owning SPI
+- [spring-ai-ascend-knowledge-starter/README.md](../spring-ai-ascend-knowledge-starter/README.md) for the owning SPI
 - [ARCHITECTURE.md](../ARCHITECTURE.md) for system design
 - [docs/cross-cutting/middleware-pattern-guide.md](../docs/cross-cutting/middleware-pattern-guide.md) for the sidecar adapter pattern
 - [docs/contracts/spi-contracts.md](../docs/contracts/spi-contracts.md) for SPI semantic contracts

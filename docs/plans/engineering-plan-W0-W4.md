@@ -1,4 +1,4 @@
-# spring-ai-fin Engineering Plan -- W0..W4
+# spring-ai-ascend Engineering Plan -- W0..W4
 
 > Companion to `ARCHITECTURE.md`. This is the *only* document
 > that schedules work and defines acceptance. Updated only when a wave
@@ -64,7 +64,7 @@ behavior gates in sec-2.7 to turn green.**
 
 ### 2.2 Scope (in)
 
-- Maven multi-module: `spring-ai-fin/` (parent), `agent-platform/`,
+- Maven multi-module: `spring-ai-ascend/` (parent), `agent-platform/`,
   `agent-runtime/`.
 - Spring Boot 4.0.5, Java 21, virtual threads on.
 - One Spring Boot main class in `agent-platform`.
@@ -726,7 +726,7 @@ The repository looks like:
 - Architecture-sync gate pruned to <= 200 lines because most of v6's
   drift surfaces are gone.
 
-At that point spring-ai-fin's score on the 32-dimension framework
+At that point spring-ai-ascend's score on the 32-dimension framework
 reaches `~23/32`, and remaining gaps (E external grounding -- needs
 real users; full F coverage; capability-registry separation) are real
 product problems, not governance problems. Cycle 9 is no longer the

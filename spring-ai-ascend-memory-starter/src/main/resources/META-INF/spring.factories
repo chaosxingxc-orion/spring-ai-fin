@@ -1,2 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  fin.springai.runtime.memory.MemoryAutoConfiguration
+  ascend.springai.runtime.memory.MemoryAutoConfiguration

@@ -1,4 +1,4 @@
-# spring-ai-fin-governance-starter
+# spring-ai-ascend-governance-starter
 
 > Provides the SPI surface for policy evaluation; supports in-process Bean Validation and optional OPA sidecar delegation. Maturity: L1.
 

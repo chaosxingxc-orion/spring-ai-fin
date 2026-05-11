@@ -1,6 +1,6 @@
-package fin.springai.runtime.docling;
+package ascend.springai.runtime.docling;
 
-import fin.springai.runtime.spi.knowledge.LayoutParser;
+import ascend.springai.runtime.spi.knowledge.LayoutParser;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +27,7 @@ class NotImplementedYetDoclingLayoutParser implements LayoutParser {
     NotImplementedYetDoclingLayoutParser(MeterRegistry registry, DoclingProperties properties) {
         this.registry = registry;
         this.properties = properties;
-        LOG.info("spring-ai-fin-docling-starter activated at L0; REST client pending W2; baseUrl={}", properties.getBaseUrl());
+        LOG.info("spring-ai-ascend-docling-starter activated at L0; REST client pending W2; baseUrl={}", properties.getBaseUrl());
     }
 
     @Override

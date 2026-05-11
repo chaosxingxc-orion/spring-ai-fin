@@ -1,6 +1,6 @@
-package fin.springai.runtime.skills;
+package ascend.springai.runtime.skills;
 
-import fin.springai.runtime.spi.skills.ToolProvider;
+import ascend.springai.runtime.spi.skills.ToolProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -16,7 +16,7 @@ class SkillsAutoConfigurationTest {
 
     @Test
     void autoConfigurationClassIsLoadable() throws Exception {
-        Class.forName("fin.springai.runtime.skills.SkillsAutoConfiguration");
+        Class.forName("ascend.springai.runtime.skills.SkillsAutoConfiguration");
     }
 
     @Test

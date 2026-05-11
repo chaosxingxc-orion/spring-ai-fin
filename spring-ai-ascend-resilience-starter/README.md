@@ -1,4 +1,4 @@
-# spring-ai-fin-resilience-starter
+# spring-ai-ascend-resilience-starter
 
 > Provides the SPI surface for mapping operation identifiers to named Resilience4j policy triples (circuit breaker, retry, time limiter); W2 callers apply the names via @CircuitBreaker/@Retry annotations. Maturity: L1.
 

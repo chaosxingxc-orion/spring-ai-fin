@@ -5,22 +5,22 @@
 # (v1.18.0 / SHA 60846e5; IBM Granite-Docling donated to LF AI&Data 2026).
 # Docling-serve exposes REST API on port 5001.
 #
-# spring-ai-fin-docling-starter connects via:
-#   fin.springai.docling.base-url=http://localhost:5001
+# spring-ai-ascend-docling-starter connects via:
+#   ascend.springai.docling.base-url=http://localhost:5001
 
 services:
   docling:
     image: quay.io/docling-project/docling-serve:v1.18.0
-    container_name: spring-ai-fin-docling
+    container_name: spring-ai-ascend-docling
     ports:
       - "5001:5001"
     environment:
       DOCLING_SERVE_MAX_WORKERS: "2"
     networks:
-      - spring-ai-fin
+      - spring-ai-ascend
     restart: unless-stopped
 
 networks:
-  spring-ai-fin:
-    name: spring-ai-fin
+  spring-ai-ascend:
+    name: spring-ai-ascend
     external: true

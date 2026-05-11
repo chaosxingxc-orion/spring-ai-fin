@@ -1,6 +1,6 @@
 # SDK Versioning and Deprecation Policy
 
-spring-ai-fin SDK versioning (W0 baseline; 2026-05-10).
+spring-ai-ascend SDK versioning (W0 baseline; 2026-05-10).
 
 ## Version scheme
 
@@ -18,9 +18,9 @@ Current version: `0.1.0-SNAPSHOT` (pre-release; no stability guarantees until `1
 
 The SDK's stable contract surface is:
 
-1. **SDK module artifacts** (`spring-ai-fin-*-starter`, `spring-ai-fin-dependencies`) — published to Maven Central.
-2. **SPI interfaces** in `fin.springai.runtime.spi.**` — frozen by `ApiCompatibilityTest` via ArchUnit. Any signature change requires editing the test, making the break explicit.
-3. **Spring Boot auto-configuration property keys** in `fin.springai.*` namespace — changes to required properties are MAJOR.
+1. **SDK module artifacts** (`spring-ai-ascend-*-starter`, `spring-ai-ascend-dependencies`) — published to Maven Central.
+2. **SPI interfaces** in `ascend.springai.runtime.spi.**` — frozen by `ApiCompatibilityTest` via ArchUnit. Any signature change requires editing the test, making the break explicit.
+3. **Spring Boot auto-configuration property keys** in `ascend.springai.*` namespace — changes to required properties are MAJOR.
 
 The following are NOT stability-contracted:
 - Internal implementation classes (packages without `api` or `spi` in the path)
@@ -38,7 +38,7 @@ The following are NOT stability-contracted:
 ## Dependency version policy
 
 - All deps pinned to exact patch in `pom.xml` `<properties>`. No ranges, no `LATEST`, no `RELEASE`.
-- The `spring-ai-fin-dependencies` BoM is the externally-consumable version contract.
+- The `spring-ai-ascend-dependencies` BoM is the externally-consumable version contract.
 - Dependency upgrades within a MAJOR line (e.g. `resilience4j 2.4.0 → 2.5.0`) are PATCH/MINOR in the SDK.
 - Dependency MAJOR upgrades (e.g. `tika 3.x → 4.x`) require a deprecation cycle and SDK MAJOR bump unless the new API is backward-compatible.
 
@@ -48,4 +48,4 @@ Spring AI 2.0.0-M5 is used at W0. `gate/check_spring_ai_milestone.sh` fails CI a
 
 ## Sidecar adapter versioning
 
-Sidecar adapter starters (`spring-ai-fin-mem0-starter`, `-graphmemory-starter`, `-docling-starter`) follow the SDK version. The Python services (mem0, Graphiti, Docling-serve) release independently. The SPI layer isolates the SDK contract: only the adapter starter changes when the Python service breaks compatibility — the SDK SPI surface is stable.
+Sidecar adapter starters (`spring-ai-ascend-mem0-starter`, `-graphmemory-starter`, `-docling-starter`) follow the SDK version. The Python services (mem0, Graphiti, Docling-serve) release independently. The SPI layer isolates the SDK contract: only the adapter starter changes when the Python service breaks compatibility — the SDK SPI surface is stable.

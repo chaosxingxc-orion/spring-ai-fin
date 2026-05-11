@@ -6,7 +6,7 @@
 # Observability Cardinality Policy
 
 > Per `docs/systematic-architecture-remediation-plan-2026-05-08.en.md` sec-9.4 and `agent-runtime/observability/ARCHITECTURE.md` AD-5.
-> Defines what may appear as a metric label in spring-ai-fin and what cardinality budget the platform commits to.
+> Defines what may appear as a metric label in spring-ai-ascend and what cardinality budget the platform commits to.
 
 ## Why this exists
 

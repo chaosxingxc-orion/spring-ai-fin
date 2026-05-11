@@ -1,7 +1,7 @@
-package fin.springai.runtime.memory;
+package ascend.springai.runtime.memory;
 
-import fin.springai.runtime.spi.memory.GraphMemoryRepository;
-import fin.springai.runtime.spi.memory.LongTermMemoryRepository;
+import ascend.springai.runtime.spi.memory.GraphMemoryRepository;
+import ascend.springai.runtime.spi.memory.LongTermMemoryRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.springframework.beans.factory.BeanCreationException;

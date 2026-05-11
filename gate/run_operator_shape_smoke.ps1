@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-  spring-ai-fin Rule 8 operator-shape smoke gate — Windows entry point.
+  spring-ai-ascend Rule 8 operator-shape smoke gate — Windows entry point.
 
 .DESCRIPTION
   This is the FIRST Rule 8 gate per CLAUDE.md / AGENTS.md Rule 8 and

@@ -86,7 +86,7 @@ Sentinel WARN log example:
 {
   "timestamp": "2026-05-10T08:00:00.000Z",
   "level": "WARN",
-  "logger": "fin.springai.runtime.memory.NotConfiguredLongTermMemoryRepository",
+  "logger": "ascend.springai.runtime.memory.NotConfiguredLongTermMemoryRepository",
   "message": "LongTermMemoryRepository sentinel called -- no real impl configured",
   "posture": "dev",
   "spi": "LongTermMemoryRepository",

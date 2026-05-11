@@ -5,28 +5,28 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>fin.springai</groupId>
-    <artifactId>spring-ai-fin-parent</artifactId>
+    <groupId>ascend.springai</groupId>
+    <artifactId>spring-ai-ascend-parent</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>spring-ai-fin-mem0-starter</artifactId>
+  <artifactId>spring-ai-ascend-mem0-starter</artifactId>
   <packaging>jar</packaging>
 
-  <name>spring-ai-fin mem0 adapter starter (optional)</name>
+  <name>spring-ai-ascend mem0 adapter starter (optional)</name>
   <description>
     Optional adapter: implements LongTermMemoryRepository SPI via the
     mem0 REST API (https://github.com/mem0ai/mem0; 55k+ stars; Apache-2.0).
     Activate by adding this artifact to the classpath alongside
-    spring-ai-fin-memory-starter.
+    spring-ai-ascend-memory-starter.
     Requires: ops/compose/sidecar-mem0.yml service running.
   </description>
 
   <dependencies>
     <dependency>
-      <groupId>fin.springai</groupId>
-      <artifactId>spring-ai-fin-memory-starter</artifactId>
+      <groupId>ascend.springai</groupId>
+      <artifactId>spring-ai-ascend-memory-starter</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

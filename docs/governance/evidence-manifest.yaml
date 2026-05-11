@@ -1,4 +1,4 @@
-# spring-ai-fin evidence manifest (v3; cycle-8 evidence graph closure).
+# spring-ai-ascend evidence manifest (v3; cycle-8 evidence graph closure).
 #
 # Per docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
 # sec-B1, sec-B2, sec-B3, sec-B4 and
@@ -58,12 +58,12 @@ schema_capabilities:
 # of cycle-8's remediation. The gate derives it from HEAD when verifying
 # audit_trail_shape.
 
-reviewed_content_sha: 391cd6e                       # cycle-17 Phase 1: class-based reviewer response + cycle-17 review record committed
-evidence_commit_parent_sha: 391cd6e                 # MUST equal reviewed_content_sha (gate enforced)
+reviewed_content_sha: 9b5368a                       # project rename spring-ai-fin → spring-ai-ascend (2026-05-12); full identity rename commit
+evidence_commit_parent_sha: 9b5368a                 # MUST equal reviewed_content_sha (gate enforced)
 evidence_commit_classification: audit_trail_only    # one of: direct_reviewed_content | audit_trail_only
 
 # Backward compatibility with v1/v2 readers (cycle-5/cycle-6/cycle-7).
-reviewed_sha: 391cd6e
+reviewed_sha: 9b5368a
 
 current_head_policy:
   accepted_shapes:
@@ -71,6 +71,7 @@ current_head_policy:
     - one_parent_audit_trail_only
   allowed_audit_trail_paths:
     - docs/delivery/**
+    - docs/archive/**
     - docs/governance/architecture-status.yaml
     - docs/governance/current-architecture-index.md
     - docs/governance/evidence-manifest.yaml
@@ -78,7 +79,8 @@ current_head_policy:
 
 # ---- Delivery and logs (cycle-8 sec-B1, sec-B2, sec-B3) ----
 
-delivery_file: docs/delivery/2026-05-11-391cd6e.md   # cycle-17 Phase 1: class-based reviewer response; Phase 0 build evidence in 2026-05-11-a7756cd.md (authoritative)
+delivery_file: docs/delivery/2026-05-12-9b5368a.md   # spring-ai-ascend: project rename delivery record at rename SHA
+prior_delivery_file: docs/archive/spring-ai-fin/delivery/2026-05-11-391cd6e.md   # last delivery under spring-ai-fin identity (archived)
 
 # Per cycle-8 sec-B3: log slots use the explicit state enum, never null.
 # Per cycle-8 sec-B1: when state == pass, path MUST exist and the log's
@@ -103,16 +105,16 @@ architecture_sync_logs:
     # Cycle-8 sec-B2: deliveries before platform-suffix naming get an explicit
     # legacy exemption so delivery_log_parity does not require a per-platform
     # log for them. Pure historical record.
-    - delivery_file: docs/delivery/2026-05-08-7025ac9.md
+    - delivery_file: docs/archive/spring-ai-fin/delivery/2026-05-08-7025ac9.md
       reason: pre_platform_suffix_legacy
       log: gate/log/7025ac9.json
-    - delivery_file: docs/delivery/2026-05-08-003ed6f.md
+    - delivery_file: docs/archive/spring-ai-fin/delivery/2026-05-08-003ed6f.md
       reason: pre_platform_suffix_legacy
       log: gate/log/003ed6f.json
-    - delivery_file: docs/delivery/2026-05-08-a070a77.md
+    - delivery_file: docs/archive/spring-ai-fin/delivery/2026-05-08-a070a77.md
       reason: pre_platform_suffix_legacy
       log: gate/log/a070a77.json
-    - delivery_file: docs/delivery/2026-05-08-d284232.md
+    - delivery_file: docs/archive/spring-ai-fin/delivery/2026-05-08-d284232.md
       reason: pre_platform_suffix_legacy
       log: gate/log/d284232.json
 
@@ -245,7 +247,7 @@ status_findings_addressed:
   cycle_15_16_closure_extension_contracts:
     - D1-idempotency-key-filter           # T1: IdempotencyHeaderFilter + posture matrix
     - D2-tenant-context-filter            # T2: TenantContextFilter + ThreadLocal lifetime
-    - D3-resilience-starter               # T3: spring-ai-fin-resilience-starter + ResilienceContract SPI
+    - D3-resilience-starter               # T3: spring-ai-ascend-resilience-starter + ResilienceContract SPI
     - D4-document-source-connector-registry  # T4: DocumentSourceConnectorRegistry fan-out
     - D5-configuration-properties         # T-CS-A: @ConfigurationProperties per core starter
     - D6-openapi-v1-snapshot              # T-CS-2: docs/contracts/openapi-v1.yaml + OpenApiContractIT

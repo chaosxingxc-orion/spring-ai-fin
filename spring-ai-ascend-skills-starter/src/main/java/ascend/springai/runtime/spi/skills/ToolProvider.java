@@ -1,4 +1,4 @@
-package fin.springai.runtime.spi.skills;
+package ascend.springai.runtime.spi.skills;
 
 import java.util.List;
 

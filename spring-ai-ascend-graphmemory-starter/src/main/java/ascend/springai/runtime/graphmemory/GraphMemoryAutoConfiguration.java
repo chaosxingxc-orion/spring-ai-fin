@@ -1,6 +1,6 @@
-package fin.springai.runtime.graphmemory;
+package ascend.springai.runtime.graphmemory;
 
-import fin.springai.runtime.spi.memory.GraphMemoryRepository;
+import ascend.springai.runtime.spi.memory.GraphMemoryRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.springframework.boot.autoconfigure.AutoConfiguration;

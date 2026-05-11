@@ -1,4 +1,4 @@
-package fin.springai.platform.tenant;
+package ascend.springai.platform.tenant;
 
 import java.util.UUID;
 

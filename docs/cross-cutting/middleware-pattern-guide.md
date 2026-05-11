@@ -2,7 +2,7 @@
 
 # Middleware Pattern Guide: Sidecar Adapter Pattern
 
-This guide walks through the sidecar adapter pattern end-to-end using `spring-ai-fin-mem0-starter` (Mem0 REST adapter) as a concrete example. The same four-step pattern applies to any sidecar adapter (Graphiti, Docling, LangChain4j, or custom).
+This guide walks through the sidecar adapter pattern end-to-end using `spring-ai-ascend-mem0-starter` (Mem0 REST adapter) as a concrete example. The same four-step pattern applies to any sidecar adapter (Graphiti, Docling, LangChain4j, or custom).
 
 ---
 
@@ -22,9 +22,9 @@ Spring-ai-fin SPI interfaces are defined in pure Java with no framework dependen
 Create a class that implements the target SPI interface. All external calls go through a `RestClient` injected at construction time. The implementation must be thread-safe (called from virtual threads concurrently).
 
 ```java
-package fin.springai.runtime.mem0;
+package ascend.springai.runtime.mem0;
 
-import fin.springai.runtime.spi.memory.LongTermMemoryRepository;
+import ascend.springai.runtime.spi.memory.LongTermMemoryRepository;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
@@ -84,9 +84,9 @@ public class Mem0LongTermMemoryRepository implements LongTermMemoryRepository {
 The AutoConfiguration is the wiring class. It is active only when the adapter is explicitly enabled.
 
 ```java
-package fin.springai.runtime.mem0;
+package ascend.springai.runtime.mem0;
 
-import fin.springai.runtime.spi.memory.LongTermMemoryRepository;
+import ascend.springai.runtime.spi.memory.LongTermMemoryRepository;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -121,7 +121,7 @@ Register the AutoConfiguration so Spring Boot discovers it automatically:
 File: `src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`
 
 ```
-fin.springai.runtime.mem0.Mem0AutoConfiguration
+ascend.springai.runtime.mem0.Mem0AutoConfiguration
 ```
 
 This is the Spring Boot 4.x way to register auto-configurations (replaces `spring.factories`).
@@ -155,7 +155,7 @@ The memory-starter's sentinel `NotConfiguredLongTermMemoryRepository` has `@Cond
 
 To adapt a new external service `X` to SPI interface `MySpi`:
 
-1. Create `spring-ai-fin-<x>-starter/` module.
+1. Create `spring-ai-ascend-<x>-starter/` module.
 2. Implement `MySpiXAdapter implements MySpi` with a `RestClient` constructor arg.
 3. Create `XAutoConfiguration` with `@ConditionalOnProperty(name = "springai.fin.<x>.enabled", havingValue = "true")` and `@ConditionalOnMissingBean` on the @Bean method.
 4. Register `XAutoConfiguration` in `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.

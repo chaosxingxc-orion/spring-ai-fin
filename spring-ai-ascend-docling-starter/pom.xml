@@ -5,16 +5,16 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>fin.springai</groupId>
-    <artifactId>spring-ai-fin-parent</artifactId>
+    <groupId>ascend.springai</groupId>
+    <artifactId>spring-ai-ascend-parent</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>spring-ai-fin-docling-starter</artifactId>
+  <artifactId>spring-ai-ascend-docling-starter</artifactId>
   <packaging>jar</packaging>
 
-  <name>spring-ai-fin Docling adapter starter (optional)</name>
+  <name>spring-ai-ascend Docling adapter starter (optional)</name>
   <description>
     Optional adapter: implements LayoutParser SPI via the Docling-serve
     REST API (https://github.com/docling-project/docling-serve; Apache-2.0;
@@ -25,8 +25,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>fin.springai</groupId>
-      <artifactId>spring-ai-fin-knowledge-starter</artifactId>
+      <groupId>ascend.springai</groupId>
+      <artifactId>spring-ai-ascend-knowledge-starter</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

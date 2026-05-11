@@ -1,9 +1,9 @@
-package fin.springai.runtime.knowledge;
+package ascend.springai.runtime.knowledge;
 
-import fin.springai.runtime.spi.knowledge.DocumentSourceConnector;
-import fin.springai.runtime.spi.knowledge.DocumentSourceConnector.RawDocument;
-import fin.springai.runtime.spi.knowledge.DocumentSourceConnector.SourceConfig;
-import fin.springai.runtime.spi.knowledge.LayoutParser;
+import ascend.springai.runtime.spi.knowledge.DocumentSourceConnector;
+import ascend.springai.runtime.spi.knowledge.DocumentSourceConnector.RawDocument;
+import ascend.springai.runtime.spi.knowledge.DocumentSourceConnector.SourceConfig;
+import ascend.springai.runtime.spi.knowledge.LayoutParser;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -19,7 +19,7 @@ class KnowledgeAutoConfigurationTest {
 
     @Test
     void autoConfigurationClassIsLoadable() throws Exception {
-        Class.forName("fin.springai.runtime.knowledge.KnowledgeAutoConfiguration");
+        Class.forName("ascend.springai.runtime.knowledge.KnowledgeAutoConfiguration");
     }
 
     @Test

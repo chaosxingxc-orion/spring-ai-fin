@@ -1,6 +1,6 @@
-package fin.springai.runtime.mem0;
+package ascend.springai.runtime.mem0;
 
-import fin.springai.runtime.spi.memory.LongTermMemoryRepository;
+import ascend.springai.runtime.spi.memory.LongTermMemoryRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +26,7 @@ class NotImplementedYetMem0LongTermMemoryRepository implements LongTermMemoryRep
     NotImplementedYetMem0LongTermMemoryRepository(MeterRegistry registry, Mem0Properties properties) {
         this.registry = registry;
         this.properties = properties;
-        LOG.info("spring-ai-fin-mem0-starter activated at L0; REST client pending W2; baseUrl={}", properties.getBaseUrl());
+        LOG.info("spring-ai-ascend-mem0-starter activated at L0; REST client pending W2; baseUrl={}", properties.getBaseUrl());
     }
 
     @Override

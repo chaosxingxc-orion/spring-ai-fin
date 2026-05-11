@@ -1,6 +1,6 @@
-package fin.springai.runtime.graphmemory;
+package ascend.springai.runtime.graphmemory;
 
-import fin.springai.runtime.spi.memory.GraphMemoryRepository;
+import ascend.springai.runtime.spi.memory.GraphMemoryRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -16,7 +16,7 @@ class GraphMemoryAutoConfigurationTest {
 
     @Test
     void autoConfigurationClassIsLoadable() throws Exception {
-        Class.forName("fin.springai.runtime.graphmemory.GraphMemoryAutoConfiguration");
+        Class.forName("ascend.springai.runtime.graphmemory.GraphMemoryAutoConfiguration");
     }
 
     @Test

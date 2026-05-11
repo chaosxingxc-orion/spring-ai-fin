@@ -1,2 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  fin.springai.runtime.knowledge.KnowledgeAutoConfiguration
+  ascend.springai.runtime.knowledge.KnowledgeAutoConfiguration

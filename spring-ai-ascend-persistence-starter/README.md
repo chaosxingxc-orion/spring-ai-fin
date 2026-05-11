@@ -1,4 +1,4 @@
-# spring-ai-fin-persistence-starter
+# spring-ai-ascend-persistence-starter
 
 > Provides the SPI surface for durable run records, idempotency key deduplication, and artifact storage; all records carry full contract-spine fields. Maturity: L1.
 

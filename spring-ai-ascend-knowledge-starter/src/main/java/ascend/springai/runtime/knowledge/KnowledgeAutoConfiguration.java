@@ -1,7 +1,7 @@
-package fin.springai.runtime.knowledge;
+package ascend.springai.runtime.knowledge;
 
-import fin.springai.runtime.spi.knowledge.DocumentSourceConnector;
-import fin.springai.runtime.spi.knowledge.LayoutParser;
+import ascend.springai.runtime.spi.knowledge.DocumentSourceConnector;
+import ascend.springai.runtime.spi.knowledge.LayoutParser;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;

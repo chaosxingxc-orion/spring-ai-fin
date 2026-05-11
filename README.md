@@ -1,4 +1,4 @@
-# spring-ai-fin
+# spring-ai-ascend
 
 > **Capability-layer enterprise agent platform for Southeast Asia financial services (Indonesia OJK / Singapore MAS).** Built on Spring Boot 4.0.5 + Spring AI 2.0.0-M5. Multi-framework dispatch (Spring AI native, LangChain4j profile, Python sidecars). W0 scaffold: Maven compile+unit-test PASS at a7756cd; ITs pending Docker in CI. 14 Maven modules, SPI surface frozen at 7 interfaces.
 
@@ -19,7 +19,7 @@
 ## Document hierarchy
 
 ```
-spring-ai-fin/
+spring-ai-ascend/
 ├── ARCHITECTURE.md                              L0 system boundary (v6.1, 17 decisions)
 ├── CLAUDE.md                                    Behavioural rules (12 universal rules)
 ├── README.md                                    this file
@@ -30,24 +30,24 @@ spring-ai-fin/
 ├── agent-runtime/                               Tier-B cognitive runtime (L1 — OssApiProbeTest compile-verified at a7756cd)
 │   └── ARCHITECTURE.md                          L1
 │
-├── spring-ai-fin-dependencies/                  BoM — pins 7 starter coordinates + 13 OSS deps (L1 — SPI interface compiled)
+├── spring-ai-ascend-dependencies/                  BoM — pins 7 starter coordinates + 13 OSS deps (L1 — SPI interface compiled)
 │   └── pom.xml
 │
-├── spring-ai-fin-memory-starter/                SPI: LongTermMemoryRepository, GraphMemoryRepository (L1 — SPI interface compiled)
-├── spring-ai-fin-skills-starter/                SPI: ToolProvider (L1 — SPI interface compiled)
-├── spring-ai-fin-knowledge-starter/             SPI: LayoutParser, DocumentSourceConnector (L1 — SPI interface compiled)
-├── spring-ai-fin-governance-starter/            SPI: PolicyEvaluator (L1 — SPI interface compiled)
-├── spring-ai-fin-persistence-starter/           SPI: RunRepository, IdempotencyRepository, ArtifactRepository (L1 — SPI interface compiled)
-├── spring-ai-fin-resilience-starter/            SPI: ResilienceContract (L1 — SPI interface compiled; W2 callers)
+├── spring-ai-ascend-memory-starter/                SPI: LongTermMemoryRepository, GraphMemoryRepository (L1 — SPI interface compiled)
+├── spring-ai-ascend-skills-starter/                SPI: ToolProvider (L1 — SPI interface compiled)
+├── spring-ai-ascend-knowledge-starter/             SPI: LayoutParser, DocumentSourceConnector (L1 — SPI interface compiled)
+├── spring-ai-ascend-governance-starter/            SPI: PolicyEvaluator (L1 — SPI interface compiled)
+├── spring-ai-ascend-persistence-starter/           SPI: RunRepository, IdempotencyRepository, ArtifactRepository (L1 — SPI interface compiled)
+├── spring-ai-ascend-resilience-starter/            SPI: ResilienceContract (L1 — SPI interface compiled; W2 callers)
 │
-├── spring-ai-fin-mem0-starter/                  Sidecar adapter — Mem0 REST (enabled=false by default, L0)
-├── spring-ai-fin-graphmemory-starter/           Sidecar adapter — Graphiti REST (enabled=false by default, L0)
-├── spring-ai-fin-docling-starter/               Sidecar adapter — Docling REST (enabled=false by default, L0)
-├── spring-ai-fin-langchain4j-profile/           Alternate framework profile — LangChain4j (enabled=false, L0)
+├── spring-ai-ascend-mem0-starter/                  Sidecar adapter — Mem0 REST (enabled=false by default, L0)
+├── spring-ai-ascend-graphmemory-starter/           Sidecar adapter — Graphiti REST (enabled=false by default, L0)
+├── spring-ai-ascend-docling-starter/               Sidecar adapter — Docling REST (enabled=false by default, L0)
+├── spring-ai-ascend-langchain4j-profile/           Alternate framework profile — LangChain4j (enabled=false, L0)
 │
 ├── ops/
 │   ├── runbooks/                                5 operational runbooks (L0 skeleton, Maturity: L0)
-│   └── helm/spring-ai-fin/                      Helm chart skeleton (L0, not deployment-tested)
+│   └── helm/spring-ai-ascend/                      Helm chart skeleton (L0, not deployment-tested)
 ├── perf/                                        Performance evidence path (JMH skeleton, W4 numbers)
 ├── gate/                                        Architecture gate + doctor scripts
 ├── third_party/                                 Third-party notices and OSS attribution
@@ -118,7 +118,7 @@ See [`ops/runbooks/`](ops/runbooks/) for operational runbooks.
                               │ SAS-1 single seam
                               ▼
 ┌──────────────────────────────────────────────────────────────────┐
-│ SPI / Starter Layer — spring-ai-fin-*-starter (W0 scaffold)      │
+│ SPI / Starter Layer — spring-ai-ascend-*-starter (W0 scaffold)      │
 │ • LongTermMemoryRepository · GraphMemoryRepository               │
 │ • ToolProvider                                                   │
 │ • LayoutParser · DocumentSourceConnector                         │
@@ -148,8 +148,8 @@ See [`ops/runbooks/`](ops/runbooks/) for operational runbooks.
 <dependencyManagement>
   <dependencies>
     <dependency>
-      <groupId>fin.springai</groupId>
-      <artifactId>spring-ai-fin-dependencies</artifactId>
+      <groupId>ascend.springai</groupId>
+      <artifactId>spring-ai-ascend-dependencies</artifactId>
       <version>0.1.0-SNAPSHOT</version>
       <type>pom</type>
       <scope>import</scope>
@@ -162,8 +162,8 @@ See [`ops/runbooks/`](ops/runbooks/) for operational runbooks.
 
 ```xml
 <dependency>
-  <groupId>fin.springai</groupId>
-  <artifactId>spring-ai-fin-memory-starter</artifactId>
+  <groupId>ascend.springai</groupId>
+  <artifactId>spring-ai-ascend-memory-starter</artifactId>
 </dependency>
 ```
 

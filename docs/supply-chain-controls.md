@@ -173,7 +173,7 @@ SLSA (Supply-chain Levels for Software Artifacts) Level 2 requires:
 # CI generates provenance
 slsa-verifier verify-artifact \
   --provenance-path provenance.intoto.jsonl \
-  --source-uri github.com/chaosxingxc-orion/spring-ai-fin \
+  --source-uri github.com/chaosxingxc-orion/spring-ai-ascend \
   --source-tag v1.0.0 \
   agent-platform.jar
 ```
@@ -330,7 +330,7 @@ Platform provides:
 Customers consume:
 - `fin-starter-core`, `fin-starter-memory`, `fin-starter-skill`, `fin-starter-flow`, `fin-starter-advanced`
 
-Each Starter pinned to specific Spring AI version + spring-ai-fin version. Customer's own application BOM resolves transitive versions.
+Each Starter pinned to specific Spring AI version + spring-ai-ascend version. Customer's own application BOM resolves transitive versions.
 
 Cross-version compatibility tracked in `docs/governance/starter-compat-matrix.yaml`.
 

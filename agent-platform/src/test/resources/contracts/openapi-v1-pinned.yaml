@@ -1,10 +1,10 @@
 openapi: "3.0.1"
 info:
-  title: spring-ai-fin API v1
-  description: "Northbound facade for the spring-ai-fin agent platform. Stability: stable (W0 surface). Non-health routes are added in W1+."
+  title: spring-ai-ascend API v1
+  description: "Northbound facade for the spring-ai-ascend agent platform. Stability: stable (W0 surface). Non-health routes are added in W1+."
   version: "1.0.0-W0"
   contact:
-    name: spring-ai-fin platform team
+    name: spring-ai-ascend platform team
 
 servers:
   - url: http://localhost:8080

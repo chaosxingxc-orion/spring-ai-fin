@@ -5,21 +5,21 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>fin.springai</groupId>
-    <artifactId>spring-ai-fin-parent</artifactId>
+    <groupId>ascend.springai</groupId>
+    <artifactId>spring-ai-ascend-parent</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>spring-ai-fin-memory-starter</artifactId>
+  <artifactId>spring-ai-ascend-memory-starter</artifactId>
   <packaging>jar</packaging>
 
-  <name>spring-ai-fin memory starter</name>
+  <name>spring-ai-ascend memory starter</name>
   <description>
     Spring Boot auto-configuration for short-term and long-term memory.
     Default impl: Spring AI ChatMemory (in-process) + JDBC-backed
     LongTermMemoryRepository over Postgres.
-    Optional sidecar impl: spring-ai-fin-mem0-starter.
+    Optional sidecar impl: spring-ai-ascend-mem0-starter.
   </description>
 
   <dependencies>

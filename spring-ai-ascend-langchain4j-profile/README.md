@@ -1,4 +1,4 @@
-# spring-ai-fin-langchain4j-profile
+# spring-ai-ascend-langchain4j-profile
 
 > Alternate framework profile that replaces Spring AI ChatClient dispatching with LangChain4j; disabled by default; the Spring AI native path is the W0 production default. Maturity: L0.
 

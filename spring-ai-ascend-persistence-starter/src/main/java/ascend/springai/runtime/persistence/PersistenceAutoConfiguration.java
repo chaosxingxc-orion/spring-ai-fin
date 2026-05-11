@@ -1,8 +1,8 @@
-package fin.springai.runtime.persistence;
+package ascend.springai.runtime.persistence;
 
-import fin.springai.runtime.spi.persistence.ArtifactRepository;
-import fin.springai.runtime.spi.persistence.IdempotencyRepository;
-import fin.springai.runtime.spi.persistence.RunRepository;
+import ascend.springai.runtime.spi.persistence.ArtifactRepository;
+import ascend.springai.runtime.spi.persistence.IdempotencyRepository;
+import ascend.springai.runtime.spi.persistence.RunRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.springframework.beans.factory.BeanCreationException;

@@ -1,4 +1,4 @@
-# spring-ai-fin Platform -- Architecture (v6.1)
+# spring-ai-ascend Platform -- Architecture (v6.1)
 
 > **Last refreshed:** 2026-05-10 (v6.1 refresh; not a major version bump).
 > v6.1 adds: ADR per-file split (docs/adr/), operational runbooks
@@ -14,7 +14,7 @@
 
 ## 0. Purpose and constraints
 
-spring-ai-fin is a self-hostable agent runtime for financial-services
+spring-ai-ascend is a self-hostable agent runtime for financial-services
 operators. It accepts authenticated tenant requests, drives one or more
 LLMs through a tool-calling loop with audit-grade evidence, and persists
 durable side effects through an idempotent outbox. It is built on Spring
@@ -132,12 +132,12 @@ secondary development = patches we contribute upstream.
 | Eval harness           | Custom on JUnit + Ragas-Java port    | Eval suite                                          | W4   |
 | CI                     | GitHub Actions                       | `.github/workflows/*.yml`                           | W0   |
 | Linting                | Checkstyle + ErrorProne              | `.checkstyle.xml`                                   | W0   |
-| Multi-framework dispatch | LangChain4j 1.x (alternate profile) | `spring-ai-fin-langchain4j-profile`; disabled by default | W0 scaffold |
-| Python sidecar -- memory  | Mem0 REST API                     | `spring-ai-fin-mem0-starter`; `enabled=false` default    | W0 scaffold |
-| Python sidecar -- graph   | Graphiti REST API (Zep OSS)       | `spring-ai-fin-graphmemory-starter`; `enabled=false`     | W0 scaffold |
-| PDF layout parsing       | Docling REST API (IBM)            | `spring-ai-fin-docling-starter`; `enabled=false`         | W0 scaffold |
-| Resilience SPI contract   | spring-ai-fin-resilience-starter  | SPI contract-only; maps operation ids to Resilience4j policy names; caller_users=0 (W2 annotations) | W0 scaffold |
-| Spring AI fin BoM        | spring-ai-fin-dependencies        | Pins 9 starter coords + 13 OSS transitive deps           | W0           |
+| Multi-framework dispatch | LangChain4j 1.x (alternate profile) | `spring-ai-ascend-langchain4j-profile`; disabled by default | W0 scaffold |
+| Python sidecar -- memory  | Mem0 REST API                     | `spring-ai-ascend-mem0-starter`; `enabled=false` default    | W0 scaffold |
+| Python sidecar -- graph   | Graphiti REST API (Zep OSS)       | `spring-ai-ascend-graphmemory-starter`; `enabled=false`     | W0 scaffold |
+| PDF layout parsing       | Docling REST API (IBM)            | `spring-ai-ascend-docling-starter`; `enabled=false`         | W0 scaffold |
+| Resilience SPI contract   | spring-ai-ascend-resilience-starter  | SPI contract-only; maps operation ids to Resilience4j policy names; caller_users=0 (W2 annotations) | W0 scaffold |
+| Spring AI fin BoM        | spring-ai-ascend-dependencies        | Pins 9 starter coords + 13 OSS transitive deps           | W0           |
 
 This table is the authoritative dependency list. Adding a row requires a
 decision in the engineering plan; removing a row requires explicit
@@ -214,58 +214,58 @@ architecture-design self-audit (`docs/architecture-design-self-audit.md`).
 ## 3. Module layout
 
 ```
-spring-ai-fin/
+spring-ai-ascend/
   pom.xml                                   # parent (Maven; Java 21; Spring Boot 4.0.5 BOM)
   agent-platform/                           # northbound facade (L1 -- compile+unit verified at a7756cd; HealthEndpointIT CI-expected)
     pom.xml
-    src/main/java/fin/springai/platform/
+    src/main/java/ascend/springai/platform/
       AgentPlatformApplication.java         # Spring Boot main
       health/HealthController.java          # GET /v1/health
       probe/OssApiProbe.java                # OSS class presence probe
-    src/test/java/fin/springai/platform/
+    src/test/java/ascend/springai/platform/
       api/ApiCompatibilityTest.java         # ArchUnit 4 rules (SPI separation)
       health/HealthEndpointIT.java          # /v1/health integration test
   agent-runtime/                            # cognitive runtime kernel (L0 -- shell only)
     pom.xml
-    src/main/java/fin/springai/runtime/
+    src/main/java/ascend/springai/runtime/
       probe/OssApiProbe.java
-  spring-ai-fin-dependencies/              # BoM (L1)
+  spring-ai-ascend-dependencies/              # BoM (L1)
     pom.xml                                # pins 9 starters + 13 OSS transitive deps
-  spring-ai-fin-memory-starter/            # SPI: LongTermMemoryRepository, GraphMemoryRepository (L0)
+  spring-ai-ascend-memory-starter/            # SPI: LongTermMemoryRepository, GraphMemoryRepository (L0)
     pom.xml
-    src/main/java/fin/springai/runtime/
+    src/main/java/ascend/springai/runtime/
       memory/MemoryAutoConfiguration.java
       memory/NotConfiguredLongTermMemoryRepository.java
       memory/NotConfiguredGraphMemoryRepository.java
       spi/memory/LongTermMemoryRepository.java
       spi/memory/GraphMemoryRepository.java
     src/test/...                           # MemoryAutoConfigurationTest
-  spring-ai-fin-skills-starter/            # SPI: ToolProvider (L0)
+  spring-ai-ascend-skills-starter/            # SPI: ToolProvider (L0)
     pom.xml
-    src/main/java/fin/springai/runtime/
+    src/main/java/ascend/springai/runtime/
       skills/SkillsAutoConfiguration.java
       skills/NotConfiguredToolProvider.java
       spi/skills/ToolProvider.java
     src/test/...
-  spring-ai-fin-knowledge-starter/         # SPI: LayoutParser, DocumentSourceConnector (L0)
+  spring-ai-ascend-knowledge-starter/         # SPI: LayoutParser, DocumentSourceConnector (L0)
     pom.xml
-    src/main/java/fin/springai/runtime/
+    src/main/java/ascend/springai/runtime/
       knowledge/KnowledgeAutoConfiguration.java
       knowledge/NotConfiguredLayoutParser.java
       knowledge/NotConfiguredDocumentSourceConnector.java
       spi/knowledge/LayoutParser.java
       spi/knowledge/DocumentSourceConnector.java
     src/test/...
-  spring-ai-fin-governance-starter/        # SPI: PolicyEvaluator (L0)
+  spring-ai-ascend-governance-starter/        # SPI: PolicyEvaluator (L0)
     pom.xml
-    src/main/java/fin/springai/runtime/
+    src/main/java/ascend/springai/runtime/
       governance/GovernanceAutoConfiguration.java
       governance/NotConfiguredPolicyEvaluator.java
       spi/governance/PolicyEvaluator.java
     src/test/...
-  spring-ai-fin-persistence-starter/       # SPI: RunRepository, IdempotencyRepository, ArtifactRepository (L0)
+  spring-ai-ascend-persistence-starter/       # SPI: RunRepository, IdempotencyRepository, ArtifactRepository (L0)
     pom.xml
-    src/main/java/fin/springai/runtime/
+    src/main/java/ascend/springai/runtime/
       persistence/PersistenceAutoConfiguration.java
       persistence/NotConfiguredRunRepository.java
       persistence/NotConfiguredIdempotencyRepository.java
@@ -274,18 +274,18 @@ spring-ai-fin/
       spi/persistence/IdempotencyRepository.java
       spi/persistence/ArtifactRepository.java
     src/test/...
-  spring-ai-fin-mem0-starter/              # sidecar -- Mem0 REST (enabled=false, L0)
+  spring-ai-ascend-mem0-starter/              # sidecar -- Mem0 REST (enabled=false, L0)
     pom.xml
-    src/main/java/fin/springai/runtime/mem0/
-  spring-ai-fin-graphmemory-starter/       # sidecar -- Graphiti REST (enabled=false, L0)
+    src/main/java/ascend/springai/runtime/mem0/
+  spring-ai-ascend-graphmemory-starter/       # sidecar -- Graphiti REST (enabled=false, L0)
     pom.xml
-    src/main/java/fin/springai/runtime/graphmemory/
-  spring-ai-fin-docling-starter/           # sidecar -- Docling REST (enabled=false, L0)
+    src/main/java/ascend/springai/runtime/graphmemory/
+  spring-ai-ascend-docling-starter/           # sidecar -- Docling REST (enabled=false, L0)
     pom.xml
-    src/main/java/fin/springai/runtime/docling/
-  spring-ai-fin-langchain4j-profile/       # alternate framework profile (enabled=false, L0)
+    src/main/java/ascend/springai/runtime/docling/
+  spring-ai-ascend-langchain4j-profile/       # alternate framework profile (enabled=false, L0)
     pom.xml
-    src/main/java/fin/springai/runtime/langchain4j/
+    src/main/java/ascend/springai/runtime/langchain4j/
   third_party/                             # OSS attribution + third-party notices
   gate/                                    # architecture-sync + milestone gates
   docs/
@@ -308,7 +308,7 @@ build boundaries.
       |
       |  (no direct Java import of runtime; SPI contract only)
       v
-[spring-ai-fin-*-starter]  --provides-->  SPI interfaces
+[spring-ai-ascend-*-starter]  --provides-->  SPI interfaces
       |                                   (LongTermMemoryRepository,
       |                                    GraphMemoryRepository,
       |                                    ToolProvider,
@@ -326,14 +326,14 @@ build boundaries.
       v
    [Postgres / LLM providers / MCP servers / Python sidecars]
 
-[spring-ai-fin-{mem0,graphmemory,docling,langchain4j}-starter]
+[spring-ai-ascend-{mem0,graphmemory,docling,langchain4j}-starter]
       |  enabled=false by default (sidecar adapters)
       +--provides--> SPI impl (replaces sentinel when enabled=true + URL configured)
 ```
 
 Rules:
 
-1. SPI packages (`fin.springai.runtime.spi.*`) import only `java.*` types.
+1. SPI packages (`ascend.springai.runtime.spi.*`) import only `java.*` types.
    No Spring, no Micrometer, no platform classes. Enforced by ArchUnit
    `ApiCompatibilityTest.spi_packages_import_only_java_sdk_types`.
 2. `agent-platform` must not import `agent-runtime` Java types directly.
@@ -341,7 +341,7 @@ Rules:
    `ApiCompatibilityTest.platform_does_not_depend_on_runtime`.
 3. Sidecar starters may depend on the core starter that owns their SPI
    (e.g. `graphmemory` -> `memory`). Core starters must not depend on sidecar starters.
-4. `spring-ai-fin-dependencies` BoM pins all starter coordinates and
+4. `spring-ai-ascend-dependencies` BoM pins all starter coordinates and
    OSS transitive deps; modules declare version-free `<dependency>` entries.
 
 ### 3.2 SPI extension surface
@@ -350,13 +350,13 @@ The 7 SPI interfaces below are the extension surface for W1+ implementations.
 They are frozen (no breaking changes without a new major version) and enforced
 by `ApiCompatibilityTest` (ArchUnit, compile-verified at a7756cd):
 
-- `fin.springai.runtime.spi.memory.LongTermMemoryRepository`
-- `fin.springai.runtime.spi.memory.GraphMemoryRepository`
-- `fin.springai.runtime.spi.skills.ToolProvider`
-- `fin.springai.runtime.spi.knowledge.LayoutParser`
-- `fin.springai.runtime.spi.knowledge.DocumentSourceConnector`
-- `fin.springai.runtime.spi.governance.PolicyEvaluator`
-- `fin.springai.runtime.spi.persistence.RunRepository` (+ `IdempotencyRepository`, `ArtifactRepository`)
+- `ascend.springai.runtime.spi.memory.LongTermMemoryRepository`
+- `ascend.springai.runtime.spi.memory.GraphMemoryRepository`
+- `ascend.springai.runtime.spi.skills.ToolProvider`
+- `ascend.springai.runtime.spi.knowledge.LayoutParser`
+- `ascend.springai.runtime.spi.knowledge.DocumentSourceConnector`
+- `ascend.springai.runtime.spi.governance.PolicyEvaluator`
+- `ascend.springai.runtime.spi.persistence.RunRepository` (+ `IdempotencyRepository`, `ArtifactRepository`)
 
 ## 4. The nine quality attributes -- mechanism + test
 
@@ -791,7 +791,7 @@ The following artifacts were added in the v6.1 readiness pass:
 
 - **ADR index**: [`docs/adr/`](docs/adr/) -- 15 per-file MADR 4.0 ADRs; version refs current.
 - **Operational runbooks**: [`ops/runbooks/`](ops/runbooks/) -- 5 runbooks (DR, rollback, digest-pin, credential-loss, incident); L0.
-- **Helm chart skeleton**: [`ops/helm/spring-ai-fin/`](ops/helm/spring-ai-fin/) -- L0, not deployment-tested (W4).
+- **Helm chart skeleton**: [`ops/helm/spring-ai-ascend/`](ops/helm/spring-ai-ascend/) -- L0, not deployment-tested (W4).
 - **RLS policy**: [`docs/security/rls-policy.sql`](docs/security/rls-policy.sql) -- PostgreSQL RLS DDL enforcing `app.tenant_id` GUC.
 - **Performance evidence path**: [`perf/`](perf/) -- JMH skeleton; no captured numbers (W4 cadence).
 - **Doctor scripts**: [`gate/doctor.sh`](gate/doctor.sh), [`gate/doctor.ps1`](gate/doctor.ps1) -- env health checks.

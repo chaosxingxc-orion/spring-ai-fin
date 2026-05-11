@@ -13,7 +13,7 @@
 
 ## 1. Purpose & Boundary
 
-`adapters/` owns **multi-framework dispatch** -- the single most distinctive feature of spring-ai-fin relative to hi-agent. It implements the user's brief that "the platform should run mainstream agent frameworks" without trapping customers in one choice. It also owns the **runtime binding to `docs/sidecar-security-profile.md`**: the rules that govern transport, identity, payload, cancellation, and supply-chain evidence for the Python sidecar path.
+`adapters/` owns **multi-framework dispatch** -- the single most distinctive feature of spring-ai-ascend relative to hi-agent. It implements the user's brief that "the platform should run mainstream agent frameworks" without trapping customers in one choice. It also owns the **runtime binding to `docs/sidecar-security-profile.md`**: the rules that govern transport, identity, payload, cancellation, and supply-chain evidence for the Python sidecar path.
 
 The package owns one abstraction (`FrameworkAdapter`) and three concrete implementations:
 

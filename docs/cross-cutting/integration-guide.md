@@ -2,7 +2,7 @@
 
 # Integration Guide
 
-Three paths for integrating with the spring-ai-fin platform. Choose the path that fits your deployment model.
+Three paths for integrating with the spring-ai-ascend platform. Choose the path that fits your deployment model.
 
 ---
 
@@ -16,8 +16,8 @@ The simplest integration path. Import the BoM, add one or more starters, and dec
 <dependencyManagement>
   <dependencies>
     <dependency>
-      <groupId>fin.springai</groupId>
-      <artifactId>spring-ai-fin-dependencies</artifactId>
+      <groupId>ascend.springai</groupId>
+      <artifactId>spring-ai-ascend-dependencies</artifactId>
       <version>0.1.0-SNAPSHOT</version>
       <type>pom</type>
       <scope>import</scope>
@@ -27,12 +27,12 @@ The simplest integration path. Import the BoM, add one or more starters, and dec
 
 <dependencies>
   <dependency>
-    <groupId>fin.springai</groupId>
-    <artifactId>spring-ai-fin-memory-starter</artifactId>
+    <groupId>ascend.springai</groupId>
+    <artifactId>spring-ai-ascend-memory-starter</artifactId>
   </dependency>
   <dependency>
-    <groupId>fin.springai</groupId>
-    <artifactId>spring-ai-fin-persistence-starter</artifactId>
+    <groupId>ascend.springai</groupId>
+    <artifactId>spring-ai-ascend-persistence-starter</artifactId>
   </dependency>
 </dependencies>
 ```
@@ -73,8 +73,8 @@ Use this path when you want a pre-built adapter to an external service (Mem0, Gr
 ```xml
 <dependencies>
   <dependency>
-    <groupId>fin.springai</groupId>
-    <artifactId>spring-ai-fin-mem0-starter</artifactId>
+    <groupId>ascend.springai</groupId>
+    <artifactId>spring-ai-ascend-mem0-starter</artifactId>
   </dependency>
 </dependencies>
 ```
@@ -91,13 +91,13 @@ springai:
 
 The sidecar adapter registers a `LongTermMemoryRepository` bean that overrides the sentinel. No @Bean declaration needed. The external service must be reachable at context load time in `research` and `prod` postures.
 
-The same pattern applies to `spring-ai-fin-graphmemory-starter` (property prefix: `springai.fin.graphmemory`) and `spring-ai-fin-docling-starter` (property prefix: `springai.fin.docling`).
+The same pattern applies to `spring-ai-ascend-graphmemory-starter` (property prefix: `springai.fin.graphmemory`) and `spring-ai-ascend-docling-starter` (property prefix: `springai.fin.docling`).
 
 ---
 
 ## Path 3: External BoM consumer
 
-Use this path when you are building a third-party module or a downstream project that depends on the spring-ai-fin SPI contracts but does not bundle the platform itself.
+Use this path when you are building a third-party module or a downstream project that depends on the spring-ai-ascend SPI contracts but does not bundle the platform itself.
 
 ### Maven setup
 
@@ -107,8 +107,8 @@ Import only the BoM and depend on the SPI-only artifact (no auto-configuration o
 <dependencyManagement>
   <dependencies>
     <dependency>
-      <groupId>fin.springai</groupId>
-      <artifactId>spring-ai-fin-dependencies</artifactId>
+      <groupId>ascend.springai</groupId>
+      <artifactId>spring-ai-ascend-dependencies</artifactId>
       <version>0.1.0-SNAPSHOT</version>
       <type>pom</type>
       <scope>import</scope>
@@ -119,8 +119,8 @@ Import only the BoM and depend on the SPI-only artifact (no auto-configuration o
 <dependencies>
   <!-- SPI interfaces only; no auto-configuration triggered -->
   <dependency>
-    <groupId>fin.springai</groupId>
-    <artifactId>spring-ai-fin-memory-starter</artifactId>
+    <groupId>ascend.springai</groupId>
+    <artifactId>spring-ai-ascend-memory-starter</artifactId>
     <optional>true</optional>
   </dependency>
 </dependencies>

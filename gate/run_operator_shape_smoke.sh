@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# spring-ai-fin Rule 8 operator-shape smoke gate -- POSIX entry point.
+# spring-ai-ascend Rule 8 operator-shape smoke gate -- POSIX entry point.
 #
 # Per CLAUDE.md / AGENTS.md Rule 8 and
 # docs/systematic-architecture-remediation-plan-2026-05-08-cycle-4.en.md sec-D1.

@@ -15,9 +15,9 @@ Post-deploy regression: elevated error rate, latency spike, health probe failure
 ## Procedure
 
 1. Confirm regression: `gate/doctor.sh` exits non-zero OR `/v1/health` returns non-200 for > 2 minutes.
-2. List releases: `helm history spring-ai-fin -n <namespace>`
-3. Roll back: `helm rollback spring-ai-fin <previous-revision> -n <namespace>`
-4. Verify pods restart: `kubectl rollout status deployment/spring-ai-fin -n <namespace>`
+2. List releases: `helm history spring-ai-ascend -n <namespace>`
+3. Roll back: `helm rollback spring-ai-ascend <previous-revision> -n <namespace>`
+4. Verify pods restart: `kubectl rollout status deployment/spring-ai-ascend -n <namespace>`
 5. Confirm health: `gate/doctor.sh` exits 0.
 6. If schema migration involved: coordinate with DBA before rollback (Flyway migrations are NOT auto-reversed).
 7. Open incident post-mortem ticket.

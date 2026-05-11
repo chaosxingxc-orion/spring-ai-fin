@@ -1,4 +1,4 @@
-package fin.springai.runtime.spi.memory;
+package ascend.springai.runtime.spi.memory;
 
 import java.util.List;
 
@@ -6,7 +6,7 @@ import java.util.List;
  * SPI: knowledge-graph memory store for relationship-aware retrieval.
  *
  * No default in-JVM impl (graph structure requires an external store).
- * Primary sidecar impl: spring-ai-fin-graphmemory-starter (Graphiti REST).
+ * Primary sidecar impl: spring-ai-ascend-graphmemory-starter (Graphiti REST).
  * Evaluation alternative: Cognee — cycle-15 selects one.
  *
  * Rule 11: every operation carries tenantId.

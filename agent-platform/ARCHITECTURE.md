@@ -47,7 +47,7 @@ belong to `agent-runtime`.
 
 Each L2 has its own `ARCHITECTURE.md` following the skeleton in `docs/plans/architecture-systems-engineering-plan.md` sec-3.
 
-9 SPI surfaces are published by the `spring-ai-fin-*-starter` modules and frozen by `ApiCompatibilityTest` (ArchUnit 4 rules GREEN). Platform code calls runtime capabilities only through these SPI contracts, never through direct Java imports of `agent-runtime` types.
+9 SPI surfaces are published by the `spring-ai-ascend-*-starter` modules and frozen by `ApiCompatibilityTest` (ArchUnit 4 rules GREEN). Platform code calls runtime capabilities only through these SPI contracts, never through direct Java imports of `agent-runtime` types.
 
 ## 4. Public contract
 

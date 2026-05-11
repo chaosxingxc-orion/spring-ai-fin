@@ -1,4 +1,4 @@
-# spring-ai-fin-memory-starter
+# spring-ai-ascend-memory-starter
 
 > Provides the SPI surface for durable long-term memory and relationship-aware graph memory, with posture-aware sentinel impls for dev mode. Maturity: L1.
 

@@ -1,4 +1,4 @@
-package fin.springai.platform.probe;
+package ascend.springai.platform.probe;
 
 /*
  * W0 U2 promotion probe for agent-platform critical-path deps.

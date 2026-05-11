@@ -1,4 +1,4 @@
-package fin.springai.platform.persistence;
+package ascend.springai.platform.persistence;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;

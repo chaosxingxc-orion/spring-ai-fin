@@ -1,4 +1,4 @@
-# spring-ai-fin line-ending and text policy.
+# spring-ai-ascend line-ending and text policy.
 #
 # Per docs/systematic-architecture-remediation-plan-2026-05-08-cycle-8.en.md
 # sec-A1 (CRLF on gate/check_architecture_sync.sh broke POSIX execution) and

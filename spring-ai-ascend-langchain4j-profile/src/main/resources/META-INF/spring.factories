@@ -1,2 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  fin.springai.runtime.langchain4j.LangChain4jAutoConfiguration
+  ascend.springai.runtime.langchain4j.LangChain4jAutoConfiguration

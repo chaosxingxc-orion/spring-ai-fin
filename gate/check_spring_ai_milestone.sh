@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# spring-ai-fin Spring AI milestone gate.
+# spring-ai-ascend Spring AI milestone gate.
 #
 # Fails CI past 2026-08-01 if spring-ai.version still contains "-M"
 # (milestone), forcing re-evaluation when Spring AI 2.0 GA ships.

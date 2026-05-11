@@ -1,6 +1,6 @@
 # SPI Contracts
 
-> Full semantic contracts for all spring-ai-fin SPI interfaces.
+> Full semantic contracts for all spring-ai-ascend SPI interfaces.
 > Version: 0.1.0-SNAPSHOT | Last refreshed: 2026-05-10
 
 All SPI interfaces share these cross-cutting contracts:
@@ -8,15 +8,15 @@ All SPI interfaces share these cross-cutting contracts:
 - **Thread safety**: every SPI implementation is required to be thread-safe. The runtime calls SPIs from Java 21 virtual threads concurrently.
 - **Null returns**: SPI methods must never return null. Return Optional.empty() or an empty collection instead.
 - **Tenant scope**: every method that has a `tenantId` parameter must scope its effect to that tenant. Operations must not leak data across tenant boundaries.
-- **ArchUnit enforcement**: SPI packages (`fin.springai.runtime.spi.*`) import only `java.*` types. No Spring, Micrometer, or platform imports in SPI packages.
-- **Binary API compatibility**: japicmp configured in spring-ai-fin-dependencies (BoM). Enforcement enabled from W1 onward when baseline JARs are available.
+- **ArchUnit enforcement**: SPI packages (`ascend.springai.runtime.spi.*`) import only `java.*` types. No Spring, Micrometer, or platform imports in SPI packages.
+- **Binary API compatibility**: japicmp configured in spring-ai-ascend-dependencies (BoM). Enforcement enabled from W1 onward when baseline JARs are available.
 
 ---
 
 ## LongTermMemoryRepository
 
-Package: `fin.springai.runtime.spi.memory`
-Owner: `spring-ai-fin-memory-starter`
+Package: `ascend.springai.runtime.spi.memory`
+Owner: `spring-ai-ascend-memory-starter`
 
 | Method | Signature | Semantic guarantee | Error contract |
 |--------|-----------|-------------------|----------------|
@@ -34,8 +34,8 @@ Posture-aware behavior:
 
 ## GraphMemoryRepository
 
-Package: `fin.springai.runtime.spi.memory`
-Owner: `spring-ai-fin-memory-starter`
+Package: `ascend.springai.runtime.spi.memory`
+Owner: `spring-ai-ascend-memory-starter`
 
 | Method | Signature | Semantic guarantee | Error contract |
 |--------|-----------|-------------------|----------------|
@@ -49,8 +49,8 @@ Posture-aware behavior: same as LongTermMemoryRepository.
 
 ## ToolProvider
 
-Package: `fin.springai.runtime.spi.skills`
-Owner: `spring-ai-fin-skills-starter`
+Package: `ascend.springai.runtime.spi.skills`
+Owner: `spring-ai-ascend-skills-starter`
 
 | Method | Signature | Semantic guarantee | Error contract |
 |--------|-----------|-------------------|----------------|
@@ -66,8 +66,8 @@ Posture-aware behavior:
 
 ## LayoutParser
 
-Package: `fin.springai.runtime.spi.knowledge`
-Owner: `spring-ai-fin-knowledge-starter`
+Package: `ascend.springai.runtime.spi.knowledge`
+Owner: `spring-ai-ascend-knowledge-starter`
 
 | Method | Signature | Semantic guarantee | Error contract |
 |--------|-----------|-------------------|----------------|
@@ -84,8 +84,8 @@ Posture-aware behavior:
 
 ## DocumentSourceConnector
 
-Package: `fin.springai.runtime.spi.knowledge`
-Owner: `spring-ai-fin-knowledge-starter`
+Package: `ascend.springai.runtime.spi.knowledge`
+Owner: `spring-ai-ascend-knowledge-starter`
 
 | Method | Signature | Semantic guarantee | Error contract |
 |--------|-----------|-------------------|----------------|
@@ -103,8 +103,8 @@ Posture-aware behavior:
 
 ## PolicyEvaluator
 
-Package: `fin.springai.runtime.spi.governance`
-Owner: `spring-ai-fin-governance-starter`
+Package: `ascend.springai.runtime.spi.governance`
+Owner: `spring-ai-ascend-governance-starter`
 
 | Method | Signature | Semantic guarantee | Error contract |
 |--------|-----------|-------------------|----------------|
@@ -121,8 +121,8 @@ Posture-aware behavior:
 
 ## RunRepository
 
-Package: `fin.springai.runtime.spi.persistence`
-Owner: `spring-ai-fin-persistence-starter`
+Package: `ascend.springai.runtime.spi.persistence`
+Owner: `spring-ai-ascend-persistence-starter`
 
 | Method | Signature | Semantic guarantee | Error contract |
 |--------|-----------|-------------------|----------------|
@@ -142,8 +142,8 @@ Posture-aware behavior:
 
 ## IdempotencyRepository
 
-Package: `fin.springai.runtime.spi.persistence`
-Owner: `spring-ai-fin-persistence-starter`
+Package: `ascend.springai.runtime.spi.persistence`
+Owner: `spring-ai-ascend-persistence-starter`
 
 | Method | Signature | Semantic guarantee | Error contract |
 |--------|-----------|-------------------|----------------|
@@ -158,8 +158,8 @@ Posture-aware behavior:
 
 ## ArtifactRepository
 
-Package: `fin.springai.runtime.spi.persistence`
-Owner: `spring-ai-fin-persistence-starter`
+Package: `ascend.springai.runtime.spi.persistence`
+Owner: `spring-ai-ascend-persistence-starter`
 
 | Method | Signature | Semantic guarantee | Error contract |
 |--------|-----------|-------------------|----------------|
@@ -178,8 +178,8 @@ Posture-aware behavior:
 
 ## ResilienceContract
 
-Package: `fin.springai.runtime.spi.resilience`
-Owner: `spring-ai-fin-resilience-starter`
+Package: `ascend.springai.runtime.spi.resilience`
+Owner: `spring-ai-ascend-resilience-starter`
 
 | Method | Signature | Semantic guarantee | Error contract |
 |--------|-----------|-------------------|----------------|

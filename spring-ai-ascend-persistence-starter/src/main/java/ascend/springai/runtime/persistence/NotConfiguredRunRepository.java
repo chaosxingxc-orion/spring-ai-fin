@@ -1,6 +1,6 @@
-package fin.springai.runtime.persistence;
+package ascend.springai.runtime.persistence;
 
-import fin.springai.runtime.spi.persistence.RunRepository;
+import ascend.springai.runtime.spi.persistence.RunRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,4 +1,4 @@
-package fin.springai.platform.tenant;
+package ascend.springai.platform.tenant;
 
 public final class TenantConstants {
     private TenantConstants() {}

@@ -1,4 +1,4 @@
-package fin.springai.runtime.spi.knowledge;
+package ascend.springai.runtime.spi.knowledge;
 
 import java.io.InputStream;
 import java.util.List;
@@ -8,7 +8,7 @@ import java.util.List;
  *
  * Default impl: Apache Tika 3.3.0 AutoDetectParser (best-effort;
  * no layout awareness for complex PDFs).
- * Optional sidecar impl: spring-ai-fin-docling-starter (Docling-serve
+ * Optional sidecar impl: spring-ai-ascend-docling-starter (Docling-serve
  * REST API; IBM Granite-Docling; LF AI&Data donation 2026).
  */
 public interface LayoutParser {

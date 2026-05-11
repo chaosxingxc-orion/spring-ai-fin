@@ -1,6 +1,6 @@
-package fin.springai.runtime.docling;
+package ascend.springai.runtime.docling;
 
-import fin.springai.runtime.spi.knowledge.LayoutParser;
+import ascend.springai.runtime.spi.knowledge.LayoutParser;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.springframework.boot.autoconfigure.AutoConfiguration;

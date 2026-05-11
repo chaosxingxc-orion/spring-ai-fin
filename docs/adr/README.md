@@ -2,7 +2,7 @@
 
 > Owner: architecture | Format: MADR 4.0 | Last refreshed: 2026-05-10
 
-This directory contains Architecture Decision Records (ADRs) for spring-ai-fin.
+This directory contains Architecture Decision Records (ADRs) for spring-ai-ascend.
 Each ADR documents a significant architectural decision with its context,
 options considered, decision, and consequences.
 

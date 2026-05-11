@@ -1,4 +1,4 @@
-package fin.springai.platform;
+package ascend.springai.platform;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

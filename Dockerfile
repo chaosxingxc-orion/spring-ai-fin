@@ -1,4 +1,4 @@
-# spring-ai-fin agent-platform Dockerfile.
+# spring-ai-ascend agent-platform Dockerfile.
 #
 # Per docs/cross-cutting/supply-chain-controls.md: distroless runtime + digest pin.
 # The :nonroot tag below should be replaced with a sha256 digest in CI before

@@ -1,4 +1,4 @@
-package fin.springai.runtime.langchain4j;
+package ascend.springai.runtime.langchain4j;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
@@ -14,7 +14,7 @@ class LangChain4jAutoConfigurationTest {
 
     @Test
     void autoConfigurationClassIsLoadable() throws Exception {
-        Class.forName("fin.springai.runtime.langchain4j.LangChain4jAutoConfiguration");
+        Class.forName("ascend.springai.runtime.langchain4j.LangChain4jAutoConfiguration");
     }
 
     @Test

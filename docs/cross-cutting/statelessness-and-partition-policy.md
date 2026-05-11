@@ -2,7 +2,7 @@
 
 # Statelessness and Partition Policy
 
-This document describes the state ownership model, per-transaction tenant isolation, horizontal scaling story, and known failure modes for the spring-ai-fin platform.
+This document describes the state ownership model, per-transaction tenant isolation, horizontal scaling story, and known failure modes for the spring-ai-ascend platform.
 
 ---
 

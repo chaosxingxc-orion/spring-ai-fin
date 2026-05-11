@@ -1,6 +1,6 @@
-package fin.springai.platform.web;
+package ascend.springai.platform.web;
 
-import fin.springai.platform.persistence.HealthCheckRepository;
+import ascend.springai.platform.persistence.HealthCheckRepository;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;

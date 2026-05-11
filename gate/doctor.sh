@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# spring-ai-fin doctor script -- POSIX
+# spring-ai-ascend doctor script -- POSIX
 # Checks that the local environment is minimally configured for dev posture.
 # Exits 0 if healthy, 1 if any required condition fails.
 # Usage: bash gate/doctor.sh

@@ -17,8 +17,8 @@ Any production anomaly: 5xx spike, latency p99 breach, data-access anomaly, secu
 ## Procedure
 
 1. **Detect**: alert fires (Grafana / PagerDuty).
-2. **Triage**: run `gate/doctor.sh`. Check `/v1/health`. Check pod logs (`kubectl logs -l app=spring-ai-fin --tail=100`).
-3. **Contain**: if data loss risk, scale to 0 (`kubectl scale deploy/spring-ai-fin --replicas=0`) and open DR runbook.
+2. **Triage**: run `gate/doctor.sh`. Check `/v1/health`. Check pod logs (`kubectl logs -l app=spring-ai-ascend --tail=100`).
+3. **Contain**: if data loss risk, scale to 0 (`kubectl scale deploy/spring-ai-ascend --replicas=0`) and open DR runbook.
 4. **Mitigate**: apply rollback runbook if root cause is a recent deploy.
 5. **Communicate**: post P1/P2 status to status page within 30 min.
 6. **Resolve**: confirm `gate/doctor.sh` exits 0. Monitor for 30 min post-fix.

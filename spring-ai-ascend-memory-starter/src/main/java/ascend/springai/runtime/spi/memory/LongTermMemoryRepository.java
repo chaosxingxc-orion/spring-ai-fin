@@ -1,4 +1,4 @@
-package fin.springai.runtime.spi.memory;
+package ascend.springai.runtime.spi.memory;
 
 import java.util.List;
 import java.util.Optional;
@@ -7,7 +7,7 @@ import java.util.Optional;
  * SPI: durable long-term memory store, scoped to a tenant + user session.
  *
  * Default impl: Spring Data JDBC repository over Postgres.
- * Optional sidecar impl: spring-ai-fin-mem0-starter (mem0 REST API).
+ * Optional sidecar impl: spring-ai-ascend-mem0-starter (mem0 REST API).
  *
  * All implementations are required to scope every operation to the
  * provided tenantId (Rule 11 contract-spine requirement).

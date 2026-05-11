@@ -1,4 +1,4 @@
-package fin.springai.runtime.probe;
+package ascend.springai.runtime.probe;
 
 /*
  * W0 U2 promotion probe for agent-runtime critical-path deps.

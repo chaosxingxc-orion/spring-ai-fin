@@ -4,7 +4,7 @@
 
 spring:
   application:
-    name: spring-ai-fin
+    name: spring-ai-ascend
   threads:
     virtual:
       enabled: true   # ADR-01 + Loom; HikariCP 5 pool is virtual-thread-friendly.
@@ -57,7 +57,7 @@ springdoc:
 logging:
   level:
     root: INFO
-    fin.springai: INFO
+    ascend.springai: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}] - %msg%n"
 

@@ -24,7 +24,7 @@ PostgreSQL (primary data store), Valkey (session cache), agent-platform deployme
 3. Restore Postgres: `aws s3 cp s3://springaifin-wal/<latest-base> - | pg_restore ...`
    - Target: RPO <= 1 hour (WAL streaming must have been active).
 4. Unseal Vault in DR region. Verify all secrets accessible.
-5. Apply Helm release in DR cluster: `helm upgrade --install spring-ai-fin ops/helm/spring-ai-fin/ -f values-prod-dr.yaml`
+5. Apply Helm release in DR cluster: `helm upgrade --install spring-ai-ascend ops/helm/spring-ai-ascend/ -f values-prod-dr.yaml`
 6. Smoke test: `bash gate/doctor.sh` exits 0 in DR cluster.
 7. Notify on-call via PagerDuty P1.
 
@@ -40,7 +40,7 @@ If DR restore fails, maintain primary region degraded-mode (read-only). Escalate
 
 ## Contacts / Escalation
 
-- On-call: PagerDuty rotation `spring-ai-fin-oncall`
+- On-call: PagerDuty rotation `spring-ai-ascend-oncall`
 - DBA: via #db-oncall Slack
 - Vendor: AWS Support (if S3/RDS issue)
 

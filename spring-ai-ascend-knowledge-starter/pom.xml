@@ -5,22 +5,22 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>fin.springai</groupId>
-    <artifactId>spring-ai-fin-parent</artifactId>
+    <groupId>ascend.springai</groupId>
+    <artifactId>spring-ai-ascend-parent</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>spring-ai-fin-knowledge-starter</artifactId>
+  <artifactId>spring-ai-ascend-knowledge-starter</artifactId>
   <packaging>jar</packaging>
 
-  <name>spring-ai-fin knowledge starter</name>
+  <name>spring-ai-ascend knowledge starter</name>
   <description>
     Spring Boot auto-configuration for document parsing, ingestion, and
     vector retrieval. Default impl: Spring AI ETL pipeline + Tika 3.3.0
     (general parsing) + VectorStore client (pgvector).
     Exposes LayoutParser and DocumentSourceConnector SPIs.
-    Optional sidecar: spring-ai-fin-docling-starter for layout-aware PDF.
+    Optional sidecar: spring-ai-ascend-docling-starter for layout-aware PDF.
   </description>
 
   <dependencies>

@@ -1,4 +1,4 @@
-package fin.springai.platform.tenant;
+package ascend.springai.platform.tenant;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Value;

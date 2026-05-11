@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  spring-ai-fin-dependencies (SDK BoM).
+  spring-ai-ascend-dependencies (SDK BoM).
 
   This module is the externally-consumable version contract for the
-  spring-ai-fin SDK. External consumers import it in their
+  spring-ai-ascend SDK. External consumers import it in their
   <dependencyManagement> section:
 
     <dependencyManagement>
       <dependencies>
         <dependency>
-          <groupId>fin.springai</groupId>
-          <artifactId>spring-ai-fin-dependencies</artifactId>
+          <groupId>ascend.springai</groupId>
+          <artifactId>spring-ai-ascend-dependencies</artifactId>
           <version>0.1.0-SNAPSHOT</version>
           <type>pom</type>
           <scope>import</scope>
@@ -32,19 +32,19 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>fin.springai</groupId>
-    <artifactId>spring-ai-fin-parent</artifactId>
+    <groupId>ascend.springai</groupId>
+    <artifactId>spring-ai-ascend-parent</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>spring-ai-fin-dependencies</artifactId>
+  <artifactId>spring-ai-ascend-dependencies</artifactId>
   <packaging>pom</packaging>
 
-  <name>spring-ai-fin dependencies (BoM)</name>
+  <name>spring-ai-ascend dependencies (BoM)</name>
   <description>
-    Bill of Materials POM for the spring-ai-fin SDK. Import this
-    artifact to pin all spring-ai-fin module and third-party
+    Bill of Materials POM for the spring-ai-ascend SDK. Import this
+    artifact to pin all spring-ai-ascend module and third-party
     dependency versions in a single place.
   </description>
 
@@ -52,71 +52,71 @@
     <dependencies>
 
       <!-- ============================================================ -->
-      <!-- spring-ai-fin SDK modules (this project)                     -->
+      <!-- spring-ai-ascend SDK modules (this project)                     -->
       <!-- ============================================================ -->
 
       <dependency>
-        <groupId>fin.springai</groupId>
+        <groupId>ascend.springai</groupId>
         <artifactId>agent-platform</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>fin.springai</groupId>
+        <groupId>ascend.springai</groupId>
         <artifactId>agent-runtime</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <!-- Capability starters (embedded defaults) -->
       <dependency>
-        <groupId>fin.springai</groupId>
-        <artifactId>spring-ai-fin-memory-starter</artifactId>
+        <groupId>ascend.springai</groupId>
+        <artifactId>spring-ai-ascend-memory-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>fin.springai</groupId>
-        <artifactId>spring-ai-fin-skills-starter</artifactId>
+        <groupId>ascend.springai</groupId>
+        <artifactId>spring-ai-ascend-skills-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>fin.springai</groupId>
-        <artifactId>spring-ai-fin-knowledge-starter</artifactId>
+        <groupId>ascend.springai</groupId>
+        <artifactId>spring-ai-ascend-knowledge-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>fin.springai</groupId>
-        <artifactId>spring-ai-fin-governance-starter</artifactId>
+        <groupId>ascend.springai</groupId>
+        <artifactId>spring-ai-ascend-governance-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>fin.springai</groupId>
-        <artifactId>spring-ai-fin-persistence-starter</artifactId>
+        <groupId>ascend.springai</groupId>
+        <artifactId>spring-ai-ascend-persistence-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>fin.springai</groupId>
-        <artifactId>spring-ai-fin-resilience-starter</artifactId>
+        <groupId>ascend.springai</groupId>
+        <artifactId>spring-ai-ascend-resilience-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <!-- Optional sidecar adapter starters -->
       <dependency>
-        <groupId>fin.springai</groupId>
-        <artifactId>spring-ai-fin-mem0-starter</artifactId>
+        <groupId>ascend.springai</groupId>
+        <artifactId>spring-ai-ascend-mem0-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>fin.springai</groupId>
-        <artifactId>spring-ai-fin-graphmemory-starter</artifactId>
+        <groupId>ascend.springai</groupId>
+        <artifactId>spring-ai-ascend-graphmemory-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>fin.springai</groupId>
-        <artifactId>spring-ai-fin-docling-starter</artifactId>
+        <groupId>ascend.springai</groupId>
+        <artifactId>spring-ai-ascend-docling-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>fin.springai</groupId>
-        <artifactId>spring-ai-fin-langchain4j-profile</artifactId>
+        <groupId>ascend.springai</groupId>
+        <artifactId>spring-ai-ascend-langchain4j-profile</artifactId>
         <version>${project.version}</version>
       </dependency>
 

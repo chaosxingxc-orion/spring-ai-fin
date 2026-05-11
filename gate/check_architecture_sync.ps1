@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-  spring-ai-fin architecture-sync gate (cycle-8 evidence graph v3).
+  spring-ai-ascend architecture-sync gate (cycle-8 evidence graph v3).
 
 .DESCRIPTION
   Cycle-8 changes (this version: "cycle-8-evidence-graph-v3"):

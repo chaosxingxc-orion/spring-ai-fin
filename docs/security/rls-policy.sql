@@ -1,4 +1,4 @@
--- spring-ai-fin Row-Level Security Policy
+-- spring-ai-ascend Row-Level Security Policy
 -- Applied during schema migration W2 when the persistence layer materializes.
 -- Owner: persistence-starter | Maturity: L0 (design only; applied in W2)
 -- References: ADR-05 (tenant isolation via GUC SET LOCAL)
@@ -37,4 +37,4 @@ $$;
 --     FOR EACH ROW EXECUTE FUNCTION assert_tenant_guc_set();
 
 -- Cross-tenant escape test: verify that a query under tenant A cannot see tenant B data.
--- Tested in TenantIsolationIT (see agent-platform/src/test/java/fin/springai/platform/security/).
+-- Tested in TenantIsolationIT (see agent-platform/src/test/java/ascend/springai/platform/security/).

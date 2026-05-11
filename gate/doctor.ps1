@@ -1,4 +1,4 @@
-# spring-ai-fin doctor script -- Windows PowerShell
+# spring-ai-ascend doctor script -- Windows PowerShell
 # Checks that the local environment is minimally configured for dev posture.
 # Exits 0 if healthy, 1 if any required condition fails.
 # Usage: pwsh gate/doctor.ps1

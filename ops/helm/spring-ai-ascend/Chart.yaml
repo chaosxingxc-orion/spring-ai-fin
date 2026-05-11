@@ -1,6 +1,6 @@
 apiVersion: v2
-name: spring-ai-fin
-description: Agent-platform for financial-services AI workflows (spring-ai-fin SDK)
+name: spring-ai-ascend
+description: Agent-platform for financial-services AI workflows (spring-ai-ascend SDK)
 type: application
 version: 0.1.0
 appVersion: "0.1.0-SNAPSHOT"
@@ -9,7 +9,7 @@ keywords:
   - agent-platform
   - financial-services
 maintainers:
-  - name: spring-ai-fin-platform-team
+  - name: spring-ai-ascend-platform-team
 annotations:
   maturity: L0
   notes: "Skeleton chart. Not deployment-tested. W4 deliverable."

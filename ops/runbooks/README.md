@@ -2,7 +2,7 @@
 
 > Owner: platform-engineering | Maturity: L0 | Posture: all | Last refreshed: 2026-05-10
 
-Operational runbooks for spring-ai-fin. Each runbook covers trigger,
+Operational runbooks for spring-ai-ascend. Each runbook covers trigger,
 scope, prerequisites, step-by-step procedure, verification, and rollback.
 
 All runbooks are L0 (design skeleton). Procedures are validated when the
@@ -20,7 +20,7 @@ W4 operator-shape gate runs a real-dependency long-lived process.
 
 ## References
 
-- Helm chart: ops/helm/spring-ai-fin/
+- Helm chart: ops/helm/spring-ai-ascend/
 - Doctor script: gate/doctor.sh (POSIX) / gate/doctor.ps1 (Windows)
 - Posture model: docs/cross-cutting/posture-model.md
 - Deployment topology: docs/cross-cutting/deployment-topology.md

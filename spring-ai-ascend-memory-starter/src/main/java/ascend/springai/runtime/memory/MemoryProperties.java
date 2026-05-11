@@ -1,4 +1,4 @@
-package fin.springai.runtime.memory;
+package ascend.springai.runtime.memory;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

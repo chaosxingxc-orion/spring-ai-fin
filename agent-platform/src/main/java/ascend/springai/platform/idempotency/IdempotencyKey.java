@@ -1,4 +1,4 @@
-package fin.springai.platform.idempotency;
+package ascend.springai.platform.idempotency;
 
 import java.util.UUID;
 

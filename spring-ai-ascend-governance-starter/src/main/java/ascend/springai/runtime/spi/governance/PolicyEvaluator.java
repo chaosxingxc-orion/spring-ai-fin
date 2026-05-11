@@ -1,4 +1,4 @@
-package fin.springai.runtime.spi.governance;
+package ascend.springai.runtime.spi.governance;
 
 import java.util.Map;
 

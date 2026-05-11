@@ -1,4 +1,4 @@
-package fin.springai.runtime.spi.resilience;
+package ascend.springai.runtime.spi.resilience;
 
 /**
  * SPI: maps an operation identifier to a named resilience policy.

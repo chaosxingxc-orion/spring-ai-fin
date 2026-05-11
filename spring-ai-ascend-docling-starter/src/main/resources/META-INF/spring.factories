@@ -1,2 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  fin.springai.runtime.docling.DoclingAutoConfiguration
+  ascend.springai.runtime.docling.DoclingAutoConfiguration

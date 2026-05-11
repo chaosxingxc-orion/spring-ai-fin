@@ -1,4 +1,4 @@
-package fin.springai.platform.web;
+package ascend.springai.platform.web;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

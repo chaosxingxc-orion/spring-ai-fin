@@ -18,7 +18,7 @@ posture, scaling triggers, and rollout strategy. Replaces implicit
 | Developer laptop                              |
 |                                               |
 |  +-----------------+   +------------------+   |
-|  | spring-ai-fin   |-->| Postgres 16      |   |
+|  | spring-ai-ascend   |-->| Postgres 16      |   |
 |  | (agent-platform |   | (compose)        |   |
 |  |  + agent-runtime|   +------------------+   |
 |  |  in one JVM)    |                          |
@@ -63,7 +63,7 @@ provider OR fake provider (configurable).
               +---------+---------+
                         |
               +---------+---------+
-              | spring-ai-fin app |
+              | spring-ai-ascend app |
               | (2-4 replicas;    |
               |  HPA on CPU + RPS)|
               +-----+---+-----+---+

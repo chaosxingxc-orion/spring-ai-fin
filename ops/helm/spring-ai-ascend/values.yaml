@@ -1,4 +1,4 @@
-# Default values for spring-ai-fin Helm chart.
+# Default values for spring-ai-ascend Helm chart.
 # Maturity: L0 (skeleton; validated in W4).
 
 replicaCount: 2

@@ -1,4 +1,4 @@
-package fin.springai.platform.idempotency;
+package ascend.springai.platform.idempotency;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

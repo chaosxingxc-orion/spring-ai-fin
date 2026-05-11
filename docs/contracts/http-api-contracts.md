@@ -1,6 +1,6 @@
 # HTTP API Contracts
 
-> Per-route HTTP contract reference for the spring-ai-fin platform v1 API.
+> Per-route HTTP contract reference for the spring-ai-ascend platform v1 API.
 > Version: 1.0.0-W0 | Last refreshed: 2026-05-10
 
 The full OpenAPI specification is at [openapi-v1.yaml](openapi-v1.yaml). This document provides the human-readable contract reference, mandatory header conventions, and status code semantics.

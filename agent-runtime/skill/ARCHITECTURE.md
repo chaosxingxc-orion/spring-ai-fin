@@ -18,7 +18,7 @@
 > **Important security boundary** (per `../action-guard/` AD-1 and security review sec-P0-1, sec-P0-6):
 > The load-time gate in this package is **registry hygiene**, not the runtime security boundary. It catches *registration* of skills that declare dangerous capabilities. Every actual side-effectful skill **invocation** at runtime must additionally pass through `ActionGuard.authorize(envelope)` (`../action-guard/`). Load-time and runtime are complementary, not redundant; both must hold for a skill to take effect on a tenant resource.
 
-In the spring-ai-fin context, a "skill" = a reusable agent capability composed of:
+In the spring-ai-ascend context, a "skill" = a reusable agent capability composed of:
 
 - An MCP tool (StdIO transport) OR a Spring AI Advisor
 - A skill definition (YAML) describing inputs/outputs/safety classification

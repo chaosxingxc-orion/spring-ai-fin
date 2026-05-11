@@ -1,4 +1,4 @@
-package fin.springai.runtime.probe;
+package ascend.springai.runtime.probe;
 
 import org.junit.jupiter.api.Test;
 
@@ -8,7 +8,7 @@ class OssApiProbeTest {
 
     @Test
     void classIsLoadable() throws Exception {
-        Class.forName("fin.springai.runtime.probe.OssApiProbe");
+        Class.forName("ascend.springai.runtime.probe.OssApiProbe");
     }
 
     @Test

@@ -27,7 +27,7 @@ All properties are read once at startup (except Caffeine cache TTL which is read
 
 | Property | Type | Default | Posture impact | Owner |
 |----------|------|---------|----------------|-------|
-| springai.fin.memory.enabled | boolean | true | dev: sentinel on missing @Bean; research/prod: BeanCreationException on missing @Bean | spring-ai-fin-memory-starter |
+| springai.fin.memory.enabled | boolean | true | dev: sentinel on missing @Bean; research/prod: BeanCreationException on missing @Bean | spring-ai-ascend-memory-starter |
 
 ---
 
@@ -35,8 +35,8 @@ All properties are read once at startup (except Caffeine cache TTL which is read
 
 | Property | Type | Default | Posture impact | Owner |
 |----------|------|---------|----------------|-------|
-| springai.fin.mem0.enabled | boolean | false | When false: adapter not loaded in any posture | spring-ai-fin-mem0-starter |
-| springai.fin.mem0.base-url | String | (none) | Required when enabled=true; missing URL causes BeanCreationException in all postures | spring-ai-fin-mem0-starter |
+| springai.fin.mem0.enabled | boolean | false | When false: adapter not loaded in any posture | spring-ai-ascend-mem0-starter |
+| springai.fin.mem0.base-url | String | (none) | Required when enabled=true; missing URL causes BeanCreationException in all postures | spring-ai-ascend-mem0-starter |
 
 ---
 
@@ -44,8 +44,8 @@ All properties are read once at startup (except Caffeine cache TTL which is read
 
 | Property | Type | Default | Posture impact | Owner |
 |----------|------|---------|----------------|-------|
-| springai.fin.graphmemory.enabled | boolean | false | When false: adapter not loaded in any posture | spring-ai-fin-graphmemory-starter |
-| springai.fin.graphmemory.base-url | String | (none) | Required when enabled=true; missing URL causes BeanCreationException in all postures | spring-ai-fin-graphmemory-starter |
+| springai.fin.graphmemory.enabled | boolean | false | When false: adapter not loaded in any posture | spring-ai-ascend-graphmemory-starter |
+| springai.fin.graphmemory.base-url | String | (none) | Required when enabled=true; missing URL causes BeanCreationException in all postures | spring-ai-ascend-graphmemory-starter |
 
 ---
 
@@ -53,8 +53,8 @@ All properties are read once at startup (except Caffeine cache TTL which is read
 
 | Property | Type | Default | Posture impact | Owner |
 |----------|------|---------|----------------|-------|
-| springai.fin.docling.enabled | boolean | false | When false: adapter not loaded in any posture | spring-ai-fin-docling-starter |
-| springai.fin.docling.base-url | String | (none) | Required when enabled=true; missing URL causes BeanCreationException in all postures | spring-ai-fin-docling-starter |
+| springai.fin.docling.enabled | boolean | false | When false: adapter not loaded in any posture | spring-ai-ascend-docling-starter |
+| springai.fin.docling.base-url | String | (none) | Required when enabled=true; missing URL causes BeanCreationException in all postures | spring-ai-ascend-docling-starter |
 
 ---
 
@@ -62,7 +62,7 @@ All properties are read once at startup (except Caffeine cache TTL which is read
 
 | Property | Type | Default | Posture impact | Owner |
 |----------|------|---------|----------------|-------|
-| springai.fin.skills.enabled | boolean | true | dev: sentinel on missing @Bean; research/prod: BeanCreationException on missing @Bean | spring-ai-fin-skills-starter |
+| springai.fin.skills.enabled | boolean | true | dev: sentinel on missing @Bean; research/prod: BeanCreationException on missing @Bean | spring-ai-ascend-skills-starter |
 
 ---
 
@@ -70,7 +70,7 @@ All properties are read once at startup (except Caffeine cache TTL which is read
 
 | Property | Type | Default | Posture impact | Owner |
 |----------|------|---------|----------------|-------|
-| springai.fin.knowledge.enabled | boolean | true | dev: sentinel on missing @Bean; research/prod: BeanCreationException on missing @Bean | spring-ai-fin-knowledge-starter |
+| springai.fin.knowledge.enabled | boolean | true | dev: sentinel on missing @Bean; research/prod: BeanCreationException on missing @Bean | spring-ai-ascend-knowledge-starter |
 
 ---
 
@@ -78,7 +78,7 @@ All properties are read once at startup (except Caffeine cache TTL which is read
 
 | Property | Type | Default | Posture impact | Owner |
 |----------|------|---------|----------------|-------|
-| springai.fin.governance.enabled | boolean | true | dev: sentinel on missing @Bean; research/prod: BeanCreationException on missing @Bean | spring-ai-fin-governance-starter |
+| springai.fin.governance.enabled | boolean | true | dev: sentinel on missing @Bean; research/prod: BeanCreationException on missing @Bean | spring-ai-ascend-governance-starter |
 
 ---
 
@@ -86,7 +86,7 @@ All properties are read once at startup (except Caffeine cache TTL which is read
 
 | Property | Type | Default | Posture impact | Owner |
 |----------|------|---------|----------------|-------|
-| springai.fin.persistence.enabled | boolean | true | dev: sentinel on missing @Bean; research/prod: BeanCreationException on missing @Bean | spring-ai-fin-persistence-starter |
+| springai.fin.persistence.enabled | boolean | true | dev: sentinel on missing @Bean; research/prod: BeanCreationException on missing @Bean | spring-ai-ascend-persistence-starter |
 
 ---
 
@@ -94,7 +94,7 @@ All properties are read once at startup (except Caffeine cache TTL which is read
 
 | Property | Type | Default | Posture impact | Owner |
 |----------|------|---------|----------------|-------|
-| springai.fin.resilience.enabled | boolean | true | dev: sentinel on missing @Bean; research/prod: BeanCreationException on missing @Bean | spring-ai-fin-resilience-starter |
+| springai.fin.resilience.enabled | boolean | true | dev: sentinel on missing @Bean; research/prod: BeanCreationException on missing @Bean | spring-ai-ascend-resilience-starter |
 
 ---
 

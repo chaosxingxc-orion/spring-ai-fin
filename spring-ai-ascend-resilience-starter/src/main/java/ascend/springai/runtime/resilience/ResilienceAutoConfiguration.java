@@ -1,6 +1,6 @@
-package fin.springai.runtime.resilience;
+package ascend.springai.runtime.resilience;
 
-import fin.springai.runtime.spi.resilience.ResilienceContract;
+import ascend.springai.runtime.spi.resilience.ResilienceContract;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.springframework.beans.factory.BeanCreationException;

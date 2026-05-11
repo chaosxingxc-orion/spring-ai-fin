@@ -13,7 +13,7 @@
 
 ## 1. Purpose & Boundary
 
-`posture/` owns the **single most-impactful design lever** in spring-ai-fin: the three-posture model (`dev` / `research` / `prod`). Every fail-closed vs fail-open decision in the platform reads from here.
+`posture/` owns the **single most-impactful design lever** in spring-ai-ascend: the three-posture model (`dev` / `research` / `prod`). Every fail-closed vs fail-open decision in the platform reads from here.
 
 Owns:
 

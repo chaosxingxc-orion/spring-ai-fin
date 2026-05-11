@@ -1,6 +1,6 @@
-package fin.springai.runtime.governance;
+package ascend.springai.runtime.governance;
 
-import fin.springai.runtime.spi.governance.PolicyEvaluator;
+import ascend.springai.runtime.spi.governance.PolicyEvaluator;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -18,7 +18,7 @@ class GovernanceAutoConfigurationTest {
 
     @Test
     void autoConfigurationClassIsLoadable() throws Exception {
-        Class.forName("fin.springai.runtime.governance.GovernanceAutoConfiguration");
+        Class.forName("ascend.springai.runtime.governance.GovernanceAutoConfiguration");
     }
 
     @Test

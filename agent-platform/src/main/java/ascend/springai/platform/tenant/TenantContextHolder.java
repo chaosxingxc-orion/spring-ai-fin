@@ -1,4 +1,4 @@
-package fin.springai.platform.tenant;
+package ascend.springai.platform.tenant;
 
 // ThreadLocal cleared in TenantContextFilter.doFilterInternal finally{} per Rule 5.
 public final class TenantContextHolder {

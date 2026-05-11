@@ -48,7 +48,7 @@ public class ReactorSchedulerConfig {
         return Schedulers.newBoundedElastic(
             /* threadCap */ 64,
             /* queuedTaskCap */ 10000,
-            /* threadNamePrefix */ "spring-ai-fin-dispatch",
+            /* threadNamePrefix */ "spring-ai-ascend-dispatch",
             /* ttlSeconds */ 60,
             /* daemon */ true
         );

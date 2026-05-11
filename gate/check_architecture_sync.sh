@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# spring-ai-fin architecture-sync gate (cycle-8 evidence graph v3; POSIX bash).
+# spring-ai-ascend architecture-sync gate (cycle-8 evidence graph v3; POSIX bash).
 # Catches drift classes from cycles 1-8.
 #
 # Cycle-8 changes (this version: "cycle-9-truth-cut"):

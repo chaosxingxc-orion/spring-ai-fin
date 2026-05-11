@@ -1,6 +1,6 @@
-package fin.springai.runtime.mem0;
+package ascend.springai.runtime.mem0;
 
-import fin.springai.runtime.spi.memory.LongTermMemoryRepository;
+import ascend.springai.runtime.spi.memory.LongTermMemoryRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -16,7 +16,7 @@ class Mem0AutoConfigurationTest {
 
     @Test
     void autoConfigurationClassIsLoadable() throws Exception {
-        Class.forName("fin.springai.runtime.mem0.Mem0AutoConfiguration");
+        Class.forName("ascend.springai.runtime.mem0.Mem0AutoConfiguration");
     }
 
     @Test

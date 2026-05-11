@@ -25,7 +25,7 @@ All secrets in `secrets/springai-fin/*` Vault path (see docs/cross-cutting/secre
    - OpenAI: regenerate API key in provider portal.
    - JWT signing key: generate new RSA-4096 keypair.
 3. Unseal Vault. Write new secrets: `vault kv put secrets/springai-fin/...`
-4. Trigger pod restart: `kubectl rollout restart deployment/spring-ai-fin`
+4. Trigger pod restart: `kubectl rollout restart deployment/spring-ai-ascend`
 5. Verify: `gate/doctor.sh` exits 0.
 6. Audit: review Vault audit log for unauthorized reads.
 

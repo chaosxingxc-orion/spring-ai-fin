@@ -1,4 +1,4 @@
-package fin.springai.runtime.spi.knowledge;
+package ascend.springai.runtime.spi.knowledge;
 
 import java.util.Iterator;
 
