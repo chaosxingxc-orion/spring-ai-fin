@@ -71,6 +71,21 @@ class IdempotencyHeaderFilterTest {
     }
 
     @Test
+    void missingHeader_prodPosture_returns400() throws Exception {
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        IdempotencyHeaderFilter filter = new IdempotencyHeaderFilter(registry, "prod");
+        MockHttpServletRequest req = new MockHttpServletRequest("POST", "/v1/runs");
+        MockHttpServletResponse res = new MockHttpServletResponse();
+        MockFilterChain chain = new MockFilterChain();
+
+        filter.doFilter(req, res, chain);
+
+        assertThat(res.getStatus()).isEqualTo(400);
+        assertThat(registry.counter("springai_ascend_idempotency_header_missing_total", "posture", "prod").count())
+                .isEqualTo(1.0);
+    }
+
+    @Test
     void healthPath_notFiltered() throws Exception {
         SimpleMeterRegistry registry = new SimpleMeterRegistry();
         IdempotencyHeaderFilter filter = new IdempotencyHeaderFilter(registry, "research");
