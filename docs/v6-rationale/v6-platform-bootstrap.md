@@ -1,3 +1,5 @@
+> ARCHIVED 2026-05-12. Pre-refresh design rationale; not active spec. Current state: see docs/STATE.md.
+
 # agent-platform/bootstrap -- L2 architecture (2026-05-08 refresh; cycle-14 re-scope)
 
 > Owner: platform | Wave: W0 (lite) / W1 (full guard) | Maturity: L0 | Reads: env, application.yml | Writes: --

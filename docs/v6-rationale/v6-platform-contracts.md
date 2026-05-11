@@ -1,3 +1,5 @@
+> ARCHIVED 2026-05-12. Pre-refresh design rationale; not active spec. Current state: see docs/STATE.md.
+
 # agent-platform/contracts -- L2 architecture (2026-05-08 refresh)
 
 > Owner: platform | Wave: W0 | Maturity: L0 | Reads: -- | Writes: --

@@ -1,3 +1,5 @@
+> ARCHIVED 2026-05-12. Pre-refresh design rationale; not active spec. Current state: see docs/STATE.md.
+
 # agent-platform/config -- L2 architecture (2026-05-08 refresh)
 
 > Owner: platform | Wave: W2 | Maturity: L0 | Reads: tenant_config, Spring Cloud Config server | Writes: --
