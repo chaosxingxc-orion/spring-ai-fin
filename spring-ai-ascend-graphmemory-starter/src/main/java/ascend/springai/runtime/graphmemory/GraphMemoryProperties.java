@@ -1,4 +1,4 @@
-﻿package ascend.springai.runtime.graphmemory;
+package ascend.springai.runtime.graphmemory;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

@@ -1,4 +1,4 @@
-﻿package ascend.springai.runtime.graphmemory;
+package ascend.springai.runtime.graphmemory;
 
 import ascend.springai.runtime.spi.memory.GraphMemoryRepository;
 import io.micrometer.core.instrument.MeterRegistry;

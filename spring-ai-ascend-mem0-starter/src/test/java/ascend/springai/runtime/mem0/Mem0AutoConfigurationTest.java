@@ -1,4 +1,4 @@
-﻿package ascend.springai.runtime.mem0;
+package ascend.springai.runtime.mem0;
 
 import ascend.springai.runtime.spi.memory.LongTermMemoryRepository;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -25,6 +25,27 @@ class Mem0AutoConfigurationTest {
             assertThat(ctx).hasNotFailed();
             assertThat(ctx).doesNotHaveBean(LongTermMemoryRepository.class);
         });
+    }
+
+    @Test
+    void devPosture_enabled_contextLoads() {
+        runner.withPropertyValues("springai.ascend.mem0.enabled=true", "app.posture=dev")
+                .run(ctx -> {
+                    assertThat(ctx).hasNotFailed();
+                    assertThat(ctx).hasSingleBean(LongTermMemoryRepository.class);
+                });
+    }
+
+    @Test
+    void researchPosture_enabled_throwsBeanCreationException() {
+        runner.withPropertyValues("springai.ascend.mem0.enabled=true", "app.posture=research")
+                .run(ctx -> assertThat(ctx).hasFailed());
+    }
+
+    @Test
+    void prodPosture_enabled_throwsBeanCreationException() {
+        runner.withPropertyValues("springai.ascend.mem0.enabled=true", "app.posture=prod")
+                .run(ctx -> assertThat(ctx).hasFailed());
     }
 
     @Test

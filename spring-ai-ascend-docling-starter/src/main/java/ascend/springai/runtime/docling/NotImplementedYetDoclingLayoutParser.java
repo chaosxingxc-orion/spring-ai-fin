@@ -1,4 +1,4 @@
-﻿package ascend.springai.runtime.docling;
+package ascend.springai.runtime.docling;
 
 import ascend.springai.runtime.spi.knowledge.LayoutParser;
 import io.micrometer.core.instrument.MeterRegistry;

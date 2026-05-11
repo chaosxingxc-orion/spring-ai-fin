@@ -1,4 +1,4 @@
-﻿package ascend.springai.runtime.graphmemory;
+package ascend.springai.runtime.graphmemory;
 
 import ascend.springai.runtime.spi.memory.GraphMemoryRepository;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -25,6 +25,27 @@ class GraphMemoryAutoConfigurationTest {
             assertThat(ctx).hasNotFailed();
             assertThat(ctx).doesNotHaveBean(GraphMemoryRepository.class);
         });
+    }
+
+    @Test
+    void devPosture_enabled_contextLoads() {
+        runner.withPropertyValues("springai.ascend.graphmemory.enabled=true", "app.posture=dev")
+                .run(ctx -> {
+                    assertThat(ctx).hasNotFailed();
+                    assertThat(ctx).hasSingleBean(GraphMemoryRepository.class);
+                });
+    }
+
+    @Test
+    void researchPosture_enabled_throwsBeanCreationException() {
+        runner.withPropertyValues("springai.ascend.graphmemory.enabled=true", "app.posture=research")
+                .run(ctx -> assertThat(ctx).hasFailed());
+    }
+
+    @Test
+    void prodPosture_enabled_throwsBeanCreationException() {
+        runner.withPropertyValues("springai.ascend.graphmemory.enabled=true", "app.posture=prod")
+                .run(ctx -> assertThat(ctx).hasFailed());
     }
 
     @Test

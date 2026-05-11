@@ -1,4 +1,4 @@
-﻿package ascend.springai.runtime.mem0;
+package ascend.springai.runtime.mem0;
 
 import ascend.springai.runtime.spi.memory.LongTermMemoryRepository;
 import io.micrometer.core.instrument.MeterRegistry;

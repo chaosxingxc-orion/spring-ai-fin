@@ -1,4 +1,4 @@
-﻿package ascend.springai.runtime.docling;
+package ascend.springai.runtime.docling;
 
 import ascend.springai.runtime.spi.knowledge.LayoutParser;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -25,6 +25,27 @@ class DoclingAutoConfigurationTest {
             assertThat(ctx).hasNotFailed();
             assertThat(ctx).doesNotHaveBean(LayoutParser.class);
         });
+    }
+
+    @Test
+    void devPosture_enabled_contextLoads() {
+        runner.withPropertyValues("springai.ascend.docling.enabled=true", "app.posture=dev")
+                .run(ctx -> {
+                    assertThat(ctx).hasNotFailed();
+                    assertThat(ctx).hasSingleBean(LayoutParser.class);
+                });
+    }
+
+    @Test
+    void researchPosture_enabled_throwsBeanCreationException() {
+        runner.withPropertyValues("springai.ascend.docling.enabled=true", "app.posture=research")
+                .run(ctx -> assertThat(ctx).hasFailed());
+    }
+
+    @Test
+    void prodPosture_enabled_throwsBeanCreationException() {
+        runner.withPropertyValues("springai.ascend.docling.enabled=true", "app.posture=prod")
+                .run(ctx -> assertThat(ctx).hasFailed());
     }
 
     @Test

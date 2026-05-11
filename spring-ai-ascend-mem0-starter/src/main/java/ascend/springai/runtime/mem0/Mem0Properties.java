@@ -1,4 +1,4 @@
-﻿package ascend.springai.runtime.mem0;
+package ascend.springai.runtime.mem0;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

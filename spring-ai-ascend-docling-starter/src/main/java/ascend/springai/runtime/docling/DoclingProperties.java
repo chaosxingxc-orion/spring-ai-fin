@@ -1,4 +1,4 @@
-﻿package ascend.springai.runtime.docling;
+package ascend.springai.runtime.docling;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
