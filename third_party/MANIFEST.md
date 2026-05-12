@@ -27,10 +27,10 @@ Run `third_party/clone-all.sh` to populate after checking out this repo.
 
 | Name | Upstream | Tag | SHA (HEAD at tag) | License | SDK adapter | Intended use |
 |---|---|---|---|---|---|---|
-| **mem0** | `https://github.com/mem0ai/mem0.git` | `v2.0.2` | `9043fbf61e60c9e2f2e60ddddc849adebc273608` | Apache-2.0 | `spring-ai-ascend-mem0-starter` | Long-term hierarchical memory; implements `LongTermMemoryRepository` SPI |
+| **mem0** | `https://github.com/mem0ai/mem0.git` | `v2.0.2` | `9043fbf61e60c9e2f2e60ddddc849adebc273608` | Apache-2.0 | none (evaluation-only; not selected at L0; see ADR-0034) | Long-term hierarchical memory candidate; associated SPI and starter deleted in 2026-05-12 Occam pass |
 | **Graphiti** | `https://github.com/getzep/graphiti.git` | `v0.29.0` | `56cf7b369a671084112ad86d64411362d19f6d56` | Apache-2.0 | `spring-ai-ascend-graphmemory-starter` | Knowledge-graph memory; implements `GraphMemoryRepository` SPI |
 | **Cognee** | `https://github.com/topoteretes/cognee.git` | `v1.0.9` | `b0f513b43df8cb2d62063e3fb43e673738fd0552` | Apache-2.0 | none (evaluation alternative to Graphiti; cycle-15 picks one) | Graph memory evaluation alternative |
-| **Docling-serve** | `https://github.com/docling-project/docling-serve.git` | `v1.18.0` | `60846e5264c9b5e401aa133c5d654a7b2fe03228` | Apache-2.0 | `spring-ai-ascend-docling-starter` | Layout-aware PDF parsing; implements `LayoutParser` SPI |
+| **Docling-serve** | `https://github.com/docling-project/docling-serve.git` | `v1.18.0` | `60846e5264c9b5e401aa133c5d654a7b2fe03228` | Apache-2.0 | none (evaluation-only; associated SPI and starter deleted in 2026-05-12 Occam pass) | Layout-aware PDF parsing candidate |
 | **RAGFlow** | `https://github.com/infiniflow/ragflow.git` | `v0.25.2` | `57b24be6d6db2f46265eb10b06ddc2e46b7c2728` | Apache-2.0 | none (alt RAG platform; consumer integrates via RAGFlow API) | Full-stack RAG platform alternative |
 
 ## How to clone Section B repos
@@ -50,5 +50,5 @@ git clone --depth 1 --branch v0.25.2  https://github.com/infiniflow/ragflow.git 
 
 - All Docker image versions in Section A are pinned to a specific release channel; pin to exact digest in `ops/compose/` for reproducibility.
 - Section B SHAs were captured on 2026-05-10. Re-verify on each pull-and-test cycle.
-- Cognee and Graphiti are both evaluated for `GraphMemoryRepository` SPI; cycle-15 picks one. Both are cloned so the team can run side-by-side evaluation.
+- Graphiti is the W1 reference sidecar for `GraphMemoryRepository` SPI (ADR-0034). Cognee is evaluation-only and not selected at L0. Both are cloned for historical side-by-side evaluation reference.
 - RAGFlow is NOT wired into any SDK adapter; consumers integrate via RAGFlow's own REST API if they choose this platform.

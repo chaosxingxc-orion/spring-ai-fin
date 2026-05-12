@@ -148,4 +148,4 @@ Low for the DFA (code change only). Medium for the `RunLifecycle` SPI split (req
 - Rule 24 (deferred, W2): RunLifecycle re-authorization
 - `architecture-status.yaml` rows: `run_status_transition_validator`, `run_lifecycle_spi`,
   `run_state_change_audit_log`, `run_optimistic_lock`
-- W2 wave plan: `docs/plans/engineering-plan-W0-W4.md` §4.2
+- W2 wave plan: `docs/archive/2026-05-13-plans-archived/engineering-plan-W0-W4.md` §4.2 (archived per ADR-0037)

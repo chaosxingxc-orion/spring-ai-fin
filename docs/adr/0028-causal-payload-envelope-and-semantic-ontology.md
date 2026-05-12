@@ -168,4 +168,4 @@ added without breaking existing code.
 - §4 #25 (new, this ADR)
 - §4 #36 (payload migration adapter strategy)
 - `architecture-status.yaml` rows: `causal_payload_envelope`, `semantic_ontology_tags`, `payload_fingerprint_precommit`
-- W2 wave plan: `docs/plans/engineering-plan-W0-W4.md` §4.2
+- W2 wave plan: `docs/archive/2026-05-13-plans-archived/engineering-plan-W0-W4.md` §4.2 (archived per ADR-0037)

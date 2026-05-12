@@ -92,4 +92,4 @@ misses the transaction boundary and must be retrofitted.
 - Rule 23 (deferred, W2): suspension write atomicity enforcement
 - ADR-0007 (Postgres outbox pattern)
 - `architecture-status.yaml` row: `suspension_write_atomicity_contract`
-- W2 wave plan: `docs/plans/engineering-plan-W0-W4.md` §4.2
+- W2 wave plan: `docs/archive/2026-05-13-plans-archived/engineering-plan-W0-W4.md` §4.2 (archived per ADR-0037)

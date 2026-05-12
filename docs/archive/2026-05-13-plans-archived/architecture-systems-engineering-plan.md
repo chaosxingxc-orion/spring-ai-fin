@@ -1,3 +1,7 @@
+> **ARCHIVED 2026-05-13.** Historical document-level execution plan. Do not treat as current wave authority.
+> Active wave authority: `ARCHITECTURE.md §1` + `docs/governance/architecture-status.yaml` +
+> `docs/CLAUDE-deferred.md`. See ADR-0037 and ADR-0041.
+
 # Architecture Systems-Engineering Plan -- L0 / L1 / L2 Drill-Down
 
 > Companion to `ARCHITECTURE.md` and

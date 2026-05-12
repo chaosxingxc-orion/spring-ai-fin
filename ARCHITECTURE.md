@@ -1,6 +1,6 @@
 # spring-ai-ascend Platform — Architecture
 
-> Last updated: 2026-05-13 (sixth+seventh reviewer combined pass — §4 #29-#36, ADR-0032-0039, Gate Rules 12-14, AppPostureGate, findRootRuns, plans archived).
+> Last updated: 2026-05-13 (post-seventh follow-up — §4 #37-#38, ADR-0040-0041, Gate Rules 15-18, corpus truth refresh, HTTP contract reconciliation, SPI catalog split).
 
 ## 1. System boundary
 
@@ -38,8 +38,8 @@ spring-ai-ascend/
         TenantFilterAutoConfiguration.java
         TenantContext.java / TenantConstants.java
       idempotency/
-        IdempotencyHeaderFilter.java           # Idempotency-Key dedup
-        IdempotencyStore.java                  # dev-posture in-memory store
+        IdempotencyHeaderFilter.java           # Idempotency-Key header validation (W0; no dedup)
+        IdempotencyStore.java                  # W0 stub; not registered as bean
         IdempotencyFilterAutoConfiguration.java
         IdempotencyKey.java / IdempotencyConstants.java
       persistence/
@@ -80,7 +80,7 @@ spring-ai-ascend/
         SequentialGraphExecutor.java           # Reference: node→edge traversal with checkpoint on suspend
         IterativeAgentLoopExecutor.java        # Reference: ReAct loop with iter+state checkpoint on suspend
 
-  spring-ai-ascend-graphmemory-starter/        # E2 middleware shell (enabled=false, W2)
+  spring-ai-ascend-graphmemory-starter/        # E2 adapter shell (Graphiti W1 ref per ADR-0034; auto-config disabled; full code W2)
     src/main/java/ascend/springai/runtime/graphmemory/
       GraphMemoryAutoConfiguration.java
       GraphMemoryProperties.java
@@ -149,8 +149,8 @@ only `java.*` (enforced by `OrchestrationSpiArchTest`, `MemorySpiArchTest`).
    - W0 (shipped): `TenantContextFilter` reads `X-Tenant-Id` header (UUID shape),
      stores in `TenantContextHolder` + MDC. Every persistent record carries
      `tenant_id NOT NULL`.
-   - W1 (planned): replace header with JWT `tenant_id` claim; validate against
-     `tenants` table.
+   - W1 (planned): add JWT `tenant_id` claim cross-check against the existing
+     `X-Tenant-Id` header; validate against `tenants` table (ADR-0040).
    - W2 (planned): add `SET LOCAL app.tenant_id = :id` GUC inside each transaction;
      enable Postgres RLS policies on tenant tables. See ADR-0005, ADR-0023.
 
@@ -435,11 +435,25 @@ only `java.*` (enforced by `OrchestrationSpiArchTest`, `MemorySpiArchTest`).
     removal; removal without an adapter wrapper is a ship-blocking defect. See ADR-0039,
     `payload_migration_adapter`.
 
+37. **W1 HTTP contract reconciliation.** W1 tenant identity: `X-Tenant-Id` header stays required;
+    W1 adds JWT `tenant_id` claim cross-check against the header value (403 on mismatch). The
+    initial run status is `PENDING` (matching `RunStatus` enum and RunStateMachine DFA). Cancellation
+    is a state transition expressed as `POST /v1/runs/{id}/cancel` (not `DELETE`); run records survive
+    cancellation as terminal records. Gate Rule 16 enforces these three points across the five active
+    HTTP contract documents. See ADR-0040, `w1_http_contract_reconciliation`.
+
+38. **Active-corpus truth sweep.** No active document outside `docs/archive/` and `docs/reviews/`
+    may reference the two deleted plan paths (the engineering plan and the roadmap archived under
+    `docs/archive/2026-05-13-plans-archived/` per ADR-0037). Wave-planning information from those
+    files lives exclusively in the single wave authority (§4 #34). ADR references are repointed to
+    the archived copies. The companion systems-engineering plan is archived alongside its peers.
+    Gate Rule 15 enforces the deleted-path freeze. See ADR-0041, `active_corpus_truth_sweep`.
+
 ---
 
 ## 5. W0 shipped capabilities
 
-- `GET /v1/health` — liveness probe; JSON `{"status":"UP"}`.
+- `GET /v1/health` — liveness probe; JSON `{status, sha, db_ping_ns, ts}`.
 - `TenantContextFilter` — extracts `X-Tenant-Id` header (UUID shape), propagates via
   `TenantContextHolder` + MDC `tenant_id`. (W0: header-only; W1: JWT claim; W2: GUC+RLS.)
 - `IdempotencyHeaderFilter` — validates UUID shape of `Idempotency-Key` header on

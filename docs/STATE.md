@@ -92,6 +92,21 @@
 
 ---
 
+## Designed + Governance — post-seventh follow-up (2026-05-13)
+
+*P1/P2 findings from post-seventh L0 readiness follow-up. 6 findings ACCEPTED (all). No rejections. No new Java code; all changes are documentation, gate rules, and ADRs. See `docs/reviews/2026-05-13-post-seventh-l0-readiness-followup-response.en.md`.*
+
+| capability | ADR | wave | claim |
+|---|---|---|---|
+| w1_http_contract_reconciliation | ADR-0040 | W1 (design) | X-Tenant-Id stays required; W1 adds JWT cross-check; initial status = PENDING; cancel = POST /cancel |
+| active_corpus_truth_sweep | ADR-0041 | W0 (gate) | 11 ADR stale plan paths fixed; architecture-systems-engineering-plan.md archived; Gate Rule 15 prevents recurrence |
+| contract_catalog_split_tables | — | W0 (doc) | §2 rewritten: 4 sub-tables (SPI/carriers/probes/deferred); OssApiProbe moved to probe table; 3 orchestration SPIs added; Gate Rule 17 |
+| http_contract_consistency | ADR-0040 | W0 (doc) | http-api-contracts.md CREATED→PENDING; openapi-v1.yaml x-w1-note DELETE→POST /cancel; agent-platform ARCH replace→cross-check |
+| memory_sidecar_consistency | ADR-0034 | W0 (doc) | MANIFEST.md + oss-bill-of-materials.md stripped of mem0/Docling/langchain4j-profile; GraphMemoryRepository JavaDoc updated; Gate Rule 18 |
+| module_tree_comment_truth | — | W0 (doc) | IdempotencyHeaderFilter/IdempotencyStore comments fixed; health response format corrected; Testcontainers claim corrected |
+
+---
+
 ## Shipped + Designed — sixth+seventh reviewer combined response (2026-05-13)
 
 *8 clusters from combined review surface. ~50 hidden defects surfaced beyond 12 reviewer-named findings. §4 #29–#36 + ADR-0032–0039 + Gate Rules 12–14 + AppPostureGate shipped. See `docs/reviews/2026-05-13-sixth-reviewer-response.en.md` and `docs/reviews/2026-05-13-seventh-reviewer-response.en.md`.*

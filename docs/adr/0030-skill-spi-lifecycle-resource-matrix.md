@@ -274,4 +274,4 @@ existing code.
 - Rule 26 (deferred W2 — Skill Lifecycle Conformance, defined in CLAUDE-deferred.md)
 - Rule 27 (deferred W3 — Untrusted Skill Sandbox Mandate, defined in CLAUDE-deferred.md)
 - `architecture-status.yaml` rows: `skill_spi_lifecycle`, `skill_resource_matrix`, `untrusted_skill_sandbox_mandatory`
-- W2 wave plan: `docs/plans/engineering-plan-W0-W4.md` §4.2
+- W2 wave plan: `docs/archive/2026-05-13-plans-archived/engineering-plan-W0-W4.md` §4.2 (archived per ADR-0037)

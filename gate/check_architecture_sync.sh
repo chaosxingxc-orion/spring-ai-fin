@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# spring-ai-ascend architecture-sync gate -- sixth+seventh reviewer refresh (14 rules).
+# spring-ai-ascend architecture-sync gate -- post-seventh follow-up refresh (18 rules).
 # Exits 0 if all rules pass, 1 if any fail.
 # Each rule prints PASS: <name> or FAIL: <name> -- <reason>.
 # Prints GATE: PASS or GATE: FAIL at the end.
@@ -19,6 +19,10 @@
 #  12.  inmemory_orchestrator_posture_guard_present  -- AppPostureGate.requireDev in all 3 in-memory components (ADR-0035)
 #  13.  contract_catalog_no_deleted_spi_or_starter_names -- contract-catalog.md must not reference deleted names
 #  14.  module_arch_method_name_truth                -- method names in ARCHITECTURE.md code-fences must exist in Java class
+#  15.  no_active_refs_deleted_wave_plan_paths        -- active .md files must not reference docs/plans/engineering-plan-W0-W4.md or roadmap-W0-W4.md
+#  16.  http_contract_w1_tenant_and_cancel_consistency -- W1 HTTP contract: no replace-X-Tenant-Id wording, no CREATED initial status, no DELETE cancel route
+#  17.  contract_catalog_spi_table_matches_source     -- SPI sub-table must list 7 known SPIs; OssApiProbe must not appear before Probes sub-table
+#  18.  deleted_spi_starter_names_outside_catalog     -- MANIFEST.md, oss-bill-of-materials.md, README.md must not reference deleted SPI/starter names
 
 set -uo pipefail
 export LC_ALL=C
@@ -356,6 +360,135 @@ for _maf in 'agent-platform/ARCHITECTURE.md' 'agent-runtime/ARCHITECTURE.md'; do
   fi
 done
 if [[ $_r14_fail -eq 0 ]]; then pass_rule "module_arch_method_name_truth"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 15 — no_active_refs_deleted_wave_plan_paths
+# ADR-0041: active .md files (outside archive/reviews/third_party/target/.git)
+# must not reference docs/plans/engineering-plan-W0-W4.md or
+# docs/plans/roadmap-W0-W4.md. Both plans were archived per ADR-0037.
+# ---------------------------------------------------------------------------
+_r15_fail=0
+_deleted_plan_refs=('docs/plans/engineering-plan-W0-W4.md' 'docs/plans/roadmap-W0-W4.md')
+while IFS= read -r _mdf15; do
+  [[ -z "$_mdf15" ]] && continue
+  for _ref15 in "${_deleted_plan_refs[@]}"; do
+    if grep -qF "$_ref15" "$_mdf15" 2>/dev/null; then
+      fail_rule "no_active_refs_deleted_wave_plan_paths" "$_mdf15 references deleted plan path '$_ref15'. Per ADR-0041 Gate Rule 15 active docs must not reference archived plan paths."
+      _r15_fail=1
+      break 2
+    fi
+  done
+done < <(find . -name '*.md' \
+  ! -path './docs/archive/*' \
+  ! -path './docs/reviews/*' \
+  ! -path './docs/adr/*' \
+  ! -path './docs/delivery/*' \
+  ! -path './docs/v6-rationale/*' \
+  ! -path './third_party/*' \
+  ! -path './target/*' \
+  ! -path './.git/*' \
+  -type f 2>/dev/null | sort || true)
+if [[ $_r15_fail -eq 0 ]]; then pass_rule "no_active_refs_deleted_wave_plan_paths"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 16 — http_contract_w1_tenant_and_cancel_consistency
+# ADR-0040: (a) no "replace.*X-Tenant-Id" in active docs; (b) http-api-contracts.md
+# must not reference CREATED as initial status; (c) openapi-v1.yaml must not
+# mention DELETE /v1/runs/{runId} as the cancel mechanism.
+# ---------------------------------------------------------------------------
+_r16_fail=0
+# 16a: no forward-looking "will replace X-Tenant-Id" claim in active normative docs
+# Exclude docs/adr/: ADRs may legitimately document rejected options and past wrong text.
+while IFS= read -r _mdf16; do
+  [[ -z "$_mdf16" ]] && continue
+  if grep -qE 'will replace.*X-Tenant-Id|replace header-based.*with JWT|W1 replaces.*X-Tenant-Id' "$_mdf16" 2>/dev/null; then
+    fail_rule "http_contract_w1_tenant_and_cancel_consistency" "$_mdf16 contains a forward-looking 'replace X-Tenant-Id' claim. Per ADR-0040 W1 adds JWT cross-check; X-Tenant-Id is NOT replaced."
+    _r16_fail=1
+    break
+  fi
+done < <(find . -name '*.md' \
+  ! -path './docs/archive/*' \
+  ! -path './docs/reviews/*' \
+  ! -path './docs/adr/*' \
+  ! -path './third_party/*' \
+  ! -path './target/*' \
+  ! -path './.git/*' \
+  -type f 2>/dev/null | sort || true)
+# 16b: http-api-contracts.md must not say CREATED as initial status
+if [[ $_r16_fail -eq 0 ]] && [[ -f 'docs/contracts/http-api-contracts.md' ]]; then
+  if grep -qE 'starts in CREATED|CREATED stage|status.*CREATED' 'docs/contracts/http-api-contracts.md' 2>/dev/null; then
+    fail_rule "http_contract_w1_tenant_and_cancel_consistency" "docs/contracts/http-api-contracts.md references CREATED as initial run status. Per ADR-0040 initial status is PENDING."
+    _r16_fail=1
+  fi
+fi
+# 16c: openapi-v1.yaml must not mention DELETE /v1/runs/{runId} as cancel
+if [[ $_r16_fail -eq 0 ]] && [[ -f 'docs/contracts/openapi-v1.yaml' ]]; then
+  if grep -qE 'DELETE[[:space:]]*/v1/runs/\{runId\}|DELETE.*runId.*cancel' 'docs/contracts/openapi-v1.yaml' 2>/dev/null; then
+    fail_rule "http_contract_w1_tenant_and_cancel_consistency" "docs/contracts/openapi-v1.yaml references DELETE /v1/runs/{runId} as cancel. Per ADR-0040 cancel is POST /v1/runs/{id}/cancel."
+    _r16_fail=1
+  fi
+fi
+if [[ $_r16_fail -eq 0 ]]; then pass_rule "http_contract_w1_tenant_and_cancel_consistency"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 17 — contract_catalog_spi_table_matches_source
+# ADR-0041: contract-catalog.md must list the 7 known active SPI interfaces.
+# OssApiProbe must NOT appear before the **Probes sub-table heading.
+# ---------------------------------------------------------------------------
+_r17_fail=0
+_catalog17='docs/contracts/contract-catalog.md'
+_known_spis=('RunRepository' 'Checkpointer' 'GraphMemoryRepository' 'ResilienceContract' 'Orchestrator' 'GraphExecutor' 'AgentLoopExecutor')
+if [[ -f "$_catalog17" ]]; then
+  for _spi in "${_known_spis[@]}"; do
+    if ! grep -qF "$_spi" "$_catalog17" 2>/dev/null; then
+      fail_rule "contract_catalog_spi_table_matches_source" "$_catalog17 does not list SPI '$_spi'. Per ADR-0041 Gate Rule 17 all 7 active SPI interfaces must appear."
+      _r17_fail=1
+    fi
+  done
+  if [[ $_r17_fail -eq 0 ]]; then
+    _past_probes=0
+    while IFS= read -r _ln17; do
+      if echo "$_ln17" | grep -qE '\*\*Probes|^#+[[:space:]]+Probes'; then _past_probes=1; fi
+      if [[ $_past_probes -eq 0 ]] && echo "$_ln17" | grep -qF 'OssApiProbe'; then
+        fail_rule "contract_catalog_spi_table_matches_source" "$_catalog17 contains OssApiProbe before the Probes sub-table. OssApiProbe is a probe, not an SPI. Per ADR-0041 Gate Rule 17."
+        _r17_fail=1
+        break
+      fi
+    done < "$_catalog17"
+  fi
+else
+  fail_rule "contract_catalog_spi_table_matches_source" "$_catalog17 not found."
+  _r17_fail=1
+fi
+if [[ $_r17_fail -eq 0 ]]; then pass_rule "contract_catalog_spi_table_matches_source"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 18 — deleted_spi_starter_names_outside_catalog
+# ADR-0041 extends Rule 13: deleted SPI/starter names must not appear in
+# third_party/MANIFEST.md, docs/cross-cutting/oss-bill-of-materials.md, README.md.
+# ---------------------------------------------------------------------------
+_r18_fail=0
+_r18_targets=('third_party/MANIFEST.md' 'docs/cross-cutting/oss-bill-of-materials.md' 'README.md')
+_deleted_names18=(
+  'LongTermMemoryRepository' 'ToolProvider' 'LayoutParser' 'DocumentSourceConnector'
+  'PolicyEvaluator' 'IdempotencyRepository' 'ArtifactRepository'
+  'spring-ai-ascend-memory-starter' 'spring-ai-ascend-skills-starter'
+  'spring-ai-ascend-knowledge-starter' 'spring-ai-ascend-governance-starter'
+  'spring-ai-ascend-persistence-starter' 'spring-ai-ascend-resilience-starter'
+  'spring-ai-ascend-mem0-starter' 'spring-ai-ascend-docling-starter'
+  'spring-ai-ascend-langchain4j-profile'
+)
+for _t18 in "${_r18_targets[@]}"; do
+  if [[ -f "$_t18" ]]; then
+    for _dn18 in "${_deleted_names18[@]}"; do
+      if grep -qF "$_dn18" "$_t18" 2>/dev/null; then
+        fail_rule "deleted_spi_starter_names_outside_catalog" "$_t18 references deleted name '$_dn18'. Per ADR-0041 Gate Rule 18 this is a contract-surface truth violation."
+        _r18_fail=1
+      fi
+    done
+  fi
+done
+if [[ $_r18_fail -eq 0 ]]; then pass_rule "deleted_spi_starter_names_outside_catalog"; fi
 
 # ---------------------------------------------------------------------------
 # Summary

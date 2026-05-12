@@ -130,4 +130,4 @@ ArchUnit). Removing or replacing it is a clean cut.
 - GraalVM Polyglot Sandbox: [GraalVM 24.2 Sandbox API](https://www.graalvm.org/jdk21/reference-manual/embed-languages/)
 - competitive analysis: `docs/reviews/2026-05-12-competitive-analysis-and-enhancements.en.md`
 - `architecture-status.yaml` row: `sandbox_executor_spi`
-- W3 wave plan: `docs/plans/engineering-plan-W0-W4.md` §5.2
+- W3 wave plan: `docs/archive/2026-05-13-plans-archived/engineering-plan-W0-W4.md` §5.2 (archived per ADR-0037)

@@ -1,4 +1,4 @@
-# spring-ai-ascend architecture status ledger -- 2026-05-13 combined sixth+seventh reviewer pass
+# spring-ai-ascend architecture status ledger -- 2026-05-13 post-seventh follow-up pass
 # Single source of truth for capability status. Updated by commits, not manually.
 #
 # status enum: design_accepted | implemented_unverified | test_verified | deferred_w1 | deferred_w2
@@ -67,7 +67,7 @@ capabilities:
     tests: []
     latest_semantic_pass_sha: 9ba0245
     latest_delivery_file: docs/delivery/2026-05-10-68c07f1.md
-    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml. Architecture baseline: 36 §4 constraints (#1–#36); 39 ADRs (0001–0039); 14 active gate rules; 11 active engineering rules (1–6, 9–10, 20–21, 25); 15 deferred rules (7, 8, 11, 13–19, 22–24, 26–27)."
+    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml. Architecture baseline: 38 §4 constraints (#1–#38); 41 ADRs (0001–0041); 18 active gate rules; 11 active engineering rules (1–6, 9–10, 20–21, 25); 15 deferred rules (7, 8, 11, 13–19, 22–24, 26–27)."
 
   spring_ai_ascend_dependencies_bom:
     status: implemented_unverified
@@ -214,7 +214,7 @@ capabilities:
     implementation:
       - docs/adr/
     tests: []
-    allowed_claim: "39 per-file MADR 4.0 ADRs in docs/adr/ (0001–0039); README index present and refreshed 2026-05-13."
+    allowed_claim: "41 per-file MADR 4.0 ADRs in docs/adr/ (0001–0041); README index present and refreshed 2026-05-13."
 
   perf_evidence_path:
     status: design_accepted
@@ -863,3 +863,24 @@ capabilities:
     implementation: null
     tests: []
     allowed_claim: "Design only — RunDispatcher SPI: route Run to correct channel bundle (Control/Data/Heartbeat) per ADR-0031 §4 #101-125. Terminal events bypass DROP_OLDEST via reserved terminal slot (never dropped). Non-terminal events use DROP_OLDEST with counter metric. Implementation deferred to W2. ADR-0031."
+
+  # --- Post-seventh follow-up response additions (2026-05-13) ---
+
+  w1_http_contract_reconciliation:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0040-w1-http-contract-reconciliation.md
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — W1 HTTP contract reconciliation: (a) X-Tenant-Id stays required; W1 adds JWT tenant_id claim cross-check (ADR-0040); (b) initial Run status = PENDING (RunStatus enum has no CREATED); (c) cancel = POST /v1/runs/{id}/cancel (not DELETE). Gate Rule 16 enforces. §4 #37."
+
+  active_corpus_truth_sweep:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0041-active-corpus-truth-sweep.md
+    implementation:
+      - docs/archive/2026-05-13-plans-archived/architecture-systems-engineering-plan.md
+      - gate/check_architecture_sync.ps1
+      - gate/check_architecture_sync.sh
+    tests: []
+    allowed_claim: "Active-corpus truth sweep: 11 ADR stale plan paths fixed to archived copy; agent-runtime/ARCHITECTURE.md + oss-bill-of-materials.md point to wave authority; architecture-systems-engineering-plan.md archived; Gate Rule 15 prevents recurrence (no active .md may reference deleted plan paths). §4 #38."

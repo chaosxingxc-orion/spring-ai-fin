@@ -150,17 +150,11 @@ All Spring Boot 4.x transitive deps (Web, Security, Data JDBC, Actuator, Validat
 | Dep | Pinned | Channel | Notes |
 |---|---|---|---|
 | Apache Tika | `3.3.0` | Maven | Core + parsers-standard; U2 at W0 |
-| Docling-serve | pinned in third_party/MANIFEST.md | Tier C (REST sidecar) | Layout-aware PDF; optional via docling-starter SPI |
+| Docling-serve | pinned in third_party/MANIFEST.md | Tier C (REST sidecar) | Layout-aware PDF; evaluation-only (associated starter and SPI deleted in 2026-05-12 Occam pass; future activation requires new ADR) |
 
-### 4.6 langchain4j (alternate RAG profile; U0 at W0)
+### 4.6 langchain4j (not in scope; future research)
 
-| Field | Value |
-|---|---|
-| BOM | `dev.langchain4j:langchain4j-bom:1.14.1` |
-| Status | GA (1.14.1 released 2026-05-07) |
-| Usage | Alternate RAG profile starter (`spring-ai-ascend-langchain4j-profile`); not in default path |
-| Verification level | U0 -- BOM declared; no module depends on it yet |
-| Target | U2 when spring-ai-ascend-langchain4j-profile scaffolded (Step 11) |
+LangChain4j dispatch is excluded from scope at L0 (`ARCHITECTURE.md §1`). A candidate LangChain4j profile starter is not active and has no ADR authorizing activation. Future activation requires a dedicated ADR.
 
 ## 5. Per-wave verification advancement (revised W0 complete)
 
@@ -219,7 +213,7 @@ full analysis.
 - `ascend.springai.runtime.resilience.ResilienceContract` — W0: Resilience4j impl.
 - `ascend.springai.runtime.probe.OssApiProbe` — W0: classpath shape probe.
 
-Deleted SPIs (`LongTermMemoryRepository`, `ToolProvider`, `LayoutParser`, `DocumentSourceConnector`, `PolicyEvaluator`, `IdempotencyRepository`, `ArtifactRepository`) were removed in the 2026-05-12 Occam pass. See `architecture-status.yaml` row `sdk_spi_starter_occam_pass`. Do not reference these names in active documentation.
+Seven SPIs (long-term memory, tool provider, layout parser, document source connector, policy evaluator, idempotency repository, artifact repository) were removed in the 2026-05-12 Occam pass. See `architecture-status.yaml` row `sdk_spi_starters`. Do not reference these names in active documentation.
 
 ## 7. Tier C: local source clones + Python OSS sidecars
 
@@ -299,15 +293,15 @@ The remaining reference projects (langchain4j, agentscope-java) are NOT on this 
 - **RestAssured stuck at 5.5.0.** 6.0.0 is a major version jump; upgrade deferred to W1 wave evaluation.
 - **logstash-logback-encoder stuck at 8.0.** 9.0 is a major version jump; upgrade deferred to W1 evaluation.
 - **Graphiti selected as W1 reference sidecar (ADR-0034).** mem0 and Cognee are not selected. Future activation of either requires a dedicated ADR.
-- **langchain4j at U0.** BOM declared; no module depends on it yet. Advances to U2 when `spring-ai-ascend-langchain4j-profile` scaffolded at Step 11.
-- **Python sidecar version drift.** mem0 / Graphiti / Docling release independently. Mitigated by SPI layer + `third_party/MANIFEST.md` SHA pinning.
+- **langchain4j at U0.** BOM declared; no module depends on it yet. LangChain4j dispatch is excluded from L0 scope (see `ARCHITECTURE.md §1`); future activation requires a dedicated ADR.
+- **Python sidecar version drift.** Graphiti releases independently. Mitigated by SPI layer + `third_party/MANIFEST.md` SHA pinning.
 - **springdoc 3.0.3 Boot 4 runtime behavior.** Compile-verified at W0; runtime auto-configuration verified in W1 IT tests.
 
 ## 12. References
 
 - `ARCHITECTURE.md` sec-2 (OSS component matrix)
 - `docs/architecture-v6.X.md` integration-model section
-- `docs/plans/engineering-plan-W0-W4.md`
+- Active wave authority: `ARCHITECTURE.md §1 + docs/governance/architecture-status.yaml + docs/CLAUDE-deferred.md` (per ADR-0037)
 - `third_party/MANIFEST.md` (Tier C SHA manifest)
 - `docs/cross-cutting/sdk-versioning.md` (deprecation policy)
 - `docs/cross-cutting/dev-environment.md` (toolchain install guide)

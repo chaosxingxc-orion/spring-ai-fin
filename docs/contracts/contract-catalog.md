@@ -7,25 +7,43 @@
 
 ## 1. HTTP API contracts
 
-Stable W0 routes: `GET /v1/health`, `GET /actuator/health`, `GET /actuator/prometheus` (no auth headers). Planned W1 routes: `POST /v1/runs`, `GET /v1/runs/{id}`, `POST /v1/runs/{id}/cancel` — all require `X-Tenant-Id`; POST routes also require `Idempotency-Key`. Full per-route spec: [http-api-contracts.md](http-api-contracts.md) + `docs/contracts/openapi-v1.yaml`.
+Stable W0 routes: `GET /v1/health`, `GET /actuator/health`, `GET /actuator/prometheus` (no auth headers). Planned W1 routes: `POST /v1/runs`, `GET /v1/runs/{id}`, `POST /v1/runs/{id}/cancel` — all require `X-Tenant-Id`; POST routes also require `Idempotency-Key`; W1 adds JWT `tenant_id` claim cross-check against `X-Tenant-Id` (ADR-0040). Full per-route spec: [http-api-contracts.md](http-api-contracts.md) + `docs/contracts/openapi-v1.yaml`.
 
 **API conventions** (absorbed from `api-conventions.md`): URL major-versioned (`/v1/`); plural nouns; RFC 7807 `application/problem+json` errors with stable `code`; cursor pagination (`?limit=20&cursor=`); `GET`=200, POST-create=201, async=202, DELETE=204; `Idempotency-Key` required on POST/PUT/PATCH in research/prod; `OpenApiContractIT` snapshot-tests spec; SSE streaming reserved W3+.
 
 ---
 
-## 2. SPI contracts (5 active interfaces, all L1)
+## 2. SPI contracts
 
-All impls: thread-safe, no null returns, tenant-scoped. SPI packages import only `java.*` (ArchUnit `ApiCompatibilityTest`). japicmp binary-compat from W1.
+**Inclusion rule for SPI sub-table:** Java `interface` types that represent named public extension points in `agent-platform` or `agent-runtime`; not probes, not data carriers (records/sealed classes), not implementations.
 
-**Active SPI interfaces (W0, shipped):**
+All SPI impls: thread-safe, no null returns, tenant-scoped. SPI packages import only `java.*` (ArchUnit `ApiCompatibilityTest`). japicmp binary-compat from W1.
+
+**Active SPI interfaces (W0, shipped) — 7 interfaces:**
 
 | Interface | Module | Status |
 |---|---|---|
 | `RunRepository` | `agent-runtime` | shipped — W0 in-memory impl (`InMemoryRunRegistry`) |
 | `Checkpointer` | `agent-runtime` | shipped — W0 in-memory impl (`InMemoryCheckpointer`) |
-| `GraphMemoryRepository` | `spring-ai-ascend-graphmemory-starter` | shipped — starter skeleton (no-op until W1) |
+| `GraphMemoryRepository` | `agent-runtime` (SPI interface); `spring-ai-ascend-graphmemory-starter` (adapter shell) | shipped — interface only; no production impl at W0; Graphiti is W1 reference (ADR-0034) |
 | `ResilienceContract` | `agent-runtime` | shipped — W0 Resilience4j impl |
-| `OssApiProbe` | `agent-runtime` | shipped — W0 health probe |
+| `Orchestrator` | `agent-runtime` | shipped — W0 reference impl (`SyncOrchestrator`) |
+| `GraphExecutor` | `agent-runtime` | shipped — W0 reference impl (`SequentialGraphExecutor`) |
+| `AgentLoopExecutor` | `agent-runtime` | shipped — W0 reference impl (`IterativeAgentLoopExecutor`) |
+
+**Data carriers (not SPIs; structural contracts):**
+
+| Type | Module | Notes |
+|---|---|---|
+| `RunContext` | `agent-runtime` | Per-run context record passed to SPIs |
+| `ExecutorDefinition` | `agent-runtime` | Sealed: `GraphDefinition` \| `AgentLoopDefinition` |
+| `SuspendSignal` | `agent-runtime` | Checked-exception interrupt primitive |
+
+**Probes (not SPIs; classpath shape checks):**
+
+| Type | Module | Notes |
+|---|---|---|
+| `OssApiProbe` | `agent-runtime` | W0 classpath shape probe; verifies Spring AI + Temporal + MCP + Tika on classpath |
 
 **Design-named SPIs (deferred W2+):**
 

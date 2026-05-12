@@ -2,7 +2,7 @@
 
 Enterprise agent platform scaffold for financial services teams building on Spring AI 2.0.0-M5 + Spring Boot 4.0.5.
 
-**Status**: W0 scaffold; 4 modules; dual-mode orchestration SPI (graph + agent-loop) with SuspendSignal nesting shipped (C32–C34); §4 #16–#18 + Rules 18–19 + ADR-0016/0017/0018 + 9 design_accepted rows added (competitive analysis 2026-05-12); §4 #19–#23 + Rules 20–21 (active) + Rules 22–24 (deferred) + ADR-0019–0024 + 12 yaml rows + RunStateMachine + TenantPropagationPurityTest + EXPIRED status + MDC tenant_id (third-review 2026-05-12); architecture-code consistency cleanup: W0/W1/W2 contract split, idempotency narrowed, checkpoint ownership clarified, ADR-0025/0026/0027 (fourth-review 2026-05-12); data-plane typing + cognition-action separation + skill SPI + three-track channels: §4 #25–#28 + ADR-0028/0029/0030/0031 + Rules 26–27 (deferred) + 9 yaml rows + Gate Rule 11 + HD-A.8/HD-A.10 fixes (fifth-review 2026-05-12); scope hierarchy + posture consolidation + wave authority + contract-surface truth generalization + memory taxonomy + skill tiers + payload migration: §4 #29–#36 + ADR-0032–0039 + Gate Rules 12–14 + AppPostureGate + findRootRuns + plans archived + 8 stale starter coords removed + 101 tests GREEN (sixth+seventh combined review 2026-05-13)
+**Status**: W0 scaffold; 4 modules; dual-mode orchestration SPI (graph + agent-loop) with SuspendSignal nesting shipped (C32–C34); §4 #16–#18 + Rules 18–19 + ADR-0016/0017/0018 + 9 design_accepted rows added (competitive analysis 2026-05-12); §4 #19–#23 + Rules 20–21 (active) + Rules 22–24 (deferred) + ADR-0019–0024 + 12 yaml rows + RunStateMachine + TenantPropagationPurityTest + EXPIRED status + MDC tenant_id (third-review 2026-05-12); architecture-code consistency cleanup: W0/W1/W2 contract split, idempotency narrowed, checkpoint ownership clarified, ADR-0025/0026/0027 (fourth-review 2026-05-12); data-plane typing + cognition-action separation + skill SPI + three-track channels: §4 #25–#28 + ADR-0028/0029/0030/0031 + Rules 26–27 (deferred) + 9 yaml rows + Gate Rule 11 + HD-A.8/HD-A.10 fixes (fifth-review 2026-05-12); scope hierarchy + posture consolidation + wave authority + contract-surface truth generalization + memory taxonomy + skill tiers + payload migration: §4 #29–#36 + ADR-0032–0039 + Gate Rules 12–14 + AppPostureGate + findRootRuns + plans archived + 8 stale starter coords removed + 101 tests GREEN (sixth+seventh combined review 2026-05-13); corpus truth sweep + W1 HTTP contract reconciliation + deleted plan paths frozen + contract-catalog SPI table split + module-tree comment fixes + mem0/Docling/langchain4j-profile stripped from active BoM: §4 #37–#38 + ADR-0040–0041 + Gate Rules 15–18 (post-seventh follow-up 2026-05-13)
 
 ---
 
@@ -31,7 +31,7 @@ Enterprise agent platform scaffold for financial services teams building on Spri
 
 `Run.mode` discriminates `GRAPH` (deterministic state machine) from `AGENT_LOOP` (ReAct-style LLM reasoning). Both modes share one interrupt primitive — `SuspendSignal` — which the `Orchestrator` catches to checkpoint the parent, dispatch a child Run, and resume the parent with the child's result. Three-level bidirectional nesting (graph → agent-loop → graph) is proved by `NestedDualModeIT`.
 
-Thirty-six architectural constraints govern the design path from W0 to W4+ (see `ARCHITECTURE.md §4 #1–#36`):
+Thirty-eight architectural constraints govern the design path from W0 to W4+ (see `ARCHITECTURE.md §4 #1–#38`):
 - **#10** Long-horizon lifecycle: typed suspend reasons + `AgentSubject` identity + paged `RunRepository` queries.
 - **#11** Northbound handoff contract: sync (shipped) + streamed `Flux<RunEvent>` + yield; all with cancel, heartbeat ≤ 30 s, typed progress events.
 - **#12** Two-axis resource arbitration: tenant × skill capacity matrix; saturation suspends, not fails.
@@ -54,6 +54,8 @@ Thirty-six architectural constraints govern the design path from W0 to W4+ (see 
 - **#34** Wave authority consolidation: ARCHITECTURE.md §1 + `architecture-status.yaml` + `CLAUDE-deferred.md` are the single wave authority; stale plans archived. (ADR-0037)
 - **#35** Skill SPI resource tiering: 4 enforceability tiers (hard/sandbox/advisory/hints); enforcement claims in docs must qualify tier. (ADR-0038)
 - **#36** Payload migration adapter: single normative path `Object → Payload → CausalPayloadEnvelope`; `PayloadAdapter.wrap(Object)` required; `@Deprecated` window mandatory. (ADR-0039)
+- **#37** W1 HTTP contract: `X-Tenant-Id` stays required; W1 adds JWT `tenant_id` claim cross-check (not replacement); initial Run status = `PENDING`; cancel = `POST /v1/runs/{id}/cancel`. (ADR-0040)
+- **#38** Active-corpus truth contract: active `.md` files must not reference deleted plan paths; architecture-systems-engineering-plan archived alongside engineering-plan-W0-W4; Gate Rule 15 enforces. (ADR-0041)
 
 ---
 

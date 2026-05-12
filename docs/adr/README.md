@@ -49,6 +49,8 @@ options considered, decision, and consequences.
 | [0037](0037-wave-authority-consolidation.md) | Wave authority consolidation: archive stale plan docs, ARCHITECTURE.md is single wave authority | accepted |
 | [0038](0038-skill-spi-resource-tier-classification.md) | Skill SPI resource tier classification: 4 enforceability tiers (hard/sandbox/advisory/hints) | accepted |
 | [0039](0039-payload-migration-adapter-strategy.md) | Payload migration adapter strategy: Object → Payload → CausalPayloadEnvelope + adapter wrapper | accepted |
+| [0040](0040-w1-http-contract-reconciliation.md) | W1 HTTP contract reconciliation: X-Tenant-Id + JWT cross-check, PENDING initial status, POST /cancel | accepted |
+| [0041](0041-active-corpus-truth-sweep.md) | Active-corpus truth sweep: archive stale plans, Gate Rule 15 deleted-plan-path freeze | accepted |
 
 ## Process
 

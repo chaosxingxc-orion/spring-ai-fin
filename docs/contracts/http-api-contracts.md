@@ -89,7 +89,7 @@ This route is the W0 operator probe. Kubernetes-native liveness and readiness sp
 | Auth | JWT required in research/prod (W1) |
 | Response schema | RunResponse (to be defined in W1 OpenAPI update) |
 
-Creates a new agent run for the authenticated tenant. The run is assigned a UUID run id and starts in CREATED stage. The Idempotency-Key is scoped per tenant; the same key submitted twice returns the first response.
+Creates a new agent run for the authenticated tenant. The run is assigned a UUID run id and starts in PENDING status. The Idempotency-Key is scoped per tenant; the same key submitted twice returns the first response.
 
 ---
 

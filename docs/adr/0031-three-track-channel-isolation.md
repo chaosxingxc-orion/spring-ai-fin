@@ -198,4 +198,4 @@ collapsing to a single channel would break them. Design carefully.
 - §4 #28 (new, this ADR)
 - Rule 15 (deferred W2 — Streamed Handoff Mode Conformance)
 - `architecture-status.yaml` rows: `three_track_channel_isolation`, `run_dispatcher_spi`
-- W2 wave plan: `docs/plans/engineering-plan-W0-W4.md` §4.2
+- W2 wave plan: `docs/archive/2026-05-13-plans-archived/engineering-plan-W0-W4.md` §4.2 (archived per ADR-0037)

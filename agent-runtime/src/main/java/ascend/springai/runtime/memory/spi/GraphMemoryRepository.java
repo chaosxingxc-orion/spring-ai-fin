@@ -7,7 +7,7 @@ import java.util.List;
  *
  * No default in-JVM impl (graph structure requires an external store).
  * Primary sidecar impl: spring-ai-ascend-graphmemory-starter (Graphiti REST).
- * Evaluation alternative: Cognee — cycle-15 selects one.
+ * ADR-0034: Graphiti selected as W1 reference sidecar; Cognee not selected.
  *
  * Rule 11: every operation carries tenantId.
  */

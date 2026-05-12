@@ -70,4 +70,4 @@ high (every module's build descriptor)
 
 ## References
 
-- `docs/plans/engineering-plan-W0-W4.md` sec-2.4 (W0)
+- `docs/archive/2026-05-13-plans-archived/engineering-plan-W0-W4.md` sec-2.4 (W0; archived per ADR-0037)

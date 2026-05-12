@@ -61,7 +61,7 @@ Green OssApiProbeTest is a required gate for every wave.
 
 - Deferred capabilities and design decisions: `docs/CLAUDE-deferred.md`
 - Current delivery state per wave (W0..W4): `docs/STATE.md`
-- Wave engineering plan: `docs/plans/engineering-plan-W0-W4.md`
+- Wave engineering plan: `ARCHITECTURE.md §1 + docs/governance/architecture-status.yaml + docs/CLAUDE-deferred.md` (per ADR-0037; engineering-plan-W0-W4.md archived)
 
 ## 6. Key posture defaults
 

@@ -31,10 +31,10 @@ scoped ThreadLocal), and propagates `tenant_id` into the Logback MDC
 for log correlation. No JWT claim is read at W0; no Postgres GUC is
 set.
 
-W1 will replace header-based extraction with JWT `tenant_id` claim
-validation. W2 will add `SET LOCAL app.tenant_id` GUC and enable RLS
-policies on tenant tables. See ADR-0027 (idempotency W0 scope) and
-ADR-0023 (cross-boundary propagation).
+W1 will add JWT `tenant_id` claim cross-check against the existing
+`X-Tenant-Id` header value (per ADR-0040); `X-Tenant-Id` remains
+required at W1. W2 will add `SET LOCAL app.tenant_id` GUC and enable
+RLS policies on tenant tables. See ADR-0027, ADR-0040, ADR-0023.
 
 ### idempotency -- Header validation filter (W0)
 
@@ -71,7 +71,7 @@ values.
 - HTTP: REST, JSON. Versioned URL prefix `/v1/`.
 - Auth: Bearer JWT, RS256, JWKS URL configured at boot (W1).
 - Idempotency: `Idempotency-Key` header on POST/PUT/PATCH (W0: UUID validation; W1: dedup).
-- Tenant: `X-Tenant-Id` header at W0; JWT `tenant_id` claim at W1.
+- Tenant: `X-Tenant-Id` header required at W0 and W1; W1 adds JWT `tenant_id` claim cross-check (ADR-0040).
 
 ## 5. Posture-aware defaults
 
@@ -83,7 +83,7 @@ values.
 
 ## 6. Tests
 
-W0 shipped tests (all green; no Testcontainers dependency):
+W0 shipped tests (all green; `HealthEndpointIT` and `OpenApiContractIT` use Testcontainers via `@Testcontainers(disabledWithoutDocker = true)`; remaining tests are pure JUnit):
 
 | Test | Layer | Asserts |
 |---|---|---|
