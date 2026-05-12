@@ -18,12 +18,15 @@
    wave has *zero* artifact deliverables, do not run it.
 5. **Decline reviewer findings during a wave** unless the finding blocks
    that wave's acceptance test. Reviewer findings are batched and
-   triaged at wave close.
+   triaged at wave close. **Exception:** a finding in a Rule 9
+   ship-blocking category (model path, run lifecycle, HTTP contract,
+   security boundary, resource lifetime, observability) must be resolved
+   within the wave and may not be deferred.
 6. **Posture default is `dev` in all waves.** `research` and `prod`
    strict-mode tests are added per wave; full posture certification is
    W4 sec-acceptance.
 7. **One Java version, one Spring Boot major.** Java 21 LTS, Spring Boot
-   3.5.x. No fork, no preview features in production code.
+   4.0.5. No fork, no preview features in production code.
 8. **CI smoke is not Rule 8 (cycle-9 sec-D2).** Fake-provider sequential
    runs in CI are named `ci_operator_shape_smoke` and have
    `dependency_mode: fake` + `rule_8_eligible: false`. A run is named
@@ -93,7 +96,7 @@ behavior gates in sec-2.7 to turn green.**
 | Dep | Version |
 |---|---|
 | Java | 21.0.x LTS |
-| Spring Boot | 3.5.x |
+| Spring Boot | 4.0.5 |
 | Postgres | 16.x |
 | Flyway | 10.x |
 | HikariCP | (transitive via Spring Boot) |

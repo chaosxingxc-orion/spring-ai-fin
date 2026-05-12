@@ -1,6 +1,6 @@
 # spring-ai-ascend
 
-Enterprise agent platform scaffold for financial services teams building on Spring AI 2.0 + Spring Boot 4.0.
+Enterprise agent platform scaffold for financial services teams building on Spring AI 2.0.0-M5 + Spring Boot 4.0.5.
 
 **Status**: W0 scaffold; 5 modules; GET /v1/health shipped; 9 tests GREEN
 
@@ -11,10 +11,10 @@ Enterprise agent platform scaffold for financial services teams building on Spri
 | Module | Role |
 |--------|------|
 | `agent-platform` | Northbound HTTP facade — filter chain, health endpoint, idempotency |
-| `agent-runtime` | Cognitive runtime — LLM gateway, memory/knowledge/skill dispatch |
+| `agent-runtime` | Cognitive runtime — SPI contracts, OSS API probe |
 | `spring-ai-ascend-dependencies` | BoM — pins all SDK and OSS dependency versions |
-| `spring-ai-ascend-memory-starter` | SPI starter — `LongTermMemoryRepository`, `GraphMemoryRepository` |
 | `spring-ai-ascend-graphmemory-starter` | Sidecar adapter — Graphiti REST (opt-in, `enabled=false` by default) |
+| `agent-eval` | Eval harness — W4 placeholder; no production code at W0 |
 
 ---
 

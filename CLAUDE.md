@@ -8,7 +8,7 @@
 
 ## Engineering Rules
 
-**Nine active rules.** Rules 1–4 are daily-use engineering principles. Rules 5–7 are class-level patterns. Rule 9 is the delivery gate. Rule 10 is the platform-contract standard. Rules 8 and 11 are deferred to W2 — see `docs/CLAUDE-deferred.md`. Rule 12 (maturity L0-L4) is replaced by binary `shipped:` in `architecture-status.yaml`. All rules override default habits.
+**Eight active rules.** Rules 1–4 are daily-use engineering principles. Rules 5–6 are class-level patterns. Rule 9 is the delivery gate. Rule 10 is the platform-contract standard. Rules 7, 8, and 11 are deferred — see `docs/CLAUDE-deferred.md`. Rule 12 (maturity L0-L4) is replaced by binary `shipped:` in `architecture-status.yaml`. All rules override default habits.
 
 ---
 
@@ -95,16 +95,9 @@ When a class needs tenant scoping, scope is a **required constructor argument**.
 
 ---
 
-### Rule 7 — Resilience Must Not Mask Signals
+### Rule 7 — Resilience Must Not Mask Signals [Deferred to W2]
 
-**Applies when fallback paths exist. W0 ships no soft-fallback paths; this rule is aspirational until W2's first soft-fallback lands.**
-
-Every silent-degradation path emits a loud, structured signal. Required for each fallback branch:
-
-1. **Countable**: named metric counter (e.g. `*_fallback_total`).
-2. **Attributable**: `WARNING+` log with run id and trigger reason at the branch entry.
-3. **Inspectable**: run metadata carries a `fallback_events` list. Non-empty fallback_events = not "successful".
-4. **Gate-asserted**: operator-shape gate asserts fallback counts are zero.
+**Deferred.** No live fallback path exists at W0. Re-introduction trigger: first soft-fallback path committed (target: W2 LLM gateway). Full rule text in `docs/CLAUDE-deferred.md`.
 
 ---
 
@@ -141,3 +134,13 @@ Posture set by `APP_POSTURE` env var (default `dev`). Read once at startup; neve
 | `spring-ai-ascend-graphmemory-starter` | no bean registered | no bean registered | no bean registered |
 
 Tests must cover `dev` and `research` paths for any new contract.
+
+---
+
+## Constraint Coverage by First Principle
+
+**P1 (lower cost-of-use)** and **P3 (self-evolving intelligence)** have no gate-enforced rules at W0 — intentional, because no cost-accounting, context-caching, skill-registry, or memory-compression capability exists yet. Rules 13 (P1) and 14 (P3) are staged in `docs/CLAUDE-deferred.md` with W3 re-introduction triggers; they must be activated before the first W3 capability ships.
+
+**P2 (lower onboarding barrier)** is covered by Architecture §4.7 (SPI purity — clients depend on `java.*` only), Architecture §4.2 (posture model — `dev` permissive default), Architecture §4.6 (OSS-first — glue LOC ≤ 1500), and Rule 6 (single `@Bean` construction path).
+
+**E1 (OSS-first reuse)** is operationalised by Architecture §4.6 (glue LOC ≤ 1500) and the Occam pass decision rule: "SPI wrapping an OSS Java interface → DELETE."
