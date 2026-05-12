@@ -45,20 +45,28 @@ spring-ai-ascend/
       probe/
         OssApiProbe.java
 
-  agent-runtime/                               # Cognitive runtime kernel (SPI contracts)
+  agent-runtime/                               # Cognitive runtime kernel (SPI contracts + domain entities)
     src/main/java/ascend/springai/runtime/
       memory/spi/
         GraphMemoryRepository.java             # SPI interface (interface only, W1+)
       probe/
         OssApiProbe.java
+      resilience/
+        ResilienceContract.java                # Per-operation resilience routing
+        ResiliencePolicy.java
+        YamlResilienceContract.java            # Map-backed impl (Spring wiring deferred to W2)
+      runs/
+        Run.java                               # Run entity — Rule 11 contract spine
+        RunStatus.java
+        RunRepository.java                     # SPI interface (pure Java)
+      idempotency/
+        IdempotencyRecord.java                 # Idempotency entity — Rule 11 contract spine
 
   spring-ai-ascend-graphmemory-starter/        # E2 middleware shell (enabled=false, W2)
     src/main/java/ascend/springai/runtime/graphmemory/
       GraphMemoryAutoConfiguration.java
       GraphMemoryProperties.java
 
-  agent-eval/                                  # Eval harness (W4 placeholder)
-    pom.xml
 ```
 
 Module dependency direction (enforced by `ApiCompatibilityTest` ArchUnit rules):
@@ -127,6 +135,11 @@ SPI packages (`ascend.springai.runtime.*.spi.*`) import only `java.*`.
 7. **SPI purity**: SPI interfaces under `ascend.springai.runtime.*.spi.*`
    import only `java.*`. No Spring, Micrometer, or platform types in SPIs.
 
+8. **Per-operation resilience routing**: `ResilienceContract` maps `operationId`
+   (e.g. `"llm-call"`, `"vector-search"`) to a `ResiliencePolicy(cbName, retryName, tlName)`.
+   Call sites use Resilience4j annotations with the resolved names. Spring
+   `@ConfigurationProperties` wiring is deferred to W2 LLM gateway.
+
 ---
 
 ## 5. W0 shipped capabilities
@@ -134,8 +147,11 @@ SPI packages (`ascend.springai.runtime.*.spi.*`) import only `java.*`.
 - `GET /v1/health` — liveness probe; JSON `{"status":"UP"}`.
 - `TenantContextFilter` — extracts `X-Tenant-Id`, propagates via `TenantContextHolder`.
 - `IdempotencyHeaderFilter` — deduplicates requests by `Idempotency-Key` header.
-- `IdempotencyStore` — dev-posture in-memory store (non-durable; replaced in W1).
+- `IdempotencyStore` — dev-posture stub (no-op + WARNING log); research/prod throws `IllegalStateException`; replaced in W1.
 - `GraphMemoryRepository` SPI — interface only; no implementation shipped.
+- `ResilienceContract` + `YamlResilienceContract` — per-operation resilience routing (operationId → policy triple).
+- `Run` entity + `RunRepository` SPI — contract-spine entity with mandatory `tenantId` (Rule 11 target).
+- `IdempotencyRecord` entity — contract-spine entity with mandatory `tenantId` (Rule 11 target).
 - `OssApiProbeTest` — compile-time probe verifying Spring AI + Spring Boot API surface.
 - `ApiCompatibilityTest` — ArchUnit rules enforcing SPI purity and dependency direction.
 

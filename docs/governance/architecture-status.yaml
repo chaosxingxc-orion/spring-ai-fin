@@ -10,13 +10,13 @@ generated_at: 2026-05-12
 # Source: root pom.xml <modules> list updated 2026-05-12 Occam pass (C1-C11)
 repository_counts:
   note: "Canonical counts -- derived from root pom.xml modules list. All documents reference these; no document may claim a different count without updating this block."
-  reactor_modules: 6
+  reactor_modules: 5
   sdk_spi_starters: 0
   sidecar_adapter_starters: 1
   alternate_framework_profiles: 0
-  internal_modules: 3
+  internal_modules: 2
   bom_module: 1
-  total_reactor_modules: 6
+  total_reactor_modules: 5
 
 capabilities:
 
@@ -256,4 +256,39 @@ capabilities:
     l0_decision: ARCHITECTURE.md
     implementation: null
     tests: []
-    allowed_claim: "L0: deferred to W1; no implementation yet."
+    allowed_claim: "L0: deferred to W1. W0 stub (IdempotencyStore) logs WARNING at startup for research/prod via @PostConstruct; claimOrFind throws IllegalStateException (not UnsupportedOperationException) for research/prod. No UOE on any call path."
+
+  resilience_contract:
+    status: implemented_unverified
+    shipped: true
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - agent-runtime/src/main/java/ascend/springai/runtime/resilience/ResilienceContract.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/resilience/ResiliencePolicy.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/resilience/YamlResilienceContract.java
+    tests:
+      - agent-runtime/src/test/java/ascend/springai/runtime/resilience/ResilienceContractTest.java
+      - agent-runtime/src/test/java/ascend/springai/runtime/resilience/ResilienceContractIT.java
+    allowed_claim: "L1: ResilienceContract SPI + YamlResilienceContract routing layer; dev posture returns DEFAULT_POLICY on unknown op; research/prod throws; ResilienceContractIT verifies resolved cbName against real Resilience4j CircuitBreakerRegistry."
+
+  run_entity:
+    status: implemented_unverified
+    shipped: true
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - agent-runtime/src/main/java/ascend/springai/runtime/runs/Run.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/runs/RunStatus.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/runs/RunRepository.java
+    tests:
+      - agent-runtime/src/test/java/ascend/springai/runtime/runs/RunTest.java
+    allowed_claim: "L1: Run record with mandatory tenantId and runId; RunStatus PENDING/RUNNING/SUCCEEDED/FAILED/CANCELLED; RunRepository SPI (pure Java). Rule 11 target: tenant_id mandatory on all persistent records."
+
+  idempotency_record_entity:
+    status: implemented_unverified
+    shipped: true
+    l0_decision: ARCHITECTURE.md
+    implementation:
+      - agent-runtime/src/main/java/ascend/springai/runtime/idempotency/IdempotencyRecord.java
+    tests:
+      - agent-runtime/src/test/java/ascend/springai/runtime/idempotency/IdempotencyRecordTest.java
+    allowed_claim: "L1: IdempotencyRecord contract-spine entity with mandatory tenantId and idempotencyKey. Rule 11 target."
