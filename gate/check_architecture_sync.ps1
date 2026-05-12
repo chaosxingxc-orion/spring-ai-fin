@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-  spring-ai-ascend architecture-sync gate (fourth-review refresh, 10 rules).
+  spring-ai-ascend architecture-sync gate (fifth-review refresh, 11 rules).
 
 .DESCRIPTION
   Exits 0 if all rules pass, 1 if any fail.
@@ -19,6 +19,7 @@
     8. no_hardcoded_versions_in_arch  -- module ARCHITECTURE.md files must not pin OSS versions inline
     9. openapi_path_consistency       -- /v3/api-docs must appear in WebSecurityConfig + platform ARCH
    10. module_dep_direction           -- agent-runtime must not depend on agent-platform (and vice versa)
+   11. shipped_envelope_fingerprint_present -- InMemoryCheckpointer enforces §4 #13 16-KiB cap (MAX_INLINE_PAYLOAD_BYTES present)
 
 .PARAMETER LocalOnly
   Not used by this script (kept for invocation parity with old version).
@@ -306,6 +307,26 @@ if (-not $r10Fail -and (Test-Path $platformPom)) {
   }
 }
 if (-not $r10Fail) { Pass-Rule 'module_dep_direction' }
+
+# ---------------------------------------------------------------------------
+# Rule 11 — shipped_envelope_fingerprint_present
+# The payload_fingerprint_precommit capability is shipped: true in yaml.
+# InMemoryCheckpointer.java MUST contain MAX_INLINE_PAYLOAD_BYTES to prove
+# the §4 #13 16-KiB inline cap is actually enforced (not just documented).
+# ---------------------------------------------------------------------------
+$r11Fail = $false
+$inMemoryCheckpointerPath = 'agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/InMemoryCheckpointer.java'
+if (Test-Path -LiteralPath $inMemoryCheckpointerPath) {
+  $cpContent = Get-Content -Raw -LiteralPath $inMemoryCheckpointerPath
+  if ($cpContent -notmatch 'MAX_INLINE_PAYLOAD_BYTES') {
+    Fail-Rule 'shipped_envelope_fingerprint_present' "InMemoryCheckpointer.java does not define MAX_INLINE_PAYLOAD_BYTES. §4 #13 16-KiB cap enforcement required (payload_fingerprint_precommit shipped: true)."
+    $r11Fail = $true
+  }
+} else {
+  Fail-Rule 'shipped_envelope_fingerprint_present' "$inMemoryCheckpointerPath not found on disk."
+  $r11Fail = $true
+}
+if (-not $r11Fail) { Pass-Rule 'shipped_envelope_fingerprint_present' }
 
 # ---------------------------------------------------------------------------
 # Summary

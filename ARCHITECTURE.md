@@ -1,6 +1,6 @@
 # spring-ai-ascend Platform — Architecture
 
-> Last updated: 2026-05-12 (C26 Occam's Razor cleanup).
+> Last updated: 2026-05-12 (fifth-review pass — §4 #25-#28, ADR-0028-0031, Rules 26-27).
 
 ## 1. System boundary
 
@@ -9,8 +9,10 @@ It accepts authenticated tenant HTTP requests, drives LLMs through a tool-callin
 loop with audit-grade evidence, and persists durable side effects through an
 idempotent outbox. Built on Spring Boot 4.0.5 + Java 21.
 
-**Not in scope:** admin UI, LangChain4j dispatch, Python sidecars, multi-region
-replication, on-device models. See `docs/CLAUDE-deferred.md` for deferred items.
+**Not in scope:** admin UI, LangChain4j dispatch, Python sidecars (out-of-process IPC),
+multi-region replication, on-device models. In-process polyglot (GraalVM Polyglot embedded in
+the JVM) is a W3-optional sandbox impl per ADR-0018 — it is not a sidecar. See
+`docs/CLAUDE-deferred.md` for deferred items.
 
 ---
 
@@ -200,20 +202,28 @@ only `java.*` (enforced by `OrchestrationSpiArchTest`, `MemorySpiArchTest`).
     `Flux<RunEvent>` (deferred W2 — Rule 15), yield-via-`SuspendSignal` (shipped). When streaming
     is introduced, the surface MUST carry: (a) backpressure strategy, (b) cancellation propagation
     to `RunStatus.CANCELLED`, (c) heartbeat cadence ≤ 30 s, (d) terminal frame with `runId` +
-    final `RunStatus`, (e) typed progress events — no raw `Object`. See `streamed_handoff_mode`,
-    `orchestrator_cancellation_handshake`.
+    final `RunStatus`, (e) typed progress events — no raw `Object`. The W2 streamed surface is
+    split into three physical tracks (§4 #28): Control (cancel/suspend commands), Data
+    (`Flux<RunEvent>` progress), Heartbeat (liveness cadence). See `streamed_handoff_mode`,
+    `orchestrator_cancellation_handshake`, `three_track_channel_isolation`, ADR-0031.
 
 12. **Two-axis resource arbitration.** `ResilienceContract.resolve(operationId)` extends to a
     two-axis policy `(tenantQuota, globalSkillCapacity)` (`skill_capacity_matrix`). Skill saturation
     MUST suspend the Run (`SUSPENDED + suspendedAt + reason=RateLimited`) rather than fail. Call-tree
-    budget propagates through `RunContext` (`call_tree_budget_propagation`). Per Rule 16.
+    budget propagates through `RunContext` (`call_tree_budget_propagation`). Per Rule 16. The Skill
+    SPI (§4 #27) adds per-skill `SkillResourceMatrix` declarations that feed into both quota axes;
+    see ADR-0030.
 
 13. **Payload addressing and serialization contract.** `Checkpointer.save` carries opaque bytes
     ≤ 16 KiB inline; larger payloads MUST be references to `PayloadStore` (`payload_store_spi`).
-    `SuspendSignal.resumePayload` is an in-process `Object` correct for W0 in-memory only; when
-    the durability tier crosses JVM boundaries (W2 Postgres, W4 Temporal), resumePayload MUST be
-    serializable to bytes (`serializable_resume_payload`). Checkpoint eviction: Runs in terminal
-    status become evictable after N days (deferred — `checkpoint_eviction_policy`).
+    The 16-KiB cap is enforced at W0 by `InMemoryCheckpointer` (posture-aware: dev warns, research/
+    prod throws). `SuspendSignal.resumePayload` is an in-process `Object` correct for W0 in-memory
+    only; when the durability tier crosses JVM boundaries (W2 Postgres, W4 Temporal), resumePayload
+    MUST be serializable to bytes (`serializable_resume_payload`). Above the serialization layer,
+    every payload that crosses a suspend boundary MUST be wrapped in a `CausalPayloadEnvelope`
+    (§4 #25) declaring its `SemanticOntology` and carrying a SHA-256 fingerprint for tamper
+    detection. Checkpoint eviction: Runs in terminal status become evictable after N days (deferred
+    — `checkpoint_eviction_policy`). See ADR-0028.
 
 14. **Resume re-authorization.** Resuming a suspended Run is a re-authorization boundary.
     The resume request's tenant context MUST match the original `Run.tenantId`; mismatch returns
@@ -301,6 +311,53 @@ only `java.*` (enforced by `OrchestrationSpiArchTest`, `MemorySpiArchTest`).
     Any W2+ orchestrator that violates this contract is a ship-blocking defect (Rule 23, deferred).
     See ADR-0024.
 
+24. **Typed payload + PayloadCodec SPI.** *(Renumbered — formerly constraint #21 in this list.)*
+    See §4 #21 above. No content change; number preserved for backward reference in older docs.
+
+25. **Causal payload envelope and semantic ontology.** Every payload that crosses a suspend/resume
+    boundary at W2+ MUST be wrapped in a `CausalPayloadEnvelope` declaring: (a) `SemanticOntology`
+    tag — `FACT | PLACEHOLDER | HYPOTHESIS | REDACTED`; (b) `payloadFingerprint` — SHA-256 hex of
+    encoded bytes (tamper detection on resume); (c) `byteSize` and `decayed` flag (logical decay:
+    payloads exceeding 16 KiB inline cap are replaced with a `PayloadStoreRef`). Consumers MUST
+    inspect the `SemanticOntology` tag before passing content to LLM context: `PLACEHOLDER` data
+    MUST NOT be interpreted as a verified fact. The PII filter hook (§4 #16) exempts `PLACEHOLDER`
+    and `REDACTED` payloads from further field-level redaction. Implementation deferred to W2.
+    See ADR-0028, `causal_payload_envelope`, `semantic_ontology_tags`, `payload_fingerprint_precommit`.
+
+26. **Cognition-Action separation.** Cognitive processes (LLM-driven reasoning, plan synthesis,
+    hallucination tolerance) are isolated from action processes (database writes, tool invocations,
+    RLS-bound transactions, idempotent outbox events) by the orchestration SPI boundary. Cognitive
+    processes observe and produce *intent*; action processes execute *verified intent* with full
+    determinism and auditability. Neither layer may bypass the SPI to reach the other directly.
+    Language policy: the cognitive layer MAY be implemented in any language that can call the
+    `Orchestrator` SPI. W0-W2 default: Spring AI Java (ChatClient). W3 optional: GraalVM in-process
+    polyglot (ADR-0018), MCP Java SDK remote tool server. No language is mandatory.
+    `CapabilityRegistry` entries carry a `SkillKind` discriminator (`JAVA_NATIVE | MCP_TOOL |
+    SANDBOXED_CODE_INTERPRETER`) defining the dispatch path. See ADR-0029, `cognition_action_separation`.
+
+27. **Skill SPI: lifecycle, ResourceMatrix, posture-mandatory sandbox.** Every external capability
+    MUST be registered via the `Skill` SPI with: (a) lifecycle methods `init / execute / suspend /
+    teardown` — `teardown` is called unconditionally even when `execute` throws; (b)
+    `SkillResourceMatrix` declaring `(tenantQuotaKey, globalCapacityKey, tokenBudget, wallClockMs,
+    cpuMillis, maxMemoryBytes, concurrencyCap)` — the Orchestrator enforces declared limits before
+    `init()`; (c) `SkillTrustTier (VETTED | UNTRUSTED)` — in research/prod posture, `UNTRUSTED`
+    skills MUST route through a non-`NoOp` `SandboxExecutor` (ADR-0018); startup gate asserts
+    (Rule 27, deferred W3). Every `execute()` returns a `SkillCostReceipt` for Rule 13 (P1). When
+    a Run is SUSPENDED, `Skill.suspend()` releases heavy resources; `Skill.resume(token)` reconnects
+    before the next `execute()`. Implementation deferred to W2 (SPI) + W3 (mandatory sandbox).
+    See ADR-0030, `skill_spi_lifecycle`, `skill_resource_matrix`, `untrusted_skill_sandbox_mandatory`.
+
+28. **Three-track channel isolation.** The W2 northbound streaming surface (§4 #11) is physically
+    split into three tracks: (1) **Control** — `RunControlSink.push(RunControlCommand)`: out-of-band
+    cancel/priority-suspend commands delivered before the next executor iteration boundary; (2)
+    **Data** — `Flux<RunEvent>`: typed progress events with caller-controlled demand and bounded
+    buffer (default 64 events, DROP_OLDEST overflow — Terminal events never dropped); (3)
+    **Heartbeat** — `Flux<Instant>`: liveness cadence on a dedicated scheduler independent of data
+    channel load, cadence `≤ 30 s`. `CapabilityRegistry.resolve(name, runContext)` is tenant-scoped:
+    lookups for capabilities not authorised for the requesting tenant are rejected. A `RunDispatcher`
+    SPI separates intent-enqueue from intent-execute for async dispatch at W2. Implementation
+    deferred to W2. See ADR-0031, `three_track_channel_isolation`, `run_dispatcher_spi`.
+
 ---
 
 ## 5. W0 shipped capabilities
@@ -322,8 +379,14 @@ only `java.*` (enforced by `OrchestrationSpiArchTest`, `MemorySpiArchTest`).
 - `TenantPropagationPurityTest` — ArchUnit Rule 21: no `agent-runtime` main class may import `TenantContextHolder`.
 - `Orchestrator` SPI + `GraphExecutor` + `AgentLoopExecutor` + `SuspendSignal` + `Checkpointer` — dual-mode runtime SPIs (§4 constraint #9).
 - `RunStateMachine` — DFA validator enforcing §4 #20 legal transitions; `validate/allowedTransitions/isTerminal` (Rule 20). `RunStatus.EXPIRED` added as 7th terminal value.
-- `InMemoryCheckpointer` — dev-posture in-memory checkpoint store (W2: Postgres-backed).
-- `SyncOrchestrator` + `SequentialGraphExecutor` + `IterativeAgentLoopExecutor` + `InMemoryRunRegistry` — reference executors proving 3-level bidirectional graph↔agent-loop nesting via `SuspendSignal` interrupt. Dev-posture only; not on the production code path.
+- `InMemoryCheckpointer` — dev-posture in-memory checkpoint store with posture-aware 16-KiB
+  payload cap (§4 #13 / §4 #25): dev posture emits WARN on oversize; research/prod throws
+  `IllegalStateException`. W2: replaced by Postgres-backed impl.
+- `SyncOrchestrator` + `SequentialGraphExecutor` + `IterativeAgentLoopExecutor` + `InMemoryRunRegistry`
+  — reference executors proving 3-level bidirectional graph↔agent-loop nesting via `SuspendSignal`
+  interrupt. `IterativeAgentLoopExecutor` enforces W0 String-cursor contract: throws
+  `IllegalStateException` (with ADR-0022 reference) when a non-String payload would be silently
+  corrupted by `Object.toString()` (HD-A.8 fix). Dev-posture only; not on the production code path.
 
 ---
 

@@ -8,7 +8,7 @@
 
 ## Engineering Rules
 
-**Eleven active rules.** Rules 1–4 are daily-use engineering principles. Rules 5–6 are class-level patterns. Rule 9 is the delivery gate. Rule 10 is the platform-contract standard. Rules 20–21 are architectural enforcement rules added in the third-review cycle. Rule 25 is the architecture-text truth gate added in the fourth-review cycle. Rules 7, 8, and 11 are deferred — see `docs/CLAUDE-deferred.md`. Rules 22–24 are also deferred (W2 trigger). Rule 12 (maturity L0-L4) is replaced by binary `shipped:` in `architecture-status.yaml`. All rules override default habits.
+**Eleven active rules.** Rules 1–4 are daily-use engineering principles. Rules 5–6 are class-level patterns. Rule 9 is the delivery gate. Rule 10 is the platform-contract standard. Rules 20–21 are architectural enforcement rules added in the third-review cycle. Rule 25 is the architecture-text truth gate added in the fourth-review cycle. Rules 7, 8, and 11 are deferred — see `docs/CLAUDE-deferred.md`. Rules 22–24 are also deferred (W2 trigger). Rules 26–27 are deferred (W2/W3 trigger — skill lifecycle and untrusted sandbox mandate). Rule 12 (maturity L0-L4) is replaced by binary `shipped:` in `architecture-status.yaml`. All rules override default habits.
 
 ---
 

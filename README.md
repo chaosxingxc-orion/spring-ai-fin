@@ -2,7 +2,7 @@
 
 Enterprise agent platform scaffold for financial services teams building on Spring AI 2.0.0-M5 + Spring Boot 4.0.5.
 
-**Status**: W0 scaffold; 4 modules; dual-mode orchestration SPI (graph + agent-loop) with SuspendSignal nesting shipped (C32–C34); §4 #16–#18 + Rules 18–19 + ADR-0016/0017/0018 + 9 design_accepted rows added (competitive analysis 2026-05-12); §4 #19–#23 + Rules 20–21 (active) + Rules 22–24 (deferred) + ADR-0019–0024 + 12 yaml rows + RunStateMachine + TenantPropagationPurityTest + EXPIRED status + MDC tenant_id (third-review 2026-05-12); architecture-code consistency cleanup: W0/W1/W2 contract split, idempotency narrowed, checkpoint ownership clarified, ADR-0025/0026/0027 (fourth-review 2026-05-12)
+**Status**: W0 scaffold; 4 modules; dual-mode orchestration SPI (graph + agent-loop) with SuspendSignal nesting shipped (C32–C34); §4 #16–#18 + Rules 18–19 + ADR-0016/0017/0018 + 9 design_accepted rows added (competitive analysis 2026-05-12); §4 #19–#23 + Rules 20–21 (active) + Rules 22–24 (deferred) + ADR-0019–0024 + 12 yaml rows + RunStateMachine + TenantPropagationPurityTest + EXPIRED status + MDC tenant_id (third-review 2026-05-12); architecture-code consistency cleanup: W0/W1/W2 contract split, idempotency narrowed, checkpoint ownership clarified, ADR-0025/0026/0027 (fourth-review 2026-05-12); data-plane typing + cognition-action separation + skill SPI + three-track channels: §4 #25–#28 + ADR-0028/0029/0030/0031 + Rules 26–27 (deferred) + 9 yaml rows + Gate Rule 11 + HD-A.8/HD-A.10 fixes (fifth-review 2026-05-12)
 
 ---
 
@@ -31,7 +31,7 @@ Enterprise agent platform scaffold for financial services teams building on Spri
 
 `Run.mode` discriminates `GRAPH` (deterministic state machine) from `AGENT_LOOP` (ReAct-style LLM reasoning). Both modes share one interrupt primitive — `SuspendSignal` — which the `Orchestrator` catches to checkpoint the parent, dispatch a child Run, and resume the parent with the child's result. Three-level bidirectional nesting (graph → agent-loop → graph) is proved by `NestedDualModeIT`.
 
-Fourteen architectural constraints govern the design path from W0 to W4+ (see `ARCHITECTURE.md §4 #10–#23`):
+Twenty-eight architectural constraints govern the design path from W0 to W4+ (see `ARCHITECTURE.md §4 #1–#28`):
 - **#10** Long-horizon lifecycle: typed suspend reasons + `AgentSubject` identity + paged `RunRepository` queries.
 - **#11** Northbound handoff contract: sync (shipped) + streamed `Flux<RunEvent>` + yield; all with cancel, heartbeat ≤ 30 s, typed progress events.
 - **#12** Two-axis resource arbitration: tenant × skill capacity matrix; saturation suspends, not fails.

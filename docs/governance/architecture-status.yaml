@@ -67,7 +67,7 @@ capabilities:
     tests: []
     latest_semantic_pass_sha: d33239b
     latest_delivery_file: docs/delivery/2026-05-10-68c07f1.md
-    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml. Architecture baseline: 24 §4 constraints (#1–#24); 27 ADRs (0001–0027); 11 active rules (1–6, 9–10, 20–21, 25); 13 deferred rules (7, 8, 11, 13–19, 22–24)."
+    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml. Architecture baseline: 28 §4 constraints (#1–#28); 31 ADRs (0001–0031); 11 active rules (1–6, 9–10, 20–21, 25); 15 deferred rules (7, 8, 11, 13–19, 22–24, 26–27)."
 
   spring_ai_ascend_dependencies_bom:
     status: implemented_unverified
@@ -690,3 +690,81 @@ capabilities:
     implementation: null
     tests: []
     allowed_claim: "Tracking item — 9 ADR filenames (0006, 0008-0015) describe pre-Occam decisions while titles describe post-Occam decisions. Rename deferred to a dedicated git mv commit to avoid cross-link churn."
+
+  # --- Fifth-reviewer response additions (2026-05-12) ---
+
+  causal_payload_envelope:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0028-causal-payload-envelope-and-semantic-ontology.md
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — CausalPayloadEnvelope wraps Payload (ADR-0022) with SemanticOntology tag + SHA-256 fingerprint + byteSize + decayed flag. Implementation deferred to W2."
+
+  semantic_ontology_tags:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0028-causal-payload-envelope-and-semantic-ontology.md
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — SemanticOntology enum {FACT, PLACEHOLDER, HYPOTHESIS, REDACTED}. W2 enforcement via PayloadCodec boundary gate."
+
+  payload_fingerprint_precommit:
+    status: implemented_unverified
+    shipped: true
+    l0_decision: docs/adr/0028-causal-payload-envelope-and-semantic-ontology.md
+    implementation:
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/InMemoryCheckpointer.java
+    tests:
+      - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/inmemory/InMemoryCheckpointerSizeCapTest.java
+    allowed_claim: "W0: InMemoryCheckpointer enforces §4 #13 16-KiB cap (dev: WARN; research/prod: ISE). Full SHA-256 fingerprint on CausalPayloadEnvelope deferred to W2."
+
+  cognition_action_separation:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0029-cognition-action-separation.md
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — Cognition-Action separation principle named. Python-as-mandatory rejected; GraalPolyglot remains optional W3 sandbox impl per ADR-0018. SkillKind taxonomy (JAVA_NATIVE|MCP_TOOL|SANDBOXED_CODE_INTERPRETER) defined."
+
+  skill_spi_lifecycle:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0030-skill-spi-lifecycle-resource-matrix.md
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — Skill SPI with init/execute/suspend/teardown lifecycle; SkillCostReceipt; SkillResumeToken. Implementation deferred to W2 (SPI)."
+
+  skill_resource_matrix:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0030-skill-spi-lifecycle-resource-matrix.md
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — SkillResourceMatrix(tenantQuotaKey, globalCapacityKey, tokenBudget, wallClockMs, cpuMillis, maxMemoryBytes, concurrencyCap). Extends skill_capacity_matrix two-axis model with cost/concurrency dimensions."
+
+  untrusted_skill_sandbox_mandatory:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0030-skill-spi-lifecycle-resource-matrix.md
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — research/prod posture + UNTRUSTED SkillTrustTier MUST route through non-NoOp SandboxExecutor; startup gate asserts. Rule 27 deferred W3."
+
+  three_track_channel_isolation:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0031-three-track-channel-isolation.md
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — Control (RunControlSink) + Data (Flux<RunEvent>) + Heartbeat (Flux<Instant>) physical channels. RunDispatcher SPI. Tenant-scoped CapabilityRegistry. Implementation deferred to W2."
+
+  iterative_agent_loop_typed_cursor:
+    status: implemented_unverified
+    shipped: true
+    l0_decision: docs/adr/0022-payload-codec-spi.md
+    implementation:
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/IterativeAgentLoopExecutor.java
+    tests:
+      - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/inmemory/IterativeAgentLoopExecutorResumeCursorTest.java
+    allowed_claim: "W0: IterativeAgentLoopExecutor throws IllegalStateException (ADR-0022 reference) when non-String payload would be silently corrupted by Object.toString() concat (HD-A.8 fix). String-cursor invariant enforced explicitly."

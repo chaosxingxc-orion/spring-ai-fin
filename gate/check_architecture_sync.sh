@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
-# spring-ai-ascend architecture-sync gate -- Occam's Razor cut (C24, 6 rules).
-# Replaces the 27-rule corpus. Exits 0 if all 6 pass, 1 if any fail.
+# spring-ai-ascend architecture-sync gate -- fifth-review refresh (7 rules).
+# Exits 0 if all rules pass, 1 if any fail.
 # Each rule prints PASS: <name> or FAIL: <name> -- <reason>.
 # Prints GATE: PASS or GATE: FAIL at the end.
 #
 # Rules:
-#   1. status_enum_invalid          -- docs/governance/architecture-status.yaml status values
-#   2. delivery_log_parity          -- gate/log/*.json sha field matches filename basename
-#   3. eol_policy                   -- *.sh files in gate/ must be LF (not CRLF)
-#   4. ci_no_or_true_mask           -- no gate/run_* || true in .github/workflows/*.yml
-#   5. required_files_present       -- contract-catalog.md and openapi-v1.yaml must exist
-#   6. metric_naming_namespace      -- springai_ascend_ prefix in Java metric names
+#   1. status_enum_invalid                   -- docs/governance/architecture-status.yaml status values
+#   2. delivery_log_parity                   -- gate/log/*.json sha field matches filename basename
+#   3. eol_policy                            -- *.sh files in gate/ must be LF (not CRLF)
+#   4. ci_no_or_true_mask                    -- no gate/run_* || true in .github/workflows/*.yml
+#   5. required_files_present               -- contract-catalog.md and openapi-v1.yaml must exist
+#   6. metric_naming_namespace              -- springai_ascend_ prefix in Java metric names
+#   7. shipped_envelope_fingerprint_present -- InMemoryCheckpointer enforces §4 #13 16-KiB cap
 
 set -uo pipefail
 export LC_ALL=C
@@ -168,6 +169,25 @@ if grep -rn 'springai_fin_\|springai\.fin\.' \
   _r6_fail=1
 fi
 if [[ $_r6_fail -eq 0 ]]; then pass_rule "metric_naming_namespace"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 7 — shipped_envelope_fingerprint_present
+# The payload_fingerprint_precommit capability is shipped: true in yaml.
+# InMemoryCheckpointer.java MUST contain MAX_INLINE_PAYLOAD_BYTES to prove
+# the §4 #13 16-KiB inline cap is actually enforced (not just documented).
+# ---------------------------------------------------------------------------
+_r7_fail=0
+_imc_path='agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/InMemoryCheckpointer.java'
+if [[ -f "$_imc_path" ]]; then
+  if ! grep -q 'MAX_INLINE_PAYLOAD_BYTES' "$_imc_path" 2>/dev/null; then
+    fail_rule "shipped_envelope_fingerprint_present" "$_imc_path missing MAX_INLINE_PAYLOAD_BYTES. §4 #13 16-KiB cap enforcement required (payload_fingerprint_precommit shipped: true)."
+    _r7_fail=1
+  fi
+else
+  fail_rule "shipped_envelope_fingerprint_present" "$_imc_path not found on disk"
+  _r7_fail=1
+fi
+if [[ $_r7_fail -eq 0 ]]; then pass_rule "shipped_envelope_fingerprint_present"; fi
 
 # ---------------------------------------------------------------------------
 # Summary

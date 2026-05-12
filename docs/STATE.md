@@ -74,6 +74,24 @@
 
 ---
 
+## Designed not shipped — fifth-reviewer response (2026-05-12)
+
+*Added via fifth architecture reviewer response. Category-classified: Cat-A (data-plane typing + semantic ontology), Cat-B (cognition-action separation), Cat-C (skill SPI lifecycle), Cat-D (bus discipline + channel isolation). Surfaced 29 hidden defects beyond reviewer's 4 named findings. See `docs/reviews/2026-05-12-fifth-reviewer-response.en.md`.*
+
+| capability | ADR | wave | claim |
+|---|---|---|---|
+| causal_payload_envelope | ADR-0028 | W2 | CausalPayloadEnvelope wraps Payload (ADR-0022) with SemanticOntology tag + SHA-256 fingerprint + byteSize + decayed flag |
+| semantic_ontology_tags | ADR-0028 | W2 | SemanticOntology enum {FACT, PLACEHOLDER, HYPOTHESIS, REDACTED}; W2 enforcement via PayloadCodec boundary gate |
+| **payload_fingerprint_precommit** | ADR-0028 | **W0 (shipped)** | InMemoryCheckpointer enforces §4 #13 16-KiB cap; dev: WARN; research/prod: ISE. Gate Rule 11 verifies enforcement. |
+| cognition_action_separation | ADR-0029 | W2 | Cognition-Action separation principle named; Python-as-mandatory rejected; SkillKind {JAVA_NATIVE, MCP_TOOL, SANDBOXED_CODE_INTERPRETER} taxonomy |
+| skill_spi_lifecycle | ADR-0030 | W2 | Skill SPI with init/execute/suspend/teardown + SkillCostReceipt + SkillResumeToken |
+| skill_resource_matrix | ADR-0030 | W2 | SkillResourceMatrix(tenantQuotaKey, globalCapacityKey, tokenBudget, wallClockMs, cpuMillis, maxMemoryBytes, concurrencyCap) |
+| untrusted_skill_sandbox_mandatory | ADR-0030 | W3 | research/prod + UNTRUSTED SkillTrustTier MUST route through non-NoOp SandboxExecutor; Rule 27 gate |
+| three_track_channel_isolation | ADR-0031 | W2 | Control (RunControlSink) + Data (Flux<RunEvent>) + Heartbeat (Flux<Instant>) physical channels; RunDispatcher SPI |
+| **iterative_agent_loop_typed_cursor** | ADR-0022 | **W0 (shipped)** | IterativeAgentLoopExecutor throws ISE (ADR-0022 ref) when non-String payload would be silently corrupted by Object.toString() concat (HD-A.8 fix) |
+
+---
+
 ## Deferred
 
 - Rule 8 gate runs (N≥3 real-LLM sequential runs) and Rule 11 contract-spine fields (`tenant_id` on all

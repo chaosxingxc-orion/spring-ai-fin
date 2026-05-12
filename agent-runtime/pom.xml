@@ -78,6 +78,11 @@
       <artifactId>archunit-junit5</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.github.resilience4j</groupId>
+      <artifactId>resilience4j-circuitbreaker</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

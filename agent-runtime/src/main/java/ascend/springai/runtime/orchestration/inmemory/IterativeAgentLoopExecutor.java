@@ -33,10 +33,23 @@ public final class IterativeAgentLoopExecutor implements AgentLoopExecutor {
                     .map(b -> Integer.parseInt(new String(b, StandardCharsets.UTF_8)))
                     .orElse(0);
             // Reconstruct payload: combine pre-suspension accumulated state with child result.
+            // W0 constraint: when accumulated state exists, resumePayload MUST be String;
+            // Object.toString() on a non-String produces an unrecoverable byte stream. ADR-0022 (W2).
             String savedState = ctx.checkpointer().load(ctx.runId(), RESUME_STATE_KEY)
                     .map(b -> new String(b, StandardCharsets.UTF_8))
                     .orElse(null);
-            payload = savedState != null ? savedState + resumePayload : resumePayload;
+            if (savedState != null) {
+                if (!(resumePayload instanceof String resumeStr)) {
+                    throw new IllegalStateException(
+                            "IterativeAgentLoopExecutor: resume cursor requires String resumePayload " +
+                            "when accumulated state exists; received " +
+                            resumePayload.getClass().getName() +
+                            ". Typed payload crossing suspend boundaries is deferred to W2 (ADR-0022).");
+                }
+                payload = savedState + resumeStr;
+            } else {
+                payload = resumePayload;
+            }
         } else {
             startIteration = 0;
             payload = def.initialContext();
@@ -55,8 +68,14 @@ public final class IterativeAgentLoopExecutor implements AgentLoopExecutor {
                 // Only save accumulated state if prior iterations produced output (i > 0).
                 // At i == 0 the payload is the initial context, not accumulated work.
                 if (i > 0 && payload != null) {
+                    if (!(payload instanceof String payloadStr)) {
+                        throw new IllegalStateException(
+                                "IterativeAgentLoopExecutor: resume cursor requires String payload at W0; " +
+                                "received " + payload.getClass().getName() +
+                                ". Typed payload is deferred to W2 (ADR-0022).");
+                    }
                     ctx.checkpointer().save(ctx.runId(), RESUME_STATE_KEY,
-                            payload.toString().getBytes(StandardCharsets.UTF_8));
+                            payloadStr.getBytes(StandardCharsets.UTF_8));
                 }
                 throw signal;
             }

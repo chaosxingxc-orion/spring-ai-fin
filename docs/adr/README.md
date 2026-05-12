@@ -37,6 +37,10 @@ options considered, decision, and consequences.
 | [0025](0025-checkpoint-ownership-boundary.md) | Checkpoint ownership boundary: executor resume cursors vs orchestrator Run row | accepted |
 | [0026](0026-module-dependency-direction-contracts-split.md) | Module dependency direction: agent-platform-contracts split (W1) | accepted |
 | [0027](0027-idempotency-scope-w0-header-validation.md) | Idempotency scope at W0: header validation only, dedup deferred to W1 | accepted |
+| [0028](0028-causal-payload-envelope-and-semantic-ontology.md) | Causal payload envelope and semantic ontology (extension of ADR-0022) | accepted |
+| [0029](0029-cognition-action-separation.md) | Cognition-Action separation principle: cognitive reasoning isolated from action execution | accepted |
+| [0030](0030-skill-spi-lifecycle-resource-matrix.md) | Skill SPI: lifecycle (init/execute/suspend/teardown), ResourceMatrix, trust tiers | accepted |
+| [0031](0031-three-track-channel-isolation.md) | Three-track channel isolation: Control / Data / Heartbeat + RunDispatcher SPI | accepted |
 
 ## Process
 

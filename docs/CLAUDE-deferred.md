@@ -185,3 +185,32 @@ Composes with: ARCHITECTURE.md §4 #14 (`resume_reauthorization_check`), §4 #20
 4. **Gate-asserted**: the operator-shape gate asserts that at least one hook (PII filter or token counter) is registered and fires on every real-provider invocation.
 
 Composes with: ARCHITECTURE.md §4 #16 (`runtime_hook_spi`).
+
+---
+
+## Rule 26 — Skill Lifecycle Conformance [Deferred to W2]
+
+**Re-introduction trigger**: first `Skill` SPI implementation committed (target: W2).
+
+**Rule**: Every `Skill` implementation MUST honour the complete lifecycle contract defined in ADR-0030:
+
+1. **Mandatory init**: `Skill.init(SkillContext)` MUST be called before `execute`. An ArchUnit test (`SkillLifecycleConformanceTest`) asserts no class outside `skill.spi.*` calls `execute()` without a preceding `init()` in the same execution context.
+2. **Suspend/resume pair**: when a Run is suspended, `Skill.suspend(SkillContext) → SkillResumeToken` MUST be called on any Skill holding external resources (DB connections, file handles, HTTP sessions). Resources must be released at `suspend` and reacquired at `resume`.
+3. **Mandatory teardown**: `Skill.teardown(SkillContext)` MUST be called on all code paths — normal completion, exception, and cancellation. Implement using try-finally in the execution harness.
+4. **Cost receipt**: every `Skill.execute` MUST return a `SkillCostReceipt` capturing `inputTokens`, `outputTokens`, `wallClockMs`, `cpuMillis`, and optionally `currencyCode`/`cost`. The harness aggregates receipts and attaches them to the Run.
+
+Composes with: ARCHITECTURE.md §4 #27 (`skill_spi_lifecycle_resource_matrix`); ADR-0030; Rule 13 (P1 cost-of-use).
+
+---
+
+## Rule 27 — Untrusted Skill Sandbox Mandate [Deferred to W3]
+
+**Re-introduction trigger**: first `UNTRUSTED`-tier `Skill` implementation committed in research or prod posture (target: W3).
+
+**Rule**: In `research` or `prod` posture, any `Skill` with `SkillTrustTier.UNTRUSTED` MUST be routed through a non-`NoOpSandboxExecutor` implementation:
+
+1. **Startup gate**: on application startup in `research`/`prod` posture, if any registered Skill carries `UNTRUSTED` trust tier, the container MUST assert that a non-NoOp `SandboxExecutor` bean is present. Missing sandbox → startup failure with clear error message referencing ADR-0030.
+2. **Posture model**: `dev` posture emits a `[WARN]` log when `UNTRUSTED` skills execute without a real sandbox (allows iteration without Docker/GraalVM setup). `research`/`prod` posture fails-closed per Rule 10.
+3. **VETTED bypass**: `SkillTrustTier.VETTED` skills may route through `NoOpSandboxExecutor` in all postures. Trust-tier assignment is declared in `Skill.metadata()` and is immutable at runtime.
+
+Composes with: ARCHITECTURE.md §4 #27 (`skill_spi_lifecycle_resource_matrix`); ADR-0030; ADR-0018 (`SandboxExecutor` SPI); Rule 10 (posture-aware defaults).
