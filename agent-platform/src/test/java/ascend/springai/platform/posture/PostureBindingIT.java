@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * and asserts that app.posture resolves to research in both the raw Environment
  * and in posture-sensitive filter behavior.
  */
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"APP_POSTURE=research"})
 class PostureBindingIT {

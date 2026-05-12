@@ -20,7 +20,7 @@ import static org.hamcrest.Matchers.notNullValue;
  * db_ping_ns + ts. Real Postgres via Testcontainers proves Flyway applies
  * V1__init.sql and JdbcTemplate reaches the DB.
  */
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class HealthEndpointIT {
 
