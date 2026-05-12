@@ -67,7 +67,7 @@ capabilities:
     tests: []
     latest_semantic_pass_sha: 68c07f1
     latest_delivery_file: docs/delivery/2026-05-10-68c07f1.md
-    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml."
+    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml. Architecture baseline: 23 §4 constraints (#1–#23); 24 ADRs (0001–0024); 10 active rules (1–6, 9–10, 20–21); 8 deferred rules (7, 8, 11, 13–19, 22–24)."
 
   spring_ai_ascend_dependencies_bom:
     status: implemented_unverified
@@ -351,10 +351,10 @@ capabilities:
   suspend_reason_taxonomy:
     status: design_accepted
     shipped: false
-    l0_decision: ARCHITECTURE.md (sec.4 constraints #10, #14)
+    l0_decision: docs/adr/0019-suspend-signal-and-suspend-reason-taxonomy.md
     implementation: null
     tests: []
-    allowed_claim: "Design only — typed SuspendSignal reasons (ChildRun | AwaitTimer | AwaitExternal | AwaitApproval | RateLimited). W0 single-cause suspend is reference-only. Implementation deferred to W2."
+    allowed_claim: "Design only — sealed SuspendReason variants (ChildRun | AwaitChildren | AwaitTimer | AwaitExternal | AwaitApproval | RateLimited); each carries deadline(); JoinPolicy (ALL|ANY|N_OF); ChildFailurePolicy (PROPAGATE|IGNORE|COMPENSATE). W0 single-cause (ChildRun) is reference-only; full taxonomy implementation deferred to W2. ADR-0019."
 
   repository_paging_contract:
     status: design_accepted
@@ -436,10 +436,10 @@ capabilities:
   capability_registry_spi:
     status: design_accepted
     shipped: false
-    l0_decision: ARCHITECTURE.md (sec.4 constraint #15)
+    l0_decision: docs/adr/0021-layered-spi-taxonomy.md
     implementation: null
     tests: []
-    allowed_claim: "Design only — CapabilityRegistry SPI for enumerating available skills/executors by name. Required before W4 Temporal activity dispatch. Implementation deferred to W3."
+    allowed_claim: "Design only — CapabilityRegistry SPI for enumerating available skills/executors by name. Required before W2 Postgres-backed async orchestrator (NodeFunction lambdas must become named references for cross-JVM dispatch). Trigger moved W4→W2 per ADR-0021 layered SPI taxonomy."
 
   executor_definition_serialization:
     status: design_accepted
@@ -524,3 +524,101 @@ capabilities:
     implementation: null
     tests: []
     allowed_claim: "Design only — RunPlanSheet toolset for IterativeAgentLoopExecutor: createRunPlan, reviseRunPlan, completeSubtask, listSubtasks, finalizeRunPlan, listArchivedRunPlans, restoreArchivedRunPlan. Plan rows in run_memory table keyed by run_id; parentRunId chain enables plan-reuse. Activated via AgentLoopDefinition.planningEnabled(true). Implementation deferred to W4."
+
+  # --- C10. Third-reviewer response additions (2026-05-12) ---
+
+  parallel_child_dispatch:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0019-suspend-signal-and-suspend-reason-taxonomy.md
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — AwaitChildren SuspendReason variant enables fan-out to multiple child Runs with JoinPolicy (ALL|ANY|N_OF). Implementation deferred to W2 alongside PostgresOrchestrator."
+
+  suspend_deadline_watchdog:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0019-suspend-signal-and-suspend-reason-taxonomy.md
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — watchdog / sweeper that transitions SUSPENDED runs to EXPIRED when deadline() elapses. Implementation deferred to W2."
+
+  run_status_transition_validator:
+    status: design_accepted
+    shipped: true
+    l0_decision: docs/adr/0020-runlifecycle-spi-and-runstatus-formal-dfa.md
+    implementation:
+      - agent-runtime/src/main/java/ascend/springai/runtime/runs/RunStateMachine.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/runs/Run.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/runs/RunStatus.java
+    tests:
+      - agent-runtime/src/test/java/ascend/springai/runtime/runs/RunStateMachineTest.java
+    allowed_claim: "Shipped — RunStateMachine.validate(from, to) enforces legal DFA transitions; Run.withStatus/withSuspension call validate before constructing updated record; EXPIRED added as 7th terminal RunStatus value. Rule 20 active. RunStateMachineTest exhaustively covers legal + illegal transitions."
+
+  run_lifecycle_spi:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0020-runlifecycle-spi-and-runstatus-formal-dfa.md
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — RunLifecycle interface (cancel/resume/retry) separates lifecycle operations from Orchestrator.run(). Materialised at W2 alongside RunController HTTP endpoints. Rule 24 gate."
+
+  run_state_change_audit_log:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0020-runlifecycle-spi-and-runstatus-formal-dfa.md
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — run_state_change table (runId, from_status, to_status, actor, reason, occurred_at, tenant_id) written on every RunStatus transition. Deferred to W2 Postgres."
+
+  run_optimistic_lock:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0020-runlifecycle-spi-and-runstatus-formal-dfa.md
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — Run entity gains long version field at W2; RunRepository.save guards on version; ConcurrentModificationException on stale write. Deferred to W2."
+
+  layered_spi_taxonomy:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0021-layered-spi-taxonomy.md
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — Layer 1 (cross-tier core: Run/RunStatus/RunRepository/RunContext/Orchestrator/ResilienceContract); Layer 2 (tier-specific: ExecutorDefinition/NodeFunction); Layer 3 (tier-internal: Checkpointer/IdempotencyStore/PayloadCodec). W4 Temporal bypasses Layer 3. ADR-0021."
+
+  payload_codec_spi:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0022-payload-codec-spi.md
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — PayloadCodec<T> SPI with id()/type()/encode/decode; EncodedPayload(bytes, codecId, typeRef) persistence contract; TypedPayload<T>|RawPayload sealed Payload; RunEvent sealed streaming event (NodeStarted|NodeCompleted|Suspended|Resumed|Failed|Terminal). Rule 22 gate. Implementation deferred to W2."
+
+  tenant_propagation_purity:
+    status: design_accepted
+    shipped: true
+    l0_decision: docs/adr/0023-cross-boundary-context-propagation.md
+    implementation:
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/RunContext.java
+    tests:
+      - agent-runtime/src/test/java/ascend/springai/runtime/architecture/TenantPropagationPurityTest.java
+    allowed_claim: "Shipped — TenantPropagationPurityTest ArchUnit rule enforces Rule 21: no ascend.springai.runtime.* main class may import TenantContextHolder. RunContext.tenantId() is the canonical carrier. Test-scope exemption for TenantContextFilterTest."
+
+  logbook_mdc_tenant_id:
+    status: design_accepted
+    shipped: true
+    l0_decision: docs/adr/0023-cross-boundary-context-propagation.md
+    implementation:
+      - agent-platform/src/main/java/ascend/springai/platform/tenant/TenantContextFilter.java
+    tests:
+      - agent-platform/src/test/java/ascend/springai/platform/tenant/TenantContextFilterTest.java
+    allowed_claim: "Shipped — TenantContextFilter.doFilterInternal populates MDC('tenant_id') in both the dev-default and UUID paths; clears in finally. JSON log lines now carry tenant_id for correlation."
+
+  suspension_write_atomicity_contract:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0024-suspension-write-atomicity.md
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — atomicity contract for RunRepository.save(suspended) + Checkpointer.save(payload) pair. W0 in-memory: single-thread sequential (invariant documented in SyncOrchestrator.executeLoop). W2 Postgres: single @Transactional block. W2 Redis: transactional outbox (ADR-0007). W4 Temporal: SPI bypassed. Rule 23 gate. W2 binding."

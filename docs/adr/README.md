@@ -25,6 +25,15 @@ options considered, decision, and consequences.
 | [0013](0013-vault-secrets-management.md) | UUIDv7 for surrogate IDs, not snowflake / sequence | accepted |
 | [0014](0014-contract-spine-versioning-policy.md) | 3-posture model (dev/research/prod), not 5 or 2 | accepted |
 | [0015](0015-layered-architecture-capability-model.md) | Defer multi-framework dispatch (Python sidecar, LangChain4j) to W4+ | accepted |
+| [0016](0016-a2a-federation-strategic-deferral.md) | A2A federation strategic deferral: AgentCard + AgentRegistry reserved post-W4 | accepted |
+| [0017](0017-dev-time-trace-replay.md) | Dev-time trace replay via MCP server (read-only, W4) | accepted |
+| [0018](0018-sandbox-executor-spi.md) | SandboxExecutor SPI for ActionGuard Bound stage (W3) | accepted |
+| [0019](0019-suspend-signal-and-suspend-reason-taxonomy.md) | SuspendSignal: checked-exception primitive + sealed SuspendReason taxonomy | accepted |
+| [0020](0020-runlifecycle-spi-and-runstatus-formal-dfa.md) | RunLifecycle SPI separation + RunStatus formal DFA + transition audit | accepted |
+| [0021](0021-layered-spi-taxonomy.md) | Layered SPI taxonomy: cross-tier core vs tier-specific adapters | accepted |
+| [0022](0022-payload-codec-spi.md) | PayloadCodec SPI and typed payload contract | accepted |
+| [0023](0023-cross-boundary-context-propagation.md) | Cross-boundary context propagation: tenant, trace, MDC, metric tags | accepted |
+| [0024](0024-suspension-write-atomicity.md) | Suspension write atomicity: Checkpointer + RunRepository transactional contract | accepted |
 
 ## Process
 

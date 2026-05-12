@@ -58,7 +58,8 @@ spring-ai-ascend/
       runs/
         Run.java                               # Run entity (mode, parentRunId, parentNodeKey, SUSPENDED)
         RunMode.java                           # GRAPH | AGENT_LOOP discriminator
-        RunStatus.java                         # PENDING/RUNNING/SUSPENDED/SUCCEEDED/FAILED/CANCELLED
+        RunStatus.java                         # PENDING/RUNNING/SUSPENDED/SUCCEEDED/FAILED/CANCELLED/EXPIRED
+        RunStateMachine.java                   # DFA validator — validate/allowedTransitions/isTerminal (Rule 20, ADR-0020)
         RunRepository.java                     # SPI interface (pure Java)
       idempotency/
         IdempotencyRecord.java                 # Idempotency entity — Rule 11 contract spine
@@ -160,8 +161,10 @@ SPI packages (`ascend.springai.runtime.*.spi.*`) import only `java.*`.
    (`SuspendSignal`) to delegate to a child run. The `Orchestrator` owns the
    catch/checkpoint/dispatch/resume loop; executors do not persist or wait.
    `Run.mode` discriminates `GRAPH` vs `AGENT_LOOP`; `Run.parentRunId` + `Run.parentNodeKey`
-   encode the nesting chain. Durability tiers: in-memory (dev/W0) → Postgres
-   checkpoint (W2) → Temporal child workflow (W4) — same SPI surface across all tiers.
+   encode the nesting chain. Durability tiers: in-memory (dev/W0) → Postgres checkpoint (W2)
+   → Temporal child workflow (W4). Layered SPI taxonomy: stable cross-tier core (Layer 1:
+   `Run`, `RunStatus`, `RunRepository`, `RunContext`, `Orchestrator`) + tier-specific adapters
+   (Layers 2–3: `Checkpointer`, `IdempotencyStore`); W4 Temporal bypasses Layer 3 entirely (ADR-0021).
 
 10. **Long-horizon lifecycle.** `Run` is an execution record; long-horizon agent identity
     is `AgentSubject` (deferred — `agent_subject_identity`). `SuspendSignal` will gain typed
@@ -197,9 +200,9 @@ SPI packages (`ascend.springai.runtime.*.spi.*`) import only `java.*`.
 
 15. **SPI serialization path.** Orchestration SPI types are pure Java (`OrchestrationSpiArchTest`)
     AND must be wire-serializable by W4. `ExecutorDefinition.NodeFunction` / `Reasoner` are inline
-    lambdas at W0 — correct for in-process; before W4, they MUST become named `CapabilityRegistry`
-    entries resolved by name, not inline closures (`capability_registry_spi`,
-    `executor_definition_serialization`).
+    lambdas at W0 — correct for in-process; before W2 Postgres-backed async orchestrator, they
+    MUST become named `CapabilityRegistry` entries resolved by name, not inline closures
+    (`capability_registry_spi`, `executor_definition_serialization`).
 
 16. **Runtime Hook SPI.** Every LLM invocation, tool call, and agent lifecycle boundary flows
     through a hook chain. Hook positions: `PRE_LLM_CALL` / `POST_LLM_CALL` / `PRE_TOOL_INVOKE` /
@@ -227,6 +230,53 @@ SPI packages (`ascend.springai.runtime.*.spi.*`) import only `java.*`.
     Evaluation infrastructure (corpus loader, judge runner, result store) deferred to W4
     (`eval_harness_contract`).
 
+19. **Fan-out, suspend-reason taxonomy, and suspend-deadline contract.** `SuspendSignal` MUST
+    carry a sealed `SuspendReason` identifying why the run is suspended. Every reason MUST carry a
+    `deadline() : Instant` at which the suspended run transitions to `EXPIRED` if not resumed.
+    Sealed variants: `ChildRun(UUID childRunId, ChildFailurePolicy, Instant deadline)` |
+    `AwaitChildren(List<UUID> childRunIds, JoinPolicy, ChildFailurePolicy, Instant deadline)` |
+    `AwaitTimer(Instant fireAt)` | `AwaitExternal(String callbackToken, Instant deadline)` |
+    `AwaitApproval(String approvalRequestId, Instant deadline)` |
+    `RateLimited(String resourceKey, Instant retryAfter)`.
+    `JoinPolicy: ALL | ANY | N_OF`; `ChildFailurePolicy: PROPAGATE | IGNORE | COMPENSATE`.
+    W0 reference impl covers only single-`ChildRun`; remaining variants are contract-level,
+    deferred to W2 (`suspend_reason_taxonomy`, `parallel_child_dispatch`, `suspend_deadline_watchdog`).
+    See ADR-0019.
+
+20. **RunStatus formal transition DFA + transition audit trail.** Legal transitions:
+    `PENDING → RUNNING | CANCELLED`; `RUNNING → SUSPENDED | SUCCEEDED | FAILED | CANCELLED`;
+    `SUSPENDED → RUNNING | EXPIRED | FAILED | CANCELLED`; `FAILED → RUNNING` (retry, new `attemptId`);
+    `SUCCEEDED`, `CANCELLED`, `EXPIRED` are terminal. Every `Run.withStatus(newStatus)` MUST invoke
+    `RunStateMachine.validate(from, to)`, throwing `IllegalStateException` on illegal transitions
+    (Rule 20, enforced at W0). Idempotency: `cancel` on already-cancelled run returns 200 + same row;
+    `cancel` on `SUCCEEDED`/`EXPIRED` returns 409. Every transition writes a `run_state_change` audit
+    row (W2); optimistic lock (`version` field) required before W2 Postgres. See ADR-0020.
+
+21. **Typed payload + PayloadCodec SPI.** Every payload crossing a JVM boundary (checkpoint bytes,
+    resume payload, streaming event) MUST be encoded via a registered `PayloadCodec<T>` with stable
+    `codecId` and `typeRef`. `RawPayload(Object)` is valid only within a single JVM. `EncodedPayload
+    (byte[], String codecId, String typeRef)` is the persistence contract. `RunEvent` (streamed
+    northbound per §4 #11) is a sealed interface: `NodeStarted | NodeCompleted | Suspended | Resumed |
+    Failed | Terminal`. PII redaction hooks (§4 #16) depend on `TypedPayload<T>` to locate PII fields
+    per type. All implementation deferred to W2 (Rule 22). See ADR-0022.
+
+22. **Canonical run context propagation.** `RunContext.tenantId()` is the sole carrier of tenant
+    identity inside `agent-runtime`. `TenantContextHolder` (HTTP-edge ThreadLocal in `agent-platform`)
+    MUST NOT be read by any production class under `ascend.springai.runtime.*`. Enforced at W0 by
+    `TenantPropagationPurityTest` (ArchUnit — Rule 21). Timer-driven and async resumes source tenant
+    from `Run.tenantId`. `TenantContextFilter` populates Logback MDC `tenant_id` alongside
+    `TenantContextHolder` for log correlation (shipped at W0). `RunContext.tenantId() : String` migrates
+    to `UUID` at W1 alongside Keycloak integration. Micrometer `tenant_id` tag enforcement and OTel
+    `traceparent` propagation across suspend are deferred to W1/W2. See ADR-0023.
+
+23. **Suspension write atomicity.** At the suspension boundary, `RunRepository.save(suspended)` and
+    `checkpointer.save(runId, nodeKey, payload)` MUST be observable atomically. Tiered contract:
+    W0 in-memory — single-threaded, sequential on same call stack (invariant documented in
+    `SyncOrchestrator.executeLoop` javadoc); W2 Postgres — both in one `@Transactional` block;
+    W2 Redis Checkpointer — transactional outbox (ADR-0007); W4 Temporal — SPI bypassed entirely.
+    Any W2+ orchestrator that violates this contract is a ship-blocking defect (Rule 23, deferred).
+    See ADR-0024.
+
 ---
 
 ## 5. W0 shipped capabilities
@@ -241,7 +291,9 @@ SPI packages (`ascend.springai.runtime.*.spi.*`) import only `java.*`.
 - `IdempotencyRecord` entity — contract-spine entity with mandatory `tenantId` (Rule 11 target).
 - `OssApiProbeTest` — compile-time probe verifying Spring AI + Spring Boot API surface.
 - `ApiCompatibilityTest` — ArchUnit rules enforcing SPI purity and dependency direction.
+- `TenantPropagationPurityTest` — ArchUnit Rule 21: no `agent-runtime` main class may import `TenantContextHolder`.
 - `Orchestrator` SPI + `GraphExecutor` + `AgentLoopExecutor` + `SuspendSignal` + `Checkpointer` — dual-mode runtime SPIs (§4 constraint #9).
+- `RunStateMachine` — DFA validator enforcing §4 #20 legal transitions; `validate/allowedTransitions/isTerminal` (Rule 20). `RunStatus.EXPIRED` added as 7th terminal value.
 - `InMemoryCheckpointer` — dev-posture in-memory checkpoint store (W2: Postgres-backed).
 - `SyncOrchestrator` + `SequentialGraphExecutor` + `IterativeAgentLoopExecutor` + `InMemoryRunRegistry` — reference executors proving 3-level bidirectional graph↔agent-loop nesting via `SuspendSignal` interrupt. Dev-posture only; not on the production code path.
 

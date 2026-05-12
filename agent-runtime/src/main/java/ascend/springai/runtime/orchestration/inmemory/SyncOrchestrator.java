@@ -49,6 +49,11 @@ public final class SyncOrchestrator implements Orchestrator {
         return executeLoop(run, def, initialPayload);
     }
 
+    /**
+     * W0 atomicity invariant (ADR-0024): checkpoint write and RunRepository.save(suspended)
+     * are on the same call stack; single-threaded recursion ensures sequential ordering.
+     * W2 mandate: both writes MUST move inside a single @Transactional block.
+     */
     private Object executeLoop(Run run, ExecutorDefinition def, Object payload) {
         while (true) {
             RunContextImpl ctx = new RunContextImpl(run.tenantId(), run.runId(), checkpointer);

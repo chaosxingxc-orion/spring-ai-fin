@@ -19,6 +19,27 @@
 
 ---
 
+## Designed not shipped — third-reviewer response (2026-05-12)
+
+*Added via third architecture reviewer response. Category-classified: Cat-A (suspend taxonomy), Cat-B (lifecycle DFA), Cat-C (layered SPI), Cat-D (payload codec), Cat-E (context propagation + atomicity). Surfaced 15 hidden defects beyond reviewer's 9 issues. See `docs/reviews/2026-05-12-third-reviewer-response.en.md`.*
+
+| capability | ADR | wave | claim |
+|---|---|---|---|
+| suspend_reason_taxonomy (upgraded) | ADR-0019 | W2 | Sealed SuspendReason (ChildRun\|AwaitChildren\|AwaitTimer\|AwaitExternal\|AwaitApproval\|RateLimited) + deadline() + JoinPolicy + ChildFailurePolicy |
+| parallel_child_dispatch | ADR-0019 | W2 | AwaitChildren fan-out with JoinPolicy (ALL\|ANY\|N_OF) |
+| suspend_deadline_watchdog | ADR-0019 | W2 | Sweeper: SUSPENDED → EXPIRED when deadline() elapses |
+| **run_status_transition_validator** | ADR-0020 | **W0 (shipped)** | RunStateMachine.validate wired into Run.withStatus/withSuspension; EXPIRED added; RunStateMachineTest |
+| run_lifecycle_spi | ADR-0020 | W2 | RunLifecycle interface (cancel/resume/retry) separate from Orchestrator |
+| run_state_change_audit_log | ADR-0020 | W2 | run_state_change table: runId, from, to, actor, reason, occurred_at, tenant_id |
+| run_optimistic_lock | ADR-0020 | W2 | Run.version field; ConcurrentModificationException on stale write |
+| layered_spi_taxonomy | ADR-0021 | W0 (doc) | Layer 1 cross-tier core / Layer 2 tier-specific / Layer 3 tier-internal; W4 bypasses Layer 3 |
+| payload_codec_spi | ADR-0022 | W2 | PayloadCodec<T>; EncodedPayload(bytes, codecId, typeRef); RunEvent sealed interface |
+| **tenant_propagation_purity** | ADR-0023 | **W0 (shipped)** | TenantPropagationPurityTest ArchUnit; Rule 21; RunContext.tenantId() canonical |
+| **logbook_mdc_tenant_id** | ADR-0023 | **W0 (shipped)** | TenantContextFilter MDC.put/remove("tenant_id") in both posture branches |
+| suspension_write_atomicity_contract | ADR-0024 | W2 | Tiered: W0 single-thread / W2 @Transactional / W2-Redis outbox / W4 bypass |
+
+---
+
 ## Designed not shipped — competitive analysis (2026-05-12)
 
 *Added via competitive analysis vs SAA + AgentScope-Java. See `docs/reviews/2026-05-12-competitive-analysis-and-enhancements.en.md`.*

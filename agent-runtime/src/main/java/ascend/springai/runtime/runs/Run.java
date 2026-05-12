@@ -34,6 +34,7 @@ public record Run(
     }
 
     public Run withStatus(RunStatus newStatus) {
+        RunStateMachine.validate(this.status, newStatus);
         return new Run(runId, tenantId, capabilityName, newStatus, mode,
                 createdAt, Instant.now(), finishedAt, parentRunId, attemptId,
                 parentNodeKey, suspendedAt);
@@ -52,6 +53,7 @@ public record Run(
     }
 
     public Run withSuspension(String newParentNodeKey, Instant newSuspendedAt) {
+        RunStateMachine.validate(this.status, RunStatus.SUSPENDED);
         return new Run(runId, tenantId, capabilityName, RunStatus.SUSPENDED, mode,
                 createdAt, Instant.now(), finishedAt, parentRunId, attemptId,
                 newParentNodeKey, newSuspendedAt);

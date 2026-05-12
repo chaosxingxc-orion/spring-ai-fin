@@ -8,7 +8,7 @@
 
 ## Engineering Rules
 
-**Eight active rules.** Rules 1–4 are daily-use engineering principles. Rules 5–6 are class-level patterns. Rule 9 is the delivery gate. Rule 10 is the platform-contract standard. Rules 7, 8, and 11 are deferred — see `docs/CLAUDE-deferred.md`. Rule 12 (maturity L0-L4) is replaced by binary `shipped:` in `architecture-status.yaml`. All rules override default habits.
+**Ten active rules.** Rules 1–4 are daily-use engineering principles. Rules 5–6 are class-level patterns. Rule 9 is the delivery gate. Rule 10 is the platform-contract standard. Rules 20–21 are architectural enforcement rules added in the third-review cycle. Rules 7, 8, and 11 are deferred — see `docs/CLAUDE-deferred.md`. Rules 22–24 are also deferred (W2 trigger). Rule 12 (maturity L0-L4) is replaced by binary `shipped:` in `architecture-status.yaml`. All rules override default habits.
 
 ---
 
@@ -95,6 +95,26 @@ When a class needs tenant scoping, scope is a **required constructor argument**.
 
 ---
 
+### Rule 20 — Run State Transition Validity [Active]
+
+**Every `Run.withStatus(newStatus)` mutation MUST call `RunStateMachine.validate(this.status, newStatus)` before constructing the updated record. Illegal transitions MUST throw `IllegalStateException`.**
+
+Legal DFA: `PENDING → RUNNING | CANCELLED`; `RUNNING → SUSPENDED | SUCCEEDED | FAILED | CANCELLED`; `SUSPENDED → RUNNING | EXPIRED | FAILED | CANCELLED`; `FAILED → RUNNING`; `SUCCEEDED`, `CANCELLED`, `EXPIRED` are terminal.
+
+Enforced by `RunStateMachine.validate(from, to)` (wired into `Run.withStatus` + `Run.withSuspension`) and unit-tested in `RunStateMachineTest`. Architecture reference: §4 #20, ADR-0020.
+
+---
+
+### Rule 21 — Tenant Propagation Purity [Active]
+
+**No production class under `ascend.springai.runtime.*` (main sources) may import `ascend.springai.platform.tenant.TenantContextHolder`.**
+
+`TenantContextHolder` is a request-scoped HTTP-edge ThreadLocal (valid only for the duration of an HTTP request). Runtime production code MUST source tenant identity from `RunContext.tenantId()` instead. Timer-driven resumes and async orchestration have no HTTP request and would silently receive null from the ThreadLocal.
+
+Enforced at W0 by `TenantPropagationPurityTest` (ArchUnit). Test classes are intentionally excluded — `TenantContextFilterTest` may read the holder to verify filter behaviour. Architecture reference: §4 #22, ADR-0023.
+
+---
+
 ### Rule 7 — Resilience Must Not Mask Signals [Deferred to W2]
 
 **Deferred.** No live fallback path exists at W0. Re-introduction trigger: first soft-fallback path committed (target: W2 LLM gateway). Full rule text in `docs/CLAUDE-deferred.md`.
@@ -141,6 +161,6 @@ Tests must cover `dev` and `research` paths for any new contract.
 
 **P1 (lower cost-of-use)** and **P3 (self-evolving intelligence)** have no gate-enforced rules at W0 — intentional, because no cost-accounting, context-caching, skill-registry, or memory-compression capability exists yet. Rules 13 (P1) and 14 (P3) are staged in `docs/CLAUDE-deferred.md` with W3 re-introduction triggers; they must be activated before the first W3 capability ships.
 
-**P2 (lower onboarding barrier)** is covered by Architecture §4.7 (SPI purity — clients depend on `java.*` only), Architecture §4.2 (posture model — `dev` permissive default), Architecture §4.6 (OSS-first — glue LOC ≤ 1500), and Rule 6 (single `@Bean` construction path).
+**P2 (lower onboarding barrier)** is covered by Architecture §4.7 (SPI purity — clients depend on `java.*` only), Architecture §4.2 (posture model — `dev` permissive default), Architecture §4.6 (OSS-first — glue LOC ≤ 1500), Rule 6 (single `@Bean` construction path), Rule 20 (Run state machine — prevents lifecycle corruption), and Rule 21 (tenant propagation purity — prevents cross-tenant data leaks).
 
 **E1 (OSS-first reuse)** is operationalised by Architecture §4.6 (glue LOC ≤ 1500) and the Occam pass decision rule: "SPI wrapping an OSS Java interface → DELETE."

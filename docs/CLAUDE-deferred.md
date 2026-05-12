@@ -135,6 +135,44 @@ Composes with: ARCHITECTURE.md §4 #18 (`eval_harness_contract`).
 
 ---
 
+## Rule 22 — PayloadCodec Discipline [Deferred to W2]
+
+**Re-introduction trigger**: first `Checkpointer` implementation that persists bytes to a durable store (target: W2 Postgres `PostgresCheckpointer`).
+
+**Rule**: Every payload type that crosses a suspend/resume JVM boundary MUST have a registered `PayloadCodec<T>` with a stable `codecId` and `typeRef`. `RawPayload(Object)` MUST be rejected at the persistence boundary; it is valid only within a single in-process JVM execution context. `EncodedPayload(byte[], String codecId, String typeRef)` is the mandatory persistence wire format.
+
+Composes with: ARCHITECTURE.md §4 #21 (`payload_codec_spi`); ADR-0022.
+
+---
+
+## Rule 23 — Suspension Write Atomicity Enforcement [Deferred to W2]
+
+**Re-introduction trigger**: first W2+ `Orchestrator` implementation that performs both a `RunRepository.save(suspended)` and a `Checkpointer.save(payload)` for suspension.
+
+**Rule**: Any W2+ Orchestrator that performs the suspension pair MUST:
+1. Document its atomicity strategy in Javadoc on the suspend-transition method.
+2. Wrap both writes in a single Postgres `@Transactional` block (same `DataSource`), OR use the transactional outbox pattern (ADR-0007) for non-DB Checkpointer backends.
+3. Enforce the contract with an integration test that kills the JVM mid-write and asserts post-restart consistency (e.g., via `ProcessBuilder` + DB state check).
+
+An implementation that cannot demonstrate this contract is a ship-blocking defect per Rule 9 (category: "Run lifecycle — checkpoint/resume atomicity").
+
+Composes with: ARCHITECTURE.md §4 #23 (`suspension_write_atomicity_contract`); ADR-0024; ADR-0007.
+
+---
+
+## Rule 24 — RunLifecycle Re-Authorization [Deferred to W2]
+
+**Re-introduction trigger**: first W2 `RunController` HTTP endpoint for `cancel`, `resume`, or `retry` operations.
+
+**Rule**: Every `cancel`, `retry`, and `resume` operation on a `Run` MUST:
+1. Re-validate that the request's `tenantId` matches `Run.tenantId`; mismatch returns HTTP 403.
+2. Write a `run_state_change` audit row capturing actor identity (who, when, from which request).
+3. Be idempotent for terminal→terminal same-status calls (cancel on CANCELLED returns 200 + same row); return 409 for illegal transitions per `RunStateMachine.allowedTransitions(from)`.
+
+Composes with: ARCHITECTURE.md §4 #14 (`resume_reauthorization_check`), §4 #20 (`run_state_change_audit_log`); ADR-0020; Rule 17.
+
+---
+
 ## Rule 19 — Runtime Hook Conformance
 
 **Re-introduction trigger**: first W2 LLM gateway capability committed (first `ChatClient` call in production code path).

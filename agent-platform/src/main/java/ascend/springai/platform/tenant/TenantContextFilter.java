@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -45,10 +46,12 @@ public class TenantContextFilter extends OncePerRequestFilter {
                 LOG.warn("X-Tenant-Id header missing; using dev default tenant in posture=dev");
                 TenantContextHolder.set(
                         new TenantContext(UUID.fromString(TenantConstants.DEV_DEFAULT_TENANT_ID)));
+                MDC.put("tenant_id", TenantConstants.DEV_DEFAULT_TENANT_ID);
                 try {
                     chain.doFilter(request, response);
                 } finally {
                     TenantContextHolder.clear();
+                    MDC.remove("tenant_id");
                 }
             } else {
                 response.sendError(400, "X-Tenant-Id header is required");
@@ -65,10 +68,12 @@ public class TenantContextFilter extends OncePerRequestFilter {
             return;
         }
         TenantContextHolder.set(new TenantContext(uuid));
+        MDC.put("tenant_id", uuid.toString());
         try {
             chain.doFilter(request, response);
         } finally {
             TenantContextHolder.clear();
+            MDC.remove("tenant_id");
         }
     }
 }
