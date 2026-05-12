@@ -338,3 +338,113 @@ capabilities:
       - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/NestedDualModeIT.java
       - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/RunStatusTransitionIT.java
     allowed_claim: "L1: 3-level graph→agent-loop→graph nesting proved in NestedDualModeIT. SuspendSignal/checkpoint/resume chain verified. parentRunId chain correct across all 3 Run rows. RunStatusTransitionIT verifies SUSPENDED→RUNNING→SUCCEEDED status transitions."
+
+  # --- C1. Lifecycle & Identity (§4 #10) ---
+  agent_subject_identity:
+    status: design_accepted
+    shipped: false
+    l0_decision: ARCHITECTURE.md (sec.4 constraint #10)
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — long-horizon agent subject identity (sequential Run correlation across days/weeks). Implementation deferred to W2."
+
+  suspend_reason_taxonomy:
+    status: design_accepted
+    shipped: false
+    l0_decision: ARCHITECTURE.md (sec.4 constraints #10, #14)
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — typed SuspendSignal reasons (ChildRun | AwaitTimer | AwaitExternal | AwaitApproval | RateLimited). W0 single-cause suspend is reference-only. Implementation deferred to W2."
+
+  repository_paging_contract:
+    status: design_accepted
+    shipped: false
+    l0_decision: ARCHITECTURE.md (sec.4 constraint #10)
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — RunRepository queries returning unbounded sets gain Pageable parameters before W2. Required for SUSPENDED reaper at scale."
+
+  # --- C2. Communication Surface (§4 #11) ---
+  streamed_handoff_mode:
+    status: design_accepted
+    shipped: false
+    l0_decision: ARCHITECTURE.md (sec.4 constraint #11)
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — Flux<RunEvent> streaming surface with typed progress events. Implementation deferred to W2. Gate: Rule 15."
+
+  orchestrator_cancellation_handshake:
+    status: design_accepted
+    shipped: false
+    l0_decision: ARCHITECTURE.md (sec.4 constraint #11)
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — Orchestrator cancel entrypoint propagating to RunStatus.CANCELLED. CANCELLED status value exists; no producer yet. Implementation deferred to W2."
+
+  # --- C3. Resource Governance (§4 #12) ---
+  skill_capacity_matrix:
+    status: design_accepted
+    shipped: false
+    l0_decision: ARCHITECTURE.md (sec.4 constraint #12)
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — two-axis ResiliencePolicy (tenantQuota × globalSkillCapacity) with saturation-suspends-Run semantics. Implementation deferred to W2. Gate: Rule 16."
+
+  call_tree_budget_propagation:
+    status: design_accepted
+    shipped: false
+    l0_decision: ARCHITECTURE.md (sec.4 constraint #12)
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — token/cost budget propagated through RunContext parent→child. Implementation deferred to W2. Composes with Rule 13 (P1 cost-of-use)."
+
+  # --- C4. Data Plane (§4 #13) ---
+  payload_store_spi:
+    status: design_accepted
+    shipped: false
+    l0_decision: ARCHITECTURE.md (sec.4 constraint #13)
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — PayloadStore SPI for checkpoints exceeding 16 KiB inline limit; content-addressed by hash. Implementation deferred to W2."
+
+  serializable_resume_payload:
+    status: design_accepted
+    shipped: false
+    l0_decision: ARCHITECTURE.md (sec.4 constraint #13)
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — SuspendSignal.resumePayload is in-process Object (correct for W0 in-memory only). Cross-JVM tiers (W2 Postgres, W4 Temporal) require byte-serializable resumePayload. Contract fix deferred to W2."
+
+  checkpoint_eviction_policy:
+    status: design_accepted
+    shipped: false
+    l0_decision: ARCHITECTURE.md (sec.4 constraint #13)
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — terminal-status Run checkpoints evictable after N days. No archivedAt field or eviction hook at W0. Implementation deferred to W2."
+
+  # --- C5. Trust & Authorization (§4 #14) ---
+  resume_reauthorization_check:
+    status: design_accepted
+    shipped: false
+    l0_decision: ARCHITECTURE.md (sec.4 constraint #14)
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — resume request tenantId must match Run.tenantId; mismatch returns 403. Audit envelope on resume actor. Implementation deferred to W2. Gate: Rule 17."
+
+  # --- C6. Topology & Discovery (§4 #15) ---
+  capability_registry_spi:
+    status: design_accepted
+    shipped: false
+    l0_decision: ARCHITECTURE.md (sec.4 constraint #15)
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — CapabilityRegistry SPI for enumerating available skills/executors by name. Required before W4 Temporal activity dispatch. Implementation deferred to W3."
+
+  executor_definition_serialization:
+    status: design_accepted
+    shipped: false
+    l0_decision: ARCHITECTURE.md (sec.4 constraint #15)
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — ExecutorDefinition.NodeFunction/Reasoner must become named registry entries before W4 (inline lambdas are unserializable across Temporal activity boundaries). Design deferred to W3."

@@ -163,6 +163,44 @@ SPI packages (`ascend.springai.runtime.*.spi.*`) import only `java.*`.
    encode the nesting chain. Durability tiers: in-memory (dev/W0) → Postgres
    checkpoint (W2) → Temporal child workflow (W4) — same SPI surface across all tiers.
 
+10. **Long-horizon lifecycle.** `Run` is an execution record; long-horizon agent identity
+    is `AgentSubject` (deferred — `agent_subject_identity`). `SuspendSignal` will gain typed
+    reasons (`ChildRun | AwaitTimer | AwaitExternal | AwaitApproval | RateLimited`); single-cause
+    suspend is a W0 reference-only constraint. `RunRepository` queries that may return unbounded
+    sets MUST gain `Pageable` parameters before W2 (`repository_paging_contract`). No `archivedAt`
+    hook at W0; archival lifecycle is deferred.
+
+11. **Northbound handoff contract.** Three modes: synchronous `Object` return (shipped), streamed
+    `Flux<RunEvent>` (deferred W2 — Rule 15), yield-via-`SuspendSignal` (shipped). When streaming
+    is introduced, the surface MUST carry: (a) backpressure strategy, (b) cancellation propagation
+    to `RunStatus.CANCELLED`, (c) heartbeat cadence ≤ 30 s, (d) terminal frame with `runId` +
+    final `RunStatus`, (e) typed progress events — no raw `Object`. See `streamed_handoff_mode`,
+    `orchestrator_cancellation_handshake`.
+
+12. **Two-axis resource arbitration.** `ResilienceContract.resolve(operationId)` extends to a
+    two-axis policy `(tenantQuota, globalSkillCapacity)` (`skill_capacity_matrix`). Skill saturation
+    MUST suspend the Run (`SUSPENDED + suspendedAt + reason=RateLimited`) rather than fail. Call-tree
+    budget propagates through `RunContext` (`call_tree_budget_propagation`). Per Rule 16.
+
+13. **Payload addressing and serialization contract.** `Checkpointer.save` carries opaque bytes
+    ≤ 16 KiB inline; larger payloads MUST be references to `PayloadStore` (`payload_store_spi`).
+    `SuspendSignal.resumePayload` is an in-process `Object` correct for W0 in-memory only; when
+    the durability tier crosses JVM boundaries (W2 Postgres, W4 Temporal), resumePayload MUST be
+    serializable to bytes (`serializable_resume_payload`). Checkpoint eviction: Runs in terminal
+    status become evictable after N days (deferred — `checkpoint_eviction_policy`).
+
+14. **Resume re-authorization.** Resuming a suspended Run is a re-authorization boundary.
+    The resume request's tenant context MUST match the original `Run.tenantId`; mismatch returns
+    403 (`resume_reauthorization_check`). Actor identity at resume is captured in an audit envelope.
+    Degradation authority: S-side may substitute means (alternative tool/model) without C-side
+    approval; ends-modification requires explicit C-side authority. Per Rule 17.
+
+15. **SPI serialization path.** Orchestration SPI types are pure Java (`OrchestrationSpiArchTest`)
+    AND must be wire-serializable by W4. `ExecutorDefinition.NodeFunction` / `Reasoner` are inline
+    lambdas at W0 — correct for in-process; before W4, they MUST become named `CapabilityRegistry`
+    entries resolved by name, not inline closures (`capability_registry_spi`,
+    `executor_definition_serialization`).
+
 ---
 
 ## 5. W0 shipped capabilities

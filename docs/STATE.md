@@ -12,6 +12,10 @@
 | idempotency-store | false | `agent-platform/src/main/java/ascend/springai/platform/idempotency/IdempotencyStore.java` | `agent-platform/src/test/java/ascend/springai/platform/idempotency/IdempotencyStoreTest.java` | dev (W0); research/prod throws | W0 stub; W1 will add Postgres-backed claimOrFind |
 | graphmemory-spi | false | `agent-runtime/src/main/java/ascend/springai/runtime/memory/spi/GraphMemoryRepository.java` (interface) | `agent-runtime/src/test/java/ascend/springai/runtime/memory/spi/MemorySpiArchTest.java` | no runtime path | SPI contract only; no impl; ArchUnit enforces isolation |
 | oss-api-probe | true | `agent-runtime/src/main/java/ascend/springai/runtime/probe/OssApiProbe.java` | `agent-runtime/src/test/java/ascend/springai/runtime/probe/OssApiProbeTest.java` | dev | Smoke test: Spring AI + MCP + Temporal + Tika compile |
+| run-entity | true | `agent-runtime/src/main/java/ascend/springai/runtime/runs/Run.java` | `agent-runtime/src/test/java/ascend/springai/runtime/runs/RunTest.java` | dev | Run entity with mode (GRAPH\|AGENT_LOOP), parentRunId, parentNodeKey, SUSPENDED status; contract-spine for Rule 11 |
+| idempotency-record-entity | true | `agent-runtime/src/main/java/ascend/springai/runtime/idempotency/IdempotencyRecord.java` | `agent-runtime/src/test/java/ascend/springai/runtime/idempotency/IdempotencyRecordTest.java` | dev | IdempotencyRecord entity with mandatory tenantId; contract-spine for Rule 11 |
+| orchestration-spi | true | `agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/` | `agent-runtime/src/test/java/ascend/springai/runtime/orchestration/spi/` | dev | Orchestrator + GraphExecutor + AgentLoopExecutor + SuspendSignal + Checkpointer + RunContext + ExecutorDefinition SPIs; pure java.* only (ArchUnit enforced) |
+| inmemory-orchestrator | true | `agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/` | `agent-runtime/src/test/java/ascend/springai/runtime/orchestration/NestedDualModeIT.java` | dev | SyncOrchestrator + SequentialGraphExecutor + IterativeAgentLoopExecutor; 3-level graph↔agent-loop nesting proved; dev-posture only |
 
 ---
 

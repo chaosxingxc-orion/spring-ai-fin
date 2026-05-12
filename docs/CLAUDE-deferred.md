@@ -75,3 +75,45 @@ This rule converts P1 roadmap intent into a pre-commit enforcement path.
 - Monotonicity: updated memory or skills may not reduce retrieval quality below the unmodified baseline.
 
 This rule converts P3 roadmap intent into a pre-commit enforcement path.
+
+---
+
+## Rule 15 — Streamed Handoff Mode Conformance
+
+**Re-introduction trigger**: first `Flux<T>` / SSE return from `Orchestrator` or any northbound controller (target: W2).
+
+**Rule**: Every streaming surface MUST declare and enforce:
+- (a) Backpressure strategy (bounded buffer, drop, or error on overflow).
+- (b) Cancellation propagation: caller cancel → `RunStatus.CANCELLED` set on the Run.
+- (c) Heartbeat cadence ≤ 30 s — positive liveness signal, not absence of error.
+- (d) Terminal frame carries `runId` + final `RunStatus` + error payload if applicable.
+- (e) Typed progress event shape (`progress | cost | tool_call | partial_output | terminal`) — no raw `Object`.
+
+Composes with: ARCHITECTURE.md §4 #11 (`streamed_handoff_mode`, `orchestrator_cancellation_handshake`).
+
+---
+
+## Rule 16 — Cognitive Resource Arbitration
+
+**Re-introduction trigger**: first `ResilienceContract` consumer that invokes an external tool or skill (not just LLM) (target: W2).
+
+**Rule**: Every skill invocation MUST declare:
+- (a) `operationId` in `skill:<name>` namespace.
+- (b) Tenant-scoped quota key (prevents one tenant from exhausting shared capacity).
+- (c) Global skill capacity key (caps concurrent invocations platform-wide).
+- (d) Saturation policy: skill-full suspends the Run (`SUSPENDED + suspendedAt + reason=RateLimited`), not fails it.
+- (e) Call-tree budget: parent Run's remaining token/cost budget is propagated through `RunContext` to child Runs.
+
+Composes with: ARCHITECTURE.md §4 #12 (`skill_capacity_matrix`, `call_tree_budget_propagation`); Rule 13 (P1 cost-of-use).
+
+---
+
+## Rule 17 — Degradation Authority and Resume Re-Authorization
+
+**Re-introduction trigger**: first soft-fallback path committed (composes with Rule 7 trigger — W2 LLM gateway).
+
+**Rule**:
+- **Degradation authority**: S-side (system) may substitute means only (alternative tool/model/provider) without C-side (caller) approval. Ends-modification (changing the goal, expanding scope, dropping a required action) is surfaced as a typed `BusinessDegradationRequest` to C-side for explicit approval before proceeding.
+- **Resume re-authorization**: every resume on a `SUSPENDED` Run MUST re-validate `(request.tenantId == Run.tenantId)`; mismatch returns HTTP 403. Actor identity at resume is captured in an audit envelope (who resumed, when, from which request).
+
+Composes with: ARCHITECTURE.md §4 #14 (`resume_reauthorization_check`, `suspend_reason_taxonomy`); Rule 7 (resilience signal masking).
