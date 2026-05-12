@@ -65,7 +65,7 @@ capabilities:
       - gate/check_architecture_sync.ps1
       - gate/check_architecture_sync.sh
     tests: []
-    latest_semantic_pass_sha: c6a25a7
+    latest_semantic_pass_sha: 9ba0245
     latest_delivery_file: docs/delivery/2026-05-10-68c07f1.md
     allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml. Architecture baseline: 36 §4 constraints (#1–#36); 39 ADRs (0001–0039); 14 active gate rules; 11 active engineering rules (1–6, 9–10, 20–21, 25); 15 deferred rules (7, 8, 11, 13–19, 22–24, 26–27)."
 
