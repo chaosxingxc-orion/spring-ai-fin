@@ -1,7 +1,7 @@
 # OSS Bill of Materials -- cross-cutting policy
 
 > Owner: architecture | Wave: W0 (introduce); per-wave verification advances | Maturity: L2
-> Last refreshed: 2026-05-10 (W0 U2 promotion complete)
+> Last refreshed: 2026-05-13 (sixth + seventh reviewer response; Graphiti selected as W1 example; mem0/Cognee not-selected; deleted SPI refs removed; see ADR-0034)
 
 ## 1. Purpose
 
@@ -197,11 +197,11 @@ full analysis.
 | Capability | Default (Maven Central, embedded) | Optional sidecar (REST via SPI) |
 |---|---|---|
 | Skills / Tools | MCP Java SDK 1.0.0 GA + external MCP servers | n/a (MCP is protocol-based) |
-| Short-term memory | Spring AI `ChatMemory` (in-process) | n/a |
-| Long-term hierarchical memory | Spring AI `ChatMemoryRepository` over Postgres | **mem0** (55.2k stars) via `LongTermMemoryRepository` SPI |
-| Knowledge-graph memory | none in default path | **Graphiti** (25.8k stars) via `GraphMemoryRepository` SPI |
+| Short-term memory (M1) | Spring AI `ChatMemory` (in-process) | n/a |
+| Long-term semantic memory (M3) | Spring AI `ChatMemoryRepository` over Postgres | W1+ — no SPI adapter selected yet (mem0 not-selected; see ADR-0034) |
+| Knowledge-graph memory (M4) | none in default path | **Graphiti** (25.8k stars) via `GraphMemoryRepository` SPI — W1 reference sidecar (see ADR-0034) |
 | Document parsing (general) | Apache Tika 3.3.0 (in-process) | n/a |
-| Document parsing (layout-aware) | Tika fallback | **Docling-serve** (IBM/LF AI&Data) via `LayoutParser` SPI |
+| Document parsing (layout-aware) | Tika fallback | Docling-serve (IBM/LF AI&Data) — optional, not wired to any active starter |
 | RAG pipeline (default) | Spring AI 2.0-M5 ETL (`DocumentReader` -> `DocumentTransformer` -> `VectorStore`) | n/a |
 | RAG pipeline (alternate) | langchain4j 1.14.1 modules (opt-in profile) | n/a |
 | Vector store | Spring AI `VectorStore` client + pgvector | Spring AI Pinecone/Qdrant/Weaviate adapters |
@@ -211,15 +211,15 @@ full analysis.
 | Database / persistence | Spring Data JDBC + Flyway 11.19.1 + Postgres | n/a |
 | Workflow orchestration | Temporal Java SDK 1.35.0 + Temporal server (external) | n/a |
 
-### SPI surface (frozen by ArchUnit at Step 10)
+### Active SPI surface (W0 shipped)
 
-- `ascend.springai.runtime.spi.memory.LongTermMemoryRepository` -- default: Spring AI JDBC repo. Sidecar: mem0.
-- `ascend.springai.runtime.spi.memory.GraphMemoryRepository` -- sidecar only: Graphiti (cycle-15 confirms vs Cognee).
-- `ascend.springai.runtime.spi.knowledge.LayoutParser` -- default: Tika. Sidecar: Docling.
-- `ascend.springai.runtime.spi.knowledge.DocumentSourceConnector` -- N implementations, opt-in per source.
-- `ascend.springai.runtime.spi.skills.ToolProvider` -- wraps MCP `McpClient` + local `@Tool` registry.
-- `ascend.springai.runtime.spi.governance.PolicyEvaluator` -- default: in-process JSR-303 + ArchUnit. External: OPA client.
-- `ascend.springai.runtime.spi.persistence.RunRepository`, `IdempotencyRepository`, `ArtifactRepository` -- Spring Data JDBC default impls.
+- `ascend.springai.runtime.runs.RunRepository` — dev-posture: `InMemoryRunRegistry`; W2: Spring Data JDBC + Postgres.
+- `ascend.springai.runtime.orchestration.spi.Checkpointer` — dev-posture: `InMemoryCheckpointer`; W2: Postgres-backed.
+- `ascend.springai.runtime.memory.spi.GraphMemoryRepository` — sidecar: Graphiti (W1 reference example, ADR-0034). No production impl at W0.
+- `ascend.springai.runtime.resilience.ResilienceContract` — W0: Resilience4j impl.
+- `ascend.springai.runtime.probe.OssApiProbe` — W0: classpath shape probe.
+
+Deleted SPIs (`LongTermMemoryRepository`, `ToolProvider`, `LayoutParser`, `DocumentSourceConnector`, `PolicyEvaluator`, `IdempotencyRepository`, `ArtifactRepository`) were removed in the 2026-05-12 Occam pass. See `architecture-status.yaml` row `sdk_spi_starter_occam_pass`. Do not reference these names in active documentation.
 
 ## 7. Tier C: local source clones + Python OSS sidecars
 
@@ -245,10 +245,10 @@ Tracked in `third_party/MANIFEST.md`. All entries gitignored; SHAs captured in t
 
 | Name | Stars | Purpose | SPI |
 |---|---|---|---|
-| **mem0** (`mem0ai/mem0`) | 55.2k | Long-term hierarchical memory | `LongTermMemoryRepository` via `spring-ai-ascend-mem0-starter` |
-| **Graphiti** (`getzep/graphiti`) | 25.8k | Knowledge-graph memory | `GraphMemoryRepository` via `spring-ai-ascend-graphmemory-starter` |
-| **Cognee** (`topoteretes/cognee`) | 17.1k | Graph memory alternative to Graphiti | Evaluation alternative; cycle-15 picks one |
-| **Docling-serve** (`docling-project/docling-serve`) | IBM/LF AI&Data | Layout-aware PDF parsing | `LayoutParser` via `spring-ai-ascend-docling-starter` |
+| **Graphiti** (`getzep/graphiti`) | 25.8k | Knowledge-graph memory (M4) | `GraphMemoryRepository` via `spring-ai-ascend-graphmemory-starter` — **W1 reference sidecar (selected, ADR-0034)** |
+| **mem0** (`mem0ai/mem0`) | 55.2k | Long-term hierarchical memory (M3) | Not selected (no matching active SPI at W0); future activation requires a dedicated ADR |
+| **Cognee** (`topoteretes/cognee`) | 17.1k | Graph memory | Not selected — evaluation deferred; Graphiti is the W1 example (ADR-0034) |
+| **Docling-serve** (`docling-project/docling-serve`) | IBM/LF AI&Data | Layout-aware PDF parsing | Not wired to any active starter (corresponding spi deleted in Occam pass); optional for W2+ |
 | **RAGFlow** (`infiniflow/ragflow`) | 80.1k | Alternate full-stack RAG platform | No SDK adapter; consumer integrates via RAGFlow API |
 
 ## 8. Excluded dependencies (competitor code -- never import)
@@ -298,7 +298,7 @@ The remaining reference projects (langchain4j, agentscope-java) are NOT on this 
 - **WireMock stuck at 3.9.1.** WireMock 4.x is in beta (4.0.0-beta.34 as of 2026-05-10); keeping 3.x until 4.x reaches GA.
 - **RestAssured stuck at 5.5.0.** 6.0.0 is a major version jump; upgrade deferred to W1 wave evaluation.
 - **logstash-logback-encoder stuck at 8.0.** 9.0 is a major version jump; upgrade deferred to W1 evaluation.
-- **Graphiti vs Cognee not yet picked.** Both cloned into `third_party/`; `spring-ai-ascend-graphmemory-starter` initially wires Graphiti (higher activity). Cycle-15 confirms or swaps.
+- **Graphiti selected as W1 reference sidecar (ADR-0034).** mem0 and Cognee are not selected. Future activation of either requires a dedicated ADR.
 - **langchain4j at U0.** BOM declared; no module depends on it yet. Advances to U2 when `spring-ai-ascend-langchain4j-profile` scaffolded at Step 11.
 - **Python sidecar version drift.** mem0 / Graphiti / Docling release independently. Mitigated by SPI layer + `third_party/MANIFEST.md` SHA pinning.
 - **springdoc 3.0.3 Boot 4 runtime behavior.** Compile-verified at W0; runtime auto-configuration verified in W1 IT tests.

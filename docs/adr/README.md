@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-> Owner: architecture | Format: MADR 4.0 | Last refreshed: 2026-05-10
+> Owner: architecture | Format: MADR 4.0 | Last refreshed: 2026-05-13
 
 This directory contains Architecture Decision Records (ADRs) for spring-ai-ascend.
 Each ADR documents a significant architectural decision with its context,
@@ -41,6 +41,14 @@ options considered, decision, and consequences.
 | [0029](0029-cognition-action-separation.md) | Cognition-Action separation principle: cognitive reasoning isolated from action execution | accepted |
 | [0030](0030-skill-spi-lifecycle-resource-matrix.md) | Skill SPI: lifecycle (init/execute/suspend/teardown), ResourceMatrix, trust tiers | accepted |
 | [0031](0031-three-track-channel-isolation.md) | Three-track channel isolation: Control / Data / Heartbeat + RunDispatcher SPI | accepted |
+| [0032](0032-scope-based-run-hierarchy-and-planner-contract-minimal.md) | Scope-based run hierarchy (RunScope STEP_LOCAL/SWARM) + planner contract minimal (PlanState/RunPlanRef) | accepted |
+| [0033](0033-logical-identity-equivalence-and-deployment-locus-vocabulary.md) | Logical Identity Equivalence: S-Cloud/S-Edge/C-Device deployment-locus vocabulary | accepted |
+| [0034](0034-memory-and-knowledge-taxonomy-at-l0.md) | Memory and knowledge taxonomy at L0: 6 categories + common metadata schema | accepted |
+| [0035](0035-posture-enforcement-single-construction-path.md) | Posture enforcement single-construction-path: AppPostureGate + posture-model.md as canonical ledger | accepted |
+| [0036](0036-contract-surface-truth-generalization.md) | Contract-surface truth generalization: Gate Rules 13/14 for deleted-SPI and method-name drift | accepted |
+| [0037](0037-wave-authority-consolidation.md) | Wave authority consolidation: archive stale plan docs, ARCHITECTURE.md is single wave authority | accepted |
+| [0038](0038-skill-spi-resource-tier-classification.md) | Skill SPI resource tier classification: 4 enforceability tiers (hard/sandbox/advisory/hints) | accepted |
+| [0039](0039-payload-migration-adapter-strategy.md) | Payload migration adapter strategy: Object → Payload → CausalPayloadEnvelope + adapter wrapper | accepted |
 
 ## Process
 

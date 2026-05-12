@@ -1,11 +1,11 @@
-# spring-ai-ascend architecture status ledger -- 2026-05-12 Occam pass (C22)
+# spring-ai-ascend architecture status ledger -- 2026-05-13 combined sixth+seventh reviewer pass
 # Single source of truth for capability status. Updated by commits, not manually.
 #
 # status enum: design_accepted | implemented_unverified | test_verified | deferred_w1 | deferred_w2
 # shipped: true = implementation exists + at least 1 test GREEN; false = not yet
 
-version: 3
-generated_at: 2026-05-12
+version: 4
+generated_at: 2026-05-13
 
 # Source: root pom.xml <modules> list updated 2026-05-12 fourth-review pass
 repository_counts:
@@ -52,7 +52,7 @@ capabilities:
       - agent-runtime/src/main/java/ascend/springai/runtime/probe/OssApiProbe.java
     tests:
       - agent-runtime/src/test/java/ascend/springai/runtime/probe/OssApiProbeTest.java
-    allowed_claim: "L1: OssApiProbe shell + OssApiProbeTest (3 tests GREEN). No kernel logic yet. W2 delivers run lifecycle."
+    allowed_claim: "W0: OssApiProbe shell (3 tests GREEN). Kernel logic shipped: Run entity, RunStatus DFA, RunStateMachine, SyncOrchestrator, SequentialGraphExecutor, IterativeAgentLoopExecutor, InMemoryRunRegistry, InMemoryCheckpointer, AppPostureGate. 101 unit tests GREEN in agent-runtime."
 
   architecture_sync_gate:
     status: implemented_unverified
@@ -67,7 +67,7 @@ capabilities:
     tests: []
     latest_semantic_pass_sha: c6a25a7
     latest_delivery_file: docs/delivery/2026-05-10-68c07f1.md
-    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml. Architecture baseline: 28 §4 constraints (#1–#28); 31 ADRs (0001–0031); 11 active rules (1–6, 9–10, 20–21, 25); 15 deferred rules (7, 8, 11, 13–19, 22–24, 26–27)."
+    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml. Architecture baseline: 36 §4 constraints (#1–#36); 39 ADRs (0001–0039); 14 active gate rules; 11 active engineering rules (1–6, 9–10, 20–21, 25); 15 deferred rules (7, 8, 11, 13–19, 22–24, 26–27)."
 
   spring_ai_ascend_dependencies_bom:
     status: implemented_unverified
@@ -76,7 +76,7 @@ capabilities:
     implementation:
       - spring-ai-ascend-dependencies/pom.xml
     tests: []
-    allowed_claim: "BoM publishes 9 starter coordinates + 13 transitive OSS pins."
+    allowed_claim: "BoM publishes 1 starter coordinate (spring-ai-ascend-graphmemory-starter) + OSS transitive pins. 8 deleted-starter coords stripped in 2026-05-13 Cluster 8 cleanup."
 
   sdk_spi_starters:
     status: design_accepted
@@ -214,7 +214,7 @@ capabilities:
     implementation:
       - docs/adr/
     tests: []
-    allowed_claim: "27 per-file MADR 4.0 ADRs in docs/adr/ (0001–0027); README index present."
+    allowed_claim: "39 per-file MADR 4.0 ADRs in docs/adr/ (0001–0039); README index present and refreshed 2026-05-13."
 
   perf_evidence_path:
     status: design_accepted
@@ -282,7 +282,7 @@ capabilities:
       - agent-runtime/src/main/java/ascend/springai/runtime/runs/RunRepository.java
     tests:
       - agent-runtime/src/test/java/ascend/springai/runtime/runs/RunTest.java
-    allowed_claim: "L1: Run record with mandatory tenantId, runId, mode (GRAPH|AGENT_LOOP); RunStatus PENDING/RUNNING/SUSPENDED/SUCCEEDED/FAILED/CANCELLED; nullable parentNodeKey+suspendedAt for interrupt-driven nesting; RunRepository SPI adds findByParentRunId + findByTenantAndStatus. Rule 11 target."
+    allowed_claim: "L1: Run record with mandatory tenantId, runId, mode (GRAPH|AGENT_LOOP); RunStatus PENDING/RUNNING/SUSPENDED/SUCCEEDED/FAILED/CANCELLED; nullable parentNodeKey+suspendedAt for interrupt-driven nesting; RunRepository SPI adds findByParentRunId + findByTenantAndStatus + findRootRuns(tenantId). Rule 11 target. findRootRuns shipped W0 per ADR-0032."
 
   idempotency_record_entity:
     status: implemented_unverified
@@ -311,7 +311,7 @@ capabilities:
       - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/spi/SuspendSignalTest.java
       - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/spi/OrchestrationSpiArchTest.java
       - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/inmemory/InMemoryCheckpointerTest.java
-    allowed_claim: "L1: Orchestration SPI — GraphExecutor, AgentLoopExecutor, SuspendSignal, Checkpointer, RunContext, Orchestrator. SPI is pure-Java (OrchestrationSpiArchTest). InMemoryCheckpointer provides dev-posture impl. No reference executor yet (C34)."
+    allowed_claim: "L1: Orchestration SPI — GraphExecutor, AgentLoopExecutor, SuspendSignal, Checkpointer, RunContext, Orchestrator. SPI is pure-Java (OrchestrationSpiArchTest). InMemoryCheckpointer provides dev-posture impl with posture guard (AppPostureGate, ADR-0035)."
 
   inmemory_orchestrator:
     status: implemented_unverified
@@ -504,7 +504,7 @@ capabilities:
   multi_backend_checkpointer:
     status: design_accepted
     shipped: false
-    l0_decision: docs/plans/engineering-plan-W0-W4.md (W2)
+    l0_decision: ARCHITECTURE.md (W2 wave)
     implementation: null
     tests: []
     allowed_claim: "Design only — Checkpointer SPI implementations: Postgres (primary, W2) + Redis (hot-standby, W2) + file (ops/DR, W2). All behind existing Checkpointer SPI; no SPI change required. Implementation deferred to W2."
@@ -512,7 +512,7 @@ capabilities:
   hybrid_rag_bm25:
     status: design_accepted
     shipped: false
-    l0_decision: docs/plans/engineering-plan-W0-W4.md (W3)
+    l0_decision: ARCHITECTURE.md (W3 wave)
     implementation: null
     tests: []
     allowed_claim: "Design only — MemoryService L2 extended with BM25 keyword index alongside pgvector; hybrid alpha-blended relevance scoring (alpha tunable per-tenant, default 0.7). Implementation deferred to W3."
@@ -520,10 +520,10 @@ capabilities:
   planner_as_tool_pattern:
     status: design_accepted
     shipped: false
-    l0_decision: docs/plans/engineering-plan-W0-W4.md (W4)
+    l0_decision: ARCHITECTURE.md (W4 wave)
     implementation: null
     tests: []
-    allowed_claim: "Design only — RunPlanSheet toolset for IterativeAgentLoopExecutor: createRunPlan, reviseRunPlan, completeSubtask, listSubtasks, finalizeRunPlan, listArchivedRunPlans, restoreArchivedRunPlan. Plan rows in run_memory table keyed by run_id; parentRunId chain enables plan-reuse. Activated via AgentLoopDefinition.planningEnabled(true). Implementation deferred to W4."
+    allowed_claim: "Design only — RunPlanSheet toolset for IterativeAgentLoopExecutor: createRunPlan, reviseRunPlan, completeSubtask, listSubtasks, finalizeRunPlan, listArchivedRunPlans, restoreArchivedRunPlan. Plan rows in run_memory table keyed by run_id; parentRunId chain enables plan-reuse. Minimal PlanState/RunPlanRef design named in ADR-0032; full toolset deferred to W4."
 
   # --- C10. Third-reviewer response additions (2026-05-12) ---
 
@@ -768,3 +768,98 @@ capabilities:
     tests:
       - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/inmemory/IterativeAgentLoopExecutorResumeCursorTest.java
     allowed_claim: "W0: IterativeAgentLoopExecutor throws IllegalStateException (ADR-0022 reference) when non-String payload would be silently corrupted by Object.toString() concat (HD-A.8 fix). String-cursor invariant enforced explicitly."
+
+  # --- Sixth + Seventh reviewer combined response additions (2026-05-13) ---
+
+  posture_single_construction_path:
+    status: implemented_unverified
+    shipped: true
+    l0_decision: docs/adr/0035-posture-enforcement-single-construction-path.md
+    implementation:
+      - agent-runtime/src/main/java/ascend/springai/runtime/posture/AppPostureGate.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/SyncOrchestrator.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/InMemoryRunRegistry.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/InMemoryCheckpointer.java
+    tests:
+      - agent-runtime/src/test/java/ascend/springai/runtime/posture/AppPostureGateTest.java
+      - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/inmemory/SyncOrchestratorPostureGuardTest.java
+      - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/inmemory/InMemoryCheckpointerSizeCapTest.java
+    allowed_claim: "W0: AppPostureGate.requireDevForInMemoryComponent centralizes all posture reads (Rule 6 single-construction-path). SyncOrchestrator, InMemoryRunRegistry, InMemoryCheckpointer each call it in constructor. Gate Rule 12 verifies literal presence. ADR-0035."
+
+  run_find_root_runs:
+    status: implemented_unverified
+    shipped: true
+    l0_decision: docs/adr/0032-scope-based-run-hierarchy-and-planner-contract-minimal.md
+    implementation:
+      - agent-runtime/src/main/java/ascend/springai/runtime/runs/RunRepository.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/InMemoryRunRegistry.java
+    tests:
+      - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/inmemory/InMemoryRunRegistryFindRootRunsTest.java
+    allowed_claim: "W0: RunRepository.findRootRuns(tenantId) SPI method added; InMemoryRunRegistry.findRootRuns filters parentRunId == null with tenant scoping. ADR-0032 Cluster 1."
+
+  scope_based_run_hierarchy:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0032-scope-based-run-hierarchy-and-planner-contract-minimal.md
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — RunScope{STEP_LOCAL, SWARM} discriminator taxonomy; SuspendReason.SwarmDelegation variant; PlanState/RunPlanRef minimal contract. RunScope Java field deferred to W2 alongside Postgres schema rev. ADR-0032."
+
+  logical_identity_equivalence:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0033-logical-identity-equivalence-and-deployment-locus-vocabulary.md
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — deployment-locus vocabulary: S-Cloud (server, cloud-hosted), S-Edge (server, edge-deployed), C-Device (client-resident). Rule 17 S-side/C-side substitution-authority preserved unchanged. No edge posture variant (edge posture REJECTED). ADR-0033."
+
+  memory_knowledge_taxonomy:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0034-memory-and-knowledge-taxonomy-at-l0.md
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — 6 memory categories: M1 Short-Term Run Context, M2 Episodic Session Memory, M3 Semantic Long-Term, M4 Graph Relationship, M5 Knowledge Index, M6 Retrieved Context. Common MemoryMetadata schema with tenantId/runId/sessionId/source/ontologyTag/confidence/retentionExpiry/embeddingModel/redactionState/visibilityScope. Graphiti selected as W1 reference sidecar. mem0/Cognee not-selected. Implementation deferred to W2. ADR-0034."
+
+  contract_surface_truth_generalization:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0036-contract-surface-truth-generalization.md
+    implementation:
+      - gate/check_architecture_sync.ps1
+      - gate/check_architecture_sync.sh
+    tests: []
+    allowed_claim: "Gate Rules 13+14 added: Rule 13 forbids contract-catalog from referencing deleted SPI interface names or deleted starter coords; Rule 14 requires method names in module ARCHITECTURE.md code-fences to exist in named Java class. ADR-0036 + §4 #33."
+
+  wave_authority_consolidation:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0037-wave-authority-consolidation.md
+    implementation:
+      - docs/archive/2026-05-13-plans-archived/README.md
+    tests: []
+    allowed_claim: "docs/plans/roadmap-W0-W4.md and docs/plans/engineering-plan-W0-W4.md archived to docs/archive/2026-05-13-plans-archived/ with ARCHIVED banners. Single wave authority: ARCHITECTURE.md §1 + architecture-status.yaml + CLAUDE-deferred.md. ADR-0037 + §4 #34."
+
+  skill_spi_resource_tiers:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0038-skill-spi-resource-tier-classification.md
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — 4 enforceability tiers: (a) hard-enforceable (token budget, wall-clock timeout, concurrency cap, trust tier, sandbox requirement); (b) sandbox-enforceable (CPU millis, max-memory-bytes); (c) advisory/receipt (observed CPU/time/memory); (d) skill-specific hints. SkillResourceMatrix updated in ADR-0030. ADR-0038 + §4 #35."
+
+  payload_migration_adapter:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0039-payload-migration-adapter-strategy.md
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — single normative migration path: raw Object → Payload (ADR-0022) → CausalPayloadEnvelope (ADR-0028). PayloadAdapter.wrap(Object) adapter wrapper required for legacy NodeFunction/Reasoner impls. @Deprecated window mandatory before removal. ADR-0039 + §4 #36."
+
+  run_dispatcher_spi:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0031-three-track-channel-isolation.md
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — RunDispatcher SPI: route Run to correct channel bundle (Control/Data/Heartbeat) per ADR-0031 §4 #101-125. Terminal events bypass DROP_OLDEST via reserved terminal slot (never dropped). Non-terminal events use DROP_OLDEST with counter metric. Implementation deferred to W2. ADR-0031."

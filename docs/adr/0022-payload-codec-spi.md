@@ -140,4 +140,4 @@ requires updating all executor implementations again.
 - §4 #21 (typed payload + PayloadCodec SPI)
 - Rule 22 (deferred, W2): PayloadCodec discipline
 - `architecture-status.yaml` rows: `payload_codec_spi`, `typed_run_event_schema`, `payload_pii_filter_dependency`
-- W2 wave plan: `docs/plans/engineering-plan-W0-W4.md` §4.2
+- ADR-0039: normative migration path `Object → Payload → CausalPayloadEnvelope` with `PayloadAdapter.wrap(Object)` adapter wrapper requirement (seventh-reviewer Cluster 6)

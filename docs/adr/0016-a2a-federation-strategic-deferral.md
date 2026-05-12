@@ -52,8 +52,10 @@ Three contract types are named now and kept stable across W1–W4:
   `Object result`. Returns `SuspendSignal` on cross-agent suspension.
 
 No implementation ships before W4. `a2a_federation_strategic` row in `architecture-status.yaml`
-tracks intent. An ADR-0019 (future) may activate implementation when A2A SDK reaches GA and
-platform demand justifies it.
+tracks intent. ADR-0033 (Logical Identity Equivalence, 2026-05-13) formalises the deployment-locus
+vocabulary (S-Cloud / S-Edge / C-Device) that any A2A activation ADR will reference. A future
+implementation ADR may activate `AgentRegistry` and `RemoteAgentClient` when the A2A SDK reaches
+GA and platform demand justifies it.
 
 ### Consequences
 

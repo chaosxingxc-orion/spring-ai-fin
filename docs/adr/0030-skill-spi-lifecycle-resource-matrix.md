@@ -84,8 +84,12 @@ public enum SkillKind {
  * Resource declaration for a Skill invocation.
  *
  * <p>Every Skill declares its worst-case resource consumption. The Orchestrator
- * enforces declared limits via {@link ResilienceContract} (§4 #8) and suspends
- * the Run with {@link SuspendReason.RateLimited} when saturation is reached (§4 #12).
+ * validates declared limits before init() AND enforces the subset supported by the
+ * dispatch path (see ADR-0038 §4 tiers). Hard-enforceable limits (token budget,
+ * wall-clock timeout, concurrency cap, trust tier) are enforced at W2; CPU millis
+ * and max-memory-bytes are sandbox-enforced only (UNTRUSTED + non-NoOp sandbox
+ * required). The Run is suspended with {@link SuspendReason.RateLimited} when the
+ * enforceable limits are exceeded (§4 #12).
  */
 public record SkillResourceMatrix(
         String tenantQuotaKey,    // Key in the tenant-scoped ResiliencePolicy quota

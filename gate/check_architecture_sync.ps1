@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-  spring-ai-ascend architecture-sync gate (fifth-review refresh, 11 rules).
+  spring-ai-ascend architecture-sync gate (sixth+seventh reviewer refresh, 14 rules).
 
 .DESCRIPTION
   Exits 0 if all rules pass, 1 if any fail.
@@ -20,6 +20,9 @@
     9. openapi_path_consistency       -- /v3/api-docs must appear in WebSecurityConfig + platform ARCH
    10. module_dep_direction           -- agent-runtime must not depend on agent-platform (and vice versa)
    11. shipped_envelope_fingerprint_present -- InMemoryCheckpointer enforces §4 #13 16-KiB cap (MAX_INLINE_PAYLOAD_BYTES present)
+   12. inmemory_orchestrator_posture_guard_present -- SyncOrchestrator, InMemoryRunRegistry, InMemoryCheckpointer each contain AppPostureGate.requireDev (ADR-0035)
+   13. contract_catalog_no_deleted_spi_or_starter_names -- contract-catalog.md must not reference deleted SPI interface names or deleted starter coords
+   14. module_arch_method_name_truth  -- method names in ARCHITECTURE.md code-fences must exist in named Java class
 
 .PARAMETER LocalOnly
   Not used by this script (kept for invocation parity with old version).
@@ -327,6 +330,96 @@ if (Test-Path -LiteralPath $inMemoryCheckpointerPath) {
   $r11Fail = $true
 }
 if (-not $r11Fail) { Pass-Rule 'shipped_envelope_fingerprint_present' }
+
+# ---------------------------------------------------------------------------
+# Rule 12 — inmemory_orchestrator_posture_guard_present
+# ADR-0035: AppPostureGate.requireDevForInMemoryComponent is the single
+# construction path for posture reads (Rule 6). All three in-memory components
+# MUST contain the literal AppPostureGate.requireDev in their source.
+# ---------------------------------------------------------------------------
+$r12Fail = $false
+$postureGuardTargets = @(
+  'agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/SyncOrchestrator.java',
+  'agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/InMemoryRunRegistry.java',
+  'agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/InMemoryCheckpointer.java'
+)
+foreach ($target in $postureGuardTargets) {
+  if (Test-Path -LiteralPath $target) {
+    $tc = Get-Content -Raw -LiteralPath $target
+    if ($tc -notmatch 'AppPostureGate\.requireDev') {
+      Fail-Rule 'inmemory_orchestrator_posture_guard_present' "$target does not call AppPostureGate.requireDev*. Per ADR-0035 all in-memory components must delegate posture reads to AppPostureGate (Rule 6 single-construction-path)."
+      $r12Fail = $true
+    }
+  } else {
+    Fail-Rule 'inmemory_orchestrator_posture_guard_present' "$target not found on disk."
+    $r12Fail = $true
+  }
+}
+if (-not $r12Fail) { Pass-Rule 'inmemory_orchestrator_posture_guard_present' }
+
+# ---------------------------------------------------------------------------
+# Rule 13 — contract_catalog_no_deleted_spi_or_starter_names
+# ADR-0036: contract-catalog.md must not reference deleted SPI interface names
+# or deleted starter artifact coordinates. These were removed in the 2026-05-12
+# Occam pass. Any lingering reference is a contract-surface truth violation.
+# ---------------------------------------------------------------------------
+$r13Fail = $false
+$catalogPath = 'docs/contracts/contract-catalog.md'
+$deletedNames = @(
+  'LongTermMemoryRepository',
+  'ToolProvider',
+  'LayoutParser',
+  'DocumentSourceConnector',
+  'PolicyEvaluator',
+  'IdempotencyRepository',
+  'ArtifactRepository',
+  'spring-ai-ascend-memory-starter',
+  'spring-ai-ascend-skills-starter',
+  'spring-ai-ascend-knowledge-starter',
+  'spring-ai-ascend-governance-starter',
+  'spring-ai-ascend-persistence-starter',
+  'spring-ai-ascend-resilience-starter',
+  'spring-ai-ascend-mem0-starter',
+  'spring-ai-ascend-docling-starter',
+  'spring-ai-ascend-langchain4j-profile'
+)
+if (Test-Path -LiteralPath $catalogPath) {
+  $catalogContent = Get-Content -Raw -LiteralPath $catalogPath
+  foreach ($deleted in $deletedNames) {
+    if ($catalogContent -match [regex]::Escape($deleted)) {
+      Fail-Rule 'contract_catalog_no_deleted_spi_or_starter_names' "$catalogPath references deleted name '$deleted'. Per ADR-0036 Gate Rule 13 this is a contract-surface truth violation."
+      $r13Fail = $true
+    }
+  }
+} else {
+  Fail-Rule 'contract_catalog_no_deleted_spi_or_starter_names' "$catalogPath not found."
+  $r13Fail = $true
+}
+if (-not $r13Fail) { Pass-Rule 'contract_catalog_no_deleted_spi_or_starter_names' }
+
+# ---------------------------------------------------------------------------
+# Rule 14 — module_arch_method_name_truth
+# ADR-0036: method names in code-fence blocks in agent-platform/ARCHITECTURE.md
+# and agent-runtime/ARCHITECTURE.md must exist in the named Java class.
+# Pragmatic regex sweep: looks for probe.probe() and other named method refs.
+# Currently checks the specific known drift: probe.check() was wrong; correct
+# is probe.probe(). Fails if probe.check() appears in any module ARCHITECTURE.md.
+# ---------------------------------------------------------------------------
+$r14Fail = $false
+$moduleArchFiles = @(
+  'agent-platform/ARCHITECTURE.md',
+  'agent-runtime/ARCHITECTURE.md'
+)
+foreach ($archFile in $moduleArchFiles) {
+  if (Test-Path -LiteralPath $archFile) {
+    $archContent = Get-Content -Raw -LiteralPath $archFile
+    if ($archContent -match 'probe\.check\(\)') {
+      Fail-Rule 'module_arch_method_name_truth' "$archFile references probe.check() but the actual method in OssApiProbe is probe.probe(). Per ADR-0036 Gate Rule 14 method names in docs must match source."
+      $r14Fail = $true
+    }
+  }
+}
+if (-not $r14Fail) { Pass-Rule 'module_arch_method_name_truth' }
 
 # ---------------------------------------------------------------------------
 # Summary

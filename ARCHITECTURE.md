@@ -1,6 +1,6 @@
 # spring-ai-ascend Platform — Architecture
 
-> Last updated: 2026-05-12 (fifth-review pass — §4 #25-#28, ADR-0028-0031, Rules 26-27).
+> Last updated: 2026-05-13 (sixth+seventh reviewer combined pass — §4 #29-#36, ADR-0032-0039, Gate Rules 12-14, AppPostureGate, findRootRuns, plans archived).
 
 ## 1. System boundary
 
@@ -339,8 +339,9 @@ only `java.*` (enforced by `OrchestrationSpiArchTest`, `MemorySpiArchTest`).
     MUST be registered via the `Skill` SPI with: (a) lifecycle methods `init / execute / suspend /
     teardown` — `teardown` is called unconditionally even when `execute` throws; (b)
     `SkillResourceMatrix` declaring `(tenantQuotaKey, globalCapacityKey, tokenBudget, wallClockMs,
-    cpuMillis, maxMemoryBytes, concurrencyCap)` — the Orchestrator enforces declared limits before
-    `init()`; (c) `SkillTrustTier (VETTED | UNTRUSTED)` — in research/prod posture, `UNTRUSTED`
+    cpuMillis, maxMemoryBytes, concurrencyCap)` — the Orchestrator validates declared limits before
+    `init()` AND enforces the subset supported by the dispatch path (see ADR-0038 §4 tiers); (c)
+    `SkillTrustTier (VETTED | UNTRUSTED)` — in research/prod posture, `UNTRUSTED`
     skills MUST route through a non-`NoOp` `SandboxExecutor` (ADR-0018); startup gate asserts
     (Rule 27, deferred W3). Every `execute()` returns a `SkillCostReceipt` for Rule 13 (P1). When
     a Run is SUSPENDED, `Skill.suspend()` releases heavy resources; `Skill.resume(token)` reconnects
@@ -357,6 +358,82 @@ only `java.*` (enforced by `OrchestrationSpiArchTest`, `MemorySpiArchTest`).
     lookups for capabilities not authorised for the requesting tenant are rejected. A `RunDispatcher`
     SPI separates intent-enqueue from intent-execute for async dispatch at W2. Implementation
     deferred to W2. See ADR-0031, `three_track_channel_isolation`, `run_dispatcher_spi`.
+
+29. **Scope-based run hierarchy + planner contract.** `Run` carries a `RunScope` discriminator
+    (`STEP_LOCAL | SWARM`): `STEP_LOCAL` runs are orchestrator-local, directly addressable by
+    `parentRunId` chain; `SWARM` runs are federated across multiple orchestrators and visible only
+    via `AgentRegistry`. `SuspendReason.SwarmDelegation` variant covers delegation to a SWARM child.
+    Minimal planner contract: `PlanState` (current plan status) and `RunPlanRef` (reference from a
+    Run row to its associated plan artifact) are the design-level types; full `RunPlanSheet` toolset
+    deferred to W4. `RunRepository.findRootRuns(tenantId)` (shipped W0) returns top-level runs with
+    `parentRunId == null`. `RunScope` Java field on the `Run` entity deferred to W2. See ADR-0032.
+
+30. **Logical identity equivalence + deployment-locus vocabulary.** The platform recognizes three
+    deployment loci: `S-Cloud` (server-side, cloud-hosted), `S-Edge` (server-side, edge-deployed
+    at network boundary), `C-Device` (client-resident, on-device). A capability designated for
+    `S-Cloud` MUST remain functionally equivalent when deployed at `S-Edge` (same SPI, same
+    security controls, same tenant isolation — only the execution venue differs). The existing
+    Rule 17 vocabulary `S-side / C-side` is **preserved unchanged** — it expresses substitution
+    authority (who may substitute means vs ends), not deployment location. No `edge` posture
+    variant is introduced; the three-posture model (`dev/research/prod`) is sufficient. Locus
+    scheduling is post-W4. See ADR-0033, `logical_identity_equivalence`.
+
+31. **Memory and knowledge taxonomy.** The platform recognizes six memory categories:
+    M1 Short-Term Run Context (in-process per run, TTL = run lifetime);
+    M2 Episodic Session Memory (across turns in a session, tenant-scoped);
+    M3 Semantic Long-Term (persistent embeddings, tenant-scoped);
+    M4 Graph Relationship Memory (graph nodes/edges, tenant-scoped);
+    M5 Knowledge Index (indexable documents/chunks, tenant-scoped);
+    M6 Retrieved Context (ephemeral RAG results, TTL = turn lifetime).
+    All persistent memory entries carry a common `MemoryMetadata` schema:
+    `{tenantId, runId?, sessionId?, source, ontologyTag, confidence, retentionExpiry,
+    embeddingModel?, redactionState, visibilityScope}`.
+    W1 reference sidecar: Graphiti (graph relationship memory, M4). mem0 and Cognee are not
+    selected. Code-level implementation deferred to W2. See ADR-0034, `memory_knowledge_taxonomy`.
+
+32. **Posture enforcement single-construction-path.** All posture reads MUST flow through
+    `AppPostureGate.requireDevForInMemoryComponent(componentName)`. No class other than
+    `AppPostureGate` may call `System.getenv("APP_POSTURE")` (Rule 6 single-construction-path).
+    `dev` or missing: emits WARN to stderr and continues; `research`/`prod`: throws
+    `IllegalStateException` with ADR-0035 reference. Gate Rule 12 enforces the literal
+    `AppPostureGate.requireDev` in `SyncOrchestrator`, `InMemoryRunRegistry`, and
+    `InMemoryCheckpointer`. `docs/cross-cutting/posture-model.md` is the canonical posture-truth
+    ledger; every posture-aware component row MUST appear there. See ADR-0035,
+    `posture_single_construction_path`.
+
+33. **Contract-surface truth (generalized Rule 25).** Beyond the four original Rule 25 cases,
+    two additional truth constraints are gate-enforced: Gate Rule 13 — `contract-catalog.md` MUST
+    NOT reference any deleted SPI interface name or deleted starter coordinate (deleted-name list
+    sourced from `architecture-status.yaml` `sdk_spi_starters` note); Gate Rule 14 — every method
+    name appearing in a code-fence block in `agent-platform/ARCHITECTURE.md` or
+    `agent-runtime/ARCHITECTURE.md` MUST exist in the named Java class (pragmatic regex sweep).
+    See ADR-0036, `contract_surface_truth_generalization`.
+
+34. **Wave authority consolidation.** A single chain of authority governs wave-planning decisions:
+    (1) `ARCHITECTURE.md` §1 + §4 — wave boundary constraints; (2)
+    `docs/governance/architecture-status.yaml` — per-capability shipped/deferred status;
+    (3) `docs/CLAUDE-deferred.md` — deferred engineering rules with re-introduction triggers.
+    All other planning documents are informational or archived. Stale parallel plans
+    (`roadmap-W0-W4.md`, `engineering-plan-W0-W4.md`) are archived in
+    `docs/archive/2026-05-13-plans-archived/`. See ADR-0037, `wave_authority_consolidation`.
+
+35. **Skill SPI resource-tier classification.** `SkillResourceMatrix` fields are grouped into four
+    enforceability tiers: (a) **Hard-enforceable** — quota key, token budget, wall-clock timeout,
+    concurrency cap, trust tier, sandbox requirement for UNTRUSTED; Orchestrator checks these before
+    `init()` and blocks or routes through sandbox; (b) **Sandbox-enforceable** — CPU millis and
+    max-memory-bytes; enforced only when the dispatch path routes through a non-NoOp
+    `SandboxExecutor`; (c) **Advisory/receipt** — observed CPU time, memory, and wall-clock logged
+    as `SkillCostReceipt`; no enforcement, only cost attribution; (d) **Skill-specific hints** —
+    freeform metadata passed through to the skill implementation. Claims about CPU/memory enforcement
+    in documentation MUST qualify which tier they target. See ADR-0038, `skill_spi_resource_tiers`.
+
+36. **Payload migration adapter strategy.** There is one normative migration path for payload types:
+    raw `Object` → `Payload` (typed, ADR-0022) → `CausalPayloadEnvelope` (causally annotated,
+    ADR-0028). Any `NodeFunction` or `Reasoner` implementation using raw `Object` parameters MUST
+    be wrapped with `PayloadAdapter.wrap(Object)` before being passed to a typed boundary. A
+    `@Deprecated` annotation window is mandatory on any method with raw `Object` payload before
+    removal; removal without an adapter wrapper is a ship-blocking defect. See ADR-0039,
+    `payload_migration_adapter`.
 
 ---
 
@@ -393,7 +470,8 @@ only `java.*` (enforced by `OrchestrationSpiArchTest`, `MemorySpiArchTest`).
 ## 6. Roadmap pointers
 
 - Deferred capabilities and re-introduction triggers: `docs/CLAUDE-deferred.md`
-- Current per-capability state and maturity levels: `docs/STATE.md` (created in C27)
+- Current per-capability state and maturity levels: `docs/STATE.md`
+- Per-capability shipped/deferred status: `docs/governance/architecture-status.yaml`
 - Design rationale for pre-C26 decisions: `docs/v6-rationale/`
-- Wave delivery plan (W0–W4): `docs/plans/engineering-plan-W0-W4.md`
+- Wave delivery plan (archived): `docs/archive/2026-05-13-plans-archived/` (see ADR-0037)
 - OSS BoM with per-dep verification level: `docs/cross-cutting/oss-bill-of-materials.md`

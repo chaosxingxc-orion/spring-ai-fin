@@ -1,10 +1,10 @@
 package ascend.springai.runtime.orchestration.inmemory;
 
+import ascend.springai.runtime.posture.AppPostureGate;
 import ascend.springai.runtime.runs.Run;
 import ascend.springai.runtime.runs.RunRepository;
 import ascend.springai.runtime.runs.RunStatus;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -19,6 +19,10 @@ import java.util.stream.Collectors;
 public final class InMemoryRunRegistry implements RunRepository {
 
     private final Map<UUID, Run> store = new ConcurrentHashMap<>();
+
+    public InMemoryRunRegistry() {
+        AppPostureGate.requireDevForInMemoryComponent("InMemoryRunRegistry");
+    }
 
     @Override
     public Optional<Run> findById(UUID runId) {
@@ -49,6 +53,13 @@ public final class InMemoryRunRegistry implements RunRepository {
     public List<Run> findByTenantAndStatus(String tenantId, RunStatus status) {
         return store.values().stream()
                 .filter(r -> tenantId.equals(r.tenantId()) && status == r.status())
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Run> findRootRuns(String tenantId) {
+        return store.values().stream()
+                .filter(r -> tenantId.equals(r.tenantId()) && r.parentRunId() == null)
                 .collect(Collectors.toList());
     }
 }

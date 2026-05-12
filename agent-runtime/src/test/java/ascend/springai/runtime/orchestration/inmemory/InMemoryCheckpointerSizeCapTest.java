@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
@@ -17,6 +18,12 @@ class InMemoryCheckpointerSizeCapTest {
 
     private static final int ONE_BYTE_OVER = InMemoryCheckpointer.MAX_INLINE_PAYLOAD_BYTES + 1;
     private static final int EXACTLY_AT_CAP = InMemoryCheckpointer.MAX_INLINE_PAYLOAD_BYTES;
+
+    @Test
+    void dev_posture_construction_delegates_to_posture_gate() {
+        // AppPostureGate.requireDevForInMemoryComponent called; dev posture warns, does not throw.
+        assertThatCode(InMemoryCheckpointer::new).doesNotThrowAnyException();
+    }
 
     @Test
     void dev_posture_permits_small_payload() {

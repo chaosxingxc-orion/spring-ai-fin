@@ -1,3 +1,7 @@
+> **ARCHIVED 2026-05-13.** Historical planning document. Do not treat as current wave authority.
+> Active wave authority: `ARCHITECTURE.md §1` + `docs/governance/architecture-status.yaml` +
+> `docs/CLAUDE-deferred.md`. See ADR-0037.
+
 # spring-ai-ascend Engineering Plan -- W0..W4
 
 > Companion to `ARCHITECTURE.md`. This is the *only* document

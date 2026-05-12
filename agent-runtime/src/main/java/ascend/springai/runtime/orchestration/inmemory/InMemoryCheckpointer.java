@@ -1,6 +1,7 @@
 package ascend.springai.runtime.orchestration.inmemory;
 
 import ascend.springai.runtime.orchestration.spi.Checkpointer;
+import ascend.springai.runtime.posture.AppPostureGate;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -26,8 +27,8 @@ public final class InMemoryCheckpointer implements Checkpointer {
     private final boolean failOnOversize;
 
     public InMemoryCheckpointer() {
-        String posture = System.getenv("APP_POSTURE");
-        this.failOnOversize = "research".equals(posture) || "prod".equals(posture);
+        AppPostureGate.requireDevForInMemoryComponent("InMemoryCheckpointer");
+        this.failOnOversize = false; // dev posture only (research/prod throws above)
     }
 
     /** Package-private constructor for testing posture-specific behaviour without env-var manipulation. */

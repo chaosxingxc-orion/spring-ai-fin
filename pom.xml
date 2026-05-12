@@ -221,52 +221,7 @@
       </dependency>
       <dependency>
         <groupId>ascend.springai</groupId>
-        <artifactId>spring-ai-ascend-memory-starter</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>ascend.springai</groupId>
-        <artifactId>spring-ai-ascend-skills-starter</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>ascend.springai</groupId>
-        <artifactId>spring-ai-ascend-knowledge-starter</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>ascend.springai</groupId>
-        <artifactId>spring-ai-ascend-governance-starter</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>ascend.springai</groupId>
-        <artifactId>spring-ai-ascend-persistence-starter</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>ascend.springai</groupId>
-        <artifactId>spring-ai-ascend-resilience-starter</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>ascend.springai</groupId>
-        <artifactId>spring-ai-ascend-mem0-starter</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>ascend.springai</groupId>
         <artifactId>spring-ai-ascend-graphmemory-starter</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>ascend.springai</groupId>
-        <artifactId>spring-ai-ascend-docling-starter</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>ascend.springai</groupId>
-        <artifactId>spring-ai-ascend-langchain4j-profile</artifactId>
         <version>${project.version}</version>
       </dependency>
     </dependencies>

@@ -1,3 +1,7 @@
+> **ARCHIVED 2026-05-13.** Historical planning document. Do not treat as current wave authority.
+> Active wave authority: `ARCHITECTURE.md §1` + `docs/governance/architecture-status.yaml` +
+> `docs/CLAUDE-deferred.md`. See ADR-0037.
+
 # Roadmap -- W0 through W4
 
 > Per `docs/systematic-architecture-improvement-plan-2026-05-07.en.md` sec-5.

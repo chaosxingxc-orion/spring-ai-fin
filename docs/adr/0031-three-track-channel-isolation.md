@@ -85,7 +85,8 @@ Track 2 — Data Channel (Flux<RunEvent>)
   Direction: Orchestrator → Caller (reactive push, caller-driven demand)
   Messages: NodeStarted, NodeCompleted(EncodedPayload output), Suspended, Resumed, Failed, Terminal
   Backpressure: caller controls demand; Orchestrator buffers up to N events (configurable, default 64)
-  Overflow policy: DROP_OLDEST with counter metric; DROP_LATEST for Terminal events (never dropped)
+  Overflow policy: Non-terminal events use DROP_OLDEST under overflow with a counter metric;
+  Terminal events bypass the drop policy via a reserved terminal slot and are never dropped.
   W2 impl: Sinks.many().multicast().onBackpressureBuffer(N)
 
 Track 3 — Heartbeat Channel (Flux<Instant>)

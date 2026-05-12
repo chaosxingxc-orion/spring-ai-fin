@@ -7,6 +7,7 @@ import ascend.springai.runtime.orchestration.spi.GraphExecutor;
 import ascend.springai.runtime.orchestration.spi.Orchestrator;
 import ascend.springai.runtime.orchestration.spi.RunContext;
 import ascend.springai.runtime.orchestration.spi.SuspendSignal;
+import ascend.springai.runtime.posture.AppPostureGate;
 import ascend.springai.runtime.runs.Run;
 import ascend.springai.runtime.runs.RunMode;
 import ascend.springai.runtime.runs.RunRepository;
@@ -36,6 +37,7 @@ public final class SyncOrchestrator implements Orchestrator {
 
     public SyncOrchestrator(RunRepository runs, Checkpointer checkpointer,
                             GraphExecutor graphExecutor, AgentLoopExecutor agentLoopExecutor) {
+        AppPostureGate.requireDevForInMemoryComponent("SyncOrchestrator");
         this.runs = Objects.requireNonNull(runs);
         this.checkpointer = Objects.requireNonNull(checkpointer);
         this.graphExecutor = Objects.requireNonNull(graphExecutor);

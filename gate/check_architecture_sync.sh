@@ -1,17 +1,24 @@
 #!/usr/bin/env bash
-# spring-ai-ascend architecture-sync gate -- fifth-review refresh (7 rules).
+# spring-ai-ascend architecture-sync gate -- sixth+seventh reviewer refresh (14 rules).
 # Exits 0 if all rules pass, 1 if any fail.
 # Each rule prints PASS: <name> or FAIL: <name> -- <reason>.
 # Prints GATE: PASS or GATE: FAIL at the end.
 #
 # Rules:
-#   1. status_enum_invalid                   -- docs/governance/architecture-status.yaml status values
-#   2. delivery_log_parity                   -- gate/log/*.json sha field matches filename basename
-#   3. eol_policy                            -- *.sh files in gate/ must be LF (not CRLF)
-#   4. ci_no_or_true_mask                    -- no gate/run_* || true in .github/workflows/*.yml
-#   5. required_files_present               -- contract-catalog.md and openapi-v1.yaml must exist
-#   6. metric_naming_namespace              -- springai_ascend_ prefix in Java metric names
-#   7. shipped_envelope_fingerprint_present -- InMemoryCheckpointer enforces §4 #13 16-KiB cap
+#   1.  status_enum_invalid                          -- docs/governance/architecture-status.yaml status values
+#   2.  delivery_log_parity                          -- gate/log/*.json sha field matches filename basename
+#   3.  eol_policy                                   -- *.sh files in gate/ must be LF (not CRLF)
+#   4.  ci_no_or_true_mask                           -- no gate/run_* || true in .github/workflows/*.yml
+#   5.  required_files_present                       -- contract-catalog.md and openapi-v1.yaml must exist
+#   6.  metric_naming_namespace                      -- springai_ascend_ prefix in Java metric names
+#   7.  shipped_impl_paths_exist                     -- every shipped: true implementation: path exists on disk
+#   8.  no_hardcoded_versions_in_arch                -- module ARCHITECTURE.md files must not pin OSS versions inline
+#   9.  openapi_path_consistency                     -- /v3/api-docs must appear in WebSecurityConfig + platform ARCH
+#  10.  module_dep_direction                         -- agent-runtime must not depend on agent-platform (and vice versa)
+#  11.  shipped_envelope_fingerprint_present         -- InMemoryCheckpointer enforces §4 #13 16-KiB cap
+#  12.  inmemory_orchestrator_posture_guard_present  -- AppPostureGate.requireDev in all 3 in-memory components (ADR-0035)
+#  13.  contract_catalog_no_deleted_spi_or_starter_names -- contract-catalog.md must not reference deleted names
+#  14.  module_arch_method_name_truth                -- method names in ARCHITECTURE.md code-fences must exist in Java class
 
 set -uo pipefail
 export LC_ALL=C
@@ -171,23 +178,184 @@ fi
 if [[ $_r6_fail -eq 0 ]]; then pass_rule "metric_naming_namespace"; fi
 
 # ---------------------------------------------------------------------------
-# Rule 7 — shipped_envelope_fingerprint_present
-# The payload_fingerprint_precommit capability is shipped: true in yaml.
+# Rule 7 — shipped_impl_paths_exist
+# Every capability row with shipped: true in architecture-status.yaml MUST
+# have all its implementation: paths exist on disk.
+# ---------------------------------------------------------------------------
+_r7_fail=0
+_status_file='docs/governance/architecture-status.yaml'
+_in_shipped=0
+_current_impl=''
+if [[ -f "$_status_file" ]]; then
+  while IFS= read -r _line; do
+    if echo "$_line" | grep -qE '^\s*shipped:\s*true'; then
+      _in_shipped=1
+    elif echo "$_line" | grep -qE '^\s*shipped:\s*false'; then
+      _in_shipped=0
+    elif [[ $_in_shipped -eq 1 ]] && echo "$_line" | grep -qE '^\s*-\s+\S'; then
+      _impl_path=$(echo "$_line" | sed -E 's/^\s*-\s+//')
+      if [[ -n "$_impl_path" ]] && [[ "$_impl_path" != "null" ]]; then
+        if [[ ! -e "$_impl_path" ]]; then
+          fail_rule "shipped_impl_paths_exist" "shipped: true row references non-existent path: $_impl_path"
+          _r7_fail=1
+        fi
+      fi
+    elif echo "$_line" | grep -qE '^\s*(status|tests|allowed_claim|l0_decision|l2_documents|note):'; then
+      _in_shipped=0
+    fi
+  done < "$_status_file"
+fi
+if [[ $_r7_fail -eq 0 ]]; then pass_rule "shipped_impl_paths_exist"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 8 — no_hardcoded_versions_in_arch
+# module ARCHITECTURE.md files (agent-platform/, agent-runtime/) must not
+# pin OSS versions inline (e.g., "Spring Boot 3.2.1" or "Java 21.0.2").
+# ---------------------------------------------------------------------------
+_r8_fail=0
+for _arch in 'agent-platform/ARCHITECTURE.md' 'agent-runtime/ARCHITECTURE.md'; do
+  if [[ -f "$_arch" ]]; then
+    if grep -qE '[0-9]+\.[0-9]+\.[0-9]+' "$_arch" 2>/dev/null; then
+      fail_rule "no_hardcoded_versions_in_arch" "$_arch contains inline version pin (x.y.z pattern). Move version pins to pom.xml or oss-bill-of-materials.md."
+      _r8_fail=1
+    fi
+  fi
+done
+if [[ $_r8_fail -eq 0 ]]; then pass_rule "no_hardcoded_versions_in_arch"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 9 — openapi_path_consistency
+# /v3/api-docs must appear in the agent-platform ARCHITECTURE.md documenting
+# the security permit path.
+# ---------------------------------------------------------------------------
+_r9_fail=0
+_plat_arch='agent-platform/ARCHITECTURE.md'
+if [[ -f "$_plat_arch" ]]; then
+  if ! grep -q '/v3/api-docs' "$_plat_arch" 2>/dev/null; then
+    fail_rule "openapi_path_consistency" "$_plat_arch does not document /v3/api-docs exposure. Document it or remove the security permitAll."
+    _r9_fail=1
+  fi
+fi
+if [[ $_r9_fail -eq 0 ]]; then pass_rule "openapi_path_consistency"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 10 — module_dep_direction
+# agent-runtime/pom.xml must NOT declare a dependency on agent-platform.
+# agent-platform/pom.xml must NOT declare a dependency on agent-runtime.
+# ---------------------------------------------------------------------------
+_r10_fail=0
+if [[ -f 'agent-runtime/pom.xml' ]]; then
+  if grep -q '<artifactId>agent-platform</artifactId>' 'agent-runtime/pom.xml' 2>/dev/null; then
+    fail_rule "module_dep_direction" "agent-runtime/pom.xml declares dependency on agent-platform. Per ADR-0026 forbidden."
+    _r10_fail=1
+  fi
+fi
+if [[ $_r10_fail -eq 0 ]] && [[ -f 'agent-platform/pom.xml' ]]; then
+  if grep -q '<artifactId>agent-runtime</artifactId>' 'agent-platform/pom.xml' 2>/dev/null; then
+    fail_rule "module_dep_direction" "agent-platform/pom.xml declares dependency on agent-runtime."
+    _r10_fail=1
+  fi
+fi
+if [[ $_r10_fail -eq 0 ]]; then pass_rule "module_dep_direction"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 11 — shipped_envelope_fingerprint_present
 # InMemoryCheckpointer.java MUST contain MAX_INLINE_PAYLOAD_BYTES to prove
 # the §4 #13 16-KiB inline cap is actually enforced (not just documented).
 # ---------------------------------------------------------------------------
-_r7_fail=0
+_r11_fail=0
 _imc_path='agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/InMemoryCheckpointer.java'
 if [[ -f "$_imc_path" ]]; then
   if ! grep -q 'MAX_INLINE_PAYLOAD_BYTES' "$_imc_path" 2>/dev/null; then
-    fail_rule "shipped_envelope_fingerprint_present" "$_imc_path missing MAX_INLINE_PAYLOAD_BYTES. §4 #13 16-KiB cap enforcement required (payload_fingerprint_precommit shipped: true)."
-    _r7_fail=1
+    fail_rule "shipped_envelope_fingerprint_present" "$_imc_path missing MAX_INLINE_PAYLOAD_BYTES. §4 #13 16-KiB cap enforcement required."
+    _r11_fail=1
   fi
 else
   fail_rule "shipped_envelope_fingerprint_present" "$_imc_path not found on disk"
-  _r7_fail=1
+  _r11_fail=1
 fi
-if [[ $_r7_fail -eq 0 ]]; then pass_rule "shipped_envelope_fingerprint_present"; fi
+if [[ $_r11_fail -eq 0 ]]; then pass_rule "shipped_envelope_fingerprint_present"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 12 — inmemory_orchestrator_posture_guard_present
+# ADR-0035: AppPostureGate.requireDevForInMemoryComponent is the single
+# construction path for posture reads. All three in-memory components MUST
+# contain AppPostureGate.requireDev in their source.
+# ---------------------------------------------------------------------------
+_r12_fail=0
+_posture_targets=(
+  'agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/SyncOrchestrator.java'
+  'agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/InMemoryRunRegistry.java'
+  'agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/InMemoryCheckpointer.java'
+)
+for _pt in "${_posture_targets[@]}"; do
+  if [[ -f "$_pt" ]]; then
+    if ! grep -q 'AppPostureGate\.requireDev' "$_pt" 2>/dev/null; then
+      fail_rule "inmemory_orchestrator_posture_guard_present" "$_pt does not call AppPostureGate.requireDev*. Per ADR-0035 all in-memory components must delegate posture reads to AppPostureGate."
+      _r12_fail=1
+    fi
+  else
+    fail_rule "inmemory_orchestrator_posture_guard_present" "$_pt not found on disk."
+    _r12_fail=1
+  fi
+done
+if [[ $_r12_fail -eq 0 ]]; then pass_rule "inmemory_orchestrator_posture_guard_present"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 13 — contract_catalog_no_deleted_spi_or_starter_names
+# ADR-0036: contract-catalog.md must not reference deleted SPI interface names
+# or deleted starter artifact coordinates.
+# ---------------------------------------------------------------------------
+_r13_fail=0
+_catalog='docs/contracts/contract-catalog.md'
+_deleted_names=(
+  'LongTermMemoryRepository'
+  'ToolProvider'
+  'LayoutParser'
+  'DocumentSourceConnector'
+  'PolicyEvaluator'
+  'IdempotencyRepository'
+  'ArtifactRepository'
+  'spring-ai-ascend-memory-starter'
+  'spring-ai-ascend-skills-starter'
+  'spring-ai-ascend-knowledge-starter'
+  'spring-ai-ascend-governance-starter'
+  'spring-ai-ascend-persistence-starter'
+  'spring-ai-ascend-resilience-starter'
+  'spring-ai-ascend-mem0-starter'
+  'spring-ai-ascend-docling-starter'
+  'spring-ai-ascend-langchain4j-profile'
+)
+if [[ -f "$_catalog" ]]; then
+  for _dn in "${_deleted_names[@]}"; do
+    if grep -qF "$_dn" "$_catalog" 2>/dev/null; then
+      fail_rule "contract_catalog_no_deleted_spi_or_starter_names" "$_catalog references deleted name '$_dn'. Per ADR-0036 Gate Rule 13 this is a contract-surface truth violation."
+      _r13_fail=1
+    fi
+  done
+else
+  fail_rule "contract_catalog_no_deleted_spi_or_starter_names" "$_catalog not found."
+  _r13_fail=1
+fi
+if [[ $_r13_fail -eq 0 ]]; then pass_rule "contract_catalog_no_deleted_spi_or_starter_names"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 14 — module_arch_method_name_truth
+# ADR-0036: method names in code-fence blocks in agent-platform/ARCHITECTURE.md
+# and agent-runtime/ARCHITECTURE.md must exist in the named Java class.
+# Currently checks the specific known drift: probe.check() was wrong; correct
+# is probe.probe(). Fails if probe.check() appears in any module ARCHITECTURE.md.
+# ---------------------------------------------------------------------------
+_r14_fail=0
+for _maf in 'agent-platform/ARCHITECTURE.md' 'agent-runtime/ARCHITECTURE.md'; do
+  if [[ -f "$_maf" ]]; then
+    if grep -q 'probe\.check()' "$_maf" 2>/dev/null; then
+      fail_rule "module_arch_method_name_truth" "$_maf references probe.check() but actual method in OssApiProbe is probe.probe(). Per ADR-0036 Gate Rule 14 method names in docs must match source."
+      _r14_fail=1
+    fi
+  fi
+done
+if [[ $_r14_fail -eq 0 ]]; then pass_rule "module_arch_method_name_truth"; fi
 
 # ---------------------------------------------------------------------------
 # Summary

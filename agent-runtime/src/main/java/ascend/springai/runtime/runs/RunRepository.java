@@ -14,4 +14,6 @@ public interface RunRepository {
     List<Run> findByTenant(String tenantId);
     List<Run> findByParentRunId(UUID parentRunId);
     List<Run> findByTenantAndStatus(String tenantId, RunStatus status);
+    /** Returns top-level runs for a tenant — runs with no parent (parentRunId == null). */
+    List<Run> findRootRuns(String tenantId);
 }

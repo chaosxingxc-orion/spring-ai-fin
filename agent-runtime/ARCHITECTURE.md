@@ -33,7 +33,7 @@ values (keys: `spring-ai.version`, `temporal.version`, `mcp.version`,
 context test). `OssApiProbeTest` runs 3 tests:
 
 1. `classIsLoadable` — `OssApiProbe.class` loads without `NoClassDefFoundError`.
-2. `probeReturnsNonNullString` — `probe.check()` returns a non-null String.
+2. `probeReturnsNonNullString` — `probe.probe()` returns a non-null String.
 3. `temporalGetVersionShapeReturnsMinusOne` — Temporal client stub returns -1
    (confirms SDK is on classpath without a live server).
 

@@ -92,6 +92,25 @@
 
 ---
 
+## Shipped + Designed — sixth+seventh reviewer combined response (2026-05-13)
+
+*8 clusters from combined review surface. ~50 hidden defects surfaced beyond 12 reviewer-named findings. §4 #29–#36 + ADR-0032–0039 + Gate Rules 12–14 + AppPostureGate shipped. See `docs/reviews/2026-05-13-sixth-reviewer-response.en.md` and `docs/reviews/2026-05-13-seventh-reviewer-response.en.md`.*
+
+| capability | ADR | wave | claim |
+|---|---|---|---|
+| **posture_single_construction_path** | ADR-0035 | **W0 (shipped)** | AppPostureGate centralizes all APP_POSTURE reads; SyncOrchestrator + InMemoryRunRegistry + InMemoryCheckpointer delegate to it; Gate Rule 12 enforces literal presence |
+| **run_find_root_runs** | ADR-0032 | **W0 (shipped)** | RunRepository.findRootRuns(tenantId); InMemoryRunRegistry impl filters parentRunId == null with tenant scoping |
+| scope_based_run_hierarchy | ADR-0032 | W2 | RunScope{STEP_LOCAL, SWARM} discriminator; SuspendReason.SwarmDelegation variant; PlanState/RunPlanRef minimal contract |
+| logical_identity_equivalence | ADR-0033 | doc | S-Cloud/S-Edge/C-Device deployment-locus vocabulary; Rule 17 S-side/C-side substitution-authority preserved |
+| memory_knowledge_taxonomy | ADR-0034 | W2 | 6 categories M1–M6 + common MemoryMetadata schema; Graphiti=W1 ref sidecar; mem0/Cognee=not-selected |
+| contract_surface_truth_generalization | ADR-0036 | **W0 (Gate Rules 13+14)** | Gate 13: no deleted SPI names in contract-catalog; Gate 14: method names in ARCHITECTURE.md code-fences must exist in named Java class |
+| wave_authority_consolidation | ADR-0037 | **W0 (archived)** | Both stale plan docs archived; ARCHITECTURE.md §1 + YAML + CLAUDE-deferred = single wave authority |
+| skill_spi_resource_tiers | ADR-0038 | W2 | 4 enforceability tiers: hard/sandbox-enforceable/advisory/hints; enforcement claims in docs must qualify tier |
+| payload_migration_adapter | ADR-0039 | W2 | Single normative path Object→Payload→CausalPayloadEnvelope; PayloadAdapter.wrap(Object); @Deprecated window mandatory |
+| run_dispatcher_spi | ADR-0031 | W2 | RunDispatcher SPI; terminal events use reserved slot (never dropped); non-terminal use DROP_OLDEST with counter metric |
+
+---
+
 ## Deferred
 
 - Rule 8 gate runs (N≥3 real-LLM sequential runs) and Rule 11 contract-spine fields (`tenant_id` on all

@@ -162,8 +162,10 @@ added without breaking existing code.
 - Response document: `docs/reviews/2026-05-12-fifth-reviewer-response.en.md` (Cat-A)
 - ADR-0022: PayloadCodec SPI and typed payload contract
 - ADR-0019: SuspendReason taxonomy (HD-A.3 resume-payload schema per-variant)
+- ADR-0039: normative migration path `Object → Payload → CausalPayloadEnvelope` with `PayloadAdapter.wrap(Object)` (seventh-reviewer Cluster 6)
 - §4 #13 (payload addressing and serialization contract — 16-KiB inline cap)
 - §4 #21 (PayloadCodec SPI — parent of this ADR)
 - §4 #25 (new, this ADR)
+- §4 #36 (payload migration adapter strategy)
 - `architecture-status.yaml` rows: `causal_payload_envelope`, `semantic_ontology_tags`, `payload_fingerprint_precommit`
 - W2 wave plan: `docs/plans/engineering-plan-W0-W4.md` §4.2
