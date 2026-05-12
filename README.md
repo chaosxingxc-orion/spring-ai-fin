@@ -14,7 +14,6 @@ Enterprise agent platform scaffold for financial services teams building on Spri
 | `agent-runtime` | Cognitive runtime — SPI contracts, OSS API probe |
 | `spring-ai-ascend-dependencies` | BoM — pins all SDK and OSS dependency versions |
 | `spring-ai-ascend-graphmemory-starter` | Sidecar adapter — Graphiti REST (opt-in, `enabled=false` by default) |
-| `agent-eval` | Eval harness — W4 placeholder; no production code at W0 |
 
 ---
 

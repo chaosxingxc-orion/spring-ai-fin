@@ -36,7 +36,6 @@
     <module>agent-platform</module>
     <module>agent-runtime</module>
     <module>spring-ai-ascend-graphmemory-starter</module>
-    <module>agent-eval</module>
   </modules>
 
   <properties>
@@ -213,11 +212,6 @@
       <dependency>
         <groupId>ascend.springai</groupId>
         <artifactId>agent-runtime</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>ascend.springai</groupId>
-        <artifactId>agent-eval</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
