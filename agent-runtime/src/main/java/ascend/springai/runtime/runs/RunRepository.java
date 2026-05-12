@@ -12,4 +12,6 @@ public interface RunRepository {
     Optional<Run> findById(UUID runId);
     Run save(Run run);
     List<Run> findByTenant(String tenantId);
+    List<Run> findByParentRunId(UUID parentRunId);
+    List<Run> findByTenantAndStatus(String tenantId, RunStatus status);
 }
