@@ -1,4 +1,4 @@
-# CLAUDE.md
+# AGENTS.md
 
 ## Language Rule
 
@@ -95,36 +95,6 @@ When a class needs tenant scoping, scope is a **required constructor argument**.
 
 ---
 
-### Rule 20 — Run State Transition Validity [Active]
-
-**Every `Run.withStatus(newStatus)` mutation MUST call `RunStateMachine.validate(this.status, newStatus)` before constructing the updated record. Illegal transitions MUST throw `IllegalStateException`.**
-
-Legal DFA: `PENDING → RUNNING | CANCELLED`; `RUNNING → SUSPENDED | SUCCEEDED | FAILED | CANCELLED`; `SUSPENDED → RUNNING | EXPIRED | FAILED | CANCELLED`; `FAILED → RUNNING`; `SUCCEEDED`, `CANCELLED`, `EXPIRED` are terminal.
-
-Enforced by `RunStateMachine.validate(from, to)` (wired into `Run.withStatus` + `Run.withSuspension`) and unit-tested in `RunStateMachineTest`. Architecture reference: §4 #20, ADR-0020.
-
----
-
-### Rule 21 — Tenant Propagation Purity [Active]
-
-**No production class under `ascend.springai.runtime.*` (main sources) may import `ascend.springai.platform.tenant.TenantContextHolder`.**
-
-`TenantContextHolder` is a request-scoped HTTP-edge ThreadLocal (valid only for the duration of an HTTP request). Runtime production code MUST source tenant identity from `RunContext.tenantId()` instead. Timer-driven resumes and async orchestration have no HTTP request and would silently receive null from the ThreadLocal.
-
-Enforced at W0 by `TenantPropagationPurityTest` (ArchUnit). Test classes are intentionally excluded — `TenantContextFilterTest` may read the holder to verify filter behaviour. Architecture reference: §4 #22, ADR-0023.
-
----
-
-### Rule 25 — Architecture-Text Truth [Active]
-
-**Every `shipped: true` row in `docs/governance/architecture-status.yaml` MUST have a non-empty `tests:` list pointing to a real test class. Every `implementation:` path MUST exist on disk. Every prose claim in `ARCHITECTURE.md` / `agent-*/ARCHITECTURE.md` that names an enforcer ("enforced by X", "asserted by X", "tested by X") MUST be backed by X actually performing the named assertion.**
-
-Violations of the path-existence constraint are caught at commit time by Gate Rule 7 (`shipped_impl_paths_exist`). Violations of the version-drift constraint are caught by Gate Rule 8 (`no_hardcoded_versions_in_arch`). Violations of the route-exposure constraint are caught by Gate Rule 9 (`openapi_path_consistency`). Violations of the module-dep-direction constraint are caught by Gate Rule 10 (`module_dep_direction`). Prose-enforcer claims without a real enforcer are a ship-blocking finding under Rule 9.
-
-Architecture reference: §4 #24 (new), ADR-0025/ADR-0026/ADR-0027.
-
----
-
 ### Rule 7 — Resilience Must Not Mask Signals [Deferred to W2]
 
 **Deferred.** No live fallback path exists at W0. Re-introduction trigger: first soft-fallback path committed (target: W2 LLM gateway). Full rule text in `docs/CLAUDE-deferred.md`.
@@ -164,6 +134,36 @@ Posture set by `APP_POSTURE` env var (default `dev`). Read once at startup; neve
 | `spring-ai-ascend-graphmemory-starter` | no bean registered | no bean registered | no bean registered |
 
 Tests must cover `dev` and `research` paths for any new contract.
+
+---
+
+### Rule 20 — Run State Transition Validity [Active]
+
+**Every `Run.withStatus(newStatus)` mutation MUST call `RunStateMachine.validate(this.status, newStatus)` before constructing the updated record. Illegal transitions MUST throw `IllegalStateException`.**
+
+Legal DFA: `PENDING → RUNNING | CANCELLED`; `RUNNING → SUSPENDED | SUCCEEDED | FAILED | CANCELLED`; `SUSPENDED → RUNNING | EXPIRED | FAILED | CANCELLED`; `FAILED → RUNNING`; `SUCCEEDED`, `CANCELLED`, `EXPIRED` are terminal.
+
+Enforced by `RunStateMachine.validate(from, to)` (wired into `Run.withStatus` + `Run.withSuspension`) and unit-tested in `RunStateMachineTest`. Architecture reference: §4 #20, ADR-0020.
+
+---
+
+### Rule 21 — Tenant Propagation Purity [Active]
+
+**No production class under `ascend.springai.runtime.*` (main sources) may import `ascend.springai.platform.tenant.TenantContextHolder`.**
+
+`TenantContextHolder` is a request-scoped HTTP-edge ThreadLocal (valid only for the duration of an HTTP request). Runtime production code MUST source tenant identity from `RunContext.tenantId()` instead.
+
+Enforced at W0 by `TenantPropagationPurityTest` (ArchUnit). Architecture reference: §4 #22, ADR-0023.
+
+---
+
+### Rule 25 — Architecture-Text Truth [Active]
+
+**Every `shipped: true` row in `docs/governance/architecture-status.yaml` MUST have a non-empty `tests:` list pointing to a real test class. Every `implementation:` path MUST exist on disk. Every prose claim in `ARCHITECTURE.md` / `agent-*/ARCHITECTURE.md` that names an enforcer ("enforced by X", "asserted by X", "tested by X") MUST be backed by X actually performing the named assertion.**
+
+Violations of the path-existence constraint are caught by Gate Rule 7 (`shipped_impl_paths_exist`). Violations of the version-drift constraint are caught by Gate Rule 8 (`no_hardcoded_versions_in_arch`). Violations of the route-exposure constraint are caught by Gate Rule 9 (`openapi_path_consistency`). Violations of the module-dep-direction constraint are caught by Gate Rule 10 (`module_dep_direction`). Prose-enforcer claims without a real enforcer are a ship-blocking finding under Rule 9.
+
+Architecture reference: §4 #24 (new), ADR-0025/ADR-0026/ADR-0027.
 
 ---
 

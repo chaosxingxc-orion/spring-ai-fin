@@ -31,7 +31,12 @@ public class IdempotencyHeaderFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        return path.startsWith("/actuator") || "/v1/health".equals(path);
+        if (path.startsWith("/actuator") || "/v1/health".equals(path)) return true;
+        // Only POST/PUT/PATCH carry side-effects that require idempotency guarantees (ADR-0027).
+        String method = request.getMethod();
+        return !"POST".equalsIgnoreCase(method)
+                && !"PUT".equalsIgnoreCase(method)
+                && !"PATCH".equalsIgnoreCase(method);
     }
 
     @Override

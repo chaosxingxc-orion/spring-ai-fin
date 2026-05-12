@@ -2,7 +2,7 @@
 
 Enterprise agent platform scaffold for financial services teams building on Spring AI 2.0.0-M5 + Spring Boot 4.0.5.
 
-**Status**: W0 scaffold; 5 modules; dual-mode orchestration SPI (graph + agent-loop) with SuspendSignal nesting shipped (C32–C34); §4 #16–#18 + Rules 18–19 + ADR-0016/0017/0018 + 9 design_accepted rows added (competitive analysis 2026-05-12); §4 #19–#23 + Rules 20–21 (active) + Rules 22–24 (deferred) + ADR-0019–0024 + 12 yaml rows + RunStateMachine + TenantPropagationPurityTest + EXPIRED status + MDC tenant_id (third-review 2026-05-12)
+**Status**: W0 scaffold; 4 modules; dual-mode orchestration SPI (graph + agent-loop) with SuspendSignal nesting shipped (C32–C34); §4 #16–#18 + Rules 18–19 + ADR-0016/0017/0018 + 9 design_accepted rows added (competitive analysis 2026-05-12); §4 #19–#23 + Rules 20–21 (active) + Rules 22–24 (deferred) + ADR-0019–0024 + 12 yaml rows + RunStateMachine + TenantPropagationPurityTest + EXPIRED status + MDC tenant_id (third-review 2026-05-12); architecture-code consistency cleanup: W0/W1/W2 contract split, idempotency narrowed, checkpoint ownership clarified, ADR-0025/0026/0027 (fourth-review 2026-05-12)
 
 ---
 

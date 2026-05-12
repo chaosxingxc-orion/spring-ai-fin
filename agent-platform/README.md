@@ -1,6 +1,6 @@
 ﻿# agent-platform
 
-> Northbound HTTP facade; accepts authenticated tenant requests, runs the filter chain (TenantContextFilter order 20, IdempotencyHeaderFilter order 30), and forwards to agent-runtime via SPI contracts. Maturity: L1.
+> Northbound HTTP facade; accepts HTTP requests, validates tenant + idempotency headers, and forwards to agent-runtime via SPI contracts. Maturity: W0.
 
 ## SPI surface
 
@@ -20,13 +20,15 @@ The platform calls `RunRepository`, `IdempotencyRepository`, `PolicyEvaluator`, 
 
 ## Filter chain
 
-| Filter | Order | Responsibility |
-|--------|-------|----------------|
-| JWTAuthFilter | 10 | Validate JWT; reject invalid algorithm or missing token in research/prod |
-| TenantContextFilter | 20 | Bind X-Tenant-Id to request scope; set Postgres GUC app.tenant_id per transaction |
-| IdempotencyHeaderFilter | 30 | Reserve or replay Idempotency-Key; emit 4 metrics on every decision |
+| Filter | Order | Responsibility | Wave |
+|--------|-------|----------------|------|
+| JWTAuthFilter | 10 | Validate JWT; reject invalid algorithm or missing token in research/prod | W1 (passthrough at W0) |
+| TenantContextFilter | 20 | Bind X-Tenant-Id header to TenantContextHolder + MDC tenant_id | W0 |
+| IdempotencyHeaderFilter | 30 | Validate UUID shape of Idempotency-Key on POST/PUT/PATCH; 400 on missing in research/prod | W0 |
 
-JWTAuth (order 10) is a W2 deliverable; W0/W1 run with a passthrough dev filter at order 10.
+W0: TenantContextFilter reads `X-Tenant-Id` header only; no JWT, no `SET LOCAL` GUC.
+W1: TenantContextFilter switches to JWT `tenant_id` claim; IdempotencyHeaderFilter wires IdempotencyStore for dedup.
+W2: `SET LOCAL app.tenant_id` GUC + RLS policies enabled.
 
 ## Health endpoint
 
@@ -39,13 +41,16 @@ JWTAuth (order 10) is a W2 deliverable; W0/W1 run with a passthrough dev filter 
 
 Platform-level beans are not SPI-overridable. Customization is via starter @Bean overrides (see individual starter READMEs) or application properties.
 
-## Counters emitted
+## Counters emitted (W0)
 
-- `SPRINGAI_ASCEND_filter_errors_total` tagged `filter=<filter-class>, reason=<reason>` -- emitted by each filter on failure (Rule 7)
-- `SPRINGAI_ASCEND_idempotency_claimed_total` -- new key claimed
-- `SPRINGAI_ASCEND_idempotency_replayed_total` -- existing key replayed
-- `SPRINGAI_ASCEND_idempotency_conflict_total` -- key claimed by different run
-- `SPRINGAI_ASCEND_idempotency_error_total` -- storage error during claim
+All counters use lowercase `springai_ascend_` prefix (canonical naming per §4 #5):
+
+- `springai_ascend_idempotency_header_missing_total` tagged `posture=<posture>` — missing Idempotency-Key header
+- `springai_ascend_idempotency_header_invalid_total` tagged `posture=<posture>` — UUID parse failure
+- `springai_ascend_tenant_header_missing_total` tagged `posture=<posture>` — missing X-Tenant-Id header
+- `springai_ascend_tenant_header_invalid_total` tagged `posture=<posture>` — UUID parse failure
+
+W1 will add `springai_ascend_idempotency_claimed_total`, `_replayed_total`, `_conflict_total` when IdempotencyStore is wired.
 
 ## See also
 

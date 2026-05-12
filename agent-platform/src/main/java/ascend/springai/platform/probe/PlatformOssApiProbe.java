@@ -39,9 +39,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 // Logback JSON encoder
 import net.logstash.logback.encoder.LogstashEncoder;
 
-public final class OssApiProbe {
+public final class PlatformOssApiProbe {
 
-    private OssApiProbe() {}
+    private PlatformOssApiProbe() {}
 
     public static String probe() {
         // Each dep below cites at least one symbol; classloader-resolution

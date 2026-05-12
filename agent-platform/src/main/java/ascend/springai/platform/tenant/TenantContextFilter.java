@@ -33,7 +33,9 @@ public class TenantContextFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        return path.startsWith("/actuator") || "/v1/health".equals(path);
+        // /v3/api-docs is permitted anonymously at W0 (contract gate uses it).
+        return path.startsWith("/actuator") || "/v1/health".equals(path)
+                || path.startsWith("/v3/api-docs");
     }
 
     @Override

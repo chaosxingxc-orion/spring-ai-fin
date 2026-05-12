@@ -15,15 +15,6 @@
   <description>Cognitive runtime: run lifecycle, LLM gateway, tool registry, ActionGuard, memory, outbox, Temporal.</description>
 
   <dependencies>
-    <!-- Shared deps from the platform module's contract layer (ADR-13: agent-platform/contracts owns shared types).
-         Once agent-platform/contracts is split into its own JAR, this becomes a `<dependency>` on it; for W0
-         it imports the whole agent-platform module to keep the build tree minimal. -->
-    <dependency>
-      <groupId>ascend.springai</groupId>
-      <artifactId>agent-platform</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
     <!-- Spring AI: LLM gateway. -->
     <dependency>
       <groupId>org.springframework.ai</groupId>

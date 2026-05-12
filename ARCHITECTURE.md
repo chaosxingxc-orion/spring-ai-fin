@@ -88,14 +88,22 @@ spring-ai-ascend/
 Module dependency direction (enforced by `ApiCompatibilityTest` ArchUnit rules):
 
 ```
-agent-platform  ──SPI-only──►  agent-runtime  ──►  [Postgres / LLMs / sidecars]
-                                     ▲
-                     spring-ai-ascend-graphmemory-starter
-                     (provides SPI impl when enabled=true + URL set)
+agent-platform  ──────────────────────────────►  [Postgres / LLMs / sidecars]
+
+agent-runtime  ──(no platform dep)─────────────►  [Postgres / LLMs / sidecars]
+
+spring-ai-ascend-graphmemory-starter  ──────────►  agent-runtime SPI
 ```
 
-`agent-platform` must not import `agent-runtime` Java types directly.
-SPI packages (`ascend.springai.runtime.*.spi.*`) import only `java.*`.
+At W0 neither module depends on the other at the Maven module level. The previously
+declared `agent-runtime → agent-platform` pom dependency was unused at the source level
+and has been removed (ADR-0026). W1 will introduce `agent-platform-contracts` as a shared
+SPI module when `agent-runtime` first needs a common type (e.g. `TenantContext` for
+`RunController`).
+
+`agent-platform` MUST NOT import `agent-runtime` Java types directly (enforced by
+`ApiCompatibilityTest`). SPI packages (`ascend.springai.runtime.*.spi.*`) import
+only `java.*` (enforced by `OrchestrationSpiArchTest`, `MemorySpiArchTest`).
 
 ---
 
@@ -106,40 +114,51 @@ SPI packages (`ascend.springai.runtime.*.spi.*`) import only `java.*`.
 | Spring Boot | 4.0.5 | HTTP server, DI container, actuator |
 | Spring AI | 2.0.0-M5 | ChatClient, VectorStore, MCP adapters |
 | Spring Security | 6.x | JWT filter chain, SecurityFilterChain |
-| Spring Cloud Gateway | 2024.x | Edge routing (W1) |
-| MCP Java SDK | 2.0.0-M2 | Tool protocol (W3) |
+| Spring Cloud Gateway | see parent POM (`spring-cloud.version`) | Edge routing (W2) |
+| MCP Java SDK | see parent POM (`mcp.version`) | Tool protocol (W3) |
 | Java (OpenJDK) | 21 | Virtual threads (Project Loom) |
 | PostgreSQL | 16 | Relational + vector (pgvector) + outbox |
-| Flyway | 10.x | Schema migrations |
-| HikariCP | 5.x | Connection pool |
-| Temporal Java SDK | 1.35.0 | Durable workflow engine (W4) |
-| Resilience4j | 2.x | Circuit breaker, rate limiter |
-| Caffeine | 3.x | In-process L0 cache |
-| Apache Tika | 2.x | Document parsing (W3) |
+| Flyway | see parent POM | Schema migrations |
+| HikariCP | see parent POM | Connection pool |
+| Temporal Java SDK | see parent POM (`temporal.version`) | Durable workflow engine (W4) |
+| Resilience4j | see parent POM (`resilience4j.version`) | Circuit breaker, rate limiter |
+| Caffeine | see parent POM (`caffeine.version`) | In-process L0 cache |
+| Apache Tika | see parent POM | Document parsing (W3) |
 | Micrometer + Prometheus | latest | Metrics (`springai_ascend_*` prefix) |
-| Testcontainers | 1.20.x | Integration test containers |
+| Testcontainers | see parent POM (`testcontainers.version`) | Integration test containers |
 | Maven | 3.9 | Build, multi-module |
 
 ---
 
 ## 4. Architecture constraints
 
-1. **Dependency direction**: `agent-platform` → SPI interfaces only → `agent-runtime`.
-   No reverse imports. Enforced by `ApiCompatibilityTest`.
+1. **Dependency direction**: neither `agent-platform` nor `agent-runtime` depends on
+   the other at the Maven module level. `agent-platform` MUST NOT import `agent-runtime`
+   Java types (enforced by `ApiCompatibilityTest`). The `agent-runtime/pom.xml` dependency
+   on `agent-platform` was a speculative dead-weight reference with zero source imports; it
+   has been removed (ADR-0026). W1 will add `agent-platform-contracts` as a shared SPI
+   module when a common type is genuinely needed.
 
 2. **Posture model**: `APP_POSTURE={dev|research|prod}`. Read once at boot.
    `dev` is permissive (in-memory stores, relaxed validation).
    `research` and `prod` are fail-closed (Vault secrets, durable stores, strict JWT).
 
-3. **Tenant isolation**: every HTTP request must carry `X-Tenant-Id`.
-   `TenantContextFilter` binds it to `TenantContextHolder`. Every persistent
-   record carries `tenant_id NOT NULL`. RLS policies enforce row visibility.
-   Connection-level GUC `app.tenant_id` is set via `SET LOCAL` inside each
-   transaction and auto-discarded on commit.
+3. **Tenant isolation** (phased by wave):
+   - W0 (shipped): `TenantContextFilter` reads `X-Tenant-Id` header (UUID shape),
+     stores in `TenantContextHolder` + MDC. Every persistent record carries
+     `tenant_id NOT NULL`.
+   - W1 (planned): replace header with JWT `tenant_id` claim; validate against
+     `tenants` table.
+   - W2 (planned): add `SET LOCAL app.tenant_id = :id` GUC inside each transaction;
+     enable Postgres RLS policies on tenant tables. See ADR-0005, ADR-0023.
 
-4. **Idempotency**: callers send `Idempotency-Key` header. `IdempotencyHeaderFilter`
-   deduplicates at the edge. `IdempotencyStore` (dev: in-memory; W1: Postgres dedup
-   table) prevents double side effects.
+4. **Idempotency** (phased by wave):
+   - W0 (shipped): `IdempotencyHeaderFilter` validates the `Idempotency-Key` header
+     (UUID shape, required on POST/PUT/PATCH; missing returns 400 in research/prod).
+     No deduplication, no caching, no `IdempotencyStore` interaction.
+   - W1 (planned): wire `IdempotencyStore` with `(tenant_id, key)` claim/replay
+     semantics; concurrent duplicate returns 409; backed by Postgres `idempotency_dedup`
+     table. See ADR-0027.
 
 5. **Metric naming**: all custom Micrometer metrics use the prefix
    `springai_ascend_`. No bare or provider-prefixed names on platform meters.
@@ -158,13 +177,17 @@ SPI packages (`ascend.springai.runtime.*.spi.*`) import only `java.*`.
 
 9. **Dual-mode runtime + interrupt-driven nesting**: both `GraphExecutor` (deterministic
    state machine) and `AgentLoopExecutor` (ReAct-style) use one interrupt primitive
-   (`SuspendSignal`) to delegate to a child run. The `Orchestrator` owns the
-   catch/checkpoint/dispatch/resume loop; executors do not persist or wait.
-   `Run.mode` discriminates `GRAPH` vs `AGENT_LOOP`; `Run.parentRunId` + `Run.parentNodeKey`
-   encode the nesting chain. Durability tiers: in-memory (dev/W0) → Postgres checkpoint (W2)
-   → Temporal child workflow (W4). Layered SPI taxonomy: stable cross-tier core (Layer 1:
-   `Run`, `RunStatus`, `RunRepository`, `RunContext`, `Orchestrator`) + tier-specific adapters
-   (Layers 2–3: `Checkpointer`, `IdempotencyStore`); W4 Temporal bypasses Layer 3 entirely (ADR-0021).
+   (`SuspendSignal`) to delegate to a child run. Ownership at suspension is split:
+   executors persist executor-local **resume cursors** (keys `_graph_next_node`,
+   `_loop_resume_iter`, `_loop_resume_state`) via `Checkpointer.save()`; the
+   `Orchestrator` persists the **Run row** (status=SUSPENDED) via `RunRepository.save()`.
+   Both writes must be observable atomically (ADR-0024 — sequential at W0, transactional
+   at W2). `Run.mode` discriminates `GRAPH` vs `AGENT_LOOP`; `Run.parentRunId` +
+   `Run.parentNodeKey` encode the nesting chain. Durability tiers: in-memory (dev/W0)
+   → Postgres checkpoint (W2) → Temporal child workflow (W4). Layered SPI taxonomy:
+   stable cross-tier core (Layer 1: `Run`, `RunStatus`, `RunRepository`, `RunContext`,
+   `Orchestrator`) + tier-specific adapters (Layers 2–3: `Checkpointer`,
+   `IdempotencyStore`); W4 Temporal bypasses Layer 3 entirely (ADR-0021).
 
 10. **Long-horizon lifecycle.** `Run` is an execution record; long-horizon agent identity
     is `AgentSubject` (deferred — `agent_subject_identity`). `SuspendSignal` will gain typed
@@ -210,7 +233,8 @@ SPI packages (`ascend.springai.runtime.*.spi.*`) import only `java.*`.
     implementing typed `RuntimeHook` interfaces; the chain is ordered and failsafe (hook failure
     logs at `WARNING+` and does not abort the invocation). Reference hooks shipped in W2: PII
     filter, token counter, summariser, tool-call-limit. Direct LLM/tool calls that bypass
-    `HookChain` are a gate-blocking defect (Rule 19 asserts no bypass via ArchUnit test).
+    `HookChain` are a gate-blocking defect (Rule 19 — deferred W2; `HookChain` SPI and
+    `HookChainConformanceTest` do not exist at W0).
 
 17. **Graph DSL conformance.** `ExecutorDefinition.GraphDefinition` MUST support beyond W2:
     (a) per-key `StateReducer` registry (`OverwriteReducer` — last-write-wins; `AppendReducer` —
@@ -282,9 +306,13 @@ SPI packages (`ascend.springai.runtime.*.spi.*`) import only `java.*`.
 ## 5. W0 shipped capabilities
 
 - `GET /v1/health` — liveness probe; JSON `{"status":"UP"}`.
-- `TenantContextFilter` — extracts `X-Tenant-Id`, propagates via `TenantContextHolder`.
-- `IdempotencyHeaderFilter` — deduplicates requests by `Idempotency-Key` header.
-- `IdempotencyStore` — dev-posture stub (no-op + WARNING log); research/prod throws `IllegalStateException`; replaced in W1.
+- `TenantContextFilter` — extracts `X-Tenant-Id` header (UUID shape), propagates via
+  `TenantContextHolder` + MDC `tenant_id`. (W0: header-only; W1: JWT claim; W2: GUC+RLS.)
+- `IdempotencyHeaderFilter` — validates UUID shape of `Idempotency-Key` header on
+  POST/PUT/PATCH; missing key returns 400 in research/prod. (W0: validation only;
+  W1: dedup + caching backed by `IdempotencyStore`. See ADR-0027.)
+- `IdempotencyStore` — `@Component` present but not injected at W0 (dev: WARNING log;
+  research/prod: throws `IllegalStateException`). Wired in W1.
 - `GraphMemoryRepository` SPI — interface only; no implementation shipped.
 - `ResilienceContract` + `YamlResilienceContract` — per-operation resilience routing (operationId → policy triple).
 - `Run` entity + `RunRepository` SPI — contract-spine entity (Rule 11 target); `mode` field (`GRAPH`|`AGENT_LOOP`) discriminates executor type; `parentRunId` + `parentNodeKey` + `SUSPENDED` status support interrupt-driven nesting.

@@ -7,16 +7,16 @@
 version: 3
 generated_at: 2026-05-12
 
-# Source: root pom.xml <modules> list updated 2026-05-12 Occam pass (C1-C11)
+# Source: root pom.xml <modules> list updated 2026-05-12 fourth-review pass
 repository_counts:
   note: "Canonical counts -- derived from root pom.xml modules list. All documents reference these; no document may claim a different count without updating this block."
-  reactor_modules: 5
+  reactor_modules: 4
   sdk_spi_starters: 0
   sidecar_adapter_starters: 1
   alternate_framework_profiles: 0
   internal_modules: 2
   bom_module: 1
-  total_reactor_modules: 5
+  total_reactor_modules: 4
 
 capabilities:
 
@@ -35,12 +35,12 @@ capabilities:
     l2_documents:
       - agent-platform/ARCHITECTURE.md
     implementation:
-      - agent-platform/src/main/java/ascend/springai/platform/AgentPlatformApplication.java
-      - agent-platform/src/main/java/ascend/springai/platform/health/HealthController.java
+      - agent-platform/src/main/java/ascend/springai/platform/PlatformApplication.java
+      - agent-platform/src/main/java/ascend/springai/platform/web/HealthController.java
     tests:
-      - agent-platform/src/test/java/ascend/springai/platform/health/HealthEndpointIT.java
+      - agent-platform/src/test/java/ascend/springai/platform/HealthEndpointIT.java
       - agent-platform/src/test/java/ascend/springai/platform/api/ApiCompatibilityTest.java
-    allowed_claim: "L1: /v1/health GREEN; ArchUnit 4 rules GREEN. SPI contracts frozen."
+    allowed_claim: "W0: /v1/health GREEN; ArchUnit rules GREEN. SPI contracts frozen."
 
   agent_runtime_kernel:
     status: design_accepted
@@ -65,9 +65,9 @@ capabilities:
       - gate/check_architecture_sync.ps1
       - gate/check_architecture_sync.sh
     tests: []
-    latest_semantic_pass_sha: 68c07f1
+    latest_semantic_pass_sha: pending-fourth-review-fix
     latest_delivery_file: docs/delivery/2026-05-10-68c07f1.md
-    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml. Architecture baseline: 23 §4 constraints (#1–#23); 24 ADRs (0001–0024); 10 active rules (1–6, 9–10, 20–21); 8 deferred rules (7, 8, 11, 13–19, 22–24)."
+    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml. Architecture baseline: 23 §4 constraints (#1–#23); 27 ADRs (0001–0027); 10 active rules (1–6, 9–10, 20–21); 13 deferred rules (7, 8, 11, 13–19, 22–24)."
 
   spring_ai_ascend_dependencies_bom:
     status: implemented_unverified
@@ -214,7 +214,7 @@ capabilities:
     implementation:
       - docs/adr/
     tests: []
-    allowed_claim: "L1: 15 per-file MADR 4.0 ADRs in docs/adr/; version refs current; README index present."
+    allowed_claim: "27 per-file MADR 4.0 ADRs in docs/adr/ (0001–0027); README index present."
 
   perf_evidence_path:
     status: design_accepted
@@ -622,3 +622,71 @@ capabilities:
     implementation: null
     tests: []
     allowed_claim: "Design only — atomicity contract for RunRepository.save(suspended) + Checkpointer.save(payload) pair. W0 in-memory: single-thread sequential (invariant documented in SyncOrchestrator.executeLoop). W2 Postgres: single @Transactional block. W2 Redis: transactional outbox (ADR-0007). W4 Temporal: SPI bypassed. Rule 23 gate. W2 binding."
+
+  # --- Fourth-reviewer response additions (2026-05-12) ---
+
+  checkpoint_ownership_boundary:
+    status: design_accepted
+    shipped: true
+    l0_decision: docs/adr/0025-checkpoint-ownership-boundary.md
+    implementation:
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/SequentialGraphExecutor.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/IterativeAgentLoopExecutor.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/SyncOrchestrator.java
+    tests:
+      - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/NestedDualModeIT.java
+    allowed_claim: "W0: executors persist executor-local resume cursors (keys _graph_next_node, _loop_resume_iter, _loop_resume_state) via Checkpointer.save(); Orchestrator persists Run row via RunRepository.save(). Both writes in single call stack (sequential atomicity per ADR-0024). ADR-0025."
+
+  module_dependency_direction_w0:
+    status: test_verified
+    shipped: true
+    l0_decision: docs/adr/0026-module-dependency-direction-contracts-split.md
+    implementation:
+      - agent-runtime/pom.xml
+    tests:
+      - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/spi/OrchestrationSpiArchTest.java
+      - agent-runtime/src/test/java/ascend/springai/runtime/architecture/TenantPropagationPurityTest.java
+    allowed_claim: "W0 clean: agent-runtime/pom.xml dependency on agent-platform removed (it was a speculative reference with zero source imports). Neither module depends on the other at the Maven level. W1 will add agent-platform-contracts when a shared type is genuinely needed. ADR-0026."
+
+  idempotency_scope_w0:
+    status: test_verified
+    shipped: true
+    l0_decision: docs/adr/0027-idempotency-scope-w0-header-validation.md
+    implementation:
+      - agent-platform/src/main/java/ascend/springai/platform/idempotency/IdempotencyHeaderFilter.java
+    tests:
+      - agent-platform/src/test/java/ascend/springai/platform/idempotency/IdempotencyHeaderFilterTest.java
+      - agent-platform/src/test/java/ascend/springai/platform/idempotency/IdempotencyHeaderFilterIT.java
+    allowed_claim: "W0: IdempotencyHeaderFilter validates UUID shape on POST/PUT/PATCH only. No dedup, no caching, no IdempotencyStore interaction. ADR-0027."
+
+  idempotency_store_promotion_to_interface:
+    status: deferred_w1
+    shipped: false
+    l0_decision: docs/adr/0021-layered-spi-taxonomy.md
+    implementation: null
+    tests: []
+    allowed_claim: "Deferred W1 — wire IdempotencyStore into IdempotencyHeaderFilter with (tenant_id, key) claim/replay/409-conflict semantics backed by Postgres. Currently IdempotencyStore is a @Component stub not injected in production."
+
+  micrometer_mandatory_tenant_tag:
+    status: deferred_w1
+    shipped: false
+    l0_decision: docs/adr/0023-cross-boundary-context-propagation.md
+    implementation: null
+    tests: []
+    allowed_claim: "Deferred W1 — every springai_ascend_* metric must carry tenant_id tag (ADR-0023). No MeterFilter at W0; current counters tag only with posture."
+
+  otel_trace_propagation_across_suspend:
+    status: deferred_w2
+    shipped: false
+    l0_decision: docs/adr/0023-cross-boundary-context-propagation.md
+    implementation: null
+    tests: []
+    allowed_claim: "Deferred W2 — OTel traceparent propagated through SuspendSignal and resumed in new thread/transaction boundary. No OTel instrumentation at W0."
+
+  adr_filename_title_drift:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/README.md
+    implementation: null
+    tests: []
+    allowed_claim: "Tracking item — 9 ADR filenames (0006, 0008-0015) describe pre-Occam decisions while titles describe post-Occam decisions. Rename deferred to a dedicated git mv commit to avoid cross-link churn."

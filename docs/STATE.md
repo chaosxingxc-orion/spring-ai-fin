@@ -58,6 +58,22 @@
 
 ---
 
+## Shipped (fourth-review cycle, 2026-05-12)
+
+*Added via fourth architecture reviewer response. Category-classified: Cat-A (source-of-truth duplication), Cat-B (temporal-mood drift), Cat-C (physical-vs-logical structure), Cat-D (ownership boundary ambiguity), Cat-E (enforcement gaps). Surfaced 44+ hidden defects beyond the 6 reviewer findings. See `docs/reviews/2026-05-12-fourth-reviewer-response.en.md`.*
+
+| capability | ADR | wave | claim |
+|---|---|---|---|
+| **checkpoint_ownership_boundary** | ADR-0025 | **W0 (doc)** | Executors own `_`-prefixed resume cursor keys via `Checkpointer.save()`; orchestrator owns Run row via `RunRepository.save()`. Two owners, two stores. |
+| **module_dependency_direction_w0** | ADR-0026 | **W0 (resolved)** | `agent-runtime/pom.xml` dep on `agent-platform` removed (was speculative — zero source imports). Neither module depends on the other at Maven level. W1 will create `agent-platform-contracts` when a genuine shared type is first needed. |
+| **idempotency_scope_w0** | ADR-0027 | **W0 (shipped)** | `IdempotencyHeaderFilter` validates UUID shape on POST/PUT/PATCH only; GET/DELETE/HEAD/OPTIONS bypass. `IdempotencyStore` `@Component` removed — wired in W1. |
+| idempotency_store_promotion_to_interface | ADR-0027 | W1 | Wire `IdempotencyStore` with Postgres `idempotency_dedup` table; `claimOrFind` semantics; 409 on replay. |
+| micrometer_mandatory_tenant_id_tag | ADR-0023 | W1 | Every `springai_ascend_*` counter/timer/gauge MUST include `.tag("tenant_id", ...)`. Enforced by `MicrometerTenantTagTest` (activate at W1). |
+| otel_trace_propagation_across_suspend | ADR-0023 | W2 | W-carrier propagation across `SuspendSignal` boundary; trace context survives checkpoint/resume. |
+| agent_platform_contracts_module | ADR-0026 | W1 | `agent-platform-contracts` Maven module: `TenantContext`, `TenantConstants`, `Run`, `RunStatus`, `RunMode`, `RunStateMachine`, `SuspendSignal`, `Checkpointer`, `RunContext` extracted. Both modules depend on contracts; neither on the other. |
+
+---
+
 ## Deferred
 
 - Rule 8 gate runs (N≥3 real-LLM sequential runs) and Rule 11 contract-spine fields (`tenant_id` on all

@@ -1,20 +1,24 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-  spring-ai-ascend architecture-sync gate -- Occam's Razor cut (C24, 6 rules).
+  spring-ai-ascend architecture-sync gate (fourth-review refresh, 10 rules).
 
 .DESCRIPTION
-  Replaces the 27-rule corpus. Exits 0 if all 6 pass, 1 if any fail.
+  Exits 0 if all rules pass, 1 if any fail.
   Each rule prints PASS: <name> or FAIL: <name> -- <reason>.
   Prints GATE: PASS or GATE: FAIL at the end.
 
   Rules:
-    1. status_enum_invalid      -- architecture-status.yaml status values
-    2. delivery_log_parity      -- gate/log/*.json sha field matches filename
-    3. eol_policy               -- *.sh files in gate/ must be LF (not CRLF)
-    4. ci_no_or_true_mask       -- no gate/run_* || true in CI workflows
-    5. required_files_present   -- contract-catalog.md and openapi-v1.yaml must exist
-    6. metric_naming_namespace  -- springai_ascend_ prefix in Java metric names
+    1. status_enum_invalid            -- architecture-status.yaml status values
+    2. delivery_log_parity            -- gate/log/*.json sha field matches filename
+    3. eol_policy                     -- *.sh files in gate/ must be LF (not CRLF)
+    4. ci_no_or_true_mask             -- no gate/run_* || true in CI workflows
+    5. required_files_present         -- contract-catalog.md and openapi-v1.yaml must exist
+    6. metric_naming_namespace        -- springai_ascend_ prefix in Java metric names
+    7. shipped_impl_paths_exist       -- every shipped: true implementation: path exists on disk
+    8. no_hardcoded_versions_in_arch  -- module ARCHITECTURE.md files must not pin OSS versions inline
+    9. openapi_path_consistency       -- /v3/api-docs must appear in WebSecurityConfig + platform ARCH
+   10. module_dep_direction           -- agent-runtime must not depend on agent-platform (and vice versa)
 
 .PARAMETER LocalOnly
   Not used by this script (kept for invocation parity with old version).
@@ -182,6 +186,126 @@ foreach ($jf in $javaFiles) {
   }
 }
 if (-not $r6Fail) { Pass-Rule 'metric_naming_namespace' }
+
+# ---------------------------------------------------------------------------
+# Rule 7 — shipped_impl_paths_exist
+# For every row in architecture-status.yaml where shipped: true, every
+# implementation: path listed must exist on disk. Rows where implementation
+# is null or empty are skipped.
+# ---------------------------------------------------------------------------
+$r7Fail = $false
+if (Test-Path $statusPath) {
+  $content7 = Get-Content -Raw -LiteralPath $statusPath
+  # Find all shipped: true blocks, then find their implementation paths.
+  # Strategy: scan line-by-line for implementation paths following a shipped: true.
+  $lines7 = Get-Content -LiteralPath $statusPath
+  $inShippedBlock = $false
+  $inImplList = $false
+  for ($i = 0; $i -lt $lines7.Count; $i++) {
+    $ln = $lines7[$i]
+    # Reset block tracking on a new top-level capability key (2-space indent + non-space key)
+    if ($ln -match '^  [a-z][a-z_]+:') {
+      $inShippedBlock = $false
+      $inImplList = $false
+    }
+    if ($ln -match '^\s+shipped:\s+true') { $inShippedBlock = $true }
+    if ($inShippedBlock -and $ln -match '^\s+implementation:') {
+      # Check if inline null
+      if ($ln -match 'implementation:\s*(null|\[\])') { $inImplList = $false; continue }
+      $inImplList = $true
+      continue
+    }
+    if ($inImplList -and $ln -match '^\s+-\s+(.+)$') {
+      $implPath = $matches[1].Trim()
+      if (-not (Test-Path -LiteralPath $implPath)) {
+        Fail-Rule 'shipped_impl_paths_exist' "implementation path '$implPath' not found on disk (line $($i+1))"
+        $r7Fail = $true
+        break
+      }
+    } elseif ($inImplList -and $ln -notmatch '^\s+-') {
+      $inImplList = $false
+    }
+  }
+}
+if (-not $r7Fail) { Pass-Rule 'shipped_impl_paths_exist' }
+
+# ---------------------------------------------------------------------------
+# Rule 8 — no_hardcoded_versions_in_arch
+# Module-level ARCHITECTURE.md files must NOT contain inline OSS version pins
+# like "3.5.x", "1.0.7 GA", "2.0.0-M5". These must say "see parent POM".
+# Version strings in the root ARCHITECTURE.md table are allowed (they use
+# "see parent POM" after the fourth-review cleanup).
+# ---------------------------------------------------------------------------
+$r8Fail = $false
+$moduleArchFiles = @(
+  'agent-platform/ARCHITECTURE.md',
+  'agent-runtime/ARCHITECTURE.md'
+)
+# Pattern: a standalone version like "3.5.x", "1.0.7 GA", "2.0.0-M5", "1.35.0"
+$versionPattern = '\b\d+\.\d+(\.\d+)?(\.x|-SNAPSHOT|-M\d+|-RC\d+|\s+GA)?\b'
+foreach ($maf in $moduleArchFiles) {
+  if (Test-Path $maf) {
+    $mafContent = Get-Content -Raw -LiteralPath $maf
+    # Look for version in a table column (pipe-delimited line with a version-like string)
+    $tableLines = Select-String -InputObject $mafContent -Pattern '^\|.+\|\s*\d+\.\d+' -AllMatches
+    if ($tableLines) {
+      Fail-Rule 'no_hardcoded_versions_in_arch' "$maf contains inline version pins in a table. Use 'see parent POM' instead."
+      $r8Fail = $true
+      break
+    }
+  }
+}
+if (-not $r8Fail) { Pass-Rule 'no_hardcoded_versions_in_arch' }
+
+# ---------------------------------------------------------------------------
+# Rule 9 — openapi_path_consistency
+# /v3/api-docs must appear in WebSecurityConfig.java requestMatchers() AND
+# in agent-platform/ARCHITECTURE.md. This prevents the W0 doc/code drift
+# where the doc said "/v3/api-docs not exposed" but the config permitted it.
+# ---------------------------------------------------------------------------
+$r9Fail = $false
+$webSecPath = 'agent-platform/src/main/java/ascend/springai/platform/web/WebSecurityConfig.java'
+$platformArchPath = 'agent-platform/ARCHITECTURE.md'
+if (Test-Path $webSecPath) {
+  $webSecContent = Get-Content -Raw -LiteralPath $webSecPath
+  if ($webSecContent -notmatch '/v3/api-docs') {
+    Fail-Rule 'openapi_path_consistency' "WebSecurityConfig.java does not permit /v3/api-docs. Update security config or gate."
+    $r9Fail = $true
+  }
+}
+if (-not $r9Fail -and (Test-Path $platformArchPath)) {
+  $platformArchContent = Get-Content -Raw -LiteralPath $platformArchPath
+  if ($platformArchContent -notmatch '/v3/api-docs') {
+    Fail-Rule 'openapi_path_consistency' "agent-platform/ARCHITECTURE.md does not document /v3/api-docs exposure. Document it or remove the security permitAll."
+    $r9Fail = $true
+  }
+}
+if (-not $r9Fail) { Pass-Rule 'openapi_path_consistency' }
+
+# ---------------------------------------------------------------------------
+# Rule 10 — module_dep_direction
+# agent-runtime/pom.xml must NOT declare a dependency on agent-platform.
+# agent-platform/pom.xml must NOT declare a dependency on agent-runtime.
+# This enforces the corrected module graph from ADR-0026.
+# ---------------------------------------------------------------------------
+$r10Fail = $false
+$runtimePom = 'agent-runtime/pom.xml'
+$platformPom = 'agent-platform/pom.xml'
+if (Test-Path $runtimePom) {
+  $rtContent = Get-Content -Raw -LiteralPath $runtimePom
+  if ($rtContent -match '<artifactId>agent-platform</artifactId>') {
+    Fail-Rule 'module_dep_direction' "agent-runtime/pom.xml declares dependency on agent-platform. Per ADR-0026 this is forbidden. Use agent-platform-contracts when a shared type is needed."
+    $r10Fail = $true
+  }
+}
+if (-not $r10Fail -and (Test-Path $platformPom)) {
+  $pfContent = Get-Content -Raw -LiteralPath $platformPom
+  if ($pfContent -match '<artifactId>agent-runtime</artifactId>') {
+    Fail-Rule 'module_dep_direction' "agent-platform/pom.xml declares dependency on agent-runtime. This creates a circular or backwards dependency."
+    $r10Fail = $true
+  }
+}
+if (-not $r10Fail) { Pass-Rule 'module_dep_direction' }
 
 # ---------------------------------------------------------------------------
 # Summary

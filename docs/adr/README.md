@@ -34,6 +34,9 @@ options considered, decision, and consequences.
 | [0022](0022-payload-codec-spi.md) | PayloadCodec SPI and typed payload contract | accepted |
 | [0023](0023-cross-boundary-context-propagation.md) | Cross-boundary context propagation: tenant, trace, MDC, metric tags | accepted |
 | [0024](0024-suspension-write-atomicity.md) | Suspension write atomicity: Checkpointer + RunRepository transactional contract | accepted |
+| [0025](0025-checkpoint-ownership-boundary.md) | Checkpoint ownership boundary: executor resume cursors vs orchestrator Run row | accepted |
+| [0026](0026-module-dependency-direction-contracts-split.md) | Module dependency direction: agent-platform-contracts split (W1) | accepted |
+| [0027](0027-idempotency-scope-w0-header-validation.md) | Idempotency scope at W0: header validation only, dedup deferred to W1 | accepted |
 
 ## Process
 
