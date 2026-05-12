@@ -25,15 +25,15 @@
 
 | capability | code-path | wave | claim |
 |---|---|---|---|
-| runtime-hook-spi | `agent-runtime/.../action/spi/RuntimeHook.java` (future) | W2 | HookChain at BEFORE/AFTER MODEL, TOOL, AGENT; PII + token counter + summariser + tool-call-limit ref hooks; Rule 19 gate |
-| graph-dsl-conformance | `agent-runtime/.../orchestration/spi/ExecutorDefinition.java` (extend) | W3 | KeyStrategy registry + typed Edge with predicate + JSON/Mermaid export; backward-compat factory retained |
+| runtime-hook-spi | `agent-runtime/.../action/spi/RuntimeHook.java` (future) | W2 | HookChain at PRE/POST LLM_CALL, TOOL_INVOKE, AGENT_TURN; PII + token counter + summariser + tool-call-limit ref hooks; Rule 19 gate |
+| graph-dsl-conformance | `agent-runtime/.../orchestration/spi/ExecutorDefinition.java` (extend) | W3 | StateReducer registry (Overwrite/Append/DeepMerge) + typed Edge with predicate + JSON/Mermaid export; backward-compat factory retained |
 | eval-harness-contract | `docs/eval/` (future) | W4 | corpus.jsonl + evaluator.yaml + thresholds.yaml per capability; EvalThresholdGate blocks merge on regression; Rule 18 gate |
 | trace-replay-dev-surface | `agent-runtime/.../trace/TraceReplayMcpServer.java` (future) | W4 | MCP tools get_run_trace + list_runs; OTel-driven from trace_store; no Admin UI |
 | sandbox-executor-spi | `agent-runtime/.../action/spi/SandboxExecutor.java` (future) | W3 | ActionGuard Bound stage; NoOp default; GraalVM polyglot pluggable; ADR-0018 |
 | a2a-federation-strategic | `docs/adr/0016-a2a-federation-strategic-deferral.md` | post-W4 | AgentCard + AgentRegistry + RemoteAgentClient contract surface; registry-binding pluggable |
 | multi-backend-checkpointer | `agent-runtime/.../orchestration/inmemory/` (extend) | W2 | Postgres + Redis + file Checkpointer impls behind existing SPI |
 | hybrid-rag-bm25 | `agent-runtime/.../memory/` (extend) | W3 | MemoryService L2 + BM25 keyword index + alpha-blended scoring |
-| planner-as-tool-pattern | `agent-runtime/.../orchestration/spi/AgentLoopDefinition.java` (extend) | W4 | PlanNotebook toolset for IterativeAgentLoopExecutor; plan rows in run_memory |
+| planner-as-tool-pattern | `agent-runtime/.../orchestration/spi/AgentLoopDefinition.java` (extend) | W4 | RunPlanSheet toolset for IterativeAgentLoopExecutor; plan rows in run_memory |
 
 ---
 

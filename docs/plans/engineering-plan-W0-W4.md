@@ -335,8 +335,9 @@ PASS becomes real.
   `agent_run_cost_usd_total{tenant,model}` Prometheus counter.
 - Helm chart skeleton (single-replica).
 - **RuntimeHook SPI** (`runtime_hook_spi`, §4 #16): `RuntimeHook` interface + `HookChain` bean;
-  hook positions `BEFORE_MODEL` / `AFTER_MODEL` / `BEFORE_TOOL` / `AFTER_TOOL`; `@Bean`-ordered
-  chain wired into `ChatClient` and tool-adapter calls. Reference hooks: PII filter (redacts PII
+  hook positions `PRE_LLM_CALL` / `POST_LLM_CALL` / `PRE_TOOL_INVOKE` / `POST_TOOL_INVOKE`
+  (W2 LLM+tool scope; `PRE_AGENT_TURN`/`POST_AGENT_TURN` added W3 with agent-loop gateway);
+  `@Bean`-ordered chain wired into `ChatClient` and tool-adapter calls. Reference hooks: PII filter (redacts PII
   patterns from prompt/response), token counter (emits `springai_ascend_tokens_total` counter),
   summariser (optional context compression), tool-call-limit (throws if call count exceeds
   `ResiliencePolicy.maxToolCalls`). `HookChainConformanceTest` (ArchUnit) asserts no bypass.
@@ -462,8 +463,8 @@ gradually.
 - `feedback` table; `FeedbackController` accepts thumbs + optional
   text per `run_id`.
 - **Graph DSL Conformance** (`graph_dsl_conformance`, §4 #17): extend
-  `ExecutorDefinition.GraphDefinition` with: (a) `KeyStrategy` registry (`Replace`, `Append`,
-  `Merge`) applied on partial state updates; (b) typed `Edge` records with optional
+  `ExecutorDefinition.GraphDefinition` with: (a) `StateReducer` registry (`OverwriteReducer`,
+  `AppendReducer`, `DeepMergeReducer`) applied on partial state updates; (b) typed `Edge` records with optional
   `Function<RunContext, Boolean>` predicate for conditional routing; (c) `GraphSerializer`
   emitting JSON + Mermaid topology. Factory method `GraphDefinition.simple(...)` retained for
   backward compat. Existing `NestedDualModeIT` updated to exercise conditional edge.
@@ -599,14 +600,15 @@ redeploying the platform.
   versioned prompt template) scores each output; `EvalThresholdGate` reads
   `docs/eval/<capability>/thresholds.yaml` and blocks merge on regression. `EvalRegressionIT`
   replaces the generic placeholder with a real corpus-driven test.
-- **Planner-as-Tool** (`planner_as_tool_pattern`): `PlanNotebook` toolset for
-  `IterativeAgentLoopExecutor` — tools: `createPlan`, `revisePlan`, `finishSubtask`,
-  `recoverHistoricalPlan`, `viewSubtasks`, `finishPlan`. Plan rows persist in the `run_memory`
-  table keyed by `run_id`; `parentRunId` chain enables plan-reuse across correlated runs.
+- **Planner-as-Tool** (`planner_as_tool_pattern`): `RunPlanSheet` toolset for
+  `IterativeAgentLoopExecutor` — tools: `createRunPlan`, `reviseRunPlan`, `completeSubtask`,
+  `listSubtasks`, `finalizeRunPlan`, `listArchivedRunPlans`, `restoreArchivedRunPlan`. Plan rows
+  persist in the `run_memory` table keyed by `run_id`; `parentRunId` chain enables plan-reuse
+  across correlated runs.
   Activated by `AgentLoopDefinition.planningEnabled(true)`.
 - **Trace Replay Dev Surface** (`trace_replay_dev_surface`, ADR-0017): MCP server exposing
   `/tools/get_run_trace(runId)` and `/tools/list_runs(tenantId, since)` that read structured
-  OTel span data from the `trace_store` table populated by `GraphObservationLifecycleListener`.
+  OTel span data from the `trace_store` table populated by `GraphNodeTraceWriter`.
   No HTML/JS. Clients: Claude Desktop, custom CLI. `§1 Admin UI exclusion preserved`.
 
 ### 6.3 Scope (out, deferred)

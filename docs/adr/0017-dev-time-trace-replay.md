@@ -45,7 +45,7 @@ The dev-time trace replay surface consists of:
 - **`trace_store` table** (Postgres): `run_id`, `node_id`, `parent_span_id`, `kind`
   (`model_call | tool_call | agent_loop | graph_node`), `started_at`, `finished_at`,
   `prompt_tokens`, `completion_tokens`, `status`, `attributes_json`.
-- **`GraphObservationLifecycleListener`** (W2, Micrometer): writes a row to `trace_store`
+- **`GraphNodeTraceWriter`** (W2): writes a row to `trace_store`
   on every node start + end.
 - **`TraceReplayMcpServer`** (W4): exposes two MCP tools:
   - `get_run_trace(runId: String)` → list of span rows in chronological order.
@@ -62,7 +62,7 @@ protocol is the transport; the client renders the timeline.
 **Positive:**
 - No UI maintenance burden (JS/CSS/HTML/security review for a web surface).
 - Trace data is available to any MCP client — composable, not monolithic.
-- Reuses `trace_store` written by `GraphObservationLifecycleListener` (shared with eval harness
+- Reuses `trace_store` written by `GraphNodeTraceWriter` (shared with eval harness
   — SAA-Admin creates datasets from traces; our eval corpus can also be seeded from trace data).
 - §1 exclusion of Admin UI stays clean and unambiguous.
 

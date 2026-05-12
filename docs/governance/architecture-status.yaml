@@ -456,7 +456,7 @@ capabilities:
     l0_decision: ARCHITECTURE.md (sec.4 constraint #16)
     implementation: null
     tests: []
-    allowed_claim: "Design only — Hook SPI at BEFORE_MODEL / AFTER_MODEL / BEFORE_TOOL / AFTER_TOOL / BEFORE_AGENT / AFTER_AGENT. Reference hooks (W2): PII filter, token counter, summariser, tool-call-limit. HookChainConformanceTest asserts no direct-call bypass. Implementation deferred to W2. Gate: Rule 19."
+    allowed_claim: "Design only — Hook SPI at PRE_LLM_CALL / POST_LLM_CALL / PRE_TOOL_INVOKE / POST_TOOL_INVOKE / PRE_AGENT_TURN / POST_AGENT_TURN. Reference hooks (W2): PII filter, token counter, summariser, tool-call-limit. HookChainConformanceTest asserts no direct-call bypass. Implementation deferred to W2. Gate: Rule 19."
 
   # --- C8. Graph DSL Conformance (§4 #17) ---
   graph_dsl_conformance:
@@ -465,7 +465,7 @@ capabilities:
     l0_decision: ARCHITECTURE.md (sec.4 constraint #17)
     implementation: null
     tests: []
-    allowed_claim: "Design only — ExecutorDefinition.GraphDefinition extended with KeyStrategy registry (Replace/Append/Merge), typed Edge records with optional predicate for conditional routing, JSON/Mermaid export via GraphSerializer. Backward-compatible factory retained. Implementation deferred to W3."
+    allowed_claim: "Design only — ExecutorDefinition.GraphDefinition extended with StateReducer registry (OverwriteReducer/AppendReducer/DeepMergeReducer), typed Edge records with optional predicate for conditional routing, JSON/Mermaid export via GraphSerializer. Backward-compatible factory retained. Implementation deferred to W3."
 
   # --- C9. Eval Harness Contract (§4 #18) ---
   eval_harness_contract:
@@ -523,4 +523,4 @@ capabilities:
     l0_decision: docs/plans/engineering-plan-W0-W4.md (W4)
     implementation: null
     tests: []
-    allowed_claim: "Design only — PlanNotebook-style toolset for IterativeAgentLoopExecutor: createPlan, revisePlan, finishSubtask, recoverHistoricalPlan. Plan rows in run_memory table keyed by run_id; parentRunId chain enables plan-reuse. Activated via AgentLoopDefinition.planningEnabled(true). Implementation deferred to W4."
+    allowed_claim: "Design only — RunPlanSheet toolset for IterativeAgentLoopExecutor: createRunPlan, reviseRunPlan, completeSubtask, listSubtasks, finalizeRunPlan, listArchivedRunPlans, restoreArchivedRunPlan. Plan rows in run_memory table keyed by run_id; parentRunId chain enables plan-reuse. Activated via AgentLoopDefinition.planningEnabled(true). Implementation deferred to W4."

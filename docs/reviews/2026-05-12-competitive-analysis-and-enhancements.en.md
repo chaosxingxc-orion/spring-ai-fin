@@ -89,7 +89,7 @@ Each gap below passed the two-filter test: (a) SAA or AS-Java is at least `D` wh
 
 **Our gap**: W3 `ActionGuard` is a 5-stage per-action authorization chain (Authenticate / Authorize / Bound / Execute / Witness). It addresses *who is allowed to make this call*, not *what cross-cutting concerns must fire on every LLM/tool boundary*. No `BEFORE_MODEL` token counting, no `AFTER_TOOL` PII redaction, no context summarisation hook exists in our W0–W4 plan.
 
-**Resolution (committed)**: `ARCHITECTURE.md §4 #16` — Runtime Hook SPI. `HookChain` bean; hook positions `BEFORE_MODEL` / `AFTER_MODEL` / `BEFORE_TOOL` / `AFTER_TOOL` / `BEFORE_AGENT` / `AFTER_AGENT`; hooks are `@Bean`-ordered; reference hooks PII + token counter + summariser + tool-call-limit ship in W2. `HookChainConformanceTest` (ArchUnit) asserts no bypass (Rule 19). YAML row: `runtime_hook_spi`.
+**Resolution (committed)**: `ARCHITECTURE.md §4 #16` — Runtime Hook SPI. `HookChain` bean; hook positions `PRE_LLM_CALL` / `POST_LLM_CALL` / `PRE_TOOL_INVOKE` / `POST_TOOL_INVOKE` / `PRE_AGENT_TURN` / `POST_AGENT_TURN`; hooks are `@Bean`-ordered; reference hooks PII + token counter + summariser + tool-call-limit ship in W2. `HookChainConformanceTest` (ArchUnit) asserts no bypass (Rule 19). YAML row: `runtime_hook_spi`.
 
 ---
 
@@ -99,7 +99,7 @@ Each gap below passed the two-filter test: (a) SAA or AS-Java is at least `D` wh
 
 **Our gap**: `ExecutorDefinition.GraphDefinition(Map<String, NodeFunction> nodes, Map<String, String> edges, String startNode)` is programmatic and flat. Edges carry no predicate — all are unconditional. No per-key reducer. No export. This means our graphs cannot accumulate state across nodes (required for multi-turn message history), cannot take conditional branches without embedding if-logic inside a `NodeFunction`, and cannot be introspected visually.
 
-**Resolution (committed)**: `ARCHITECTURE.md §4 #17` — Graph DSL Conformance. Extends `GraphDefinition` with `KeyStrategy` registry, typed `Edge` records with optional predicate, JSON/Mermaid export via `GraphSerializer`. Backward-compatible factory `GraphDefinition.simple(...)` retained. Implementation W3. YAML row: `graph_dsl_conformance`.
+**Resolution (committed)**: `ARCHITECTURE.md §4 #17` — Graph DSL Conformance. Extends `GraphDefinition` with `StateReducer` registry (`OverwriteReducer`/`AppendReducer`/`DeepMergeReducer`), typed `Edge` records with optional predicate, JSON/Mermaid export via `GraphSerializer`. Backward-compatible factory `GraphDefinition.simple(...)` retained. Implementation W3. YAML row: `graph_dsl_conformance`.
 
 ---
 
@@ -119,7 +119,7 @@ Each gap below passed the two-filter test: (a) SAA or AS-Java is at least `D` wh
 
 **Our gap**: §1 excludes "admin UI." No structured run timeline or replay surface exists in any wave.
 
-**Resolution (committed)**: ADR-0017 — preserves §1 Admin UI exclusion. Adds a read-only dev-time trace timeline exposed via MCP server tools (`get_run_trace`, `list_runs`) reading the `trace_store` Postgres table written by `GraphObservationLifecycleListener`. No HTML/JS. Clients: Claude Desktop, CLI, custom scripts. Wave-plan W4. YAML row: `trace_replay_dev_surface`.
+**Resolution (committed)**: ADR-0017 — preserves §1 Admin UI exclusion. Adds a read-only dev-time trace timeline exposed via MCP server tools (`get_run_trace`, `list_runs`) reading the `trace_store` Postgres table written by `GraphNodeTraceWriter`. No HTML/JS. Clients: Claude Desktop, CLI, custom scripts. Wave-plan W4. YAML row: `trace_replay_dev_surface`.
 
 ---
 
@@ -169,7 +169,7 @@ Each gap below passed the two-filter test: (a) SAA or AS-Java is at least `D` wh
 
 **Our gap**: `IterativeAgentLoopExecutor` is a single-reasoner ReAct loop with no plan persistence, no subtask state, and no plan reuse across correlated runs.
 
-**Resolution (committed)**: W4 wave-plan addition — `PlanNotebook`-style toolset on `AgentLoopExecutor`; plan rows in `run_memory` keyed by `run_id`; `parentRunId` chain enables plan-reuse across correlated runs; activated by `AgentLoopDefinition.planningEnabled(true)`. YAML row: `planner_as_tool_pattern`.
+**Resolution (committed)**: W4 wave-plan addition — `RunPlanSheet` toolset on `AgentLoopExecutor` (tools: `createRunPlan`, `reviseRunPlan`, `completeSubtask`, `listSubtasks`, `finalizeRunPlan`, `listArchivedRunPlans`, `restoreArchivedRunPlan`); plan rows in `run_memory` keyed by `run_id`; `parentRunId` chain enables plan-reuse across correlated runs; activated by `AgentLoopDefinition.planningEnabled(true)`. YAML row: `planner_as_tool_pattern`.
 
 ---
 
@@ -191,11 +191,11 @@ Each gap below passed the two-filter test: (a) SAA or AS-Java is at least `D` wh
 |---|---|---|
 | G7. Multi-backend Checkpointer | W2 wave-plan expansion (Postgres + Redis + file) | W2 |
 | G1. Runtime Hook SPI | §4 #16 + W2 wave-plan expansion (HookChain + ref hooks) | W2 |
-| G2. Graph DSL Conformance | §4 #17 + W3 wave-plan expansion (KeyStrategy + typed Edge + Mermaid) | W3 |
+| G2. Graph DSL Conformance | §4 #17 + W3 wave-plan expansion (StateReducer + typed Edge + Mermaid) | W3 |
 | G8. Hybrid RAG | W3 wave-plan expansion (pgvector + BM25 + alpha blend) | W3 |
 | G5. Sandbox Executor SPI | ADR-0018 + W3 wave-plan addition (SandboxExecutor SPI + NoOp default) | W3 |
 | G3. Eval Harness Contract | §4 #18 + W4 wave-plan expansion (corpus + judge + gate) | W4 |
-| G9. Planner-as-Tool | W4 wave-plan addition (PlanNotebook toolset) | W4 |
+| G9. Planner-as-Tool | W4 wave-plan addition (RunPlanSheet toolset) | W4 |
 | G4. Dev-time Trace Replay | ADR-0017 + W4 wave-plan addition (MCP server) | W4 |
 | G6. A2A Federation | ADR-0016 (strategic post-W4 placeholder) | post-W4 |
 

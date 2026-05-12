@@ -202,16 +202,17 @@ SPI packages (`ascend.springai.runtime.*.spi.*`) import only `java.*`.
     `executor_definition_serialization`).
 
 16. **Runtime Hook SPI.** Every LLM invocation, tool call, and agent lifecycle boundary flows
-    through a hook chain. Hook positions: `BEFORE_MODEL` / `AFTER_MODEL` / `BEFORE_TOOL` /
-    `AFTER_TOOL` / `BEFORE_AGENT` / `AFTER_AGENT`. Hooks are pluggable `@Bean`s implementing
-    typed `RuntimeHook` interfaces; the chain is ordered and failsafe (hook failure logs at
-    `WARNING+` and does not abort the invocation). Reference hooks shipped in W2: PII filter,
-    token counter, summariser, tool-call-limit. Direct LLM/tool calls that bypass `HookChain`
-    are a gate-blocking defect (Rule 19 asserts no bypass via ArchUnit test).
+    through a hook chain. Hook positions: `PRE_LLM_CALL` / `POST_LLM_CALL` / `PRE_TOOL_INVOKE` /
+    `POST_TOOL_INVOKE` / `PRE_AGENT_TURN` / `POST_AGENT_TURN`. Hooks are pluggable `@Bean`s
+    implementing typed `RuntimeHook` interfaces; the chain is ordered and failsafe (hook failure
+    logs at `WARNING+` and does not abort the invocation). Reference hooks shipped in W2: PII
+    filter, token counter, summariser, tool-call-limit. Direct LLM/tool calls that bypass
+    `HookChain` are a gate-blocking defect (Rule 19 asserts no bypass via ArchUnit test).
 
 17. **Graph DSL conformance.** `ExecutorDefinition.GraphDefinition` MUST support beyond W2:
-    (a) per-key `KeyStrategy` registry (`Replace` — last-write-wins; `Append` — list concat;
-    `Merge` — deep map merge) applied when a node returns a partial state update;
+    (a) per-key `StateReducer` registry (`OverwriteReducer` — last-write-wins; `AppendReducer` —
+    list concat; `DeepMergeReducer` — recursive map merge) applied when a node returns a partial
+    state update;
     (b) typed `Edge` records replacing the flat `Map<String,String>` edges — an `Edge` may carry
     an optional predicate (`Function<RunContext, Boolean>`) for conditional routing;
     (c) JSON and Mermaid export of the compiled graph topology for debugging and documentation.

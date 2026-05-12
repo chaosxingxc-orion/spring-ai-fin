@@ -38,8 +38,8 @@ Nine architectural constraints govern the design path from W0 to W4+ (see `ARCHI
 - **#13** Payload serialization: inline bytes ≤ 16 KiB; `resumePayload` must be byte-serializable by W2.
 - **#14** Resume re-authorization: every resume re-validates `tenantId`; mismatch returns 403.
 - **#15** SPI serialization path: `NodeFunction`/`Reasoner` lambdas become named `CapabilityRegistry` entries before W4 Temporal.
-- **#16** Runtime Hook SPI: every LLM/tool/agent boundary flows through `HookChain`; reference hooks: PII filter, token counter, summariser, tool-call-limit. (W2)
-- **#17** Graph DSL conformance: `GraphDefinition` gains `KeyStrategy` reducers + typed conditional edges + JSON/Mermaid export. (W3)
+- **#16** Runtime Hook SPI: every LLM/tool/agent boundary flows through `HookChain`; hook positions `PRE_LLM_CALL`/`POST_LLM_CALL`/`PRE_TOOL_INVOKE`/`POST_TOOL_INVOKE`/`PRE_AGENT_TURN`/`POST_AGENT_TURN`; reference hooks: PII filter, token counter, summariser, tool-call-limit. (W2)
+- **#17** Graph DSL conformance: `GraphDefinition` gains `StateReducer` registry (OverwriteReducer/AppendReducer/DeepMergeReducer) + typed conditional edges + JSON/Mermaid export. (W3)
 - **#18** Eval Harness Contract: every shipped capability must have golden corpus + LLM-as-judge + regression threshold gate. (W4)
 
 ---
