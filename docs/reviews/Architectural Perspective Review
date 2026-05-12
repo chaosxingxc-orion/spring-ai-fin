@@ -1,0 +1,420 @@
+
+
+The architecture document defines 18 constraints (§4 #1–#18), 19 ADRs, and a four-wave evolution roadmap from W0 → W4. The core design model is:
+
+> Dual execution modes (GRAPH / AGENT_LOOP) + a single interrupt primitive (SuspendSignal) + an Orchestrator that owns the catch/checkpoint/dispatch/resume loop + one unified SPI surface across all persistence tiers (memory → Postgres → Temporal)
+
+Below are the architectural issues I believe exist in the design itself.
+
+---
+
+# Issue 1: Using `SuspendSignal` as a checked exception for composition poisons the entire execution model
+
+Architecture §4 #9 positions `SuspendSignal` as “one interrupt primitive for both modes.” But its carrier is a checked exception. This is not merely an implementation choice — it is an architectural choice about the composition model itself.
+
+Consequences:
+
+- `NodeFunction.apply()` and `Reasoner.reason()` signatures become polluted with `throws SuspendSignal`
+- Higher-order composition (`map`, `filter`, `compose`) can no longer directly use these functional interfaces
+- User code is forced to write:
+    
+    ```
+    try {    ...} catch (SuspendSignal s) {    ...}return null; // unreachable
+    ```
+    
+- Java checked exceptions cannot implicitly propagate through lambdas — meaning builder patterns and DSLs become constrained
+
+More importantly, the roadmap says W2 will introduce typed suspend reasons such as `AwaitTimer`, `AwaitExternal`, `AwaitApproval`, and `RateLimited` (§4 #10). If all of these are subclasses or attributes of `SuspendSignal`, then every new suspend reason further expands the responsibility scope of the exception type itself.
+
+An exception that simultaneously represents:
+
+- “waiting for a child task,”
+- “rate limited,”
+- and “waiting for human approval”
+
+is semantically overloaded.
+
+Fundamentally, the architecture requires continuation/yield semantics (pause execution now, resume later), but chooses to encode them using exception semantics. These two semantic models are fundamentally at odds.
+
+---
+
+# Issue 2: The composition model only supports sequential parent-child nesting — it cannot express fan-out or parallelism
+
+The architecture defines an execution tree with a strict pattern:
+
+```
+parent RUNNING    → suspend    → single child runs    → parent resumes with child result
+```
+
+But real orchestration patterns in financial systems look like this:
+
+```
+Risk Approval Graph:    gather_data        → [parallel]            → credit analysis            → market risk evaluation            → compliance checks            → fraud detection        → aggregate        → generate report
+```
+
+There are 4 parallel subtasks here, but the current architecture cannot express them.
+
+The only possible implementation today is:
+
+```
+suspend → child → resumesuspend → child → resumesuspend → child → resumesuspend → child → resume
+```
+
+which serializes what should be parallel work.
+
+Architecture §4 #10 mentions typed suspend reasons (`ChildRun | AwaitTimer | AwaitExternal | AwaitApproval | RateLimited`), but none of them represent:
+
+> “waiting for multiple child tasks”
+
+This means even in W2+, fan-out remains outside the design space.
+
+Fundamentally, the architecture’s composition primitive is unary:
+
+- one parent waits for one child
+
+But real workflows require N-ary composition:
+
+- one parent waits for N children, fully or partially.
+
+---
+
+# Issue 3: “One SPI surface across all persistence tiers” is an unattainable goal
+
+Architecture §4 #9 claims:
+
+> “Durability tiers: in-memory (dev/W0) → Postgres checkpoint (W2) → Temporal child workflow (W4) — same SPI surface across all tiers.”
+
+But the constraints imposed by the three persistence tiers are fundamentally different:
+
+|Dimension|W0 In-memory|W2 Postgres|W4 Temporal|
+|---|---|---|---|
+|`NodeFunction`|lambda + closure|must be byte-serializable|must be registered as named capability|
+|`resumePayload`|in-process Object|must be JSONB-serializable|must be Temporal Payload|
+|`Checkpointer`|JVM memory|transactional SQL|workflow state managed by Temporal|
+|`Orchestrator`|synchronous recursion|async + recovery|lifecycle owned by Temporal runtime|
+
+The architecture itself acknowledges this.
+
+§4 #15 states:
+
+> “before W4, NodeFunction MUST become named CapabilityRegistry entries resolved by name, not inline closures”
+
+This means the SPI surface must change, otherwise W4 Temporal integration is impossible.
+
+The shape of the `ExecutorDefinition` sealed interface differs across tiers:
+
+- W0:
+    
+    ```
+    GraphDefinition(    Map<String, NodeFunction>,    Map<String, String>,    String)
+    ```
+    
+    → lambdas are values
+    
+- W4:
+    
+    ```
+    GraphDefinition(    Map<String, String /* capabilityName */>,    ...)
+    ```
+    
+    → lambdas become symbolic references
+    
+
+This is a type-signature-level change, not “the same SPI surface.”
+
+Fundamentally, the architecture is making a promise it cannot keep.
+
+Rather than claiming “same SPI surface,” the architecture should define a layered SPI:
+
+- stable cross-tier core concepts (`Run`, `RunStatus`)
+- execution-layer SPIs (`ExecutorDefinition`, `Checkpointer`) with tier-specific constraints
+
+---
+
+# Issue 4: The `Orchestrator` SPI is overloaded with responsibilities — concerns are not separated
+
+The `Orchestrator` interface exposes only one method:
+
+```
+Object run(    UUID runId,    String tenantId,    ExecutorDefinition def,    Object initialPayload);
+```
+
+But internally this method must handle at least five distinct concerns:
+
+1. Run lifecycle management  
+    (`PENDING → RUNNING → SUSPENDED → RUNNING → SUCCEEDED/FAILED`)
+2. Checkpoint persistence  
+    (save/load suspend points)
+3. Child run dispatching  
+    (create, execute, collect results)
+4. Failure recovery  
+    (state transitions on failure)
+5. Result return semantics  
+    (final value typing and formatting)
+
+These concerns need to evolve independently:
+
+- W1 introduces cancel/retry → but cancel is absent from the SPI
+- W2 introduces streaming → but `Object` return values are incompatible
+- W2 introduces resume re-authorization → but there is no dedicated resume entrypoint
+- W4 lets Temporal own lifecycle management → but lifecycle and dispatch are tightly coupled
+
+Every new capability mutates the semantics of the same `run()` method, instead of introducing new methods or dedicated interfaces.
+
+Fundamentally, the architecture lacks a `RunLifecycleManager` concept.
+
+State transitions, checkpoint management, and child-run dispatch should be independent SPIs, allowing the `Orchestrator` to function purely as an execution scheduler rather than an omnipotent controller.
+
+---
+
+# Issue 5: The `RunStatus` state machine has no formal transition definition
+
+The architecture defines six `RunStatus` values:
+
+```
+PENDING | RUNNING | SUSPENDED | SUCCEEDED | FAILED | CANCELLED
+```
+
+But `ARCHITECTURE.md` never specifies which transitions are legal.
+
+Critical unanswered questions:
+
+- Can `SUSPENDED` transition directly to `CANCELLED`?  
+    (e.g. user cancels a run waiting for approval)
+- Can `FAILED` transition back to `RUNNING`?  
+    (retry semantics)
+- Can `SUSPENDED` transition to `FAILED`?  
+    (timeout while waiting)
+- Can `CANCELLED` transition back to `RUNNING`?  
+    (undo cancellation)
+
+These are not W4-only questions.
+
+Architecture §4 #14 already discusses:
+
+- “resume re-authorization”
+
+and §4 #12 says:
+
+- “saturation suspends, not fails”
+
+Both constraints directly depend on the state machine definition.
+
+If legal transitions from `SUSPENDED` are undefined, then resume and timeout semantics cannot be designed correctly.
+
+Fundamentally, transition rules should themselves be architectural constraints, not implementation-time decisions.
+
+Without a formal definition, different implementations (`SyncOrchestrator`, future `PostgresOrchestrator`, `TemporalOrchestrator`) may each implement incompatible state graphs.
+
+---
+
+# Issue 6: Payloads are untyped `Object`s throughout the entire pipeline — blocking future evolution
+
+From the HTTP boundary to the `Orchestrator`, `NodeFunction`, `SuspendSignal`, and `Checkpointer`, payloads are all represented as `Object`:
+
+```
+Orchestrator.run(..., Object initialPayload)NodeFunction.apply(ctx, Object payload) -> ObjectReasoner.reason(ctx, Object payload, int iteration)    -> ReasoningResult(Object payload)SuspendSignal(Object resumePayload)Checkpointer.save(runId, key, byte[])
+```
+
+But how does `Object` become `byte[]`?
+
+Architecture §4 #13 says:
+
+> “resumePayload MUST be serializable to bytes when the durability tier crosses JVM boundaries”
+
+Yet the SPI imposes no such constraint:
+
+- `Object` need not implement `Serializable`
+- nor be JSON-serializable
+
+Consequences:
+
+- W1 API definitions cannot declare request/response schemas
+- W2 checkpoint persistence must arbitrarily choose a serialization strategy (JSON? Proto? custom?), but the SPI exposes no extension point
+- W2 streaming (`Flux`) conflicts with Rule 15:
+    
+    > “typed progress event shape — no raw Object”  
+    > while the entire pipeline still uses raw `Object`
+    
+
+Fundamentally, the architecture needs a `PayloadCodec` abstraction:
+
+- serialization contracts must exist at the SPI layer
+- instead of pushing raw `Object`s all the way to persistence boundaries and deciding serialization ad hoc
+
+---
+
+# Issue 7: Tenant propagation across suspend/resume boundaries is architecturally undefined
+
+The architecture’s tenant isolation model is:
+
+1. HTTP request carries `X-Tenant-Id`
+2. `TenantContextFilter` stores it in `TenantContextHolder` (`ThreadLocal`)
+3. Every persistence record includes `tenant_id NOT NULL`
+4. Database RLS policies enforce isolation
+
+But suspend/resume crosses HTTP request boundaries:
+
+```
+Request A:    create Run    → RUNNING    → SUSPENDED    → request ends, thread returned to pool... time passes ...Request B:    resume Run    → TenantContextHolder is empty (new thread)
+```
+
+Architecture §4 #14 says:
+
+> “resume re-authorization: request tenantId must match Run.tenantId”
+
+But who supplies `request tenantId`?
+
+If resume is triggered by a timer (`AwaitTimer`) rather than an HTTP request, then there is no HTTP request context at all.
+
+More fundamentally:  
+once W2 introduces asynchronous orchestrators, child runs may execute:
+
+- on different threads
+- or even different processes
+
+The `ThreadLocal` propagation model becomes entirely invalid.
+
+The architecture lacks a transport-independent tenant propagation mechanism.
+
+In fact, `RunContext.tenantId()` already exists, but:
+
+- `TenantContextFilter`
+- and `IdempotencyStore`
+
+still rely on `TenantContextHolder` rather than `RunContext`.
+
+The architecture currently contains two independent tenant propagation mechanisms with no unified model.
+
+---
+
+# Issue 8: The `Orchestrator` SPI exposes states without operations
+
+`RunStatus` defines:
+
+- `CANCELLED`
+- `FAILED`
+
+But the `Orchestrator` interface only exposes:
+
+```
+run()
+```
+
+There is:
+
+- no `cancel(UUID runId)`
+- no `retry(UUID runId)`
+- no `compensate(UUID runId)`
+
+This means the architecture defines states without defining the operations that trigger transitions.
+
+The state machine is only half-defined:
+
+- states exist
+- transitions do not
+
+Consequences:
+
+- Rule 8 requires:
+    
+    > “cancellation round-trip: cancel on live run → 200 + terminal”  
+    > but the SPI has no cancellation entrypoint
+    
+- §4 #12 says:
+    
+    > “saturation suspends, not fails”  
+    > but who resumes the suspended run once saturation clears?
+    
+- W2 streaming requires:
+    
+    > “cancellation propagation: caller cancel → RunStatus.CANCELLED”  
+    > but the `Orchestrator` cannot receive cancellation signals
+    
+
+Fundamentally, the architecture needs a `RunLifecycle` SPI (or at minimum explicit `cancel()` / `resume()` methods on `Orchestrator`) separated from execution dispatch.
+
+Otherwise the state machine remains structurally hollow.
+
+---
+
+# Issue 9: No transaction boundary is defined between `Checkpointer` and `RunRepository`
+
+The architecture defines two independent persistence SPIs:
+
+- `Checkpointer`
+- `RunRepository`
+
+When a Run transitions from `RUNNING` to `SUSPENDED`, both must update atomically:
+
+```
+RunRepository.save(run.withStatus(SUSPENDED))
+```
+
+```
+Checkpointer.save(runId, RESUME_KEY, nextNodeBytes)
+```
+
+Failure scenarios:
+
+- (1) succeeds but (2) fails  
+    → Run is marked `SUSPENDED`, but no checkpoint exists  
+    → resume becomes impossible
+- (2) succeeds but (1) fails  
+    → checkpoint exists for next step  
+    → but Run still appears `RUNNING`  
+    → scheduler/timers never resume it
+
+The architecture never defines the transactional contract between these SPIs.
+
+This is not a problem in W0 in-memory mode, but becomes critical in W2 Postgres:
+
+- the two SPIs may use different tables
+- or even different connection pools
+
+At that point:
+
+- distributed transactions
+- or sagas/reconciliation
+
+must be explicitly designed.
+
+Fundamentally, the architecture must define the atomicity contract between `Checkpointer` and `RunRepository`:
+
+- same transaction?
+- eventual consistency + reconciliation?
+- transactional outbox?
+
+This is an architectural decision that directly impacts the W2 Postgres implementation strategy.
+
+---
+
+# Summary
+
+|#|Architectural Problem|Affected Waves|Root Cause|
+|---|---|---|---|
+|1|`SuspendSignal` as checked-exception composition primitive|W0→W4|continuation semantics conflict with exception semantics|
+|2|Sequential-only parent-child composition|W2+|unary composition primitive cannot express N-ary workflows|
+|3|“Same SPI surface across all tiers” is unattainable|W4|persistence tiers impose fundamentally different serialization constraints|
+|4|`Orchestrator` SPI overloaded with responsibilities|W1+|five independent concerns coupled into one method|
+|5|`RunStatus` state machine lacks formal transition rules|W1+|states defined, transitions undefined|
+|6|Untyped payloads across the entire pipeline|W1→W4|raw `Object` blocks serialization/API/streaming evolution|
+|7|Tenant propagation breaks across suspend/resume boundaries|W2|ThreadLocal and RunContext propagation models are inconsistent|
+|8|SPI defines states but no lifecycle operations|W2|half-defined state machine|
+|9|No transaction contract between `Checkpointer` and `RunRepository`|W2|atomicity boundary undefined|
+
+Among these, Issues 1, 2, and 4 are foundational architectural problems.
+
+They determine the shape of the entire system, and the later they are changed, the higher the migration cost becomes.
+
+Issues 1 and 2 amplify each other:
+
+> unary composition primitives + exception-based suspension
+
+effectively lock the system’s expressive power into:
+
+- sequential
+- single-threaded
+- nested execution
+
+as the upper bound of the model.
