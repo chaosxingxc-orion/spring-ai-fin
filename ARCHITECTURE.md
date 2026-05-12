@@ -56,11 +56,26 @@ spring-ai-ascend/
         ResiliencePolicy.java
         YamlResilienceContract.java            # Map-backed impl (Spring wiring deferred to W2)
       runs/
-        Run.java                               # Run entity — Rule 11 contract spine
-        RunStatus.java
+        Run.java                               # Run entity (mode, parentRunId, parentNodeKey, SUSPENDED)
+        RunMode.java                           # GRAPH | AGENT_LOOP discriminator
+        RunStatus.java                         # PENDING/RUNNING/SUSPENDED/SUCCEEDED/FAILED/CANCELLED
         RunRepository.java                     # SPI interface (pure Java)
       idempotency/
         IdempotencyRecord.java                 # Idempotency entity — Rule 11 contract spine
+      orchestration/spi/
+        Orchestrator.java                      # Entry point: owns suspend/checkpoint/resume loop
+        RunContext.java                        # Per-run ctx: tenantId, checkpointer, suspendForChild
+        GraphExecutor.java                     # SPI: deterministic graph traversal
+        AgentLoopExecutor.java                 # SPI: ReAct-style iterative reasoning
+        ExecutorDefinition.java                # Sealed: GraphDefinition | AgentLoopDefinition
+        SuspendSignal.java                     # Checked exception — one interrupt for both modes
+        Checkpointer.java                      # SPI: suspend-point persistence
+      orchestration/inmemory/
+        InMemoryCheckpointer.java              # Dev-posture: ConcurrentHashMap-backed
+        InMemoryRunRegistry.java               # Dev-posture: ConcurrentHashMap-backed RunRepository
+        SyncOrchestrator.java                  # Reference: single-threaded suspend/checkpoint/resume loop
+        SequentialGraphExecutor.java           # Reference: node→edge traversal with checkpoint on suspend
+        IterativeAgentLoopExecutor.java        # Reference: ReAct loop with iter+state checkpoint on suspend
 
   spring-ai-ascend-graphmemory-starter/        # E2 middleware shell (enabled=false, W2)
     src/main/java/ascend/springai/runtime/graphmemory/
@@ -140,6 +155,14 @@ SPI packages (`ascend.springai.runtime.*.spi.*`) import only `java.*`.
    Call sites use Resilience4j annotations with the resolved names. Spring
    `@ConfigurationProperties` wiring is deferred to W2 LLM gateway.
 
+9. **Dual-mode runtime + interrupt-driven nesting**: both `GraphExecutor` (deterministic
+   state machine) and `AgentLoopExecutor` (ReAct-style) use one interrupt primitive
+   (`SuspendSignal`) to delegate to a child run. The `Orchestrator` owns the
+   catch/checkpoint/dispatch/resume loop; executors do not persist or wait.
+   `Run.mode` discriminates `GRAPH` vs `AGENT_LOOP`; `Run.parentRunId` + `Run.parentNodeKey`
+   encode the nesting chain. Durability tiers: in-memory (dev/W0) → Postgres
+   checkpoint (W2) → Temporal child workflow (W4) — same SPI surface across all tiers.
+
 ---
 
 ## 5. W0 shipped capabilities
@@ -150,10 +173,13 @@ SPI packages (`ascend.springai.runtime.*.spi.*`) import only `java.*`.
 - `IdempotencyStore` — dev-posture stub (no-op + WARNING log); research/prod throws `IllegalStateException`; replaced in W1.
 - `GraphMemoryRepository` SPI — interface only; no implementation shipped.
 - `ResilienceContract` + `YamlResilienceContract` — per-operation resilience routing (operationId → policy triple).
-- `Run` entity + `RunRepository` SPI — contract-spine entity with mandatory `tenantId` (Rule 11 target).
+- `Run` entity + `RunRepository` SPI — contract-spine entity (Rule 11 target); `mode` field (`GRAPH`|`AGENT_LOOP`) discriminates executor type; `parentRunId` + `parentNodeKey` + `SUSPENDED` status support interrupt-driven nesting.
 - `IdempotencyRecord` entity — contract-spine entity with mandatory `tenantId` (Rule 11 target).
 - `OssApiProbeTest` — compile-time probe verifying Spring AI + Spring Boot API surface.
 - `ApiCompatibilityTest` — ArchUnit rules enforcing SPI purity and dependency direction.
+- `Orchestrator` SPI + `GraphExecutor` + `AgentLoopExecutor` + `SuspendSignal` + `Checkpointer` — dual-mode runtime SPIs (§4 constraint #9).
+- `InMemoryCheckpointer` — dev-posture in-memory checkpoint store (W2: Postgres-backed).
+- `SyncOrchestrator` + `SequentialGraphExecutor` + `IterativeAgentLoopExecutor` + `InMemoryRunRegistry` — reference executors proving 3-level bidirectional graph↔agent-loop nesting via `SuspendSignal` interrupt. Dev-posture only; not on the production code path.
 
 ---
 

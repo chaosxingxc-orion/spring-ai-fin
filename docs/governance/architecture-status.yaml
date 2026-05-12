@@ -277,11 +277,12 @@ capabilities:
     l0_decision: ARCHITECTURE.md
     implementation:
       - agent-runtime/src/main/java/ascend/springai/runtime/runs/Run.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/runs/RunMode.java
       - agent-runtime/src/main/java/ascend/springai/runtime/runs/RunStatus.java
       - agent-runtime/src/main/java/ascend/springai/runtime/runs/RunRepository.java
     tests:
       - agent-runtime/src/test/java/ascend/springai/runtime/runs/RunTest.java
-    allowed_claim: "L1: Run record with mandatory tenantId and runId; RunStatus PENDING/RUNNING/SUCCEEDED/FAILED/CANCELLED; RunRepository SPI (pure Java). Rule 11 target: tenant_id mandatory on all persistent records."
+    allowed_claim: "L1: Run record with mandatory tenantId, runId, mode (GRAPH|AGENT_LOOP); RunStatus PENDING/RUNNING/SUSPENDED/SUCCEEDED/FAILED/CANCELLED; nullable parentNodeKey+suspendedAt for interrupt-driven nesting; RunRepository SPI adds findByParentRunId + findByTenantAndStatus. Rule 11 target."
 
   idempotency_record_entity:
     status: implemented_unverified
@@ -292,3 +293,48 @@ capabilities:
     tests:
       - agent-runtime/src/test/java/ascend/springai/runtime/idempotency/IdempotencyRecordTest.java
     allowed_claim: "L1: IdempotencyRecord contract-spine entity with mandatory tenantId and idempotencyKey. Rule 11 target."
+
+  orchestration_spi:
+    status: implemented_unverified
+    shipped: true
+    l0_decision: ARCHITECTURE.md (sec.4 constraint #9)
+    implementation:
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/Orchestrator.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/RunContext.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/GraphExecutor.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/AgentLoopExecutor.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/ExecutorDefinition.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/SuspendSignal.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/Checkpointer.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/InMemoryCheckpointer.java
+    tests:
+      - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/spi/SuspendSignalTest.java
+      - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/spi/OrchestrationSpiArchTest.java
+      - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/inmemory/InMemoryCheckpointerTest.java
+    allowed_claim: "L1: Orchestration SPI — GraphExecutor, AgentLoopExecutor, SuspendSignal, Checkpointer, RunContext, Orchestrator. SPI is pure-Java (OrchestrationSpiArchTest). InMemoryCheckpointer provides dev-posture impl. No reference executor yet (C34)."
+
+  inmemory_orchestrator:
+    status: implemented_unverified
+    shipped: true
+    l0_decision: ARCHITECTURE.md (sec.4 constraint #9)
+    implementation:
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/SyncOrchestrator.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/SequentialGraphExecutor.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/IterativeAgentLoopExecutor.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/InMemoryRunRegistry.java
+    tests:
+      - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/RunStatusTransitionIT.java
+    allowed_claim: "L1: Reference executors — SyncOrchestrator (catches SuspendSignal, dispatches child, resumes parent), SequentialGraphExecutor, IterativeAgentLoopExecutor, InMemoryRunRegistry. Dev-posture only; W2 replaces with Postgres-backed impls behind same SPI."
+
+  nested_dual_mode_reference:
+    status: implemented_unverified
+    shipped: true
+    l0_decision: ARCHITECTURE.md (sec.4 constraint #9)
+    implementation:
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/SyncOrchestrator.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/SequentialGraphExecutor.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/IterativeAgentLoopExecutor.java
+    tests:
+      - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/NestedDualModeIT.java
+      - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/RunStatusTransitionIT.java
+    allowed_claim: "L1: 3-level graph→agent-loop→graph nesting proved in NestedDualModeIT. SuspendSignal/checkpoint/resume chain verified. parentRunId chain correct across all 3 Run rows. RunStatusTransitionIT verifies SUSPENDED→RUNNING→SUCCEEDED status transitions."
