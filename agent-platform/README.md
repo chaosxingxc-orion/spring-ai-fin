@@ -8,7 +8,7 @@
 |-----------|--------|--------------------|
 | (consumer only) | -- | agent-platform consumes SPI interfaces defined in spring-ai-ascend-*-starter modules; it does not define new SPI interfaces |
 
-The platform calls `RunRepository`, `IdempotencyRepository`, `PolicyEvaluator`, and all other SPI interfaces through the starter contracts. It never imports `agent-runtime` Java types directly (enforced by `ApiCompatibilityTest`).
+At W0, the platform applies: Spring Security `AuthorizationManager` for access control, `TenantContextFilter` (validates X-Tenant-Id header), and `IdempotencyHeaderFilter` (validates Idempotency-Key UUID shape). It reads `RunRepository` from the `agent-runtime` SPI for run state queries. It never imports `agent-runtime` Java types directly (enforced by `ApiCompatibilityTest`).
 
 ## Posture defaults
 
@@ -55,6 +55,6 @@ W1 will add `springai_ascend_idempotency_claimed_total`, `_replayed_total`, `_co
 ## See also
 
 - [ARCHITECTURE.md](../ARCHITECTURE.md) for system design
-- [agent-platform/api/ARCHITECTURE.md](api/ARCHITECTURE.md) for HTTP transport layer detail
+- [ARCHITECTURE.md](ARCHITECTURE.md) for HTTP transport layer detail
 - [docs/contracts/http-api-contracts.md](../docs/contracts/http-api-contracts.md) for route-level HTTP contracts
-- [docs/contracts/spi-contracts.md](../docs/contracts/spi-contracts.md) for SPI semantic contracts
+- [docs/contracts/contract-catalog.md](../docs/contracts/contract-catalog.md) for SPI semantic contracts

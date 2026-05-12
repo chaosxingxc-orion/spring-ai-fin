@@ -38,7 +38,7 @@ Evidence: `docs/delivery/2026-05-10-ca9bbba-mvn-resolve.log`.
 | Verified-at-sha | cd13612 |
 | APIs cited | `ChatClient`, `ChatModel`, `EmbeddingModel`, `VectorStore` (package `org.springframework.ai.*`) |
 | Probe | `agent-runtime/.../probe/OssApiProbe.java` |
-| Glue we own | `agent-runtime/llm/ChatClientFactory`, `agent-runtime/llm/LlmRouter`, `agent-runtime/memory/PgVectorAdapter` |
+| Planned glue (W2) | `ChatClientFactory`, `LlmRouter`, `PgVectorAdapter` (implementation paths not yet created; scheduled for W2) |
 | Risks | (a) Milestone API may shift between M5 and GA; gate/check_spring_ai_milestone.sh fails CI past 2026-08-01 if still on M-version, forcing re-eval. (b) 2.0 GA expected ~mid-2026 -- plan W2 upgrade. |
 | Upgrade trigger | 2.0 GA; or gate fires |
 
@@ -53,7 +53,7 @@ Evidence: `docs/delivery/2026-05-10-ca9bbba-mvn-resolve.log`.
 | Verified-at-sha | cd13612 |
 | APIs cited | `Workflow`, `WorkflowInterface`, `WorkflowMethod`, `ActivityInterface`, `ActivityMethod`, `WorkflowClient` (package `io.temporal.*`) |
 | Probe | `agent-runtime/.../probe/OssApiProbe.java#temporalGetVersionShape()` |
-| Glue we own | `agent-runtime/temporal/RunWorkflow`, `RunWorkflowImpl`, `LlmCallActivity`, `ToolCallActivity` |
+| Planned glue (W2) | `RunWorkflow`, `RunWorkflowImpl`, `LlmCallActivity`, `ToolCallActivity` (implementation paths not yet created; scheduled for W2) |
 | Risks | Workflow determinism lint required; `getVersion` markers must be retired >= 30 days after rollout |
 | Upgrade trigger | Minor every 90 days; major every 12 months |
 
@@ -68,7 +68,7 @@ Evidence: `docs/delivery/2026-05-10-ca9bbba-mvn-resolve.log`.
 | Verified-at-sha | cd13612 |
 | APIs cited | `McpClient`, `McpSyncClient`, `McpAsyncClient` (package `io.modelcontextprotocol.client`); `McpSchema` (package `io.modelcontextprotocol.spec`) |
 | Probe | `agent-runtime/.../probe/OssApiProbe.java` |
-| Glue we own | `agent-runtime/tool/McpToolRegistry` |
+| Planned glue (W2) | `McpToolRegistry` (implementation path not yet created; scheduled for W2) |
 | Risks | MCP spec continues evolving; 1.0.0 is first stable release; server transports (SSE, streamable-HTTP) are part of the API |
 | Upgrade trigger | Patch as available; minor when a needed MCP server feature requires it |
 
@@ -211,7 +211,13 @@ full analysis.
 - `ascend.springai.runtime.orchestration.spi.Checkpointer` — dev-posture: `InMemoryCheckpointer`; W2: Postgres-backed.
 - `ascend.springai.runtime.memory.spi.GraphMemoryRepository` — sidecar: Graphiti (W1 reference example, ADR-0034). No production impl at W0.
 - `ascend.springai.runtime.resilience.ResilienceContract` — W0: Resilience4j impl.
-- `ascend.springai.runtime.probe.OssApiProbe` — W0: classpath shape probe.
+- `ascend.springai.runtime.orchestration.spi.Orchestrator` — W0: `SyncOrchestrator` reference impl.
+- `ascend.springai.runtime.orchestration.spi.GraphExecutor` — W0: `SequentialGraphExecutor` reference impl.
+- `ascend.springai.runtime.orchestration.spi.AgentLoopExecutor` — W0: `IterativeAgentLoopExecutor` reference impl.
+
+### Active probes (W0 shipped)
+
+- `ascend.springai.runtime.probe.OssApiProbe` — W0: classpath shape probe; verifies Spring AI + Temporal + MCP + Tika on classpath.
 
 Seven SPIs (long-term memory, tool provider, layout parser, document source connector, policy evaluator, idempotency repository, artifact repository) were removed in the 2026-05-12 Occam pass. See `architecture-status.yaml` row `sdk_spi_starters`. Do not reference these names in active documentation.
 

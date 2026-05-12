@@ -2,7 +2,7 @@
 
 **Status**: v1 -- created 2026-05-08 in response to security review sec-P0-9
 **Owner**: Platform team (GOV) + Customer infrastructure team
-**Companion**: [`security-control-matrix.md`](cross-cutting/security-control-matrix.md) sec-10
+**Companion**: `security-control-matrix.md` sec-10 (planned; not yet created)
 
 This profile defines the **deployment-time security requirements** that the north-south gateway must implement. spring-ai-ascend is gateway-agnostic by design (Higress recommended, but customers may substitute), so the security guarantee is enforced at deployment via this profile.
 

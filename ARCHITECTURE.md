@@ -1,6 +1,6 @@
 # spring-ai-ascend Platform — Architecture
 
-> Last updated: 2026-05-13 (post-seventh follow-up — §4 #37-#38, ADR-0040-0041, Gate Rules 15-18, corpus truth refresh, HTTP contract reconciliation, SPI catalog split).
+> Last updated: 2026-05-13 (post-seventh second-pass — §4 #39-#41, ADR-0042-0044, Gate Rules 19-23, widen Rule 17/18, peripheral drift prevention, SPI catalog precision, memory metadata normalization).
 
 ## 1. System boundary
 
@@ -387,7 +387,7 @@ only `java.*` (enforced by `OrchestrationSpiArchTest`, `MemorySpiArchTest`).
     M6 Retrieved Context (ephemeral RAG results, TTL = turn lifetime).
     All persistent memory entries carry a common `MemoryMetadata` schema:
     `{tenantId, runId?, sessionId?, source, ontologyTag, confidence, retentionExpiry,
-    embeddingModel?, redactionState, visibilityScope}`.
+    embeddingModelVersion?, redactionState, visibilityScope}`.
     W1 reference sidecar: Graphiti (graph relationship memory, M4). mem0 and Cognee are not
     selected. Code-level implementation deferred to W2. See ADR-0034, `memory_knowledge_taxonomy`.
 
@@ -448,6 +448,26 @@ only `java.*` (enforced by `OrchestrationSpiArchTest`, `MemorySpiArchTest`).
     files lives exclusively in the single wave authority (§4 #34). ADR references are repointed to
     the archived copies. The companion systems-engineering plan is archived alongside its peers.
     Gate Rule 15 enforces the deleted-path freeze. See ADR-0041, `active_corpus_truth_sweep`.
+
+39. **Test-evidence enforcement for shipped capabilities.** Every `shipped: true` row in
+    `docs/governance/architecture-status.yaml` MUST have a non-empty `tests:` list pointing
+    to a real test class or test script. Gate Rule 19 (`shipped_row_tests_evidence`) fails any
+    `shipped: true` row with `tests: []` or absent `tests:`. See ADR-0042,
+    `shipped_row_tests_evidence`.
+
+40. **Peripheral entry-point drift prevention.** The ACTIVE_NORMATIVE_DOCS corpus is the
+    canonical domain for contract-truth claims. Every peripheral entry-point in that corpus
+    (module POM descriptions, module READMEs, BoM implementation-path cells, contract-catalog
+    tables) must agree with the central truth established by the architecture, ADR, and Java
+    source layers. Gate Rules 18 (widened), 20, 21, 22, and 23 enforce this at commit time.
+    See ADR-0043, `active_normative_doc_catalog`.
+
+41. **SPI catalog precision matches Java source.** The `contract-catalog.md` SPI table MUST
+    match each SPI's actual Java signature at W0: `RunContext` is classified as `interface` (not
+    `record`); scope invariants are per-SPI (tenant-scoped, run-scoped, or operation-scoped);
+    `embeddingModelVersion` is the canonical field name per ADR-0034. Gate Rule 17 is extended
+    to verify `RunContext` is labeled "interface" in the catalog. See ADR-0044,
+    `spi_contract_precision_and_memory_metadata_reconciliation`.
 
 ---
 

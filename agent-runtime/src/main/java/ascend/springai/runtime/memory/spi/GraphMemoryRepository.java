@@ -24,5 +24,9 @@ public interface GraphMemoryRepository {
 
     record GraphEdge(String tenantId, String subject, String relation, String object) {}
 
+    /**
+     * Pre-W2 minimal graph-edge metadata subset. Full {@code MemoryMetadata} (including
+     * {@code embeddingModelVersion}) lands with the W2 memory implementation per ADR-0034.
+     */
     record GraphMetadata(String tenantId, String sessionId, String runId, java.time.Instant createdAt) {}
 }

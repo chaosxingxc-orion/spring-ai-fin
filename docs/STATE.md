@@ -107,6 +107,19 @@
 
 ---
 
+## Designed — post-seventh second-pass response (2026-05-13)
+
+*8 clusters of peripheral-drift findings. META pattern: central docs cleaned; peripheral entry-points left pointing to deleted/non-existent contracts. §4 #39–#41 + ADR-0042–0044 + Gate Rules 19–23 + widen Rules 17/18. See `docs/reviews/2026-05-13-post-seventh-l0-readiness-second-pass-response.en.md`.*
+
+| capability | ADR | wave | claim |
+|---|---|---|---|
+| shipped_row_tests_evidence | ADR-0042 | W0 (gate) | Gate Rule 19: every shipped: true row must have non-empty tests:; architecture_sync_gate.tests populated |
+| active_normative_doc_catalog | ADR-0043 | W0 (gate) | ACTIVE_NORMATIVE_DOCS + HISTORICAL_EXCLUSIONS canonical sets defined; 8 peripheral violations fixed; Gate Rules 18 (widened), 20, 21, 22, 23 installed |
+| spi_contract_precision | ADR-0044 | W0 (doc) | RunContext classified as interface; per-SPI scope table added; ResilienceContract W0 operation-scoped documented; Gate Rule 17 extended |
+| memory_metadata_normalization | ADR-0044 | W0 (doc) | embeddingModelVersion canonical across ARCHITECTURE.md + status.yaml; GraphMetadata documented as pre-W2 minimal |
+
+---
+
 ## Shipped + Designed — sixth+seventh reviewer combined response (2026-05-13)
 
 *8 clusters from combined review surface. ~50 hidden defects surfaced beyond 12 reviewer-named findings. §4 #29–#36 + ADR-0032–0039 + Gate Rules 12–14 + AppPostureGate shipped. See `docs/reviews/2026-05-13-sixth-reviewer-response.en.md` and `docs/reviews/2026-05-13-seventh-reviewer-response.en.md`.*

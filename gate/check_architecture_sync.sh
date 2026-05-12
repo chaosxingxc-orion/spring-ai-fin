@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# spring-ai-ascend architecture-sync gate -- post-seventh follow-up refresh (18 rules).
+# spring-ai-ascend architecture-sync gate -- post-seventh second-pass (23 rules).
 # Exits 0 if all rules pass, 1 if any fail.
 # Each rule prints PASS: <name> or FAIL: <name> -- <reason>.
 # Prints GATE: PASS or GATE: FAIL at the end.
@@ -22,7 +22,12 @@
 #  15.  no_active_refs_deleted_wave_plan_paths        -- active .md files must not reference docs/plans/engineering-plan-W0-W4.md or roadmap-W0-W4.md
 #  16.  http_contract_w1_tenant_and_cancel_consistency -- W1 HTTP contract: no replace-X-Tenant-Id wording, no CREATED initial status, no DELETE cancel route
 #  17.  contract_catalog_spi_table_matches_source     -- SPI sub-table must list 7 known SPIs; OssApiProbe must not appear before Probes sub-table
-#  18.  deleted_spi_starter_names_outside_catalog     -- MANIFEST.md, oss-bill-of-materials.md, README.md must not reference deleted SPI/starter names
+#  18.  deleted_spi_starter_names_outside_catalog     -- ACTIVE_NORMATIVE_DOCS corpus must not reference deleted SPI/starter names (widened, ADR-0043)
+#  19.  shipped_row_tests_evidence                    -- every shipped: true row in architecture-status.yaml must have non-empty tests: (ADR-0042)
+#  20.  module_metadata_truth                         -- module README.md must not reference Java class names absent from the repo (ADR-0043)
+#  21.  bom_glue_paths_exist                          -- BoM must not contain known ghost implementation paths unless they exist (ADR-0043)
+#  22.  lowercase_metrics_in_contract_docs            -- docs/contracts/*.md must not contain SPRINGAI_ASCEND_<lowercase> patterns (ADR-0043)
+#  23.  active_doc_internal_links_resolve             -- markdown links ](path) in active docs must resolve to existing files (ADR-0043)
 
 set -uo pipefail
 export LC_ALL=C
@@ -456,6 +461,24 @@ if [[ -f "$_catalog17" ]]; then
       fi
     done < "$_catalog17"
   fi
+  # ADR-0044 extension: RunContext row in data-carriers sub-table must contain 'interface'
+  if [[ $_r17_fail -eq 0 ]]; then
+    _in_data_carriers=0
+    _run_ctx_has_interface=0
+    _run_ctx_found=0
+    while IFS= read -r _ln17x; do
+      if echo "$_ln17x" | grep -qE '\*\*Data carriers'; then _in_data_carriers=1; fi
+      if [[ $_in_data_carriers -eq 1 ]] && echo "$_ln17x" | grep -qF 'RunContext'; then
+        _run_ctx_found=1
+        if echo "$_ln17x" | grep -qF 'interface'; then _run_ctx_has_interface=1; fi
+        break
+      fi
+    done < "$_catalog17"
+    if [[ $_run_ctx_found -eq 1 && $_run_ctx_has_interface -eq 0 ]]; then
+      fail_rule "contract_catalog_spi_table_matches_source" "$_catalog17 RunContext row in data-carriers sub-table does not contain 'interface'. Per ADR-0044 Gate Rule 17 extension RunContext must be classified as interface."
+      _r17_fail=1
+    fi
+  fi
 else
   fail_rule "contract_catalog_spi_table_matches_source" "$_catalog17 not found."
   _r17_fail=1
@@ -468,7 +491,6 @@ if [[ $_r17_fail -eq 0 ]]; then pass_rule "contract_catalog_spi_table_matches_so
 # third_party/MANIFEST.md, docs/cross-cutting/oss-bill-of-materials.md, README.md.
 # ---------------------------------------------------------------------------
 _r18_fail=0
-_r18_targets=('third_party/MANIFEST.md' 'docs/cross-cutting/oss-bill-of-materials.md' 'README.md')
 _deleted_names18=(
   'LongTermMemoryRepository' 'ToolProvider' 'LayoutParser' 'DocumentSourceConnector'
   'PolicyEvaluator' 'IdempotencyRepository' 'ArtifactRepository'
@@ -478,17 +500,130 @@ _deleted_names18=(
   'spring-ai-ascend-mem0-starter' 'spring-ai-ascend-docling-starter'
   'spring-ai-ascend-langchain4j-profile'
 )
-for _t18 in "${_r18_targets[@]}"; do
-  if [[ -f "$_t18" ]]; then
-    for _dn18 in "${_deleted_names18[@]}"; do
-      if grep -qF "$_dn18" "$_t18" 2>/dev/null; then
-        fail_rule "deleted_spi_starter_names_outside_catalog" "$_t18 references deleted name '$_dn18'. Per ADR-0041 Gate Rule 18 this is a contract-surface truth violation."
-        _r18_fail=1
-      fi
-    done
-  fi
-done
+# Widened to full ACTIVE_NORMATIVE_DOCS corpus (ADR-0043)
+while IFS= read -r _t18; do
+  [[ -z "$_t18" ]] && continue
+  for _dn18 in "${_deleted_names18[@]}"; do
+    if grep -qF "$_dn18" "$_t18" 2>/dev/null; then
+      fail_rule "deleted_spi_starter_names_outside_catalog" "$_t18 references deleted name '$_dn18'. Per ADR-0043 Gate Rule 18 (widened) this is a contract-surface truth violation."
+      _r18_fail=1
+    fi
+  done
+done < <(find . -name '*.md' -o -name '*.yaml' | grep -v '/docs/archive/' | grep -v '/docs/reviews/' | \
+  grep -v '/docs/adr/' | grep -v '/docs/delivery/' | grep -v '/docs/v6-rationale/' | \
+  grep -v '/docs/plans/' | grep -v '/third_party/' | grep -v '/target/' | grep -v '/.git/' | sort 2>/dev/null || true)
 if [[ $_r18_fail -eq 0 ]]; then pass_rule "deleted_spi_starter_names_outside_catalog"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 19 — shipped_row_tests_evidence
+# ADR-0042: every shipped: true row in architecture-status.yaml must have a
+# non-empty tests: list. tests: [] on a shipped row is a gate failure.
+# ---------------------------------------------------------------------------
+_r19_fail=0
+_current_key19=''
+_in_shipped19=0
+while IFS= read -r _line19 || [[ -n "$_line19" ]]; do
+  if echo "$_line19" | grep -qE '^  [a-zA-Z][a-zA-Z_]+:'; then
+    _current_key19=$(echo "$_line19" | sed 's/^  \([a-zA-Z][a-zA-Z_]*\):.*/\1/')
+    _in_shipped19=0
+  fi
+  if echo "$_line19" | grep -qE '^\s+shipped:\s+true'; then _in_shipped19=1; fi
+  if [[ $_in_shipped19 -eq 1 ]] && echo "$_line19" | grep -qE '^\s+tests:\s*\[\]'; then
+    fail_rule "shipped_row_tests_evidence" "$_status_path capability '$_current_key19' has shipped: true but tests: []. Per ADR-0042 Gate Rule 19 all shipped rows must have non-empty test evidence."
+    _r19_fail=1
+  fi
+done < "$_status_path"
+if [[ $_r19_fail -eq 0 ]]; then pass_rule "shipped_row_tests_evidence"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 20 — module_metadata_truth
+# ADR-0043: module README.md files must not reference Java class names that
+# do not exist in the repository.
+# ---------------------------------------------------------------------------
+_r20_fail=0
+_ghost_classes20=('GraphitiRestGraphMemoryRepository' 'CogneeGraphMemoryRepository')
+while IFS= read -r _rm20; do
+  [[ -z "$_rm20" ]] && continue
+  for _gc20 in "${_ghost_classes20[@]}"; do
+    if grep -qF "$_gc20" "$_rm20" 2>/dev/null; then
+      if ! find . -name "${_gc20}.java" -not -path './target/*' -not -path './.git/*' | grep -q .; then
+        fail_rule "module_metadata_truth" "$_rm20 references class '$_gc20' but no .java file exists. Per ADR-0043 Gate Rule 20 module READMEs must not reference non-existent Java classes."
+        _r20_fail=1
+      fi
+    fi
+  done
+done < <(find . -name 'README.md' ! -path './docs/*' ! -path './third_party/*' ! -path './target/*' 2>/dev/null | sort || true)
+if [[ $_r20_fail -eq 0 ]]; then pass_rule "module_metadata_truth"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 21 — bom_glue_paths_exist
+# ADR-0043: docs/cross-cutting/oss-bill-of-materials.md must not contain the
+# known ghost implementation paths unless the path exists on disk.
+# ---------------------------------------------------------------------------
+_r21_fail=0
+_bom21='docs/cross-cutting/oss-bill-of-materials.md'
+_ghost_paths21=(
+  'agent-runtime/llm/ChatClientFactory' 'agent-runtime/llm/LlmRouter'
+  'agent-runtime/memory/PgVectorAdapter' 'agent-runtime/temporal/RunWorkflow'
+  'agent-runtime/tool/McpToolRegistry'
+)
+if [[ -f "$_bom21" ]]; then
+  for _gp21 in "${_ghost_paths21[@]}"; do
+    if grep -qF "$_gp21" "$_bom21" 2>/dev/null; then
+      if [[ ! -e "$_gp21" ]]; then
+        fail_rule "bom_glue_paths_exist" "$_bom21 references path '$_gp21' which does not exist on disk. Per ADR-0043 Gate Rule 21 BoM glue paths must exist or be removed."
+        _r21_fail=1
+      fi
+    fi
+  done
+fi
+if [[ $_r21_fail -eq 0 ]]; then pass_rule "bom_glue_paths_exist"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 22 — lowercase_metrics_in_contract_docs
+# ADR-0043: docs/contracts/*.md must not contain SPRINGAI_ASCEND_<lowercase>
+# metric name patterns.
+# ---------------------------------------------------------------------------
+_r22_fail=0
+while IFS= read -r _cd22; do
+  [[ -z "$_cd22" ]] && continue
+  if grep -qE 'SPRINGAI_ASCEND_[a-z]' "$_cd22" 2>/dev/null; then
+    fail_rule "lowercase_metrics_in_contract_docs" "$_cd22 contains uppercase metric namespace 'SPRINGAI_ASCEND_<lowercase>'. Per ADR-0043 Gate Rule 22 metric names must use lowercase springai_ascend_ prefix."
+    _r22_fail=1
+  fi
+done < <(find docs/contracts -name '*.md' 2>/dev/null | sort || true)
+if [[ $_r22_fail -eq 0 ]]; then pass_rule "lowercase_metrics_in_contract_docs"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 23 — active_doc_internal_links_resolve
+# ADR-0043: markdown links ](relative-path) in active normative docs must
+# resolve to files that exist on disk. Excludes http://, https://, anchors.
+# ---------------------------------------------------------------------------
+_r23_fail=0
+while IFS= read -r _af23; do
+  [[ -z "$_af23" ]] && continue
+  _dir23="$(dirname "$_af23")"
+  while IFS= read -r _link23; do
+    [[ -z "$_link23" ]] && continue
+    # Strip anchor fragment
+    _path23="${_link23%%#*}"
+    [[ -z "$_path23" ]] && continue
+    # Skip external and anchor-only links
+    case "$_link23" in http://*|https://*|mailto:*|'#'*) continue ;; esac
+    _resolved23="$(cd "$_dir23" 2>/dev/null && realpath -m "$_path23" 2>/dev/null || echo '')"
+    if [[ -n "$_resolved23" && ! -e "$_resolved23" ]]; then
+      fail_rule "active_doc_internal_links_resolve" "$_af23 has broken link to '$_link23' (resolved: '$_resolved23'). Per ADR-0043 Gate Rule 23 all internal links in active docs must resolve."
+      _r23_fail=1
+    fi
+  done < <(grep -oE '\]\([^)]+\)' "$_af23" 2>/dev/null | sed 's/^](//;s/)$//' || true)
+done < <(find . -name '*.md' \
+  ! -path './docs/archive/*' ! -path './docs/reviews/*' \
+  ! -path './docs/adr/*' ! -path './docs/delivery/*' \
+  ! -path './docs/v6-rationale/*' ! -path './docs/plans/*' \
+  ! -path './third_party/*' ! -path './target/*' \
+  ! -path './.git/*' \
+  -type f 2>/dev/null | sort || true)
+if [[ $_r23_fail -eq 0 ]]; then pass_rule "active_doc_internal_links_resolve"; fi
 
 # ---------------------------------------------------------------------------
 # Summary

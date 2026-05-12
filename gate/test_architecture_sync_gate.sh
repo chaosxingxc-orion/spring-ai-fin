@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # spring-ai-ascend architecture-sync gate self-test (Occam's Razor cut C24).
-# Covers each of the 6 rules with a positive test and a negative test.
-# Total: 12 tests (2 per rule x 6 rules).
+# PARTIAL COVERAGE: covers Rules 1-6 only (12 tests; 2 per rule x 6 rules).
+# Full gate verification requires running: pwsh gate/check_architecture_sync.ps1
+# The full gate has 23 active rules; this self-test covers only the first 6.
 # Prints: Tests passed: N/12
 # Exits 0 if all 12 pass, 1 otherwise.
 

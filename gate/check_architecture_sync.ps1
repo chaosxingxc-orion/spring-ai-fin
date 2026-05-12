@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-  spring-ai-ascend architecture-sync gate (post-seventh follow-up refresh, 18 rules).
+  spring-ai-ascend architecture-sync gate (post-seventh second-pass, 23 rules).
 
 .DESCRIPTION
   Exits 0 if all rules pass, 1 if any fail.
@@ -26,7 +26,12 @@
    15. no_active_refs_deleted_wave_plan_paths  -- active .md files must not reference docs/plans/engineering-plan-W0-W4.md or roadmap-W0-W4.md
    16. http_contract_w1_tenant_and_cancel_consistency  -- W1 HTTP contract: no replace-X-Tenant-Id wording, no CREATED initial status, no DELETE cancel route
    17. contract_catalog_spi_table_matches_source  -- SPI sub-table must list 7 known SPIs; OssApiProbe must not appear before Probes sub-table
-   18. deleted_spi_starter_names_outside_catalog  -- MANIFEST.md, oss-bill-of-materials.md, README.md must not reference deleted SPI/starter names
+   18. deleted_spi_starter_names_outside_catalog  -- ACTIVE_NORMATIVE_DOCS corpus must not reference deleted SPI/starter names (widened from 3 files, ADR-0043)
+   19. shipped_row_tests_evidence                 -- every shipped: true row in architecture-status.yaml must have non-empty tests: (ADR-0042)
+   20. module_metadata_truth                      -- module README.md must not reference Java class names absent from the repo (ADR-0043)
+   21. bom_glue_paths_exist                       -- BoM must not contain known ghost implementation paths unless they exist on disk (ADR-0043)
+   22. lowercase_metrics_in_contract_docs         -- docs/contracts/*.md must not contain SPRINGAI_ASCEND_<lowercase> metric patterns (ADR-0043)
+   23. active_doc_internal_links_resolve          -- markdown links ](path) in active docs must resolve to existing files (ADR-0043)
 
 .PARAMETER LocalOnly
   Not used by this script (kept for invocation parity with old version).
@@ -536,6 +541,24 @@ if (Test-Path $catalogPath17) {
       }
     }
   }
+  # ADR-0044 extension: RunContext row in data-carriers sub-table must contain 'interface'
+  if (-not $r17Fail) {
+    $inDataCarriers17 = $false
+    $runContextFound17 = $false
+    $runContextHasInterface17 = $false
+    foreach ($ln17x in (Get-Content -LiteralPath $catalogPath17)) {
+      if ($ln17x -match '\*\*Data carriers') { $inDataCarriers17 = $true }
+      if ($inDataCarriers17 -and $ln17x -match 'RunContext') {
+        $runContextFound17 = $true
+        if ($ln17x -match 'interface') { $runContextHasInterface17 = $true }
+        break
+      }
+    }
+    if ($runContextFound17 -and -not $runContextHasInterface17) {
+      Fail-Rule 'contract_catalog_spi_table_matches_source' "$catalogPath17 RunContext row in data-carriers sub-table does not contain 'interface'. Per ADR-0044 Gate Rule 17 extension RunContext must be classified as interface (not record)."
+      $r17Fail = $true
+    }
+  }
 } else {
   Fail-Rule 'contract_catalog_spi_table_matches_source' "$catalogPath17 not found."
   $r17Fail = $true
@@ -550,7 +573,6 @@ if (-not $r17Fail) { Pass-Rule 'contract_catalog_spi_table_matches_source' }
 # the active normative corpus.
 # ---------------------------------------------------------------------------
 $r18Fail = $false
-$r18Targets = @('third_party/MANIFEST.md', 'docs/cross-cutting/oss-bill-of-materials.md', 'README.md')
 $deletedNames18 = @(
   'LongTermMemoryRepository', 'ToolProvider', 'LayoutParser', 'DocumentSourceConnector',
   'PolicyEvaluator', 'IdempotencyRepository', 'ArtifactRepository',
@@ -560,18 +582,143 @@ $deletedNames18 = @(
   'spring-ai-ascend-mem0-starter', 'spring-ai-ascend-docling-starter',
   'spring-ai-ascend-langchain4j-profile'
 )
-foreach ($target18 in $r18Targets) {
-  if (Test-Path -LiteralPath $target18) {
-    $tc18 = Get-Content -Raw -LiteralPath $target18 -ErrorAction SilentlyContinue
-    foreach ($dn18 in $deletedNames18) {
-      if ($tc18 -match [regex]::Escape($dn18)) {
-        Fail-Rule 'deleted_spi_starter_names_outside_catalog' "$target18 references deleted name '$dn18'. Per ADR-0041 Gate Rule 18 this is a contract-surface truth violation."
-        $r18Fail = $true
-      }
+# Widened to full ACTIVE_NORMATIVE_DOCS corpus (ADR-0043)
+$r18ActiveFiles = Get-ChildItem -Path $repoRoot -Recurse -Include '*.md','*.yaml' -File -ErrorAction SilentlyContinue |
+  Where-Object {
+    $p = $_.FullName.Replace('\', '/')
+    $p -notmatch '/docs/archive/' -and $p -notmatch '/docs/reviews/' -and
+    $p -notmatch '/docs/adr/' -and $p -notmatch '/docs/delivery/' -and
+    $p -notmatch '/docs/v6-rationale/' -and $p -notmatch '/docs/plans/' -and
+    $p -notmatch '/third_party/' -and $p -notmatch '/target/' -and
+    $p -notmatch '/\.git/'
+  }
+foreach ($target18 in $r18ActiveFiles) {
+  $tc18 = Get-Content -Raw -LiteralPath $target18.FullName -ErrorAction SilentlyContinue
+  foreach ($dn18 in $deletedNames18) {
+    if ($tc18 -match [regex]::Escape($dn18)) {
+      Fail-Rule 'deleted_spi_starter_names_outside_catalog' "$($target18.FullName) references deleted name '$dn18'. Per ADR-0043 Gate Rule 18 (widened) this is a contract-surface truth violation."
+      $r18Fail = $true
     }
   }
 }
 if (-not $r18Fail) { Pass-Rule 'deleted_spi_starter_names_outside_catalog' }
+
+# ---------------------------------------------------------------------------
+# Rule 19 — shipped_row_tests_evidence
+# ADR-0042: every shipped: true row in architecture-status.yaml must have a
+# non-empty tests: list. tests: [] on a shipped row is a gate failure.
+# ---------------------------------------------------------------------------
+$r19Fail = $false
+$yamlLines19 = Get-Content -LiteralPath $statusPath -ErrorAction SilentlyContinue
+$currentKey19 = ''
+$inShippedBlock19 = $false
+foreach ($line19 in $yamlLines19) {
+  if ($line19 -match '^\s{2}(\w[\w_]+):') { $currentKey19 = $Matches[1]; $inShippedBlock19 = $false }
+  if ($line19 -match '^\s+shipped:\s+true') { $inShippedBlock19 = $true }
+  if ($inShippedBlock19 -and $line19 -match '^\s+tests:\s*\[\]') {
+    Fail-Rule 'shipped_row_tests_evidence' "$statusPath capability '$currentKey19' has shipped: true but tests: []. Per ADR-0042 Gate Rule 19 all shipped rows must have non-empty test evidence."
+    $r19Fail = $true
+  }
+}
+if (-not $r19Fail) { Pass-Rule 'shipped_row_tests_evidence' }
+
+# ---------------------------------------------------------------------------
+# Rule 20 — module_metadata_truth
+# ADR-0043: module README.md files must not reference Java class names that
+# do not exist in the repository.
+# ---------------------------------------------------------------------------
+$r20Fail = $false
+$ghostClasses20 = @('GraphitiRestGraphMemoryRepository', 'CogneeGraphMemoryRepository')
+$moduleReadmes20 = Get-ChildItem -Path $repoRoot -Recurse -Filter 'README.md' -File -ErrorAction SilentlyContinue |
+  Where-Object { $p = $_.FullName.Replace('\','/'); $p -notmatch '/docs/' -and $p -notmatch '/third_party/' -and $p -notmatch '/target/' }
+foreach ($rmFile in $moduleReadmes20) {
+  $rmContent = Get-Content -Raw -LiteralPath $rmFile.FullName -ErrorAction SilentlyContinue
+  foreach ($ghostClass in $ghostClasses20) {
+    if ($rmContent -match [regex]::Escape($ghostClass)) {
+      $classFile = Get-ChildItem -Path $repoRoot -Recurse -Filter "$ghostClass.java" -ErrorAction SilentlyContinue | Select-Object -First 1
+      if (-not $classFile) {
+        Fail-Rule 'module_metadata_truth' "$($rmFile.FullName) references class '$ghostClass' but no .java file exists. Per ADR-0043 Gate Rule 20 module READMEs must not reference non-existent Java classes."
+        $r20Fail = $true
+      }
+    }
+  }
+}
+if (-not $r20Fail) { Pass-Rule 'module_metadata_truth' }
+
+# ---------------------------------------------------------------------------
+# Rule 21 — bom_glue_paths_exist
+# ADR-0043: docs/cross-cutting/oss-bill-of-materials.md must not contain the
+# known ghost implementation paths unless the path exists on disk.
+# ---------------------------------------------------------------------------
+$r21Fail = $false
+$bomPath21 = 'docs/cross-cutting/oss-bill-of-materials.md'
+$ghostPaths21 = @(
+  'agent-runtime/llm/ChatClientFactory', 'agent-runtime/llm/LlmRouter',
+  'agent-runtime/memory/PgVectorAdapter', 'agent-runtime/temporal/RunWorkflow',
+  'agent-runtime/tool/McpToolRegistry'
+)
+if (Test-Path $bomPath21) {
+  $bomContent21 = Get-Content -Raw -LiteralPath $bomPath21
+  foreach ($gp21 in $ghostPaths21) {
+    if ($bomContent21 -match [regex]::Escape($gp21)) {
+      $gpFull21 = Join-Path $repoRoot ($gp21.Replace('/', [System.IO.Path]::DirectorySeparatorChar))
+      if (-not (Test-Path $gpFull21)) {
+        Fail-Rule 'bom_glue_paths_exist' "$bomPath21 references path '$gp21' which does not exist on disk. Per ADR-0043 Gate Rule 21 BoM glue paths must exist or be removed."
+        $r21Fail = $true
+      }
+    }
+  }
+}
+if (-not $r21Fail) { Pass-Rule 'bom_glue_paths_exist' }
+
+# ---------------------------------------------------------------------------
+# Rule 22 — lowercase_metrics_in_contract_docs
+# ADR-0043: docs/contracts/*.md must not contain SPRINGAI_ASCEND_<lowercase>
+# metric name patterns. Env-var names (all-uppercase suffix) remain acceptable.
+# ---------------------------------------------------------------------------
+$r22Fail = $false
+$contractDocs22 = Get-ChildItem -Path 'docs/contracts' -Filter '*.md' -File -ErrorAction SilentlyContinue
+foreach ($cd22 in $contractDocs22) {
+  $content22 = Get-Content -Raw -LiteralPath $cd22.FullName -ErrorAction SilentlyContinue
+  if ($content22 -match 'SPRINGAI_ASCEND_[a-z]') {
+    Fail-Rule 'lowercase_metrics_in_contract_docs' "$($cd22.FullName) contains uppercase metric namespace 'SPRINGAI_ASCEND_<lowercase>'. Per ADR-0043 Gate Rule 22 metric names must use lowercase springai_ascend_ prefix."
+    $r22Fail = $true
+  }
+}
+if (-not $r22Fail) { Pass-Rule 'lowercase_metrics_in_contract_docs' }
+
+# ---------------------------------------------------------------------------
+# Rule 23 — active_doc_internal_links_resolve
+# ADR-0043: markdown links ](relative-path) in active normative docs must
+# resolve to files that exist on disk. Excludes http://, https://, anchors.
+# ---------------------------------------------------------------------------
+$r23Fail = $false
+$activeFiles23 = Get-ChildItem -Path $repoRoot -Recurse -Filter '*.md' -File -ErrorAction SilentlyContinue |
+  Where-Object {
+    $p = $_.FullName.Replace('\', '/')
+    $p -notmatch '/docs/archive/' -and $p -notmatch '/docs/reviews/' -and
+    $p -notmatch '/docs/adr/' -and $p -notmatch '/docs/delivery/' -and
+    $p -notmatch '/docs/v6-rationale/' -and $p -notmatch '/docs/plans/' -and
+    $p -notmatch '/third_party/' -and $p -notmatch '/target/' -and
+    $p -notmatch '/\.git/'
+  }
+foreach ($af23 in $activeFiles23) {
+  $content23 = Get-Content -Raw -LiteralPath $af23.FullName -ErrorAction SilentlyContinue
+  $linkMatches23 = [regex]::Matches($content23, '\]\(([^)]+)\)')
+  foreach ($lm23 in $linkMatches23) {
+    $target23 = $lm23.Groups[1].Value.Trim()
+    if ($target23 -match '^https?://' -or $target23 -match '^#' -or $target23 -match '^mailto:') { continue }
+    $targetPath23 = ($target23 -replace '#[^#]*$', '').Trim()
+    if ($targetPath23 -eq '') { continue }
+    $fileDir23 = Split-Path -Parent $af23.FullName
+    $resolved23 = [System.IO.Path]::GetFullPath((Join-Path $fileDir23 $targetPath23))
+    if (-not (Test-Path -LiteralPath $resolved23)) {
+      Fail-Rule 'active_doc_internal_links_resolve' "$($af23.FullName) has broken link to '$target23' (resolved: '$resolved23'). Per ADR-0043 Gate Rule 23 all internal links in active docs must resolve."
+      $r23Fail = $true
+    }
+  }
+}
+if (-not $r23Fail) { Pass-Rule 'active_doc_internal_links_resolve' }
 
 # ---------------------------------------------------------------------------
 # Summary

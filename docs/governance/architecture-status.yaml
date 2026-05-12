@@ -64,10 +64,11 @@ capabilities:
     implementation:
       - gate/check_architecture_sync.ps1
       - gate/check_architecture_sync.sh
-    tests: []
+    tests:
+      - gate/test_architecture_sync_gate.sh
     latest_semantic_pass_sha: 60176f1
     latest_delivery_file: docs/delivery/2026-05-10-68c07f1.md
-    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml. Architecture baseline: 38 §4 constraints (#1–#38); 41 ADRs (0001–0041); 18 active gate rules; 11 active engineering rules (1–6, 9–10, 20–21, 25); 15 deferred rules (7, 8, 11, 13–19, 22–24, 26–27)."
+    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml. Architecture baseline: 41 §4 constraints (#1–#41); 44 ADRs (0001–0044); 23 active gate rules; 11 active engineering rules (1–6, 9–10, 20–21, 25); 15 deferred rules (7, 8, 11, 13–19, 22–24, 26–27)."
 
   spring_ai_ascend_dependencies_bom:
     status: implemented_unverified
@@ -819,7 +820,7 @@ capabilities:
     l0_decision: docs/adr/0034-memory-and-knowledge-taxonomy-at-l0.md
     implementation: null
     tests: []
-    allowed_claim: "Design only — 6 memory categories: M1 Short-Term Run Context, M2 Episodic Session Memory, M3 Semantic Long-Term, M4 Graph Relationship, M5 Knowledge Index, M6 Retrieved Context. Common MemoryMetadata schema with tenantId/runId/sessionId/source/ontologyTag/confidence/retentionExpiry/embeddingModel/redactionState/visibilityScope. Graphiti selected as W1 reference sidecar. mem0/Cognee not-selected. Implementation deferred to W2. ADR-0034."
+    allowed_claim: "Design only — 6 memory categories: M1 Short-Term Run Context, M2 Episodic Session Memory, M3 Semantic Long-Term, M4 Graph Relationship, M5 Knowledge Index, M6 Retrieved Context. Common MemoryMetadata schema with tenantId/runId/sessionId/source/ontologyTag/confidence/retentionExpiry/embeddingModelVersion/redactionState/visibilityScope. Graphiti selected as W1 reference sidecar. mem0/Cognee not-selected. Implementation deferred to W2. ADR-0034."
 
   contract_surface_truth_generalization:
     status: design_accepted
@@ -884,3 +885,33 @@ capabilities:
       - gate/check_architecture_sync.sh
     tests: []
     allowed_claim: "Active-corpus truth sweep: 11 ADR stale plan paths fixed to archived copy; agent-runtime/ARCHITECTURE.md + oss-bill-of-materials.md point to wave authority; architecture-systems-engineering-plan.md archived; Gate Rule 15 prevents recurrence (no active .md may reference deleted plan paths). §4 #38."
+
+  shipped_row_tests_evidence:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0042-test-evidence-enforcement-for-rule-25.md
+    implementation:
+      - gate/check_architecture_sync.ps1
+      - gate/check_architecture_sync.sh
+    tests: []
+    allowed_claim: "Gate Rule 19 enforces: every shipped: true row in architecture-status.yaml must have non-empty tests:. architecture_sync_gate.tests populated with gate/test_architecture_sync_gate.sh. §4 #39."
+
+  active_normative_doc_catalog:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0043-active-normative-doc-catalog-and-peripheral-drift-prevention.md
+    implementation:
+      - gate/check_architecture_sync.ps1
+      - gate/check_architecture_sync.sh
+    tests: []
+    allowed_claim: "ACTIVE_NORMATIVE_DOCS catalog defined; HISTORICAL_EXCLUSIONS defined; 8 peripheral entry-point violations reconciled; Gate Rules 18 (widened), 20, 21, 22, 23 prevent recurrence. §4 #40."
+
+  spi_contract_precision_and_memory_metadata_reconciliation:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0044-spi-contract-precision-and-memory-metadata-reconciliation.md
+    implementation:
+      - docs/contracts/contract-catalog.md
+      - agent-runtime/src/main/java/ascend/springai/runtime/memory/spi/GraphMemoryRepository.java
+    tests: []
+    allowed_claim: "RunContext classified as interface in contract-catalog.md; per-SPI scope table added; embeddingModelVersion canonical name normalized across ARCHITECTURE.md and architecture-status.yaml; GraphMetadata documented as pre-W2 minimal subset. Gate Rule 17 extended. §4 #41."

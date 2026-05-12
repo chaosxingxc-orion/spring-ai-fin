@@ -86,6 +86,11 @@ Get-ChildItem -Recurse -Filter *.md |
   Where-Object { $_.FullName -notmatch '\\docs\\archive\\|\\docs\\reviews\\|\\third_party\\|\\target\\|\\.git\\' }
 ```
 
+> **ADR-0043 addendum:** The canonical HISTORICAL_EXCLUSIONS list (which also includes
+> `docs/adr/`, `docs/delivery/`, and `docs/v6-rationale/`) is defined in ADR-0043.
+> The gate implementation in `check_architecture_sync.ps1` matches ADR-0043.
+> The five-path list above was the initial Rule 15 specification and has been superseded.
+
 ### Consequences
 
 **Positive:**

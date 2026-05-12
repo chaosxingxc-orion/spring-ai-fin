@@ -16,10 +16,9 @@
 
   <name>spring-ai-ascend graph memory adapter starter (optional)</name>
   <description>
-    Optional adapter: implements GraphMemoryRepository SPI via the
-    Graphiti REST API (https://github.com/getzep/graphiti; 25k+ stars; Apache-2.0).
-    Cycle-15 confirms Graphiti vs Cognee; this starter wires Graphiti by default.
-    Requires: ops/compose/sidecar-graphmemory.yml service running.
+    Optional adapter scaffold for the GraphMemoryRepository SPI.
+    No repository bean is contributed at W0. Consumers must provide their own
+    GraphMemoryRepository bean. Graphiti REST client integration is W1 per ADR-0034.
   </description>
 
   <dependencies>

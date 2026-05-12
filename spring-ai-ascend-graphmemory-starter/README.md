@@ -7,14 +7,17 @@ contributes nothing unless you provide your own `GraphMemoryRepository` bean.
 
 ## How to plug in your own implementation
 
+This starter is a W0 scaffold. No `GraphMemoryRepository` bean is registered by default.
+Provide your own implementation bean in your application configuration:
+
 ```java
 // In your @Configuration class:
 @Bean
-public GraphMemoryRepository graphMemoryRepository(GraphMemoryProperties props) {
-    // Connect to Graphiti (https://github.com/getzep/graphiti):
-    return new GraphitiRestGraphMemoryRepository(props.getBaseUrl(), props.getApiKey());
-
-    // Or Cognee, or a custom Postgres-backed implementation.
+public GraphMemoryRepository graphMemoryRepository() {
+    // Provide your own GraphMemoryRepository implementation.
+    // Graphiti REST client is the W1 reference integration (ADR-0034);
+    // no Graphiti adapter class ships at W0.
+    return myCustomGraphMemoryRepository;
 }
 ```
 

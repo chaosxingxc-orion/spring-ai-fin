@@ -51,6 +51,9 @@ options considered, decision, and consequences.
 | [0039](0039-payload-migration-adapter-strategy.md) | Payload migration adapter strategy: Object → Payload → CausalPayloadEnvelope + adapter wrapper | accepted |
 | [0040](0040-w1-http-contract-reconciliation.md) | W1 HTTP contract reconciliation: X-Tenant-Id + JWT cross-check, PENDING initial status, POST /cancel | accepted |
 | [0041](0041-active-corpus-truth-sweep.md) | Active-corpus truth sweep: archive stale plans, Gate Rule 15 deleted-plan-path freeze | accepted |
+| [0042](0042-test-evidence-enforcement-for-rule-25.md) | Test-evidence enforcement for Rule 25: Gate Rule 19 shipped_row_tests_evidence | accepted |
+| [0043](0043-active-normative-doc-catalog-and-peripheral-drift-prevention.md) | Active normative doc catalog and peripheral drift prevention: ACTIVE_NORMATIVE_DOCS + Gate Rules 20-23 | accepted |
+| [0044](0044-spi-contract-precision-and-memory-metadata-reconciliation.md) | SPI contract precision and memory metadata reconciliation: RunContext interface, per-SPI scope, embeddingModelVersion | accepted |
 
 ## Process
 

@@ -17,7 +17,7 @@ Stable W0 routes: `GET /v1/health`, `GET /actuator/health`, `GET /actuator/prome
 
 **Inclusion rule for SPI sub-table:** Java `interface` types that represent named public extension points in `agent-platform` or `agent-runtime`; not probes, not data carriers (records/sealed classes), not implementations.
 
-All SPI impls: thread-safe, no null returns, tenant-scoped. SPI packages import only `java.*` (ArchUnit `ApiCompatibilityTest`). japicmp binary-compat from W1.
+SPI impls: thread-safe, no null returns. SPIs that process tenant-owned runtime data MUST carry tenant scope (via explicit `tenantId` argument or `RunContext.tenantId()`). SPIs operating on tenant-agnostic configuration MAY be operation-scoped at W0 (e.g., `ResilienceContract` is operation-scoped at W0; ADR-0030 promotes to tenant-aware at W2). SPI packages import only `java.*` (ArchUnit `ApiCompatibilityTest`). japicmp binary-compat from W1.
 
 **Active SPI interfaces (W0, shipped) — 7 interfaces:**
 
@@ -31,11 +31,23 @@ All SPI impls: thread-safe, no null returns, tenant-scoped. SPI packages import 
 | `GraphExecutor` | `agent-runtime` | shipped — W0 reference impl (`SequentialGraphExecutor`) |
 | `AgentLoopExecutor` | `agent-runtime` | shipped — W0 reference impl (`IterativeAgentLoopExecutor`) |
 
+**Per-SPI tenant scope (canonical post-ADR-0044):**
+
+| SPI | W0 scope | Tenant carrier | Planned scope evolution |
+|---|---|---|---|
+| `RunRepository` | tenant-scoped | explicit `tenantId` arg on `findByTenant*` | unchanged |
+| `Checkpointer` | run-scoped | implicit via `runId` uniqueness | unchanged (ADR-0027) |
+| `GraphMemoryRepository` | tenant-scoped | explicit `tenantId` first arg (every method, Rule 11) | unchanged |
+| `ResilienceContract` | operation-scoped | no tenant param at W0 | tenant-aware `(tenantId, operationId)` at W2 (ADR-0030) |
+| `Orchestrator` | tenant-scoped | explicit `tenantId` arg in `run(runId, tenantId, …)` | unchanged |
+| `GraphExecutor` | tenant-scoped | via injected `RunContext.tenantId()` | unchanged |
+| `AgentLoopExecutor` | tenant-scoped | via injected `RunContext.tenantId()` | unchanged |
+
 **Data carriers (not SPIs; structural contracts):**
 
 | Type | Module | Notes |
 |---|---|---|
-| `RunContext` | `agent-runtime` | Per-run context record passed to SPIs |
+| `RunContext` | `agent-runtime` | Per-run context **interface** (context carrier); exposes `tenantId()`, `runId()`, etc. |
 | `ExecutorDefinition` | `agent-runtime` | Sealed: `GraphDefinition` \| `AgentLoopDefinition` |
 | `SuspendSignal` | `agent-runtime` | Checked-exception interrupt primitive |
 
@@ -68,7 +80,7 @@ Seven previously listed SDK SPI interfaces were deleted in the 2026-05-12 Occam 
 
 ## 4. Telemetry contract (absorbed from `telemetry-contracts.md`)
 
-Counter: `SPRINGAI_ASCEND_<domain>_<subject>_total`. Timer: `SPRINGAI_ASCEND_<domain>_<operation>_seconds`. High-cardinality labels (`tenant_id`, `run_id`, `user_id`) forbidden on Prometheus; use structured JSON logs. Cardinality cap: 1 000 (research) / 10 000 (prod). Key counters: `*_default_impl_not_configured_total{spi, method}`, `filter_errors_total{filter, reason}`, `idempotency_{claimed,replayed,conflict,error}_total`.
+Counter: `springai_ascend_<domain>_<subject>_total`. Timer: `springai_ascend_<domain>_<operation>_seconds`. High-cardinality labels (`tenant_id`, `run_id`, `user_id`) forbidden on Prometheus; use structured JSON logs. Cardinality cap: 1 000 (research) / 10 000 (prod). Key counters: `*_default_impl_not_configured_total{spi, method}`, `filter_errors_total{filter, reason}`, `idempotency_{claimed,replayed,conflict,error}_total`.
 
 ---
 
@@ -95,4 +107,4 @@ The following starters were deleted in the 2026-05-12 Occam pass and are no long
 
 ---
 
-*See also*: `docs/cross-cutting/observability-policy.md` · `docs/cross-cutting/posture-model.md` · `docs/cross-cutting/data-model-conventions.md`
+*See also*: `docs/observability/policy.md` · `docs/cross-cutting/posture-model.md`

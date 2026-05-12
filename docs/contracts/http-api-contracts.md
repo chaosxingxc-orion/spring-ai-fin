@@ -31,12 +31,12 @@ Exempt paths never require these headers. They are always accessible without aut
 | 201 | Created; response body contains the created resource |
 | 202 | Accepted; run is in progress; poll GET /v1/runs/{id} |
 | 400 | Bad request; malformed header (X-Tenant-Id or Idempotency-Key), invalid request body, or schema validation failure |
-| 403 | Security deny; PolicyEvaluator returned DENY; tenant mismatch; or missing required header in research/prod |
+| 403 | Security deny; Spring Security `AuthorizationManager` denial; tenant/JWT cross-check failure; or missing required header in research/prod |
 | 404 | Resource not found; or resource exists but belongs to a different tenant (tenant isolation) |
 | 409 | Conflict; duplicate run within an idempotency scope (run already in progress) |
 | 410 | Gone; endpoint removed or deprecated |
 | 429 | Rate limit exceeded or tenant token budget exhausted |
-| 500 | Internal server error; not expected in normal operation; emits SPRINGAI_ASCEND_filter_errors_total |
+| 500 | Internal server error; not expected in normal operation; emits `springai_ascend_filter_errors_total` |
 | 503 | Service unavailable; dependency health check failed |
 
 All error responses use the `ContractError` JSON envelope:
@@ -138,4 +138,4 @@ These routes are exempt from tenant and idempotency header requirements. They sh
 
 - [openapi-v1.yaml](openapi-v1.yaml) for the full machine-readable OpenAPI specification
 - [contract-catalog.md](contract-catalog.md) for the full contract inventory
-- [agent-platform/api/ARCHITECTURE.md](../../agent-platform/api/ARCHITECTURE.md) for filter chain and controller design
+- [agent-platform/ARCHITECTURE.md](../../agent-platform/ARCHITECTURE.md) for filter chain and controller design
