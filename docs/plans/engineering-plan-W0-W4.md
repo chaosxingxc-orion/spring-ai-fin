@@ -334,6 +334,15 @@ PASS becomes real.
 - Cost telemetry: per-run cost computed from token counts;
   `agent_run_cost_usd_total{tenant,model}` Prometheus counter.
 - Helm chart skeleton (single-replica).
+- **RuntimeHook SPI** (`runtime_hook_spi`, §4 #16): `RuntimeHook` interface + `HookChain` bean;
+  hook positions `BEFORE_MODEL` / `AFTER_MODEL` / `BEFORE_TOOL` / `AFTER_TOOL`; `@Bean`-ordered
+  chain wired into `ChatClient` and tool-adapter calls. Reference hooks: PII filter (redacts PII
+  patterns from prompt/response), token counter (emits `springai_ascend_tokens_total` counter),
+  summariser (optional context compression), tool-call-limit (throws if call count exceeds
+  `ResiliencePolicy.maxToolCalls`). `HookChainConformanceTest` (ArchUnit) asserts no bypass.
+- **Multi-backend Checkpointer** (`multi_backend_checkpointer`): Postgres-backed `CheckpointerImpl`
+  (primary, W2) + Redis-backed `RedisCheckpointer` (hot-standby) + file-backed `FileCheckpointer`
+  (ops scripts / DR). All implement the existing `Checkpointer` SPI.
 
 ### 4.3 Scope (out, deferred)
 
@@ -452,6 +461,21 @@ gradually.
   call; 429 when exceeded.
 - `feedback` table; `FeedbackController` accepts thumbs + optional
   text per `run_id`.
+- **Graph DSL Conformance** (`graph_dsl_conformance`, §4 #17): extend
+  `ExecutorDefinition.GraphDefinition` with: (a) `KeyStrategy` registry (`Replace`, `Append`,
+  `Merge`) applied on partial state updates; (b) typed `Edge` records with optional
+  `Function<RunContext, Boolean>` predicate for conditional routing; (c) `GraphSerializer`
+  emitting JSON + Mermaid topology. Factory method `GraphDefinition.simple(...)` retained for
+  backward compat. Existing `NestedDualModeIT` updated to exercise conditional edge.
+- **Hybrid RAG** (`hybrid_rag_bm25`): extend `MemoryService` L2 tier — alongside pgvector,
+  maintain a BM25 keyword index (`pg_bm25` extension or ElasticSearch fallback); final
+  relevance score = `alpha * vectorScore + (1 - alpha) * bm25Score` where `alpha` is a
+  per-tenant tunable; default `alpha = 0.7`.
+- **Sandbox Executor SPI** (`sandbox_executor_spi`, ADR-0018): `SandboxExecutor` interface
+  consumed by ActionGuard Bound stage before tool execution. Default `NoOpSandboxExecutor`
+  (in-JVM Java calls only). Pluggable reference: `GraalPolyglotSandboxExecutor` scaffold
+  (GraalVM 24.2+, not activated in default compose). Bound stage rejects execution if
+  `SandboxExecutor.check(toolCall, policy)` throws `SandboxViolationException`.
 
 ### 5.3 Scope (out, deferred)
 
@@ -570,6 +594,20 @@ redeploying the platform.
   5xx outside 30s graceful window.
 - Audit chain: append-only audit log + periodic Merkle root anchor (in
   Postgres for v1; S3 Object Lock optional).
+- **Eval Harness Contract** (`eval_harness_contract`, §4 #18, Rule 18): corpus loader reads
+  `docs/eval/<capability>/corpus.jsonl`; LLM-as-judge runner (configurable judge model +
+  versioned prompt template) scores each output; `EvalThresholdGate` reads
+  `docs/eval/<capability>/thresholds.yaml` and blocks merge on regression. `EvalRegressionIT`
+  replaces the generic placeholder with a real corpus-driven test.
+- **Planner-as-Tool** (`planner_as_tool_pattern`): `PlanNotebook` toolset for
+  `IterativeAgentLoopExecutor` — tools: `createPlan`, `revisePlan`, `finishSubtask`,
+  `recoverHistoricalPlan`, `viewSubtasks`, `finishPlan`. Plan rows persist in the `run_memory`
+  table keyed by `run_id`; `parentRunId` chain enables plan-reuse across correlated runs.
+  Activated by `AgentLoopDefinition.planningEnabled(true)`.
+- **Trace Replay Dev Surface** (`trace_replay_dev_surface`, ADR-0017): MCP server exposing
+  `/tools/get_run_trace(runId)` and `/tools/list_runs(tenantId, since)` that read structured
+  OTel span data from the `trace_store` table populated by `GraphObservationLifecycleListener`.
+  No HTML/JS. Clients: Claude Desktop, custom CLI. `§1 Admin UI exclusion preserved`.
 
 ### 6.3 Scope (out, deferred)
 

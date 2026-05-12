@@ -448,3 +448,79 @@ capabilities:
     implementation: null
     tests: []
     allowed_claim: "Design only — ExecutorDefinition.NodeFunction/Reasoner must become named registry entries before W4 (inline lambdas are unserializable across Temporal activity boundaries). Design deferred to W3."
+
+  # --- C7. Runtime Hooks (§4 #16) ---
+  runtime_hook_spi:
+    status: design_accepted
+    shipped: false
+    l0_decision: ARCHITECTURE.md (sec.4 constraint #16)
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — Hook SPI at BEFORE_MODEL / AFTER_MODEL / BEFORE_TOOL / AFTER_TOOL / BEFORE_AGENT / AFTER_AGENT. Reference hooks (W2): PII filter, token counter, summariser, tool-call-limit. HookChainConformanceTest asserts no direct-call bypass. Implementation deferred to W2. Gate: Rule 19."
+
+  # --- C8. Graph DSL Conformance (§4 #17) ---
+  graph_dsl_conformance:
+    status: design_accepted
+    shipped: false
+    l0_decision: ARCHITECTURE.md (sec.4 constraint #17)
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — ExecutorDefinition.GraphDefinition extended with KeyStrategy registry (Replace/Append/Merge), typed Edge records with optional predicate for conditional routing, JSON/Mermaid export via GraphSerializer. Backward-compatible factory retained. Implementation deferred to W3."
+
+  # --- C9. Eval Harness Contract (§4 #18) ---
+  eval_harness_contract:
+    status: design_accepted
+    shipped: false
+    l0_decision: ARCHITECTURE.md (sec.4 constraint #18)
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — every shipped capability must have corpus.jsonl + LLM-as-judge evaluator definition + thresholds.yaml. EvalThresholdGate blocks merge on regression. Corpus stored under docs/eval/. Implementation deferred to W4. Gate: Rule 18."
+
+  # --- C10. Strategic + wave-plan enhancements ---
+  trace_replay_dev_surface:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0017-dev-time-trace-replay.md
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — read-only dev-time trace timeline exposed via MCP server tools (get_run_trace, list_runs); OTel-driven from trace_store table; no Admin UI; clients are dev tools (Claude Desktop, CLI). §1 Admin UI exclusion preserved. Implementation deferred to W4."
+
+  sandbox_executor_spi:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0018-sandbox-executor-spi.md
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — SandboxExecutor SPI for W3 ActionGuard Bound stage. Default NoOpSandboxExecutor (in-JVM Java calls). Pluggable: GraalPolyglotSandboxExecutor scaffold (GraalVM 24.2+). Bound stage rejects on SandboxViolationException. Implementation deferred to W3."
+
+  a2a_federation_strategic:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0016-a2a-federation-strategic-deferral.md
+    implementation: null
+    tests: []
+    allowed_claim: "Post-W4 strategic reserved space — A2A protocol contract surface (AgentCard, AgentRegistry, RemoteAgentClient SPI) with pluggable registry binding (Nacos/Consul/K8s). No W1-W4 schedule. ADR-0016 names intent and reversal path."
+
+  multi_backend_checkpointer:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/plans/engineering-plan-W0-W4.md (W2)
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — Checkpointer SPI implementations: Postgres (primary, W2) + Redis (hot-standby, W2) + file (ops/DR, W2). All behind existing Checkpointer SPI; no SPI change required. Implementation deferred to W2."
+
+  hybrid_rag_bm25:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/plans/engineering-plan-W0-W4.md (W3)
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — MemoryService L2 extended with BM25 keyword index alongside pgvector; hybrid alpha-blended relevance scoring (alpha tunable per-tenant, default 0.7). Implementation deferred to W3."
+
+  planner_as_tool_pattern:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/plans/engineering-plan-W0-W4.md (W4)
+    implementation: null
+    tests: []
+    allowed_claim: "Design only — PlanNotebook-style toolset for IterativeAgentLoopExecutor: createPlan, revisePlan, finishSubtask, recoverHistoricalPlan. Plan rows in run_memory table keyed by run_id; parentRunId chain enables plan-reuse. Activated via AgentLoopDefinition.planningEnabled(true). Implementation deferred to W4."

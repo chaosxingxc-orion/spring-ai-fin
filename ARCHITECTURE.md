@@ -201,6 +201,31 @@ SPI packages (`ascend.springai.runtime.*.spi.*`) import only `java.*`.
     entries resolved by name, not inline closures (`capability_registry_spi`,
     `executor_definition_serialization`).
 
+16. **Runtime Hook SPI.** Every LLM invocation, tool call, and agent lifecycle boundary flows
+    through a hook chain. Hook positions: `BEFORE_MODEL` / `AFTER_MODEL` / `BEFORE_TOOL` /
+    `AFTER_TOOL` / `BEFORE_AGENT` / `AFTER_AGENT`. Hooks are pluggable `@Bean`s implementing
+    typed `RuntimeHook` interfaces; the chain is ordered and failsafe (hook failure logs at
+    `WARNING+` and does not abort the invocation). Reference hooks shipped in W2: PII filter,
+    token counter, summariser, tool-call-limit. Direct LLM/tool calls that bypass `HookChain`
+    are a gate-blocking defect (Rule 19 asserts no bypass via ArchUnit test).
+
+17. **Graph DSL conformance.** `ExecutorDefinition.GraphDefinition` MUST support beyond W2:
+    (a) per-key `KeyStrategy` registry (`Replace` — last-write-wins; `Append` — list concat;
+    `Merge` — deep map merge) applied when a node returns a partial state update;
+    (b) typed `Edge` records replacing the flat `Map<String,String>` edges — an `Edge` may carry
+    an optional predicate (`Function<RunContext, Boolean>`) for conditional routing;
+    (c) JSON and Mermaid export of the compiled graph topology for debugging and documentation.
+    A backward-compatible factory method (`GraphDefinition.simple(nodes, edges, startNode)`)
+    retains the existing API. Implementation deferred to W3 (`graph_dsl_conformance`).
+
+18. **Eval Harness Contract.** Every shipped capability MUST declare, by W4: (a) a golden
+    corpus in `docs/eval/<capability>/corpus.jsonl` — versioned input/expected pairs;
+    (b) an LLM-as-judge evaluator definition (judge model, prompt template, metric name);
+    (c) a per-metric regression threshold checked in as `docs/eval/<capability>/thresholds.yaml`.
+    Pre-merge gate (Rule 18, W4+): re-run corpus; any metric below its threshold blocks merge.
+    Evaluation infrastructure (corpus loader, judge runner, result store) deferred to W4
+    (`eval_harness_contract`).
+
 ---
 
 ## 5. W0 shipped capabilities

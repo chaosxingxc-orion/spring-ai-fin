@@ -117,3 +117,33 @@ Composes with: ARCHITECTURE.md §4 #12 (`skill_capacity_matrix`, `call_tree_budg
 - **Resume re-authorization**: every resume on a `SUSPENDED` Run MUST re-validate `(request.tenantId == Run.tenantId)`; mismatch returns HTTP 403. Actor identity at resume is captured in an audit envelope (who resumed, when, from which request).
 
 Composes with: ARCHITECTURE.md §4 #14 (`resume_reauthorization_check`, `suspend_reason_taxonomy`); Rule 7 (resilience signal masking).
+
+---
+
+## Rule 18 — Eval Harness Gate
+
+**Re-introduction trigger**: first shipped capability with a golden corpus + LLM-as-judge evaluator committed (target: W4).
+
+**Rule**: Every capability with a `corpus.jsonl` entry under `docs/eval/` MUST pass its declared regression thresholds before merge:
+
+1. **Corpus run**: the eval runner re-runs every input in `docs/eval/<capability>/corpus.jsonl` against the current model + prompt.
+2. **Judge evaluation**: the LLM-as-judge (configured model, versioned prompt template) scores each output against the expected.
+3. **Threshold gate**: every metric named in `docs/eval/<capability>/thresholds.yaml` must be ≥ its declared threshold; any metric below threshold blocks the merge.
+4. **Baseline protection**: a merge that lowers a threshold value without a corresponding corpus expansion MUST include an explicit justification comment in the PR description.
+
+Composes with: ARCHITECTURE.md §4 #18 (`eval_harness_contract`).
+
+---
+
+## Rule 19 — Runtime Hook Conformance
+
+**Re-introduction trigger**: first W2 LLM gateway capability committed (first `ChatClient` call in production code path).
+
+**Rule**: Every LLM invocation, tool call, and agent lifecycle transition MUST be invoked through `HookChain.invoke(...)`, not via a direct provider client call:
+
+1. **No bypass**: an ArchUnit test (`HookChainConformanceTest`) asserts that no class outside the `hookchain` package calls `ChatClient.call(...)`, tool-execution methods, or `AgentLoopExecutor.reason(...)` directly. A violation is a compile-gate failure.
+2. **Hook failure safety**: a hook that throws a checked exception MUST be caught; failure is logged at `WARNING+` with `runId` + hook class name; invocation continues. An unchecked exception propagates and fails the invocation — hooks are responsible for safety.
+3. **Hook ordering**: hooks execute in `@Order` registration sequence; lower order = earlier execution. `BEFORE_*` hooks run ascending; `AFTER_*` hooks run ascending in the same order (not reversed).
+4. **Gate-asserted**: the operator-shape gate asserts that at least one hook (PII filter or token counter) is registered and fires on every real-provider invocation.
+
+Composes with: ARCHITECTURE.md §4 #16 (`runtime_hook_spi`).
