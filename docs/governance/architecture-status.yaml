@@ -65,9 +65,9 @@ capabilities:
       - gate/check_architecture_sync.ps1
       - gate/check_architecture_sync.sh
     tests: []
-    latest_semantic_pass_sha: pending-fourth-review-fix
+    latest_semantic_pass_sha: d33239b
     latest_delivery_file: docs/delivery/2026-05-10-68c07f1.md
-    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml. Architecture baseline: 23 §4 constraints (#1–#23); 27 ADRs (0001–0027); 10 active rules (1–6, 9–10, 20–21); 13 deferred rules (7, 8, 11, 13–19, 22–24)."
+    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml. Architecture baseline: 24 §4 constraints (#1–#24); 27 ADRs (0001–0027); 11 active rules (1–6, 9–10, 20–21, 25); 13 deferred rules (7, 8, 11, 13–19, 22–24)."
 
   spring_ai_ascend_dependencies_bom:
     status: implemented_unverified
