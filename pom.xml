@@ -57,6 +57,10 @@
     <testcontainers.version>1.21.4</testcontainers.version>
     <wiremock.version>3.9.1</wiremock.version>
     <restassured.version>5.5.2</restassured.version>
+    <!-- Groovy override: RestAssured 5.5.2 pulls 5.0.4 which NPEs in
+         MetaClass property lookup under JDK 21 during applyProxySettings.
+         5.0.6 is the latest stable patch on the 5.0.x line. -->
+    <groovy.version>5.0.6</groovy.version>
     <opentelemetry-agent.version>2.10.0</opentelemetry-agent.version>
     <logstash-logback.version>8.0</logstash-logback.version>
     <springdoc.version>3.0.3</springdoc.version>
@@ -171,6 +175,26 @@
         <groupId>io.rest-assured</groupId>
         <artifactId>rest-assured</artifactId>
         <version>${restassured.version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <!-- Groovy version override (see properties block for rationale). -->
+      <dependency>
+        <groupId>org.apache.groovy</groupId>
+        <artifactId>groovy</artifactId>
+        <version>${groovy.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.groovy</groupId>
+        <artifactId>groovy-xml</artifactId>
+        <version>${groovy.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.groovy</groupId>
+        <artifactId>groovy-json</artifactId>
+        <version>${groovy.version}</version>
         <scope>test</scope>
       </dependency>
 
