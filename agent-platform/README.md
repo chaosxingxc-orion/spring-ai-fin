@@ -27,7 +27,7 @@ At W0, the platform applies: Spring Security `AuthorizationManager` for access c
 | IdempotencyHeaderFilter | 30 | Validate UUID shape of Idempotency-Key on POST/PUT/PATCH; 400 on missing in research/prod | W0 |
 
 W0: TenantContextFilter reads `X-Tenant-Id` header only; no JWT, no `SET LOCAL` GUC.
-W1: TenantContextFilter switches to JWT `tenant_id` claim; IdempotencyHeaderFilter wires IdempotencyStore for dedup.
+W1: TenantContextFilter adds a JWT `tenant_id` claim cross-check on top of the required `X-Tenant-Id` header (per ADR-0040); IdempotencyHeaderFilter wires IdempotencyStore for dedup.
 W2: `SET LOCAL app.tenant_id` GUC + RLS policies enabled.
 
 ## Health endpoint

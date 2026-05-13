@@ -440,7 +440,10 @@ only `java.*` (enforced by `OrchestrationSpiArchTest`, `MemorySpiArchTest`).
     initial run status is `PENDING` (matching `RunStatus` enum and RunStateMachine DFA). Cancellation
     is a state transition expressed as `POST /v1/runs/{id}/cancel` (not `DELETE`); run records survive
     cancellation as terminal records. Gate Rule 16 enforces these three points across the five active
-    HTTP contract documents. See ADR-0040, `w1_http_contract_reconciliation`.
+    HTTP contract documents. Gate Rule 16a (the tenant-model check) uses case-sensitive matching and
+    catches both the original three literal phrasings and replacement-implying verb forms applied to
+    `TenantContextFilter` (i.e., verb-to-JWT constructs that imply the header is discarded rather
+    than cross-checked). Full forbidden-phrasing list: see ADR-0040, `w1_http_contract_reconciliation`.
 
 38. **Active-corpus truth sweep.** No active document outside `docs/archive/` and `docs/reviews/`
     may reference the two deleted plan paths (the engineering plan and the roadmap archived under

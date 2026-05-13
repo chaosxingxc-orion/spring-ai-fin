@@ -484,8 +484,8 @@ $activeMdFiles16 = Get-ChildItem -Path $repoRoot -Recurse -Filter '*.md' -File -
   }
 foreach ($mdFile in $activeMdFiles16) {
   $c16 = Get-Content -Raw -LiteralPath $mdFile.FullName -ErrorAction SilentlyContinue
-  if ($c16 -match 'will replace.*X-Tenant-Id|replace header-based.*with JWT|W1 replaces.*X-Tenant-Id') {
-    Fail-Rule 'http_contract_w1_tenant_and_cancel_consistency' "$($mdFile.FullName) contains a forward-looking 'replace X-Tenant-Id' claim. Per ADR-0040 W1 adds JWT cross-check; X-Tenant-Id is NOT replaced."
+  if ($c16 -cmatch 'TenantContextFilter\s+(switches\s+to|replaces?\s+(with\s+)?JWT|moves\s+to)\s+JWT|will\s+replace.*X-Tenant-Id|replace\s+header-based.*with\s+JWT|W1\s+replaces.*X-Tenant-Id') {
+    Fail-Rule 'http_contract_w1_tenant_and_cancel_consistency' "$($mdFile.FullName) contains a replacement-implying claim about X-Tenant-Id or TenantContextFilter. Per ADR-0040 W1 adds JWT cross-check; X-Tenant-Id is NOT replaced. Forbidden phrasings: 'switches to JWT', 'replaces with JWT', 'moves to JWT', 'will replace X-Tenant-Id'."
     $r16Fail = $true
     break
   }

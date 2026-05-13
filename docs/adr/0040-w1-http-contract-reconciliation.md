@@ -100,6 +100,24 @@ POST /v1/runs/{runId}/cancel → 200 OK (idempotent if already CANCELLED)
 - `http-api-contracts.md` references `CREATED` as initial status.
 - `openapi-v1.yaml` `x-w1-note` mentions `DELETE /v1/runs/{runId}` as the cancel mechanism.
 
+**Rule 16a variant-phrasing forbidden list (L0 release hardening):** Gate Rule 16a uses
+case-sensitive matching and catches the following phrasings that imply X-Tenant-Id replacement
+— all are forbidden under this ADR:
+
+| Phrasing | Reason |
+|----------|--------|
+| `TenantContextFilter switches to JWT` | "switches to" implies replacement, not addition |
+| `TenantContextFilter replaces with JWT` | explicit replacement verb |
+| `TenantContextFilter moves to JWT` | "moves to" implies abandoning the header |
+| `will replace.*X-Tenant-Id` | original forbidden pattern (preserved) |
+| `replace header-based.*with JWT` | original forbidden pattern (preserved) |
+| `W1 replaces.*X-Tenant-Id` | original forbidden pattern (preserved) |
+
+Any phrasing not in the "permitted" set below is suspect and should be reviewed against this ADR:
+
+**Permitted phrasings:** "adds JWT cross-check", "cross-checks JWT", "validates JWT ... against
+X-Tenant-Id", "JWT cross-check on top of X-Tenant-Id", "X-Tenant-Id stays required; W1 adds JWT".
+
 ### Consequences
 
 **Positive:**

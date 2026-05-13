@@ -408,8 +408,8 @@ _r16_fail=0
 # Exclude docs/adr/: ADRs may legitimately document rejected options and past wrong text.
 while IFS= read -r _mdf16; do
   [[ -z "$_mdf16" ]] && continue
-  if grep -qE 'will replace.*X-Tenant-Id|replace header-based.*with JWT|W1 replaces.*X-Tenant-Id' "$_mdf16" 2>/dev/null; then
-    fail_rule "http_contract_w1_tenant_and_cancel_consistency" "$_mdf16 contains a forward-looking 'replace X-Tenant-Id' claim. Per ADR-0040 W1 adds JWT cross-check; X-Tenant-Id is NOT replaced."
+  if grep -qE 'TenantContextFilter[[:space:]]+(switches[[:space:]]+to|replaces?([[:space:]]+with)?[[:space:]]+JWT|moves[[:space:]]+to)[[:space:]]+JWT|will[[:space:]]+replace.*X-Tenant-Id|replace[[:space:]]+header-based.*with[[:space:]]+JWT|W1[[:space:]]+replaces.*X-Tenant-Id' "$_mdf16" 2>/dev/null; then
+    fail_rule "http_contract_w1_tenant_and_cancel_consistency" "$_mdf16 contains a replacement-implying claim about X-Tenant-Id or TenantContextFilter. Per ADR-0040 W1 adds JWT cross-check; X-Tenant-Id is NOT replaced. Forbidden phrasings: 'switches to JWT', 'replaces with JWT', 'moves to JWT', 'will replace X-Tenant-Id'."
     _r16_fail=1
     break
   fi

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# spring-ai-ascend architecture-sync gate self-test (post-seventh third-pass).
-# PARTIAL COVERAGE: covers Rules 1-6 + Rules 19, 22, 24, 25 (22 tests).
+# spring-ai-ascend architecture-sync gate self-test (L0 release).
+# PARTIAL COVERAGE: covers Rules 1-6 + Rules 16, 19, 22, 24, 25 (24 tests).
 # Full gate verification requires running: pwsh gate/check_architecture_sync.ps1
-# The full gate has 25 active rules; this self-test covers Rules 1-6 and 19/22/24/25.
-# Prints: Tests passed: N/22
-# Exits 0 if all 22 pass, 1 otherwise.
+# The full gate has 25 active rules; this self-test covers Rules 1-6 and 16/19/22/24/25.
+# Prints: Tests passed: N/24
+# Exits 0 if all 24 pass, 1 otherwise.
 
 set -uo pipefail
 export LC_ALL=C
@@ -14,7 +14,7 @@ cd "$repo_root"
 
 passed=0
 failed=0
-TOTAL=22
+TOTAL=24
 
 ok() {
   echo "PASS [$1]: $2"
@@ -265,6 +265,31 @@ if [[ $_r6_neg_fail -eq 1 ]]; then
   ok "rule6_metric_naming_namespace_neg" "wrong prefix 'app_counter_total' correctly triggers FAIL"
 else
   fail "rule6_metric_naming_namespace_neg" "expected FAIL for metric without springai_ascend_ prefix"
+fi
+
+# ---------------------------------------------------------------------------
+# RULE 16 — http_contract_w1_tenant_and_cancel_consistency (widened)
+# Positive: "cross-check" wording passes (must NOT be flagged)
+# Negative: "TenantContextFilter switches to JWT" is caught
+# ---------------------------------------------------------------------------
+
+## Positive: cross-check wording is compliant — must pass
+_r16_pos="$scratch/r16_pos.md"
+printf 'W1: TenantContextFilter adds a JWT tenant_id claim cross-check on top of X-Tenant-Id (per ADR-0040).\n' > "$_r16_pos"
+_r16_pos_pattern='TenantContextFilter[[:space:]]+(switches[[:space:]]+to|replaces?([[:space:]]+with)?[[:space:]]+JWT|moves[[:space:]]+to)[[:space:]]+JWT|will[[:space:]]+replace.*X-Tenant-Id|replace[[:space:]]+header-based.*with[[:space:]]+JWT|W1[[:space:]]+replaces.*X-Tenant-Id'
+if grep -qE "$_r16_pos_pattern" "$_r16_pos" 2>/dev/null; then
+  fail "rule16_w1_tenant_pos" "cross-check wording incorrectly flagged as replace violation"
+else
+  ok "rule16_w1_tenant_pos" "cross-check wording correctly passes"
+fi
+
+## Negative: "switches to JWT" replacement-implying phrasing is caught
+_r16_neg="$scratch/r16_neg.md"
+printf 'W1: TenantContextFilter switches to JWT tenant_id claim; IdempotencyHeaderFilter wires IdempotencyStore.\n' > "$_r16_neg"
+if grep -qE "$_r16_pos_pattern" "$_r16_neg" 2>/dev/null; then
+  ok "rule16_w1_tenant_neg" "'TenantContextFilter switches to JWT' correctly detected as violation"
+else
+  fail "rule16_w1_tenant_neg" "expected 'switches to JWT' to be detected as replacement-implying"
 fi
 
 # ---------------------------------------------------------------------------
