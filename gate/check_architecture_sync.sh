@@ -14,7 +14,7 @@
 #   7.  shipped_impl_paths_exist                     -- every shipped: true implementation: path exists on disk
 #   8.  no_hardcoded_versions_in_arch                -- module ARCHITECTURE.md files must not pin OSS versions inline
 #   9.  openapi_path_consistency                     -- /v3/api-docs must appear in WebSecurityConfig + platform ARCH
-#  10.  module_dep_direction                         -- agent-runtime must not depend on agent-platform (and vice versa)
+#  10.  module_dep_direction                         -- agent-runtime must not depend on agent-platform (ADR-0055: platform->runtime is now ALLOWED)
 #  11.  shipped_envelope_fingerprint_present         -- InMemoryCheckpointer enforces §4 #13 16-KiB cap
 #  12.  inmemory_orchestrator_posture_guard_present  -- AppPostureGate.requireDev in all 3 in-memory components (ADR-0035)
 #  13.  contract_catalog_no_deleted_spi_or_starter_names -- contract-catalog.md must not reference deleted names
@@ -254,20 +254,17 @@ fi
 if [[ $_r9_fail -eq 0 ]]; then pass_rule "openapi_path_consistency"; fi
 
 # ---------------------------------------------------------------------------
-# Rule 10 — module_dep_direction
+# Rule 10 — module_dep_direction (amended at L1 by ADR-0055)
 # agent-runtime/pom.xml must NOT declare a dependency on agent-platform.
-# agent-platform/pom.xml must NOT declare a dependency on agent-runtime.
+# (agent-platform -> agent-runtime is now ALLOWED per ADR-0055 for the W1
+# HTTP run handoff. The reverse direction stays forbidden at pom level here
+# and at source level via RuntimeMustNotDependOnPlatformTest, enforcer E2.)
+# Enforcer row: docs/governance/enforcers.yaml#E1
 # ---------------------------------------------------------------------------
 _r10_fail=0
 if [[ -f 'agent-runtime/pom.xml' ]]; then
   if grep -q '<artifactId>agent-platform</artifactId>' 'agent-runtime/pom.xml' 2>/dev/null; then
-    fail_rule "module_dep_direction" "agent-runtime/pom.xml declares dependency on agent-platform. Per ADR-0026 forbidden."
-    _r10_fail=1
-  fi
-fi
-if [[ $_r10_fail -eq 0 ]] && [[ -f 'agent-platform/pom.xml' ]]; then
-  if grep -q '<artifactId>agent-runtime</artifactId>' 'agent-platform/pom.xml' 2>/dev/null; then
-    fail_rule "module_dep_direction" "agent-platform/pom.xml declares dependency on agent-runtime."
+    fail_rule "module_dep_direction" "agent-runtime/pom.xml declares dependency on agent-platform. Per ADR-0055 forbidden (runtime must not depend on platform)."
     _r10_fail=1
   fi
 fi

@@ -8,7 +8,7 @@
 
 ## Engineering Rules
 
-**Eleven active rules.** Rules 1–4 are daily-use engineering principles. Rules 5–6 are class-level patterns. Rule 9 is the delivery gate. Rule 10 is the platform-contract standard. Rules 20–21 are architectural enforcement rules added in the third-review cycle. Rule 25 is the architecture-text truth gate added in the fourth-review cycle. Rules 7, 8, and 11 are deferred — see `docs/CLAUDE-deferred.md`. Rules 22–24 are also deferred (W2 trigger). Rules 26–27 are deferred (W2/W3 trigger — skill lifecycle and untrusted sandbox mandate). Rule 12 (maturity L0-L4) is replaced by binary `shipped:` in `architecture-status.yaml`. All rules override default habits.
+**Twelve active rules.** Rules 1–4 are daily-use engineering principles. Rules 5–6 are class-level patterns. Rule 9 is the delivery gate. Rule 10 is the platform-contract standard. Rules 20–21 are architectural enforcement rules added in the third-review cycle. Rule 25 is the architecture-text truth gate added in the fourth-review cycle. **Rule 28 (Code-as-Contract) is the L1 governing rule: every architectural constraint MUST have an executable enforcer; prose-only constraints are forbidden.** Rules 7, 8, and 11 are deferred — see `docs/CLAUDE-deferred.md`. Rules 22–24 are also deferred (W2 trigger). Rules 26–27 are deferred (W2/W3 trigger — skill lifecycle and untrusted sandbox mandate). Rule 12 (maturity L0-L4) is replaced by binary `shipped:` in `architecture-status.yaml`. All rules override default habits.
 
 ---
 
@@ -122,6 +122,34 @@ Enforced at W0 by `TenantPropagationPurityTest` (ArchUnit). Test classes are int
 Violations of the path-existence constraint are caught at commit time by Gate Rule 7 (`shipped_impl_paths_exist`). Violations of the version-drift constraint are caught by Gate Rule 8 (`no_hardcoded_versions_in_arch`). Violations of the route-exposure constraint are caught by Gate Rule 9 (`openapi_path_consistency`). Violations of the module-dep-direction constraint are caught by Gate Rule 10 (`module_dep_direction`). Prose-enforcer claims without a real enforcer are a ship-blocking finding under Rule 9.
 
 Architecture reference: §4 #24 (new), ADR-0025/ADR-0026/ADR-0027.
+
+---
+
+### Rule 28 — Code-as-Contract [Active, L1 Governing Rule]
+
+**Every architectural constraint MUST be enforced by code (test, gate script, schema constraint, or compile-time check). Prose-only constraints are forbidden.**
+
+Rule 28 is the strict extension of Rule 25. Rule 25 says: a `shipped: true` row must have a real test. Rule 28 says: **every architectural constraint — shipped or deferred, capability or invariant, positive or negative — must have an executable enforcer that fails the build or the gate when violated.**
+
+**Scope.** For every numbered constraint in `ARCHITECTURE.md §4`, every "must" / "must not" / "forbidden" / "required" sentence in any `ARCHITECTURE.md` (root or per-module), every ADR decision rule, and every line item in `docs/plans/*.md`, there MUST exist at least one of:
+
+1. An **ArchUnit test** that fails when the constraint is violated.
+2. A **gate-script rule** in `gate/check_architecture_sync.sh` that exits non-zero.
+3. An **integration test** that asserts the observable behaviour.
+4. A **schema constraint** (NOT NULL / UNIQUE / CHECK / PRIMARY KEY) at the storage layer.
+5. A **compile-time check** (`@ConfigurationProperties` + `@Valid`, sealed types, package-info enforcement).
+
+If none of (1)–(5) can be written, the constraint is dropped from the architecture — **not** weakened into prose. A prose claim with no enforcer is treated as a ship-blocking finding under Rule 9.
+
+**Negative invariants count too.** "X must NOT happen" requires an enforcer that detects X (e.g. ArchUnit `noClasses().should()…`).
+
+**No deferred enforcers.** The constraint and its enforcer ship in the same PR. "Test deferred to next sprint" is forbidden — drop the constraint or land the enforcer.
+
+**Enforcer index.** `docs/governance/enforcers.yaml` is the machine-readable cross-reference: every active constraint maps to at least one enforcer row, and every enforcer row points to a real artifact. The index is itself enforced by Gate Rule 28 (`constraint_enforcer_coverage` + sub-checks 28a–28i).
+
+**Self-enforcement.** Gate Rule 28 (`constraint_enforcer_coverage`) parses `ARCHITECTURE.md §4`, every `*/ARCHITECTURE.md` file, and `CLAUDE.md`; cross-references each "must"/"forbidden"/"required" sentence against `docs/governance/enforcers.yaml`; unmapped sentences fail the gate.
+
+Architecture reference: §4 #45 (new), ADR-0059.
 
 ---
 

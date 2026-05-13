@@ -1,0 +1,207 @@
+# Rule 28 — Code-as-Contract enforcer index
+#
+# Every architectural constraint in the corpus (CLAUDE.md, ARCHITECTURE.md,
+# every */ARCHITECTURE.md, every ADR, every plan under docs/plans/) MUST map
+# to at least one row in this file.
+#
+# Row schema (all fields required):
+#   id            - stable identifier (E<n>); never reused
+#   constraint_ref- citation back to the constraint (file + section or rule number)
+#   kind          - one of: archunit | gate-script | integration | schema | compile-time
+#   artifact      - relative path to the enforcer code (and optional #anchor)
+#   asserts       - one-line description of what the enforcer asserts
+#
+# Authority: ADR-0059. Self-enforced by gate rule 28f (enforcers_yaml_wellformed)
+# and rule 28i (plan_enforcer_table_in_sync). L1 plan §11 is the human mirror.
+
+- id: E1
+  constraint_ref: "ARCHITECTURE.md §4 #10 (module_dep_direction); ADR-0055 supersedes ADR-0026"
+  kind: gate-script
+  artifact: gate/check_architecture_sync.sh#rule_10
+  asserts: "agent-runtime pom does not depend on agent-platform"
+
+- id: E2
+  constraint_ref: "CLAUDE.md Rule 21 generalised at L1; ADR-0055"
+  kind: archunit
+  artifact: agent-runtime/src/test/java/ascend/springai/runtime/architecture/RuntimeMustNotDependOnPlatformTest.java
+  asserts: "no class under ascend.springai.runtime.. imports any class under ascend.springai.platform.."
+
+- id: E3
+  constraint_ref: "ARCHITECTURE.md §4.7 (SPI purity); pre-existing"
+  kind: archunit
+  artifact: agent-runtime/src/test/java/ascend/springai/runtime/memory/spi/MemorySpiArchTest.java
+  asserts: "runtime.memory.spi.. and runtime.orchestration.spi.. import only java.*"
+
+- id: E4
+  constraint_ref: "L1 plan §5.2; ADR-0055"
+  kind: archunit
+  artifact: agent-platform/src/test/java/ascend/springai/platform/architecture/HttpEdgeMustNotImportMemorySpiTest.java
+  asserts: "agent-platform does not import ascend.springai.runtime.memory.spi.."
+
+- id: E5
+  constraint_ref: "L1 plan §6.5; architecture-status.yaml line 892"
+  kind: integration
+  artifact: agent-platform/src/test/java/ascend/springai/platform/web/runs/RunHttpContractIT.java#createReturnsPending
+  asserts: "POST /v1/runs returns Run with status PENDING; RunStatus enum contains no CREATED"
+
+- id: E6
+  constraint_ref: "L1 plan §6.5; architecture-status.yaml line 892"
+  kind: integration
+  artifact: agent-platform/src/test/java/ascend/springai/platform/web/runs/RunHttpContractIT.java#cancelIsPostNotDelete
+  asserts: "DELETE /v1/runs/{id} returns 405/404; cancellation is POST /v1/runs/{id}/cancel"
+
+- id: E7
+  constraint_ref: "L1 plan §6.3 status-code matrix"
+  kind: integration
+  artifact: agent-platform/src/test/java/ascend/springai/platform/web/runs/RunHttpContractIT.java
+  asserts: "each row of §6.3 returns the documented status code + ErrorEnvelope.code"
+
+- id: E8
+  constraint_ref: "L1 plan §6.4 error envelope"
+  kind: integration
+  artifact: agent-platform/src/test/java/ascend/springai/platform/architecture/ErrorEnvelopeContractTest.java
+  asserts: "every 4xx/5xx response has only the top-level 'error' field with code+message+details"
+
+- id: E9
+  constraint_ref: "L1 plan §7.1; ADR-0056"
+  kind: integration
+  artifact: agent-platform/src/test/java/ascend/springai/platform/auth/JwtValidationIT.java
+  asserts: "JWT validation enforces RS256, iss, aud, exp, nbf, clock-skew; failures return 401 with metric"
+
+- id: E10
+  constraint_ref: "L1 plan §7.2; ADR-0056"
+  kind: integration
+  artifact: agent-platform/src/test/java/ascend/springai/platform/tenant/JwtTenantClaimCrossCheckTest.java
+  asserts: "JWT tenant_id claim mismatched with X-Tenant-Id header returns 403 tenant_mismatch + counter increment"
+
+- id: E11
+  constraint_ref: "L1 plan §7.3; ADR-0056; ADR-0058"
+  kind: integration
+  artifact: agent-platform/src/test/java/ascend/springai/platform/auth/JwtDevLocalModeGuardIT.java
+  asserts: "app.auth.dev-local-mode=true causes startup failure when app.posture != dev"
+
+- id: E12
+  constraint_ref: "L1 plan §8.3; ADR-0057"
+  kind: integration
+  artifact: agent-platform/src/test/java/ascend/springai/platform/idempotency/jdbc/IdempotencyDurabilityIT.java
+  asserts: "claim row durable before Orchestrator.submit; submit failure marks row FAILED; key cannot be re-claimed before expires_at"
+
+- id: E13
+  constraint_ref: "L1 plan §8.1; ADR-0057"
+  kind: schema
+  artifact: agent-platform/src/main/resources/db/migration/V2__idempotency_dedup.sql
+  asserts: "PRIMARY KEY (tenant_id, idempotency_key) prevents duplicate inserts at storage layer"
+
+- id: E14
+  constraint_ref: "L1 plan §8.2; ADR-0057"
+  kind: integration
+  artifact: agent-platform/src/test/java/ascend/springai/platform/idempotency/jdbc/IdempotencyStorePostgresIT.java#bodyDriftReturns409
+  asserts: "same key + different request_hash returns 409 idempotency_body_drift"
+
+- id: E15
+  constraint_ref: "L1 plan §11 row E15; Rule 28a"
+  kind: gate-script
+  artifact: gate/check_architecture_sync.sh#rule_28a_tenant_column_present
+  asserts: "every CREATE TABLE under src/main/resources/db/migration/ has a tenant_id column"
+
+- id: E16
+  constraint_ref: "architect guidance §11"
+  kind: archunit
+  artifact: agent-platform/src/test/java/ascend/springai/platform/architecture/RepositoryPaginationTest.java
+  asserts: "Spring Data repository methods returning Collection/Page declare Pageable OR are annotated @BoundedQuery"
+
+- id: E17
+  constraint_ref: "architect guidance §11"
+  kind: archunit
+  artifact: agent-platform/src/test/java/ascend/springai/platform/architecture/NoStringConcatSqlTest.java
+  asserts: "no source under agent-platform/persistence/.. builds JPQL/SQL with String concatenation"
+
+- id: E18
+  constraint_ref: "L1 plan §10; architect guidance §12"
+  kind: archunit
+  artifact: agent-platform/src/test/java/ascend/springai/platform/architecture/MetricNamingTest.java
+  asserts: "every Counter/Timer/Gauge name starts with springai_ascend_"
+
+- id: E19
+  constraint_ref: "L1 plan §10; Rule 28b"
+  kind: gate-script
+  artifact: gate/check_architecture_sync.sh#rule_28b_high_cardinality_tag_guard
+  asserts: "no source registers Tag.of(\"run_id\"|\"idempotency_key\"|\"jwt_sub\"|\"body\", …) on a springai_ascend_* metric"
+
+- id: E20
+  constraint_ref: "architect guidance §9.3; Rule 28c"
+  kind: gate-script
+  artifact: gate/check_architecture_sync.sh#rule_28c_no_secret_patterns
+  asserts: "no AKIA/sk-/-----BEGIN PRIVATE KEY-----/etc. patterns in tracked files (allow-list inline-annotated)"
+
+- id: E21
+  constraint_ref: "L1 plan §9; ADR-0058"
+  kind: integration
+  artifact: agent-platform/src/test/java/ascend/springai/platform/posture/PostureBootGuardIT.java
+  asserts: "research/prod posture fails startup with IllegalStateException when any @RequiredConfig field absent"
+
+- id: E22
+  constraint_ref: "L1 plan §8.4; ADR-0058"
+  kind: integration
+  artifact: agent-platform/src/test/java/ascend/springai/platform/idempotency/InMemoryIdempotencyAllowFlagIT.java
+  asserts: "InMemoryIdempotencyStore bean registered only when posture=dev AND app.idempotency.allow-in-memory=true"
+
+- id: E23
+  constraint_ref: "CLAUDE.md Rule 20; ADR-0020"
+  kind: integration
+  artifact: agent-runtime/src/test/java/ascend/springai/runtime/runs/RunStateMachineTest.java
+  asserts: "Run.withStatus and Run.withSuspension call RunStateMachine.validate; illegal transitions throw IllegalStateException"
+
+- id: E24
+  constraint_ref: "L1 plan §6.5 cancel semantics"
+  kind: integration
+  artifact: agent-platform/src/test/java/ascend/springai/platform/web/runs/RunHttpContractIT.java#cancelTerminalReturns409
+  asserts: "cancel of SUCCEEDED/FAILED/EXPIRED run returns 409 illegal_state_transition"
+
+- id: E25
+  constraint_ref: "architect guidance §15.6; pre-existing"
+  kind: integration
+  artifact: agent-platform/src/test/java/ascend/springai/platform/web/OpenApiContractIT.java
+  asserts: "live /v3/api-docs response matches the committed snapshot byte-for-byte"
+
+- id: E26
+  constraint_ref: "L1 plan §13 out-of-scope; Rule 28d"
+  kind: gate-script
+  artifact: gate/check_architecture_sync.sh#rule_28d_out_of_scope_name_guard
+  asserts: "names LLMGateway/PostgresCheckpointer/SkillRegistry/HookChain/SpawnEnvelope/LogicalCallHandle/ConnectionLease/AdmissionDecision/BackpressureSignal/ChronosHydration/SandboxExecutor do not appear in agent-*/src/main/java"
+
+- id: E27
+  constraint_ref: "L1 plan decision D3; Rule 28e"
+  kind: gate-script
+  artifact: gate/check_architecture_sync.sh#rule_28e_module_count_invariant
+  asserts: "root pom.xml declares exactly 4 <module> entries at L1"
+
+- id: E28
+  constraint_ref: "CLAUDE.md Rule 28 (meta); ADR-0059"
+  kind: gate-script
+  artifact: gate/check_architecture_sync.sh#rule_28_constraint_enforcer_coverage
+  asserts: "every must/must not/forbidden/required sentence in the architecture corpus maps to at least one row in this file"
+
+- id: E29
+  constraint_ref: "ADR-0059 §1; Rule 28f"
+  kind: gate-script
+  artifact: gate/check_architecture_sync.sh#rule_28f_enforcers_yaml_wellformed
+  asserts: "every row in this file has id+constraint_ref+kind+artifact+asserts; kind is one of the five legal values"
+
+- id: E30
+  constraint_ref: "ADR-0059 §3; Rule 28g"
+  kind: gate-script
+  artifact: gate/check_architecture_sync.sh#rule_28g_no_prose_only_constraint_marker
+  asserts: "no TODO:enforce / FIXME:enforcer / XXX:test / deferred:gate markers in CLAUDE.md, ARCHITECTURE.md, or any */ARCHITECTURE.md"
+
+- id: E31
+  constraint_ref: "architect guidance §16; Rule 28h"
+  kind: gate-script
+  artifact: gate/check_architecture_sync.sh#rule_28h_l1_review_checklist_present
+  asserts: "every ADR 0055-0059 contains the §16 review checklist as a sub-section"
+
+- id: E32
+  constraint_ref: "L1 plan §11; Rule 28i"
+  kind: gate-script
+  artifact: gate/check_architecture_sync.sh#rule_28i_plan_enforcer_table_in_sync
+  asserts: "L1 plan §11 table row IDs equal the set of id: fields in this file"

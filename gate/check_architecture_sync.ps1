@@ -18,7 +18,7 @@
     7. shipped_impl_paths_exist             -- every shipped: true implementation: path exists on disk
     8. no_hardcoded_versions_in_arch        -- module ARCHITECTURE.md files must not pin OSS versions inline
     9. openapi_path_consistency             -- /v3/api-docs must appear in WebSecurityConfig + platform ARCH
-   10. module_dep_direction                 -- agent-runtime must not depend on agent-platform (and vice versa)
+   10. module_dep_direction                 -- agent-runtime must not depend on agent-platform (ADR-0055: platform->runtime is now ALLOWED)
    11. shipped_envelope_fingerprint_present -- InMemoryCheckpointer enforces §4 #13 16-KiB cap (MAX_INLINE_PAYLOAD_BYTES present)
    12. inmemory_orchestrator_posture_guard_present -- SyncOrchestrator, InMemoryRunRegistry, InMemoryCheckpointer each contain AppPostureGate.requireDev (ADR-0035)
    13. contract_catalog_no_deleted_spi_or_starter_names -- contract-catalog.md must not reference deleted SPI interface names or deleted starter coords
@@ -302,25 +302,19 @@ if (-not $r9Fail -and (Test-Path $platformArchPath)) {
 if (-not $r9Fail) { Pass-Rule 'openapi_path_consistency' }
 
 # ---------------------------------------------------------------------------
-# Rule 10 — module_dep_direction
+# Rule 10 — module_dep_direction (amended at L1 by ADR-0055)
 # agent-runtime/pom.xml must NOT declare a dependency on agent-platform.
-# agent-platform/pom.xml must NOT declare a dependency on agent-runtime.
-# This enforces the corrected module graph from ADR-0026.
+# (agent-platform -> agent-runtime is now ALLOWED per ADR-0055 for the W1
+# HTTP run handoff. Source-level reverse direction is enforced by
+# RuntimeMustNotDependOnPlatformTest, enforcer E2.)
+# Enforcer row: docs/governance/enforcers.yaml#E1
 # ---------------------------------------------------------------------------
 $r10Fail = $false
 $runtimePom = 'agent-runtime/pom.xml'
-$platformPom = 'agent-platform/pom.xml'
 if (Test-Path $runtimePom) {
   $rtContent = Get-Content -Raw -LiteralPath $runtimePom
   if ($rtContent -match '<artifactId>agent-platform</artifactId>') {
-    Fail-Rule 'module_dep_direction' "agent-runtime/pom.xml declares dependency on agent-platform. Per ADR-0026 this is forbidden. Use agent-platform-contracts when a shared type is needed."
-    $r10Fail = $true
-  }
-}
-if (-not $r10Fail -and (Test-Path $platformPom)) {
-  $pfContent = Get-Content -Raw -LiteralPath $platformPom
-  if ($pfContent -match '<artifactId>agent-runtime</artifactId>') {
-    Fail-Rule 'module_dep_direction' "agent-platform/pom.xml declares dependency on agent-runtime. This creates a circular or backwards dependency."
+    Fail-Rule 'module_dep_direction' "agent-runtime/pom.xml declares dependency on agent-platform. Per ADR-0055 forbidden (runtime must not depend on platform)."
     $r10Fail = $true
   }
 }

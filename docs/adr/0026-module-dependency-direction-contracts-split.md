@@ -1,8 +1,14 @@
 # 0026. Module Dependency Direction: agent-platform-contracts Split (W1)
 
-**Status:** accepted
+**Status:** Superseded by ADR-0055 (2026-05-14)
 **Deciders:** architecture
 **Date:** 2026-05-12
+
+> **Superseded.** At L1 planning the architect guidance ruled the contracts-module
+> extraction out as speculative. The L1 decision (ADR-0055) instead permits
+> `agent-platform → agent-runtime` directly while preserving the negative invariant
+> on the reverse direction. The W1 target described below is no longer the plan.
+> See `docs/adr/0055-permit-platform-to-runtime-direction.md` for the current rule.
 **Technical story:** Fourth architecture reviewer (F2) identified that `ARCHITECTURE.md:91,127`
 claims "`agent-platform` → SPI-only → `agent-runtime`, no reverse imports," but
 `agent-runtime/pom.xml:18` declares a Maven compile-scope dependency on `agent-platform`. The
