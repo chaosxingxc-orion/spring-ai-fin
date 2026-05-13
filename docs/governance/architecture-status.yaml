@@ -63,7 +63,7 @@ capabilities:
       - gate/check_architecture_sync.sh
     tests:
       - gate/test_architecture_sync_gate.sh
-    latest_semantic_pass_sha: 862be85
+    latest_semantic_pass_sha: fc5be09
     latest_delivery_file: docs/delivery/2026-05-12-e0ccb6e.md
     allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here. Architecture baseline: 45 §4 constraints (#1–#45); 47 ADRs (0001–0047); 27 active gate rules; 11 active engineering rules (1–6, 9–10, 20–21, 25); 14 deferred rules (7, 8, 11, 13–19, 22–24, 26–27); 30 gate self-tests; L0 release published at docs/releases/2026-05-13-L0-architecture-release.en.md; eleventh-cycle L0 final entrypoint truth review closed CANONICAL-DRIFT + TEMPORAL-OVERREACH via ADR-0047 + Gate Rule 27."
 
