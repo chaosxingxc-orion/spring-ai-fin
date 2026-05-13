@@ -39,9 +39,15 @@
       <artifactId>postgresql</artifactId>
       <scope>runtime</scope>
     </dependency>
+    <!--
+      Spring Boot 4 split the Flyway autoconfig out of spring-boot-autoconfigure
+      into spring-boot-flyway (pulled in via spring-boot-starter-flyway). Without
+      the starter, flyway-core on the classpath does NOT trigger migrations at
+      startup, so V1__init.sql never runs and the health_check table is missing.
+    -->
     <dependency>
-      <groupId>org.flywaydb</groupId>
-      <artifactId>flyway-core</artifactId>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-flyway</artifactId>
     </dependency>
     <dependency>
       <groupId>org.flywaydb</groupId>
