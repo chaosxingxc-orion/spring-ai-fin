@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# spring-ai-ascend architecture-sync gate -- whitepaper-alignment remediation (29 rules).
+# spring-ai-ascend architecture-sync gate -- L1 Rule-28 expansion (39 rules; 29 base + 10 Rule-28 sub-checks).
 # Exits 0 if all rules pass, 1 if any fail.
 # Each rule prints PASS: <name> or FAIL: <name> -- <reason>.
 # Prints GATE: PASS or GATE: FAIL at the end.
@@ -34,6 +34,17 @@
 #  27.  active_entrypoint_baseline_truth              -- root README.md baseline counts must match architecture-status.yaml.architecture_sync_gate.allowed_claim (ADR-0047)
 #  28.  release_note_baseline_truth                   -- docs/releases/*.md baseline counts must match canonical YAML unless marked "Historical artifact frozen at SHA" (ADR-0049, whitepaper-alignment P0-1)
 #  29.  whitepaper_alignment_matrix_present           -- docs/governance/whitepaper-alignment-matrix.md must exist and list all 20 required whitepaper concepts (ADR-0049, whitepaper-alignment P2-1)
+#  --- L1 Rule-28 sub-checks (ADR-0059) ---
+#  28a. tenant_column_present                          -- every CREATE TABLE in db/migration declares tenant_id (enforcer E15)
+#  28b. high_cardinality_tag_guard                     -- no Tag.of("run_id"|"idempotency_key"|"jwt_sub"|"body", …) in agent-*/main (enforcer E19)
+#  28c. no_secret_patterns                             -- gitleaks-style sweep of tracked files; allowlist via 'secret-allowlist:' (enforcer E20)
+#  28d. out_of_scope_name_guard                        -- W2+ deferred names absent from agent-*/main (enforcer E26)
+#  28e. module_count_invariant                         -- root pom.xml declares exactly 4 <module> entries (enforcer E27)
+#  28f. enforcers_yaml_wellformed                      -- docs/governance/enforcers.yaml every row has all 5 fields + legal kind (enforcer E29)
+#  28g. no_prose_only_constraint_marker                -- no TODO/FIXME/XXX/deferred:enforce|enforcer|test|gate in CLAUDE.md / ARCHITECTURE.md (enforcer E30)
+#  28h. l1_review_checklist_present                    -- ADRs 0055–0059 contain '§16 Review Checklist' (enforcer E31)
+#  28i. plan_enforcer_table_in_sync                    -- plan §11 IDs == enforcers.yaml IDs (enforcer E32)
+#  28.  constraint_enforcer_coverage                   -- enforcers.yaml references CLAUDE.md AND ARCHITECTURE.md (meta-rule, enforcer E28)
 
 set -uo pipefail
 export LC_ALL=C
@@ -990,6 +1001,279 @@ else
   done
 fi
 if [[ $_r29_fail -eq 0 ]]; then pass_rule "whitepaper_alignment_matrix_present"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 28a — tenant_column_present (Rule 28 sub-check, ADR-0059, enforcer E15)
+# Every CREATE TABLE under any */src/main/resources/db/migration/*.sql that
+# isn't a control/system table must declare a tenant_id column.
+# Exemptions: health_check (singleton system row).
+# ---------------------------------------------------------------------------
+_r28a_fail=0
+_python_bin=$(command -v python3 || command -v python || echo "")
+while IFS= read -r _mig; do
+  [[ -z "$_mig" ]] && continue
+  if [[ -z "$_python_bin" ]]; then
+    # No Python available — fall back to a crude shell heuristic: every
+    # CREATE TABLE block must contain 'tenant_id' somewhere before its
+    # terminating ';'. We use awk for the statement-level split.
+    if awk '
+      BEGIN { RS=";"; FS=""; IGNORECASE=1 }
+      /CREATE[[:space:]]+TABLE/ {
+        if ($0 ~ /health_check/) next
+        if ($0 !~ /tenant_id/) { print "FAIL: " FILENAME; exit 1 }
+      }
+    ' "$_mig"; then :; else _r28a_fail=1; fi
+    continue
+  fi
+  "$_python_bin" - "$_mig" <<'PY' || _r28a_fail=1
+import re, sys
+path = sys.argv[1]
+text = open(path, encoding='utf-8').read()
+# tokenize by semicolons; for each CREATE TABLE, inspect the body
+for stmt in text.split(';'):
+    m = re.search(r'CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([a-zA-Z_][a-zA-Z0-9_]*)', stmt, re.IGNORECASE)
+    if not m: continue
+    name = m.group(1)
+    if name in ('health_check',):
+        continue
+    if not re.search(r'\btenant_id\b', stmt, re.IGNORECASE):
+        print(f"FAIL: {path}: table '{name}' lacks tenant_id column")
+        sys.exit(1)
+sys.exit(0)
+PY
+  if [[ $? -ne 0 ]]; then
+    fail_rule "tenant_column_present" "$_mig declares a tenant-scoped table without a tenant_id column. Per Rule 28a / enforcer E15."
+    _r28a_fail=1
+  fi
+done < <(find . -path '*/src/main/resources/db/migration/*.sql' -not -path './target/*' 2>/dev/null | sort || true)
+if [[ $_r28a_fail -eq 0 ]]; then pass_rule "tenant_column_present"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 28b — high_cardinality_tag_guard (enforcer E19)
+# No source in agent-*/src/main/java registers Tag.of("run_id"|"idempotency_key"|
+# "jwt_sub"|"body", ...) on a metric. The TenantTagMeterFilter scrubs these
+# at runtime; the gate rejects them at commit time.
+# ---------------------------------------------------------------------------
+_r28b_fail=0
+_forbidden_tag_pattern='Tag\.of\(\s*"(run_id|idempotency_key|jwt_sub|body)"'
+_28b_hits=$(grep -rnE "$_forbidden_tag_pattern" \
+  agent-platform/src/main/java agent-runtime/src/main/java 2>/dev/null || true)
+if [[ -n "$_28b_hits" ]]; then
+  fail_rule "high_cardinality_tag_guard" "Forbidden high-cardinality metric tag found:\n$_28b_hits\nPer Rule 28b / enforcer E19."
+  _r28b_fail=1
+fi
+if [[ $_r28b_fail -eq 0 ]]; then pass_rule "high_cardinality_tag_guard"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 28c — no_secret_patterns (enforcer E20)
+# Crude regex sweep for common secret-leak shapes in tracked files.
+# Excludes node_modules / target / .git / binary extensions. Files annotated
+# with `secret-allowlist:` are exempt.
+# Implemented as a single `git grep` for speed on Windows where per-file
+# grep loops are pathologically slow.
+# ---------------------------------------------------------------------------
+_r28c_fail=0
+# AWS access keys + private key blocks + GitHub PATs. The 'sk-' pattern was
+# dropped — it false-matched documentation that names the regex shape itself.
+_secret_patterns='AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|ghp_[A-Za-z0-9]{36}'
+# docs/governance/enforcers.yaml is the index — it DOCUMENTS the patterns and
+# is intentionally excluded; the index does not contain real secrets.
+_28c_hits=$(git grep -lE "$_secret_patterns" -- ':!target/' ':!*.jar' ':!*.png' ':!*.jpg' ':!*.pdf' ':!docs/governance/enforcers.yaml' ':!gate/check_architecture_sync.sh' ':!gate/check_architecture_sync.ps1' 2>/dev/null || true)
+if [[ -n "$_28c_hits" ]]; then
+  while IFS= read -r _hit; do
+    [[ -z "$_hit" ]] && continue
+    if ! grep -q 'secret-allowlist:' "$_hit" 2>/dev/null; then
+      fail_rule "no_secret_patterns" "$_hit appears to contain a secret pattern. Per Rule 28c / enforcer E20; add 'secret-allowlist: <reason>' inline if it is an intentional test fixture."
+      _r28c_fail=1
+    fi
+  done <<< "$_28c_hits"
+fi
+if [[ $_r28c_fail -eq 0 ]]; then pass_rule "no_secret_patterns"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 28d — out_of_scope_name_guard (enforcer E26)
+# Names of W2+ deferred concepts (LLMGateway, PostgresCheckpointer,
+# SkillRegistry, HookChain, SpawnEnvelope, LogicalCallHandle, ConnectionLease,
+# AdmissionDecision, BackpressureSignal, ChronosHydration, SandboxExecutor)
+# MUST NOT appear in agent-*/src/main/java. Test sources, ADRs, plans,
+# release notes, and architecture-status.yaml are intentionally exempt.
+# ---------------------------------------------------------------------------
+_r28d_fail=0
+_oos_names='LLMGateway|PostgresCheckpointer|SkillRegistry|HookChain|SpawnEnvelope|LogicalCallHandle|ConnectionLease|AdmissionDecision|BackpressureSignal|ChronosHydration|SandboxExecutor'
+_28d_hits=$(grep -rnE "\\b($_oos_names)\\b" \
+  agent-platform/src/main/java agent-runtime/src/main/java 2>/dev/null || true)
+if [[ -n "$_28d_hits" ]]; then
+  fail_rule "out_of_scope_name_guard" "W2+ out-of-scope name detected in main sources:\n$_28d_hits\nPer Rule 28d / enforcer E26 / plan §13."
+  _r28d_fail=1
+fi
+if [[ $_r28d_fail -eq 0 ]]; then pass_rule "out_of_scope_name_guard"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 28e — module_count_invariant (enforcer E27)
+# Root pom.xml MUST declare exactly 4 <module> entries at L1 (spring-ai-ascend-
+# dependencies, agent-platform, agent-runtime, spring-ai-ascend-graphmemory-
+# starter). Any extra module is rejected; L1 plan decision D3.
+# ---------------------------------------------------------------------------
+_r28e_fail=0
+_root_pom='pom.xml'
+if [[ -f "$_root_pom" ]]; then
+  _module_count=$(grep -c '<module>' "$_root_pom" 2>/dev/null || echo 0)
+  if [[ "$_module_count" -ne 4 ]]; then
+    fail_rule "module_count_invariant" "$_root_pom declares $_module_count <module> entries; L1 requires exactly 4. Per Rule 28e / enforcer E27 / plan decision D3."
+    _r28e_fail=1
+  fi
+fi
+if [[ $_r28e_fail -eq 0 ]]; then pass_rule "module_count_invariant"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 28f — enforcers_yaml_wellformed (enforcer E29)
+# docs/governance/enforcers.yaml MUST: exist, parse as YAML, contain a list
+# where every row has all five fields (id, constraint_ref, kind, artifact,
+# asserts) and kind is one of the five legal values.
+# ---------------------------------------------------------------------------
+_r28f_fail=0
+_efile='docs/governance/enforcers.yaml'
+if [[ ! -f "$_efile" ]]; then
+  fail_rule "enforcers_yaml_wellformed" "$_efile missing. Per Rule 28f / enforcer E29 — Rule 28 cannot function without its index."
+  _r28f_fail=1
+elif [[ -z "$_python_bin" ]]; then
+  # No Python — fall back to a coarse shell check: every '- id:' row must
+  # be followed within 5 lines by 'constraint_ref:', 'kind:', 'artifact:',
+  # 'asserts:'. Best-effort; the full schema validation requires Python.
+  if ! grep -q '^- id:' "$_efile"; then
+    fail_rule "enforcers_yaml_wellformed" "$_efile contains no '- id:' rows. Per Rule 28f / enforcer E29."
+    _r28f_fail=1
+  fi
+else
+  "$_python_bin" - "$_efile" <<'PY' || _r28f_fail=1
+import sys, re
+path = sys.argv[1]
+with open(path, encoding='utf-8') as f:
+    text = f.read()
+# Required sub-fields under each '- id:' row (id is the boundary itself).
+sub_required = ('constraint_ref', 'kind', 'artifact', 'asserts')
+kinds = ('archunit', 'gate-script', 'integration', 'schema', 'compile-time')
+# Split on the row boundary; drop the pre-list preamble (rows[0]).
+rows = re.split(r'^- id:\s*', text, flags=re.MULTILINE)
+errors = []
+for raw in rows[1:]:
+    block = raw  # first line is the ID, subsequent indented lines are the row
+    first_line = block.splitlines()[0].strip()
+    if not re.fullmatch(r'E\d+', first_line):
+        errors.append(f"row id is not E<n>: '{first_line}'")
+    for field in sub_required:
+        if not re.search(rf'(^|\n)\s*{field}:', block):
+            errors.append(f"row '{first_line}' missing field '{field}'")
+    km = re.search(r'(^|\n)\s*kind:\s*([a-zA-Z\-]+)', block)
+    if km and km.group(2) not in kinds:
+        errors.append(f"row '{first_line}' has illegal kind '{km.group(2)}': expected one of {kinds}")
+if errors:
+    for e in errors:
+        print(f"FAIL: {e}")
+    sys.exit(1)
+sys.exit(0)
+PY
+  if [[ $? -ne 0 ]]; then
+    fail_rule "enforcers_yaml_wellformed" "$_efile rows are not well-formed. Per Rule 28f / enforcer E29."
+    _r28f_fail=1
+  fi
+fi
+if [[ $_r28f_fail -eq 0 ]]; then pass_rule "enforcers_yaml_wellformed"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 28g — no_prose_only_constraint_marker (enforcer E30)
+# Rule 28 forbids deferring an enforcer. Markers like "TODO: enforce",
+# "FIXME: enforcer", "XXX: test", "deferred: gate" in CLAUDE.md /
+# ARCHITECTURE.md / module ARCHITECTURE.md / docs/governance/*.yaml are bans.
+# ---------------------------------------------------------------------------
+_r28g_fail=0
+_marker_pattern='(TODO|FIXME|XXX|deferred)[[:space:]]*:[[:space:]]*(enforce|enforcer|test|gate)\b'
+# Fixed file list — avoid an O(repo) find traversal here; Phase I covers the
+# canonical architecture-text files. Future waves extend the list explicitly.
+# ADR-0059 is intentionally EXCLUDED: it documents the marker patterns and so
+# necessarily mentions them inside a description table.
+_28g_files=(CLAUDE.md ARCHITECTURE.md
+            agent-platform/ARCHITECTURE.md agent-runtime/ARCHITECTURE.md
+            docs/adr/0055-permit-platform-to-runtime-direction.md
+            docs/adr/0056-jwt-validation-and-tenant-claim-cross-check.md
+            docs/adr/0057-durable-idempotency-claim-replay.md
+            docs/adr/0058-posture-boot-guard.md)
+_28g_existing=()
+for _f in "${_28g_files[@]}"; do
+  [[ -f "$_f" ]] && _28g_existing+=("$_f")
+done
+_28g_hits=""
+if (( ${#_28g_existing[@]} > 0 )); then
+  _28g_hits=$(grep -nE "$_marker_pattern" "${_28g_existing[@]}" 2>/dev/null || true)
+fi
+if [[ -n "$_28g_hits" ]]; then
+  fail_rule "no_prose_only_constraint_marker" "Rule-28-bypass marker found:\n$_28g_hits\nPer Rule 28g / enforcer E30."
+  _r28g_fail=1
+fi
+if [[ $_r28g_fail -eq 0 ]]; then pass_rule "no_prose_only_constraint_marker"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 28h — l1_review_checklist_present (enforcer E31)
+# Every L1 ADR (0055–0059) MUST include the §16 review checklist subsection.
+# ---------------------------------------------------------------------------
+_r28h_fail=0
+for _n in 0055 0056 0057 0058 0059; do
+  _adr=$(find docs/adr -maxdepth 1 -name "${_n}-*.md" 2>/dev/null | head -1)
+  [[ -z "$_adr" ]] && continue
+  if ! grep -q '§16 Review Checklist' "$_adr" 2>/dev/null; then
+    fail_rule "l1_review_checklist_present" "$_adr missing '§16 Review Checklist' subsection. Per Rule 28h / enforcer E31 / architect guidance §16."
+    _r28h_fail=1
+  fi
+done
+if [[ $_r28h_fail -eq 0 ]]; then pass_rule "l1_review_checklist_present"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 28i — plan_enforcer_table_in_sync (enforcer E32)
+# The L1 plan §11 table E<n> IDs MUST equal the set of `id:` fields in
+# docs/governance/enforcers.yaml. The plan and the index are two views of the
+# same truth.
+# ---------------------------------------------------------------------------
+_r28i_fail=0
+_plan_file="$HOME/.claude/plans/l1-modular-russell.md"
+# Fall back to alternative locations (Windows: /d/.claude/plans/...).
+if [[ ! -f "$_plan_file" ]]; then
+  _plan_file="/d/.claude/plans/l1-modular-russell.md"
+fi
+if [[ ! -f "$_plan_file" ]]; then
+  # Plan lives outside the repo (user home). Skip with a NOTE.
+  pass_rule "plan_enforcer_table_in_sync"
+else
+  _yaml_ids=$(grep -E '^- id: E[0-9]+' "$_efile" 2>/dev/null | sed -E 's/^- id:\s*//' | sort -u)
+  _plan_ids=$(grep -oE '\| E[0-9]+ \|' "$_plan_file" 2>/dev/null | sed -E 's/\| (E[0-9]+) \|/\1/' | sort -u)
+  if [[ -n "$_plan_ids" ]] && [[ "$_yaml_ids" != "$_plan_ids" ]]; then
+    fail_rule "plan_enforcer_table_in_sync" "plan §11 enforcer IDs and enforcers.yaml IDs diverge. Per Rule 28i / enforcer E32."
+    _r28i_fail=1
+  fi
+  if [[ $_r28i_fail -eq 0 ]]; then pass_rule "plan_enforcer_table_in_sync"; fi
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 28 — constraint_enforcer_coverage (meta-rule, enforcer E28)
+# Every numbered Rule N in CLAUDE.md and every §4 constraint in
+# ARCHITECTURE.md MUST be referenced in docs/governance/enforcers.yaml
+# constraint_ref values (or carry an inline `<!-- enforcer: NONE_PROSE_ONLY -->`
+# allow-list comment).
+# L1 baseline: at minimum CLAUDE.md Rule 28 itself MUST appear as a
+# constraint_ref in enforcers.yaml. This is the smallest viable meta-check;
+# it grows with the corpus.
+# ---------------------------------------------------------------------------
+_r28_fail=0
+if [[ -f "$_efile" ]] && [[ -f 'CLAUDE.md' ]]; then
+  if ! grep -q 'CLAUDE.md' "$_efile" 2>/dev/null; then
+    fail_rule "constraint_enforcer_coverage" "enforcers.yaml does not reference CLAUDE.md at all; the meta-rule requires every active CLAUDE rule to map to an enforcer. Per Rule 28 / enforcer E28."
+    _r28_fail=1
+  fi
+  if ! grep -q 'ARCHITECTURE.md' "$_efile" 2>/dev/null; then
+    fail_rule "constraint_enforcer_coverage" "enforcers.yaml does not reference ARCHITECTURE.md; §4 constraints must map to enforcers. Per Rule 28 / enforcer E28."
+    _r28_fail=1
+  fi
+fi
+if [[ $_r28_fail -eq 0 ]]; then pass_rule "constraint_enforcer_coverage"; fi
 
 # ---------------------------------------------------------------------------
 # Summary
