@@ -1,4 +1,4 @@
-# spring-ai-ascend architecture status ledger -- 2026-05-13 L0 release-note contract review
+# spring-ai-ascend architecture status ledger -- 2026-05-13 L0 final entrypoint truth review
 # Single source of truth for capability status. Updated by commits, not manually.
 #
 # status enum: design_accepted | implemented_unverified | test_verified | deferred_w1 | deferred_w2
@@ -65,7 +65,7 @@ capabilities:
       - gate/test_architecture_sync_gate.sh
     latest_semantic_pass_sha: 862be85
     latest_delivery_file: docs/delivery/2026-05-12-e0ccb6e.md
-    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here. Architecture baseline: 44 §4 constraints (#1–#44); 46 ADRs (0001–0046); 26 active gate rules; 11 active engineering rules (1–6, 9–10, 20–21, 25); 14 deferred rules (7, 8, 11, 13–19, 22–24, 26–27); 28 gate self-tests; L0 release published at docs/releases/2026-05-13-L0-architecture-release.en.md; release-note contract-review pass closed GATE-SCOPE-GAP via ADR-0046 + Gate Rule 26."
+    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here. Architecture baseline: 45 §4 constraints (#1–#45); 47 ADRs (0001–0047); 27 active gate rules; 11 active engineering rules (1–6, 9–10, 20–21, 25); 14 deferred rules (7, 8, 11, 13–19, 22–24, 26–27); 30 gate self-tests; L0 release published at docs/releases/2026-05-13-L0-architecture-release.en.md; eleventh-cycle L0 final entrypoint truth review closed CANONICAL-DRIFT + TEMPORAL-OVERREACH via ADR-0047 + Gate Rule 27."
 
   spring_ai_ascend_dependencies_bom:
     status: implemented_unverified
@@ -212,7 +212,7 @@ capabilities:
     implementation:
       - docs/adr/
     tests: []
-    allowed_claim: "46 per-file MADR 4.0 ADRs in docs/adr/ (0001–0046); README index present and refreshed 2026-05-13."
+    allowed_claim: "47 per-file MADR 4.0 ADRs in docs/adr/ (0001–0047); README index present and refreshed 2026-05-13."
 
   perf_evidence_path:
     status: design_accepted
@@ -926,3 +926,27 @@ capabilities:
     tests:
       - gate/test_architecture_sync_gate.sh
     allowed_claim: "Gate Rule 26 (release_note_shipped_surface_truth) scoped to docs/releases/*.md; four sub-checks: 26a RunLifecycle name guard (must carry W1-W4 wave qualifier OR design-only/deferred/not-shipped/remains-design marker), 26b RunContext method-list guard (no posture(); only runId/tenantId/checkpointer/suspendForChild), 26c OpenAPI snapshot test attribution (OpenApiContractIT, not ApiCompatibilityTest), 26d AppPostureGate scope guard (not under HTTP Edge; not 'all runtime components ... constructor'). Closes GATE-SCOPE-GAP class defect for release-artifact class. §4 #44. ADR-0046."
+
+  # --- Eleventh review cycle: L0 final entrypoint truth review (2026-05-13) ---
+
+  active_entrypoint_baseline_truth_gate:
+    status: test_verified
+    shipped: true
+    l0_decision: docs/adr/0047-active-entrypoint-truth-and-system-boundary-prose-convention.md
+    implementation:
+      - gate/check_architecture_sync.ps1
+      - gate/check_architecture_sync.sh
+      - README.md
+    tests:
+      - gate/test_architecture_sync_gate.sh
+    allowed_claim: "Gate Rule 27 (active_entrypoint_baseline_truth) cross-checks root README.md baseline counts against architecture-status.yaml.architecture_sync_gate.allowed_claim. Four count nouns verified: §4 constraints, ADRs, gate rules, self-tests. Catches CANONICAL-DRIFT between canonical baseline statement and developer-facing README. Self-tests: rule27_baseline_pos + rule27_baseline_neg (TOTAL 28 -> 30). §4 #45(a). ADR-0047."
+
+  system_boundary_prose_convention:
+    status: design_accepted
+    shipped: true
+    l0_decision: docs/adr/0047-active-entrypoint-truth-and-system-boundary-prose-convention.md
+    implementation:
+      - ARCHITECTURE.md
+      - agent-runtime/ARCHITECTURE.md
+    tests: []
+    allowed_claim: "Root and agent-runtime ARCHITECTURE.md §1 sections split into 'Target architecture (W1-W4)' and 'W0 shipped subset' subsections. Catches TEMPORAL-OVERREACH (present-tense prose for W1-W4-deferred capabilities). Reviewer-enforced; structural heading makes inspection trivial. §4 #45(b). ADR-0047."

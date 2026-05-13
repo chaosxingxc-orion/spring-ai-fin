@@ -1,9 +1,9 @@
 # spring-ai-ascend L0 Architecture Release — 2026-05-13
 
-> Status: **L0 architecturally ready** (release-note contract-review pass complete)
+> Status: **L0 architecturally ready** (final entrypoint truth review pass complete)
 > Semantic release SHA: 82a1397
-> Metadata follow-up SHAs: 776d4e7 (set `latest_semantic_pass_sha` to `82a1397`) + contract-review-response delivery (text-corrections + Gate Rule 26)
-> Review cycles: 10 passes (2nd reviewer → post-seventh third-pass → L0 release-note contract review)
+> Metadata follow-up SHAs: 776d4e7 (set `latest_semantic_pass_sha` to `82a1397`) + contract-review-response delivery (text-corrections + Gate Rule 26) + final entrypoint truth review delivery (boundary prose split + Gate Rule 27)
+> Review cycles: 11 passes (2nd reviewer → post-seventh third-pass → L0 release-note contract review → L0 final entrypoint truth review)
 > Released: 2026-05-13
 
 ---
@@ -20,12 +20,12 @@ The W0 kernel is intentionally small. W1–W4 capabilities are staged as design 
 
 | Metric | Value |
 |--------|-------|
-| §4 constraints | 44 (#1–#44) |
-| Active ADRs | 46 (ADR-0001–ADR-0046) |
-| Active gate rules | 26 (PowerShell + bash parity) |
+| §4 constraints | 45 (#1–#45) |
+| Active ADRs | 47 (ADR-0001–ADR-0047) |
+| Active gate rules | 27 (PowerShell + bash parity) |
 | Active engineering rules | 11 (Rules 1–6, 9–10, 20–21, 25) |
 | Deferred engineering rules | 14 (with documented re-introduction triggers) |
-| Gate self-test cases | 28 (covering Rules 1–6, 16, 19, 22, 24, 25, 26) |
+| Gate self-test cases | 30 (covering Rules 1–6, 16, 19, 22, 24, 25, 26, 27) |
 | Maven tests | 101 (all GREEN) |
 
 ---
@@ -59,7 +59,7 @@ The W0 kernel is intentionally small. W1–W4 capabilities are staged as design 
 |-----------|-------------|
 | OpenAPI v1 snapshot | `docs/contracts/openapi-v1.yaml` pinned; `OpenApiContractIT` (via `OpenApiSnapshotComparator`) fails if the pinned snapshot diverges from the live spec at `/v3/api-docs`. `ApiCompatibilityTest` is ArchUnit-only — it enforces SPI purity and module-dependency direction, not the OpenAPI snapshot diff |
 | ArchUnit guards | `OrchestrationSpiArchTest`, `MemorySpiArchTest` (SPI-purity: no Spring imports in SPIs); `ApiCompatibilityTest` (no `com.alibaba.cloud.ai.*` imports + agent-platform→agent-runtime dep ban); `TenantPropagationPurityTest` (no HTTP ThreadLocal in runtime) |
-| Architecture-sync gate | 26 active rules on PowerShell + bash; covers path existence, version consistency, route exposure, module dep direction, SPI contract truth, wave qualifiers, 4-shape defect patterns, and release-note shipped-surface truth |
+| Architecture-sync gate | 27 active rules on PowerShell + bash; covers path existence, version consistency, route exposure, module dep direction, SPI contract truth, wave qualifiers, 4-shape defect patterns, release-note shipped-surface truth, and active-entrypoint baseline truth |
 
 ---
 
@@ -122,9 +122,9 @@ Set `APP_POSTURE` environment variable:
 
 ```
 Maven:        101 tests, 0 failures, 0 errors — BUILD SUCCESS
-Gate (PS):    26/26 rules PASS — GATE: PASS
-Gate (bash):  26/26 rules PASS — GATE: PASS
-Self-tests:   28/28 PASS
+Gate (PS):    27/27 rules PASS — GATE: PASS
+Gate (bash):  27/27 rules PASS — GATE: PASS
+Self-tests:   30/30 PASS
 ```
 
 All `shipped: true` capability rows in `docs/governance/architecture-status.yaml` have resolvable evidence on disk (validated by Gate Rule 24). The release-note text itself is validated for shipped-surface truth by Gate Rule 26 — `RunLifecycle`, `RunContext.posture()`, `ApiCompatibilityTest`-as-OpenAPI-snapshot, and `AppPostureGate` placement/breadth overclaims are mechanically rejected before commit.
@@ -163,6 +163,7 @@ Any future architecture review should audit using these five shapes before decla
 | Post-7th 3rd pass | 4-shape defect model canonized | Rules 24–25; Rule 19/22 strengthened; bash cut-field fix; 22→24 self-tests |
 | L0 release | Final residual fix — Rule 16a widened | Rule 16a catches "switches-to-JWT" class; agent-platform README corrected |
 | L0 release-note contract review | Release-note shipped-surface drift caught: P1×2 (`RunLifecycle` SPI label, `RunContext.posture()`), P2 (`ApiCompatibilityTest` test-attribution), P3 (`AppPostureGate` placement + breadth), P4 (HEAD-SHA ambiguity) | ADR-0046 + Gate Rule 26 (`release_note_shipped_surface_truth`) with 4 sub-checks (RunLifecycle name guard, RunContext method-list guard, OpenAPI test attribution, AppPostureGate scope guard); §4 #44; +4 self-tests (24→28); release-note text corrected to match Java surface |
+| L0 final entrypoint truth review | Active-entrypoint drift caught: P1 (root README baseline drift — CANONICAL-DRIFT between README counts and `architecture-status.yaml.allowed_claim`), P2 (root + agent-runtime ARCHITECTURE.md §1 system-boundary prose using present tense for W1-W4 capabilities — TEMPORAL-OVERREACH), P3 (header-metadata staleness convention undefined) | ADR-0047 + Gate Rule 27 (`active_entrypoint_baseline_truth`) cross-checks README counts against canonical YAML; §1 boundary prose split into target architecture (W1–W4) vs W0 shipped subset in root + agent-runtime ARCHITECTURE.md; header-metadata convention codified (content-change-tracked, not re-review-tracked); §4 #45; +2 self-tests (28→30); root README baseline already corrected at SHA `0ed6a35` via prior README refresh |
 
 ---
 
@@ -181,12 +182,14 @@ The following are known, intentional, and documented:
 
 ## References
 
-- `ARCHITECTURE.md` — full §4 constraint list (#1–#44)
-- `docs/adr/README.md` — ADR index (0001–0046)
+- `ARCHITECTURE.md` — full §4 constraint list (#1–#45)
+- `docs/adr/README.md` — ADR index (0001–0047)
 - `docs/governance/architecture-status.yaml` — capability status ledger with shipped evidence
 - `docs/cross-cutting/posture-model.md` — posture matrix
-- `gate/check_architecture_sync.ps1` + `gate/check_architecture_sync.sh` — 26 gate rules
-- `gate/test_architecture_sync_gate.sh` — 28 self-tests
+- `gate/check_architecture_sync.ps1` + `gate/check_architecture_sync.sh` — 27 gate rules
+- `gate/test_architecture_sync_gate.sh` — 30 self-tests
 - `CLAUDE.md` — 11 active engineering rules
 - `docs/reviews/2026-05-13-l0-release-note-contract-review.en.md` — tenth-cycle review input
+- `docs/reviews/2026-05-13-l0-final-entrypoint-truth-review.en.md` — eleventh-cycle review input
 - `docs/adr/0046-release-note-shipped-surface-truth.md` — Gate Rule 26 + GATE-SCOPE-GAP closure
+- `docs/adr/0047-active-entrypoint-truth-and-system-boundary-prose-convention.md` — Gate Rule 27 + CANONICAL-DRIFT closure + system-boundary prose convention

@@ -1,18 +1,16 @@
 # spring-ai-ascend Platform — Architecture
 
-> Last updated: 2026-05-13 (L0 release-note contract review — §4 #44, ADR-0046, Gate Rule 26, GATE-SCOPE-GAP closure for `docs/releases/*.md`, +4 self-tests (24→28); post-seventh third-pass: §4 #42-#43, ADR-0045, Gate Rules 24-25, Rule 19 strengthened, Rule 22 PS case-sensitivity fix, REF-DRIFT path-existence gate, HISTORY-PARADOX W0-evidence-skeleton archived, PERIPHERAL-DRIFT entry-point wave-qualifier gate, shared ACTIVE_NORMATIVE_DOCS enumerator, self-tests for Rules 19/22/24/25, refresh-metadata reconciliation across 11 active-corpus files).
+> Last updated: 2026-05-13 (L0 final entrypoint truth review — §4 #45, ADR-0047, Gate Rule 27, system-boundary prose split into target architecture vs W0 shipped subset, active-entrypoint baseline truth gate, header-metadata convention codified, +2 self-tests (28→30); L0 release-note contract review — §4 #44, ADR-0046, Gate Rule 26, GATE-SCOPE-GAP closure for `docs/releases/*.md`, +4 self-tests (24→28); post-seventh third-pass: §4 #42-#43, ADR-0045, Gate Rules 24-25, Rule 19 strengthened, Rule 22 PS case-sensitivity fix, REF-DRIFT path-existence gate, HISTORY-PARADOX W0-evidence-skeleton archived, PERIPHERAL-DRIFT entry-point wave-qualifier gate, shared ACTIVE_NORMATIVE_DOCS enumerator, self-tests for Rules 19/22/24/25, refresh-metadata reconciliation across 11 active-corpus files).
 
 ## 1. System boundary
 
-spring-ai-ascend is a self-hostable agent runtime for financial-services operators.
-It accepts authenticated tenant HTTP requests, drives LLMs through a tool-calling
-loop with audit-grade evidence, and persists durable side effects through an
-idempotent outbox. Built on Spring Boot 4.0.5 + Java 21.
+`spring-ai-ascend` is a self-hostable agent-runtime architecture for financial-services operators. The system boundary below is split into the **target architecture** (the W1–W4 product contract) and the **W0 shipped subset** (what runs today). All target-architecture sentences are written in target tense; W0 shipped behavior is enumerated separately below and in `§5`.
 
-**Not in scope:** admin UI, LangChain4j dispatch, Python sidecars (out-of-process IPC),
-multi-region replication, on-device models. In-process polyglot (GraalVM Polyglot embedded in
-the JVM) is a W3-optional sandbox impl per ADR-0018 — it is not a sidecar. See
-`docs/CLAUDE-deferred.md` for deferred items.
+**Target architecture (W1–W4).** The W1–W4 product accepts authenticated tenant HTTP requests, drives LLMs through a tool-calling loop with audit-grade evidence, and persists durable side effects through an idempotent outbox. Built on Spring Boot 4.0.5 + Java 21.
+
+**W0 shipped subset.** What runs at the current release: a `GET /v1/health` probe; `TenantContextFilter` + `IdempotencyHeaderFilter` posture-aware edge filters; the Orchestration SPI contracts (`Orchestrator`, `GraphExecutor`, `AgentLoopExecutor`, `SuspendSignal`, `Checkpointer`, `ExecutorDefinition`, `RunContext`); the `Run` entity + `RunStatus` formal DFA validator; posture-gated in-memory reference executors (`SyncOrchestrator`, `SequentialGraphExecutor`, `IterativeAgentLoopExecutor`, `InMemoryCheckpointer`, `InMemoryRunRegistry`) that fail-closed in research/prod via `AppPostureGate`; the `ResilienceContract` operation-routing SPI; the `GraphMemoryRepository` SPI scaffold (no adapter shipped); contract-truth tests (`OpenApiContractIT`, `ApiCompatibilityTest`, `OrchestrationSpiArchTest`, `TenantPropagationPurityTest`). The LLM gateway, tool registry, outbox publisher, durable Postgres checkpointer, ActionGuard, and Temporal workflow implementations are staged as W1–W4 design contracts (see `§5` + `docs/governance/architecture-status.yaml`); they are not present as half-built runtime paths.
+
+**Not in scope:** admin UI, LangChain4j dispatch, Python sidecars (out-of-process IPC), multi-region replication, on-device models. In-process polyglot (GraalVM Polyglot embedded in the JVM) is a W3-optional sandbox impl per ADR-0018 — it is not a sidecar. See `docs/CLAUDE-deferred.md` for deferred items.
 
 ---
 
@@ -502,6 +500,22 @@ only `java.*` (enforced by `OrchestrationSpiArchTest`, `MemorySpiArchTest`).
     Rule 26 (`release_note_shipped_surface_truth`) enforces this with four sub-checks (26a name
     guard, 26b method-list guard, 26c test attribution, 26d scope guard). Closes the
     GATE-SCOPE-GAP class defect for the release-artifact class. See ADR-0046.
+
+45. **Active-entrypoint truth and system-boundary prose convention.** Two
+    sub-constraints, both enforced under ADR-0047:
+    (a) **Baseline cross-check.** The root `README.md` MUST contain the four architecture
+        baseline counts (§4 constraints, ADRs, gate rules, gate self-tests) currently
+        asserted by `docs/governance/architecture-status.yaml.architecture_sync_gate.allowed_claim`.
+        If the canonical baseline advances, the README MUST advance with it; the gate rejects
+        stale-count drift before commit.
+    (b) **Target-vs-W0 prose split.** The system-boundary section (`§1`) of the root and
+        module `ARCHITECTURE.md` files MUST explicitly separate target architecture (W1–W4)
+        from the W0 shipped subset. Present-tense prose describing future-wave capabilities
+        as if they are running today is forbidden in active entrypoint docs; either qualify
+        with a wave marker or move the sentence under a target-architecture heading.
+    Gate Rule 27 (`active_entrypoint_baseline_truth`) enforces sub-constraint (a)
+    mechanically. Sub-constraint (b) is enforced by review and by the §1 structure itself.
+    See ADR-0047.
 
 ---
 

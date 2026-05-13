@@ -12,7 +12,7 @@
 
 - Formal release: [docs/releases/2026-05-13-L0-architecture-release.en.md](docs/releases/2026-05-13-L0-architecture-release.en.md)
 - Per-capability shipped/deferred ledger: [docs/governance/architecture-status.yaml](docs/governance/architecture-status.yaml)
-- Architecture baseline: 44 §4 constraints · 46 ADRs · 26 gate rules · 28 self-tests · 11 active engineering rules · 101 Maven tests GREEN.
+- Architecture baseline: 45 §4 constraints · 47 ADRs · 27 gate rules · 30 self-tests · 11 active engineering rules · 101 Maven tests GREEN.
 
 ## Quick start
 
@@ -68,5 +68,5 @@ Full matrix: [docs/cross-cutting/posture-model.md](docs/cross-cutting/posture-mo
 
 - [docs/releases/](docs/releases/) — formal release notes.
 - [docs/governance/architecture-status.yaml](docs/governance/architecture-status.yaml) — capability ledger.
-- [gate/README.md](gate/README.md) — architecture-sync gate (26 rules + 28 self-tests).
+- [gate/README.md](gate/README.md) — architecture-sync gate (27 rules + 30 self-tests).
 - [docs/cross-cutting/oss-bill-of-materials.md](docs/cross-cutting/oss-bill-of-materials.md) — OSS dependency policy.

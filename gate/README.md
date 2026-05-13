@@ -1,6 +1,6 @@
 # gate/ — Architecture-Sync Gate
 
-> Document-corpus consistency checks for spring-ai-ascend. **26 active rules** with PowerShell + bash parity, backed by **28 self-tests**.
+> Document-corpus consistency checks for spring-ai-ascend. **27 active rules** with PowerShell + bash parity, backed by **30 self-tests**.
 
 ## What is this?
 
@@ -12,9 +12,9 @@ It does **not** prove the running system behaves correctly. That is the operator
 
 | File | Role |
 |------|------|
-| `check_architecture_sync.ps1` | Windows PowerShell gate (26 rules) |
+| `check_architecture_sync.ps1` | Windows PowerShell gate (27 rules) |
 | `check_architecture_sync.sh` | POSIX bash gate — line-for-line parity with the PowerShell script |
-| `test_architecture_sync_gate.sh` | Self-test harness — 28 cases covering Rules 1–6 and 16, 19, 22, 24, 25, 26 |
+| `test_architecture_sync_gate.sh` | Self-test harness — 30 cases covering Rules 1–6 and 16, 19, 22, 24, 25, 26, 27 |
 | `doctor.ps1` / `doctor.sh` | Environment probe — `APP_POSTURE`, required env vars, `mvnw` exec bit, Java availability |
 | `run_operator_shape_smoke.ps1` / `.sh` | Fail-closed shells for the W4 operator-shape gate (no runnable artifact yet) |
 | `check_spring_ai_milestone.sh` | Spring AI milestone-version probe (separate concern) |
@@ -30,7 +30,7 @@ bash gate/check_architecture_sync.sh
 pwsh gate/check_architecture_sync.ps1
 ```
 
-Exit `0` and `GATE: PASS` if all 26 rules pass; exit `1` and `GATE: FAIL` if any rule fails. Per-rule output is `PASS: <name>` or `FAIL: <name> -- <reason>`.
+Exit `0` and `GATE: PASS` if all 27 rules pass; exit `1` and `GATE: FAIL` if any rule fails. Per-rule output is `PASS: <name>` or `FAIL: <name> -- <reason>`.
 
 ## Running self-tests
 
@@ -38,7 +38,7 @@ Exit `0` and `GATE: PASS` if all 26 rules pass; exit `1` and `GATE: FAIL` if any
 bash gate/test_architecture_sync_gate.sh
 ```
 
-Expected: `Tests passed: 28/28`. Self-tests cover the rules most prone to regression (Rules 1–6 plus 16, 19, 22, 24, 25, 26) with positive and negative fixtures. Full gate verification still requires running the PowerShell or bash gate against the real repo.
+Expected: `Tests passed: 30/30`. Self-tests cover the rules most prone to regression (Rules 1–6 plus 16, 19, 22, 24, 25, 26, 27) with positive and negative fixtures. Full gate verification still requires running the PowerShell or bash gate against the real repo.
 
 ## Rule catalog
 
@@ -70,6 +70,7 @@ Expected: `Tests passed: 28/28`. Self-tests cover the rules most prone to regres
 | 24 | `shipped_row_evidence_paths_exist` | `l2_documents:` and `latest_delivery_file:` on shipped rows must exist on disk | ADR-0045 |
 | 25 | `peripheral_wave_qualifier` | SPI Javadoc and active markdown must not name future-wave impls without a wave qualifier (W0–W4) | ADR-0045 |
 | 26 | `release_note_shipped_surface_truth` | `docs/releases/*.md` must not overclaim `RunLifecycle` as W0, invent `RunContext.posture()`, misattribute the OpenAPI snapshot to `ApiCompatibilityTest`, or over-generalise `AppPostureGate` scope | ADR-0046 |
+| 27 | `active_entrypoint_baseline_truth` | Root `README.md` baseline counts (§4 constraints, ADRs, gate rules, gate self-tests) must match `architecture-status.yaml.architecture_sync_gate.allowed_claim` | ADR-0047 |
 
 ## Self-test coverage
 
@@ -84,8 +85,9 @@ Expected: `Tests passed: 28/28`. Self-tests cover the rules most prone to regres
 | 24 | 2 (pos + neg) | ADR-0045 |
 | 25 | 2 (pos + neg) | ADR-0045 |
 | 26 | 4 (pos + neg for RunLifecycle name guard; pos + neg for RunContext method-list guard) | ADR-0046 |
+| 27 | 2 (pos + neg for §4 baseline cross-check) | ADR-0047 |
 
-Total: 28. Rules without self-tests (7–15, 17–18, 20–21, 23) are exercised end-to-end by running the gate against the live repo.
+Total: 30. Rules without self-tests (7–15, 17–18, 20–21, 23) are exercised end-to-end by running the gate against the live repo.
 
 ## Audit trail
 
@@ -97,4 +99,5 @@ Total: 28. Rules without self-tests (7–15, 17–18, 20–21, 23) are exercised
 - [CLAUDE.md](../CLAUDE.md) — engineering Rule 25 (architecture-text truth) defines the prose-vs-enforcer contract.
 - [docs/adr/0045-shipped-row-evidence-path-existence-and-peripheral-wave-qualifier.md](../docs/adr/0045-shipped-row-evidence-path-existence-and-peripheral-wave-qualifier.md) — Rules 24 + 25.
 - [docs/adr/0046-release-note-shipped-surface-truth.md](../docs/adr/0046-release-note-shipped-surface-truth.md) — Rule 26.
+- [docs/adr/0047-active-entrypoint-truth-and-system-boundary-prose-convention.md](../docs/adr/0047-active-entrypoint-truth-and-system-boundary-prose-convention.md) — Rule 27.
 - [docs/governance/architecture-status.yaml](../docs/governance/architecture-status.yaml) — the per-capability ledger Rules 1, 7, 19, 24 read.

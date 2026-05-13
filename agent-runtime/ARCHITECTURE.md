@@ -1,14 +1,32 @@
-# agent-runtime -- L1 architecture (2026-05-13 post-seventh third-pass refresh)
+# agent-runtime -- L1 architecture (2026-05-13 L0 final entrypoint truth review refresh)
 
 > Owner: runtime | Wave: W0..W4 | Maturity: W0
-> Last updated: 2026-05-13 (post-seventh third-pass)
+> Last updated: 2026-05-13 (L0 final entrypoint truth review — §1 boundary prose split into target vs W0 shipped; previously refreshed at post-seventh third-pass)
 
 ## 1. System boundary
 
-`agent-runtime` is the **cognitive runtime kernel**. It receives an authenticated,
-tenant-bound `RunRequest` from `agent-platform`, drives one or more LLMs through a
-tool-calling loop, persists run state, and emits durable events via the outbox. It
-trusts that `agent-platform` has already authenticated and bound the tenant.
+`agent-runtime` is the **cognitive runtime kernel**. The boundary below separates the
+**target architecture** (the W1–W4 contract) from the **W0 shipped subset** (what runs today).
+Both views trust that `agent-platform` has already authenticated and bound the tenant.
+
+**Target architecture (W1–W4).** The runtime receives an authenticated, tenant-bound
+`RunRequest` from `agent-platform`, drives one or more LLMs through a tool-calling loop,
+persists run state to a durable backend, and emits durable side effects via the outbox.
+ActionGuard, the MCP tool registry, Temporal workflows, and the per-tenant capability
+registry layer onto this contract.
+
+**W0 shipped subset.** At the current release, `agent-runtime` ships: orchestration SPI
+contracts (`Orchestrator`, `GraphExecutor`, `AgentLoopExecutor`, `SuspendSignal`,
+`Checkpointer`, `ExecutorDefinition`, `RunContext`); the `Run` entity, `RunStatus` formal
+DFA, and `RunStateMachine` validator; posture-gated in-memory reference executors
+(`SyncOrchestrator`, `SequentialGraphExecutor`, `IterativeAgentLoopExecutor`,
+`InMemoryCheckpointer`, `InMemoryRunRegistry`) — these fail-closed in research/prod via
+`AppPostureGate`; the `ResilienceContract` operation-routing SPI; the `GraphMemoryRepository`
+SPI scaffold (no adapter); the `OssApiProbe` classpath shape probe; and the
+`IdempotencyRecord` contract-spine entity. The LLM gateway (`llm/`), outbox publisher
+(`outbox/`), tool registry (`tool/`), ActionGuard (`action/`), and Temporal workflow
+package (`temporal/`) are listed in `§4` as wave-staged placeholders — no Java
+implementation ships at W0.
 
 ## 2. OSS dependencies
 

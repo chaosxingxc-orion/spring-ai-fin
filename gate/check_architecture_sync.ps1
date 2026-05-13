@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-  spring-ai-ascend architecture-sync gate (L0 release-note contract review, 26 rules).
+  spring-ai-ascend architecture-sync gate (L0 final entrypoint truth review, 27 rules).
 
 .DESCRIPTION
   Exits 0 if all rules pass, 1 if any fail.
@@ -35,6 +35,7 @@
    24. shipped_row_evidence_paths_exist    -- l2_documents: and latest_delivery_file: on shipped rows must exist on disk (ADR-0045)
    25. peripheral_wave_qualifier           -- SPI Javadoc and active docs must not name future-wave impls without wave qualifier (ADR-0045)
    26. release_note_shipped_surface_truth  -- docs/releases/*.md must not overclaim RunLifecycle as W0, invent RunContext.posture(), misattribute OpenAPI snapshot to ApiCompatibilityTest, or over-generalise AppPostureGate scope (ADR-0046)
+   27. active_entrypoint_baseline_truth    -- root README.md baseline counts (§4 constraints, ADRs, gate rules, gate self-tests) must match architecture-status.yaml.architecture_sync_gate.allowed_claim (ADR-0047)
 
 .PARAMETER LocalOnly
   Not used by this script (kept for invocation parity with old version).
@@ -953,6 +954,52 @@ if (Test-Path $releasesDir) {
   }
 }
 if (-not $r26Fail) { Pass-Rule 'release_note_shipped_surface_truth' }
+
+# ---------------------------------------------------------------------------
+# Rule 27 — active_entrypoint_baseline_truth
+# ADR-0047: root README.md MUST contain the four architecture baseline counts
+# currently asserted by docs/governance/architecture-status.yaml
+# architecture_sync_gate.allowed_claim. Catches CANONICAL-DRIFT between the
+# canonical baseline statement and the developer-facing README.
+# ---------------------------------------------------------------------------
+$r27Fail = $false
+$statusYamlPath27 = Join-Path $repoRoot 'docs/governance/architecture-status.yaml'
+$readmePath27 = Join-Path $repoRoot 'README.md'
+if ((Test-Path $statusYamlPath27) -and (Test-Path $readmePath27)) {
+  $yamlContent27 = Get-Content -Raw -LiteralPath $statusYamlPath27
+  $blockMatch27 = [regex]::Match($yamlContent27, 'architecture_sync_gate:[\s\S]*?allowed_claim:\s*"([^"]+)"')
+  if (-not $blockMatch27.Success) {
+    Fail-Rule 'active_entrypoint_baseline_truth' "$statusYamlPath27 missing architecture_sync_gate.allowed_claim line. Per ADR-0047 Gate Rule 27 the canonical baseline statement must exist."
+    $r27Fail = $true
+  } else {
+    $claim27 = $blockMatch27.Groups[1].Value
+    $readmeContent27 = Get-Content -Raw -LiteralPath $readmePath27
+    $checks27 = @(
+      @{ Label = '§4 constraints'; YamlRegex = '\b(\d+)\s+§4\s+constraints'; ReadmeRegex = '\b(\d+)\s+§4\s+constraints' },
+      @{ Label = 'ADRs'; YamlRegex = '\b(\d+)\s+ADRs'; ReadmeRegex = '\b(\d+)\s+ADRs' },
+      @{ Label = 'gate rules'; YamlRegex = '\b(\d+)\s+active\s+gate\s+rules'; ReadmeRegex = '\b(\d+)\s+(?:active\s+)?gate\s+rules' },
+      @{ Label = 'self-tests'; YamlRegex = '\b(\d+)\s+gate\s+self-tests'; ReadmeRegex = '\b(\d+)\s+(?:gate\s+)?self-tests' }
+    )
+    foreach ($chk in $checks27) {
+      $yamlM = [regex]::Match($claim27, $chk.YamlRegex)
+      if (-not $yamlM.Success) { continue }
+      $expectedN = $yamlM.Groups[1].Value
+      $readmeMatches = [regex]::Matches($readmeContent27, $chk.ReadmeRegex)
+      if ($readmeMatches.Count -eq 0) {
+        Fail-Rule 'active_entrypoint_baseline_truth' "$readmePath27 missing baseline count for '$($chk.Label)'. Per ADR-0047 Gate Rule 27 the README MUST contain '$expectedN $($chk.Label)' (current canonical baseline from architecture-status.yaml.architecture_sync_gate.allowed_claim)."
+        $r27Fail = $true
+      } else {
+        foreach ($rm in $readmeMatches) {
+          if ($rm.Groups[1].Value -ne $expectedN) {
+            Fail-Rule 'active_entrypoint_baseline_truth' "$readmePath27 asserts '$($rm.Groups[1].Value) $($chk.Label)' but canonical baseline is '$expectedN $($chk.Label)'. Per ADR-0047 Gate Rule 27 these MUST match."
+            $r27Fail = $true
+          }
+        }
+      }
+    }
+  }
+}
+if (-not $r27Fail) { Pass-Rule 'active_entrypoint_baseline_truth' }
 
 # ---------------------------------------------------------------------------
 # Summary

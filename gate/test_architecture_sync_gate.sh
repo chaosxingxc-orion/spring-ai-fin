@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# spring-ai-ascend architecture-sync gate self-test (L0 release-note contract review).
-# PARTIAL COVERAGE: covers Rules 1-6 + Rules 16, 19, 22, 24, 25, 26 (28 tests).
+# spring-ai-ascend architecture-sync gate self-test (L0 final entrypoint truth review).
+# PARTIAL COVERAGE: covers Rules 1-6 + Rules 16, 19, 22, 24, 25, 26, 27 (30 tests).
 # Full gate verification requires running: pwsh gate/check_architecture_sync.ps1
-# The full gate has 26 active rules; this self-test covers Rules 1-6 and 16/19/22/24/25/26.
-# Prints: Tests passed: N/28
-# Exits 0 if all 28 pass, 1 otherwise.
+# The full gate has 27 active rules; this self-test covers Rules 1-6 and 16/19/22/24/25/26/27.
+# Prints: Tests passed: N/30
+# Exits 0 if all 30 pass, 1 otherwise.
 
 set -uo pipefail
 export LC_ALL=C
@@ -14,7 +14,7 @@ cd "$repo_root"
 
 passed=0
 failed=0
-TOTAL=28
+TOTAL=30
 
 ok() {
   echo "PASS [$1]: $2"
@@ -626,6 +626,58 @@ if [[ $_r26b_neg_fail -eq 1 ]]; then
   ok "rule26_runcontext_neg" "RunContext with posture() correctly detected"
 else
   fail "rule26_runcontext_neg" "expected posture() alongside RunContext to be detected"
+fi
+
+# ---------------------------------------------------------------------------
+# RULE 27 — active_entrypoint_baseline_truth
+# Positive: synthetic YAML + README with matching §4 count → PASS
+# Negative: synthetic YAML + README with mismatched §4 count → FAIL
+# ---------------------------------------------------------------------------
+
+## Positive: matching baseline counts pass
+_r27_pos="$scratch/r27_pos"
+mkdir -p "$_r27_pos/docs/governance"
+cat > "$_r27_pos/docs/governance/architecture-status.yaml" <<'EOF'
+capabilities:
+  architecture_sync_gate:
+    allowed_claim: "Architecture baseline: 45 §4 constraints (#1–#45); 47 ADRs (0001–0047); 27 active gate rules; 30 gate self-tests."
+EOF
+cat > "$_r27_pos/README.md" <<'EOF'
+- Architecture baseline: 45 §4 constraints · 47 ADRs · 27 gate rules · 30 self-tests
+EOF
+_r27_pos_claim=$(awk '/^[[:space:]]+architecture_sync_gate:/{flag=1} flag && /allowed_claim:/{print; exit}' "$_r27_pos/docs/governance/architecture-status.yaml")
+_r27_pos_readme=$(cat "$_r27_pos/README.md")
+_r27_pos_fail=0
+_r27_pos_exp=$(printf '%s' "$_r27_pos_claim" | grep -oE '[0-9]+[[:space:]]+§4[[:space:]]+constraints' | grep -oE '^[0-9]+' | head -1)
+_r27_pos_act=$(printf '%s' "$_r27_pos_readme" | grep -oE '[0-9]+[[:space:]]+§4[[:space:]]+constraints' | grep -oE '^[0-9]+' | head -1)
+[[ "$_r27_pos_exp" != "$_r27_pos_act" ]] && _r27_pos_fail=1
+if [[ $_r27_pos_fail -eq 0 ]]; then
+  ok "rule27_baseline_pos" "matching baseline counts correctly pass"
+else
+  fail "rule27_baseline_pos" "expected matching baseline counts to pass (exp=$_r27_pos_exp act=$_r27_pos_act)"
+fi
+
+## Negative: README §4 count mismatches YAML → FAIL
+_r27_neg="$scratch/r27_neg"
+mkdir -p "$_r27_neg/docs/governance"
+cat > "$_r27_neg/docs/governance/architecture-status.yaml" <<'EOF'
+capabilities:
+  architecture_sync_gate:
+    allowed_claim: "Architecture baseline: 45 §4 constraints (#1–#45); 47 ADRs (0001–0047); 27 active gate rules; 30 gate self-tests."
+EOF
+cat > "$_r27_neg/README.md" <<'EOF'
+- Architecture baseline: 44 §4 constraints · 47 ADRs · 27 gate rules · 30 self-tests
+EOF
+_r27_neg_claim=$(awk '/^[[:space:]]+architecture_sync_gate:/{flag=1} flag && /allowed_claim:/{print; exit}' "$_r27_neg/docs/governance/architecture-status.yaml")
+_r27_neg_readme=$(cat "$_r27_neg/README.md")
+_r27_neg_fail=0
+_r27_neg_exp=$(printf '%s' "$_r27_neg_claim" | grep -oE '[0-9]+[[:space:]]+§4[[:space:]]+constraints' | grep -oE '^[0-9]+' | head -1)
+_r27_neg_act=$(printf '%s' "$_r27_neg_readme" | grep -oE '[0-9]+[[:space:]]+§4[[:space:]]+constraints' | grep -oE '^[0-9]+' | head -1)
+[[ "$_r27_neg_exp" != "$_r27_neg_act" ]] && _r27_neg_fail=1
+if [[ $_r27_neg_fail -eq 1 ]]; then
+  ok "rule27_baseline_neg" "mismatched §4 baseline correctly detected (exp=$_r27_neg_exp act=$_r27_neg_act)"
+else
+  fail "rule27_baseline_neg" "expected mismatched §4 baseline to be detected"
 fi
 
 # ---------------------------------------------------------------------------
