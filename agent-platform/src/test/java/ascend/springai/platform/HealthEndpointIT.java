@@ -1,7 +1,7 @@
 package ascend.springai.platform;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -10,10 +10,13 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.notNullValue;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * W0 acceptance test: GET /v1/health returns 200, body has status + sha +
@@ -40,17 +43,22 @@ class HealthEndpointIT {
     @LocalServerPort
     private int port;
 
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final HttpClient HTTP = HttpClient.newHttpClient();
+
     @Test
-    void healthReturnsUpWithDbPingAndSha() {
-        given()
-                .port(port)
-            .when()
-                .get("/v1/health")
-            .then()
-                .statusCode(200)
-                .body("status", equalTo("UP"))
-                .body("sha", notNullValue())
-                .body("db_ping_ns", greaterThan(0))
-                .body("ts", notNullValue());
+    @SuppressWarnings("unchecked")
+    void healthReturnsUpWithDbPingAndSha() throws Exception {
+        HttpResponse<String> response = HTTP.send(
+                HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/v1/health")).build(),
+                HttpResponse.BodyHandlers.ofString());
+
+        assertThat(response.statusCode()).isEqualTo(200);
+
+        Map<String, Object> body = MAPPER.readValue(response.body(), Map.class);
+        assertThat(body.get("status")).isEqualTo("UP");
+        assertThat(body.get("sha")).isNotNull();
+        assertThat(((Number) body.get("db_ping_ns")).longValue()).isGreaterThan(0L);
+        assertThat(body.get("ts")).isNotNull();
     }
 }

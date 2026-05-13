@@ -12,9 +12,12 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.InputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.Map;
 
-import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -51,6 +54,17 @@ class OpenApiContractIT {
     private int port;
 
     private static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory());
+    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+    private static final HttpClient HTTP = HttpClient.newHttpClient();
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> fetchLiveSpec() throws Exception {
+        HttpResponse<String> response = HTTP.send(
+                HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/v3/api-docs")).build(),
+                HttpResponse.BodyHandlers.ofString());
+        assertThat(response.statusCode()).isEqualTo(200);
+        return JSON_MAPPER.readValue(response.body(), Map.class);
+    }
 
     @Test
     @SuppressWarnings("unchecked")
@@ -59,14 +73,7 @@ class OpenApiContractIT {
         assertThat(pinned).as("pinned spec on classpath at /contracts/openapi-v1-pinned.yaml").isNotNull();
         Map<String, Object> pinnedSpec = YAML_MAPPER.readValue(pinned, Map.class);
 
-        Map<String, Object> liveSpec = given()
-                .port(port)
-                .when()
-                .get("/v3/api-docs")
-                .then()
-                .statusCode(200)
-                .extract()
-                .as(Map.class);
+        Map<String, Object> liveSpec = fetchLiveSpec();
         assertThat(liveSpec).as("live OpenAPI spec from /v3/api-docs").isNotNull();
 
         OpenApiSnapshotComparator.ComparisonResult result =
@@ -83,14 +90,7 @@ class OpenApiContractIT {
         assertThat(pinned).as("pinned spec on classpath").isNotNull();
         Map<String, Object> pinnedSpec = YAML_MAPPER.readValue(pinned, Map.class);
 
-        Map<String, Object> liveSpec = given()
-                .port(port)
-                .when()
-                .get("/v3/api-docs")
-                .then()
-                .statusCode(200)
-                .extract()
-                .as(Map.class);
+        Map<String, Object> liveSpec = fetchLiveSpec();
 
         OpenApiSnapshotComparator.ComparisonResult result =
                 OpenApiSnapshotComparator.compareResponseSchemas(pinnedSpec, liveSpec);
@@ -101,15 +101,8 @@ class OpenApiContractIT {
 
     @Test
     @SuppressWarnings("unchecked")
-    void liveSpecInfoIsPresent() {
-        Map<String, Object> spec = given()
-                .port(port)
-                .when()
-                .get("/v3/api-docs")
-                .then()
-                .statusCode(200)
-                .extract()
-                .as(Map.class);
+    void liveSpecInfoIsPresent() throws Exception {
+        Map<String, Object> spec = fetchLiveSpec();
         assertThat(spec).containsKey("info");
         Map<String, Object> info = (Map<String, Object>) spec.get("info");
         assertThat(info).containsKey("title");
