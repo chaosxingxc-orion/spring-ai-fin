@@ -275,14 +275,14 @@ The following are known, intentional, and documented:
 
 v1 baseline → v2 baseline diff:
 
-| Dimension | v1 (frozen 82a1397) | v2 (current) | Delta |
-|-----------|---------------------|--------------|-------|
-| §4 constraints | 45 | 50 | +5 (#46–#50 from ADRs 0048–0052) |
-| Active ADRs | 47 | 52 | +5 (0048 Service Layer; 0049 C/S Hydration; 0050 Workflow Intermediary + Rhythm; 0051 Memory Ownership; 0052 Skill Topology) |
-| Gate rules | 27 | 29 | +2 (Rule 28 `release_note_baseline_truth`; Rule 29 `whitepaper_alignment_matrix_present`) |
-| Self-tests | 30 | 35 | +5 (Rule 28 pos/neg/no-freeze + Rule 29 coverage) |
-| Active engineering rules | 11 | 11 | No change |
-| Maven tests | 101 | 101+ | CI hardening preserved test count; deny-by-default IT updated |
+| Dimension at v2 | v2 baseline | Change from v1 |
+|-----------------|-------------|----------------|
+| §4 constraints v2 | 50 | +5 over v1's 45 (#46–#50 from ADRs 0048–0052) |
+| Total ADRs v2 | 52 | +5 over v1's 47 (0048 Service Layer; 0049 C/S Hydration; 0050 Workflow Intermediary + Rhythm; 0051 Memory Ownership; 0052 Skill Topology) |
+| Gate-rule count v2 | 29 | +2 over v1's 27 (Rule 28 `release_note_baseline_truth`; Rule 29 `whitepaper_alignment_matrix_present`) |
+| Self-test count v2 | 35 | +5 over v1's 30 (Rule 28 pos/neg/no-freeze + Rule 29 coverage) |
+| Active engineering rules v2 | 11 | unchanged from v1's 11 |
+| Maven tests v2 | 101+ | CI hardening preserved v1's 101 test count; deny-by-default IT updated |
 
 **No regression vector.** Every v1 capability that was shipped is still shipped; every v1 deferral is still deferred (now with stronger ADR backing). The Service-Layer Microservice Commitment is a deployment-topology decision that does not alter the SPI surface; the whitepaper-alignment work is contract-level naming with implementation deferred.
 
