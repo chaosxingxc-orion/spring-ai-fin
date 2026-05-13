@@ -12,6 +12,12 @@ spring:
       # docs/CLAUDE-deferred.md, so the autoconfig is excluded here; the
       # dependency is retained so PlatformOssApiProbe still compiles.
       - io.github.resilience4j.springboot3.verifier.autoconfigure.SpringBoot3VerifierAutoConfiguration
+  cloud:
+    vault:
+      # Vault starter is pinned for W2 secrets work; W0 has no Vault token,
+      # so the autoconfig would fail at startup. PlatformOssApiProbe only
+      # references VaultProperties as a compile-time citation.
+      enabled: false
   threads:
     virtual:
       enabled: true   # ADR-01 + Loom; HikariCP 5 pool is virtual-thread-friendly.
