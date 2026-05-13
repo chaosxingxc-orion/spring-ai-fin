@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# spring-ai-ascend architecture-sync gate -- L1 Rule-28 expansion (39 rules; 29 base + 10 Rule-28 sub-checks).
+# spring-ai-ascend architecture-sync gate -- L1 Rule-28 expansion + Phase K (40 rules; 29 base + 11 Rule-28 sub-checks).
 # Exits 0 if all rules pass, 1 if any fail.
 # Each rule prints PASS: <name> or FAIL: <name> -- <reason>.
 # Prints GATE: PASS or GATE: FAIL at the end.
@@ -44,6 +44,7 @@
 #  28g. no_prose_only_constraint_marker                -- no TODO/FIXME/XXX/deferred:enforce|enforcer|test|gate in CLAUDE.md / ARCHITECTURE.md (enforcer E30)
 #  28h. l1_review_checklist_present                    -- ADRs 0055–0059 contain '§16 Review Checklist' (enforcer E31)
 #  28i. plan_enforcer_table_in_sync                    -- plan §11 IDs == enforcers.yaml IDs (enforcer E32)
+#  28j. enforcer_artifact_paths_exist                   -- every artifact: path in enforcers.yaml resolves on disk (enforcer E33, Phase K audit fix F6)
 #  28.  constraint_enforcer_coverage                   -- enforcers.yaml references CLAUDE.md AND ARCHITECTURE.md (meta-rule, enforcer E28)
 
 set -uo pipefail
@@ -1188,16 +1189,25 @@ if [[ $_r28f_fail -eq 0 ]]; then pass_rule "enforcers_yaml_wellformed"; fi
 # ---------------------------------------------------------------------------
 _r28g_fail=0
 _marker_pattern='(TODO|FIXME|XXX|deferred)[[:space:]]*:[[:space:]]*(enforce|enforcer|test|gate)\b'
-# Fixed file list — avoid an O(repo) find traversal here; Phase I covers the
-# canonical architecture-text files. Future waves extend the list explicitly.
-# ADR-0059 is intentionally EXCLUDED: it documents the marker patterns and so
-# necessarily mentions them inside a description table.
-_28g_files=(CLAUDE.md ARCHITECTURE.md
-            agent-platform/ARCHITECTURE.md agent-runtime/ARCHITECTURE.md
-            docs/adr/0055-permit-platform-to-runtime-direction.md
-            docs/adr/0056-jwt-validation-and-tenant-claim-cross-check.md
-            docs/adr/0057-durable-idempotency-claim-replay.md
-            docs/adr/0058-posture-boot-guard.md)
+# Canonical architecture-text files + every L1+ ADR (00[5-9]X glob). ADR-0059
+# is exempt because it documents the marker patterns themselves; any future
+# L1+ ADR that legitimately needs to document the markers must explicitly
+# extend the _28g_exempt list (rather than silently drop out of scope).
+# Phase K (audit fix F7): switched from a hardcoded list to a glob with an
+# explicit exempt set so new ADRs are auto-covered.
+_28g_files=(CLAUDE.md ARCHITECTURE.md)
+while IFS= read -r _arch; do
+  [[ -n "$_arch" ]] && _28g_files+=("$_arch")
+done < <(ls agent-platform/ARCHITECTURE.md agent-runtime/ARCHITECTURE.md 2>/dev/null || true)
+_28g_exempt=("docs/adr/0059-code-as-contract-architectural-enforcement.md")
+while IFS= read -r _adr; do
+  [[ -z "$_adr" ]] && continue
+  _skip=0
+  for _ex in "${_28g_exempt[@]}"; do
+    [[ "$_adr" == "$_ex" ]] && _skip=1 && break
+  done
+  [[ $_skip -eq 0 ]] && _28g_files+=("$_adr")
+done < <(ls docs/adr/00[5-9][0-9]-*.md 2>/dev/null | sort || true)
 _28g_existing=()
 for _f in "${_28g_files[@]}"; do
   [[ -f "$_f" ]] && _28g_existing+=("$_f")
@@ -1251,6 +1261,31 @@ else
   fi
   if [[ $_r28i_fail -eq 0 ]]; then pass_rule "plan_enforcer_table_in_sync"; fi
 fi
+
+# ---------------------------------------------------------------------------
+# Rule 28j — enforcer_artifact_paths_exist (Phase K audit fix F6, enforcer E33)
+# Every `artifact:` path in docs/governance/enforcers.yaml MUST resolve to a
+# real file on disk. `#anchor` suffixes (e.g. `RunHttpContractIT.java#bodyDrift`
+# or `check_architecture_sync.sh#rule_10`) are stripped before path resolution.
+# Closes the gate-gap that let E12's IdempotencyDurabilityIT.java ship pointing
+# at a non-existent file.
+# ---------------------------------------------------------------------------
+_r28j_fail=0
+if [[ -f "$_efile" ]]; then
+  while IFS= read -r _aline; do
+    [[ -z "$_aline" ]] && continue
+    _apath=${_aline#*artifact:}
+    _apath=${_apath#"${_apath%%[![:space:]]*}"}  # ltrim
+    _apath=${_apath%%#*}                          # strip #anchor
+    _apath=${_apath%"${_apath##*[![:space:]]}"}   # rtrim
+    [[ -z "$_apath" ]] && continue
+    if [[ ! -e "$_apath" ]]; then
+      fail_rule "enforcer_artifact_paths_exist" "enforcers.yaml declares artifact path '$_apath' which does not exist on disk. Per Rule 28j / enforcer E33."
+      _r28j_fail=1
+    fi
+  done < <(grep -E '^[[:space:]]*artifact:' "$_efile" 2>/dev/null || true)
+fi
+if [[ $_r28j_fail -eq 0 ]]; then pass_rule "enforcer_artifact_paths_exist"; fi
 
 # ---------------------------------------------------------------------------
 # Rule 28 — constraint_enforcer_coverage (meta-rule, enforcer E28)

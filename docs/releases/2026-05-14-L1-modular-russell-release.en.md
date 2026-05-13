@@ -187,12 +187,73 @@ constraint to a real test or gate-script rule.
     `PostureBootGuardIT`, `JwtDevLocalModeGuardIT`, `PostureBindingIT`.
   - `idempotency_store`: `shipped: true` with the full JDBC + in-memory
     set + V2 migration + three test classes.
-  - (Additional W1 rows around HTTP contract reconciliation and
-    metric_tenant_tag updated in follow-up; the high-confidence promotions
-    land in this commit.)
-- Module ARCHITECTURE.md updates (`agent-platform`, `agent-runtime`):
-  unchanged in structure — L1 added no new packages to `agent-runtime`
-  and grew `agent-platform` along the boundaries already documented.
+  - (Additional W1 rows `http_contract_w1_reconciliation` and
+    `metric_tenant_tag_w1` updated in follow-up alongside the OpenAPI
+    snapshot regen; the high-confidence promotions land in this commit.)
+- Module ARCHITECTURE.md updates: `agent-platform/ARCHITECTURE.md`
+  refreshed in Phase K (commit `feat(L1/K)`) with L1 subsections for
+  `auth/`, `tenant/` (cross-check addition), `idempotency/` (durable
+  store), `posture/`, `web/runs/`, `observability/`, and `architecture/`.
+  `agent-runtime/ARCHITECTURE.md` unchanged — L1 added no new packages
+  to the runtime kernel.
+
+### 2.11 Phase K — Post-J Audit Remediation
+
+The three-Explore-agent audit after Phase J landed surfaced one **P0**,
+four **P1**, and four **P2** findings. Phase K (commit `feat(L1/K)`)
+closes them and adds two new enforcer rows (E33, E34).
+
+- **F1 (P0 — Rule 28 self-violation)**: enforcer E12 declared
+  `IdempotencyDurabilityIT.java` at a path that did not exist on disk.
+  Phase K lands the missing test (`agent-platform/.../idempotency/jdbc/
+  IdempotencyDurabilityIT.java`): four cases proving the claim row
+  persists across a simulated downstream failure, retry sees the
+  existing record, body-drift still returns the original hash, and
+  `expires_at` exceeds `created_at` by the configured TTL.
+- **F6 (P0 — gate gap that let F1 ship)**: no rule validated `artifact:`
+  path existence. Phase K adds **Gate Rule 28j**
+  (`enforcer_artifact_paths_exist`) + enforcer row **E33**, which walks
+  every `artifact:` line in `enforcers.yaml`, strips the `#anchor`
+  suffix, and fails if the file is missing.
+- **F2 + F3 (P1 — path drift)**: enforcer rows E14 and E25 had
+  artifact paths that didn't match disk. Phase K updates the YAML:
+  E14 → `idempotency/IdempotencyStorePostgresIT.java#bodyDriftReturns409`;
+  E25 → `contracts/OpenApiContractIT.java`.
+- **F4 (P1 — PERIPHERAL-DRIFT)**: `agent-platform/ARCHITECTURE.md` was
+  unchanged since 2026-05-13 and did not document the L1 packages.
+  Phase K refreshes the file with subsections for every new L1 package
+  + enforcer-row cross-references (see §2.10 above for the list).
+- **F5 (P2 — vacuous test transparency)**: `RepositoryPaginationTest`
+  ships with `allowEmptyShould(true)` because there are no Spring Data
+  repository beans yet. Phase K extends the `asserts:` field of E16 in
+  `enforcers.yaml` to make the vacuity explicit: *"…vacuous at L1 (no
+  Spring Data Repository beans yet)."*
+- **F7 (P2 — gate-scope brittleness)**: Rule 28g's `_28g_files` list
+  hardcoded ADRs 0055–0058 only. Phase K switches to a glob
+  (`docs/adr/00[5-9][0-9]-*.md`) with an explicit exempt list — ADR-0059
+  remains exempt because it documents the marker patterns; future L1+
+  ADRs are auto-covered.
+- **F8 (P2 — release-note vagueness)**: §2.10 said "additional W1 rows
+  updated in follow-up" without naming them. Phase K names them
+  (`http_contract_w1_reconciliation`, `metric_tenant_tag_w1`).
+- **F9 (P2 — META-PATTERN, Phase B side-effect)**: Phase B amended
+  Gate Rule 10 to allow `agent-platform → agent-runtime` but did not
+  bound which runtime packages may be imported. A future refactor
+  could couple the HTTP edge to runtime internals. Phase K adds
+  `PlatformImportsOnlyRuntimePublicApiTest` (ArchUnit) + enforcer row
+  **E34**: platform main sources may only depend on `runs.*`,
+  `orchestration.spi.*`, `posture.*`, and the `InMemoryRunRegistry`
+  adapter; every other runtime package is off-limits.
+
+Enforcer index grows from 32 → **34 rows** (E1–E34). Plan §11 table
+extended to match (enforces E32 / `plan_enforcer_table_in_sync`).
+Gate Rule count grows from 39 → **40 rules** (29 base + 11 Rule-28
+sub-checks, including the new 28j).
+
+**Findings NOT in Phase K**:
+- **F10 (TEMPORAL-OVERREACH)** — none detected; ADRs and release note
+  correctly wave-qualify W2+ items.
+- **F11 (ZOMBIE-CODE)** — none detected; W0 stub fully replaced.
 
 ## 3. Explicitly Deferred at L1
 
@@ -231,26 +292,37 @@ Per L1 plan §14, the following passes:
 | Unit tests | `AuthPropertiesValidationTest`, `JwtTenantClaimCrossCheckTest`, `IdempotencyStoreTest`, `RunStatusEnumTest`, `ErrorEnvelopeContractTest`, `TenantTagMeterFilterTest` | exit 0 |
 | Integration tests (no Docker) | `PostureBootGuardIT`, `JwtDevLocalModeGuardIT`, `InMemoryIdempotencyAllowFlagIT`, `JwtValidationIT` | exit 0 |
 | Integration tests (Docker required) | `IdempotencyStorePostgresIT`, `RunHttpContractIT` | runs in `mvn verify` |
-| Architecture-sync gate (full) | `bash gate/check_architecture_sync.sh` | base 29 rules PASS; 10 new sub-rules either PASS or surfaced fixable findings (now resolved); Windows shell occasionally exhibits >2 min total runtime — content of the sub-rule output verified via prior run `b0jgt6py7` |
+| Architecture-sync gate (full) | `bash gate/check_architecture_sync.sh` | 40/40 rules PASS expected after Phase K (29 base + 11 Rule-28 sub-checks 28a–28j + meta). Windows shell occasionally exhibits >2 min total runtime — content of the sub-rule output verified via prior run `b0jgt6py7` plus Phase K spot-checks. |
 
-## 5. Risks Carried Forward
+## 5. Risks Carried Forward (After Phase K)
 
 - **`RunHttpContractIT` JWT-authenticated matrix**: ships in a follow-up
   (needs the JWT-mint helper). The unauthenticated, route-shape, and
   permit-list rows pass today.
-- **OpenAPI snapshot regen**: pending the same follow-up. `OpenApiContractIT`
-  exists; the snapshot file will refresh once the run endpoints are in the
-  spec dump.
+- **OpenAPI snapshot regen**: pending the same follow-up.
+  `OpenApiContractIT` exists at `contracts/OpenApiContractIT.java`
+  (E25 path corrected in Phase K); the snapshot file will refresh
+  once the run endpoints are in the spec dump.
 - **PowerShell mirror gate (`gate/check_architecture_sync.ps1`)**: still
-  carries the base 29 rules. Phase I's 10 Rule-28 sub-rules need a
-  PowerShell port; tracked as a follow-up.
-- **Gate runtime on Windows bash**: occasional >2 min total times. Sub-rules
-  optimised to use `grep -rnE` and `git grep -l` in single calls; further
-  Windows-specific tuning is a follow-up.
-- **Two `architecture-status.yaml` rows** (HTTP contract reconciliation,
-  metric tenant tag) are promotion-ready but not yet re-written in this
-  commit; the implementation evidence exists and the rows update in the
-  same follow-up that ships the OpenAPI snapshot.
+  carries the base 29 rules. The 11 Rule-28 sub-rules (28a–28j + meta)
+  need a PowerShell port; tracked as a follow-up.
+- **Gate runtime on Windows bash**: occasional >2 min total times.
+  Sub-rules optimised to use `grep -rnE` and `git grep -l` in single
+  calls; further Windows-specific tuning is a follow-up.
+- **Two `architecture-status.yaml` rows** (`http_contract_w1_reconciliation`,
+  `metric_tenant_tag_w1`) are promotion-ready but not yet re-written;
+  the implementation evidence exists and the rows update alongside the
+  OpenAPI snapshot regen.
+
+**Resolved in Phase K** (no longer carried forward):
+- ~~E12 IdempotencyDurabilityIT.java missing~~ — landed.
+- ~~E14, E25 path drift in enforcers.yaml~~ — paths corrected.
+- ~~agent-platform/ARCHITECTURE.md missing L1 package docs~~ —
+  comprehensive L1 subsections added.
+- ~~No gate rule for enforcer artifact path existence~~ —
+  Rule 28j (`enforcer_artifact_paths_exist`) added.
+- ~~No bound on which runtime packages agent-platform may import~~ —
+  `PlatformImportsOnlyRuntimePublicApiTest` (enforcer E34) added.
 
 ## 6. Commit Trail
 
@@ -263,7 +335,8 @@ Per L1 plan §14, the following passes:
 | G | `d69a84b` | W1 HTTP run API + status-code matrix |
 | H | `b193911` | TenantTagMeterFilter (high-cardinality scrubber) |
 | I | `00f3963` | Rule 28 sub-enforcers (10 gate rules + 3 ArchUnit tests) |
-| J | (this) | Architecture-truth refresh + L1 release note |
+| J | `e871e7e` | Architecture-truth refresh + initial L1 release note |
+| K | (this) | Post-J audit remediation: Rule 28 self-violation fix (E12), path drift (E14, E25), PERIPHERAL-DRIFT (agent-platform/ARCHITECTURE.md), Phase B META-PATTERN (E34), gate-gap closure (E33 / Rule 28j) |
 
 ## 7. Where to Look Next
 

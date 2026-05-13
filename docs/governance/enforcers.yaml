@@ -95,7 +95,7 @@
 - id: E14
   constraint_ref: "L1 plan §8.2; ADR-0057"
   kind: integration
-  artifact: agent-platform/src/test/java/ascend/springai/platform/idempotency/jdbc/IdempotencyStorePostgresIT.java#bodyDriftReturns409
+  artifact: agent-platform/src/test/java/ascend/springai/platform/idempotency/IdempotencyStorePostgresIT.java#bodyDriftReturns409
   asserts: "same key + different request_hash returns 409 idempotency_body_drift"
 
 - id: E15
@@ -108,7 +108,7 @@
   constraint_ref: "architect guidance §11"
   kind: archunit
   artifact: agent-platform/src/test/java/ascend/springai/platform/architecture/RepositoryPaginationTest.java
-  asserts: "Spring Data repository methods returning Collection/Page declare Pageable OR are annotated @BoundedQuery"
+  asserts: "Spring Data repository methods returning Collection/Page declare Pageable OR are annotated @BoundedQuery. Test ships with allowEmptyShould(true) — armed for W1 persistence work; vacuous at L1 (no Spring Data Repository beans yet)."
 
 - id: E17
   constraint_ref: "architect guidance §11"
@@ -161,7 +161,7 @@
 - id: E25
   constraint_ref: "architect guidance §15.6; pre-existing"
   kind: integration
-  artifact: agent-platform/src/test/java/ascend/springai/platform/web/OpenApiContractIT.java
+  artifact: agent-platform/src/test/java/ascend/springai/platform/contracts/OpenApiContractIT.java
   asserts: "live /v3/api-docs response matches the committed snapshot byte-for-byte"
 
 - id: E26
@@ -205,3 +205,15 @@
   kind: gate-script
   artifact: gate/check_architecture_sync.sh#rule_28i_plan_enforcer_table_in_sync
   asserts: "L1 plan §11 table row IDs equal the set of id: fields in this file"
+
+- id: E33
+  constraint_ref: "L1 plan §18.3 step 1; Phase K audit fix F6; ADR-0059"
+  kind: gate-script
+  artifact: gate/check_architecture_sync.sh#rule_28j_enforcer_artifact_paths_exist
+  asserts: "every artifact: path in this file resolves to a real file on disk (strips #anchor suffix). Closes the gate-gap that let E12 ship pointing at a non-existent test."
+
+- id: E34
+  constraint_ref: "L1 plan §18.3 step 8; ADR-0055; Phase K audit fix F9"
+  kind: archunit
+  artifact: agent-platform/src/test/java/ascend/springai/platform/architecture/PlatformImportsOnlyRuntimePublicApiTest.java
+  asserts: "agent-platform main sources may only import runtime.runs.*, runtime.orchestration.spi.*, runtime.posture.* — never runtime.orchestration.inmemory.*, runtime.resilience.*, runtime.memory.spi.*, or other internal packages."
