@@ -1,7 +1,7 @@
 # spring-ai-ascend L0 Architecture Release — 2026-05-13
 
 > Status: **L0 architecturally ready**
-> HEAD SHA: (updated after commit)
+> HEAD SHA: 82a1397
 > Review cycles: 9 passes (2nd reviewer → post-seventh third-pass)
 > Released: 2026-05-13
 
