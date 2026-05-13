@@ -23,7 +23,7 @@ spring:
   jackson:
     default-property-inclusion: non_null
     serialization:
-      write-dates-as-timestamps: false
+      WRITE_DATES_AS_TIMESTAMPS: false
 
 server:
   port: 8080
