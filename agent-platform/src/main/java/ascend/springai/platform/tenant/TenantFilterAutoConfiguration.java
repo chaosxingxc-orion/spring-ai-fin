@@ -21,4 +21,19 @@ public class TenantFilterAutoConfiguration {
         reg.setOrder(20);
         return reg;
     }
+
+    @Bean
+    JwtTenantClaimCrossCheck jwtTenantClaimCrossCheck(MeterRegistry registry) {
+        return new JwtTenantClaimCrossCheck(registry);
+    }
+
+    @Bean
+    FilterRegistrationBean<JwtTenantClaimCrossCheck> jwtTenantClaimCrossCheckRegistration(
+            JwtTenantClaimCrossCheck filter) {
+        FilterRegistrationBean<JwtTenantClaimCrossCheck> reg = new FilterRegistrationBean<>(filter);
+        // Order 15: after Spring Security's BearerTokenAuthenticationFilter (which
+        // populates SecurityContextHolder), before TenantContextFilter (order 20).
+        reg.setOrder(15);
+        return reg;
+    }
 }

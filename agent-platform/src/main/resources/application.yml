@@ -66,8 +66,12 @@ springdoc:
   swagger-ui:
     path: /swagger-ui
 
-# W0 leaves auth disabled; W1 swaps to oauth2-resource-server with JWT.
-# Keeping a permitAll-default SecurityFilterChain bean in W0 keeps the wiring valid.
+# L1: oauth2-resource-server JWT validation (ADR-0056).
+# `dev` posture boots clean with no `app.auth.*` set (permit list + denyAll for the rest);
+# `research`/`prod` require `app.auth.issuer`, `jwks-uri`, `audience` and `PostureBootGuard`
+# (ADR-0058) aborts startup if any are missing.
+# Set `app.auth.dev-local-mode=true` AND `app.posture=dev` to wire a local-keypair decoder
+# from classpath `auth/dev-jwk.json` (test fixture; never enable outside dev).
 
 logging:
   level:
