@@ -84,7 +84,7 @@ capabilities:
       - gate/test_architecture_sync_gate.sh
     latest_semantic_pass_sha: 404d13a
     latest_delivery_file: docs/delivery/2026-05-12-e0ccb6e.md
-    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here. Architecture baseline: 50 §4 constraints (#1–#50); 52 ADRs (0001–0052); 29 active gate rules; 11 active engineering rules (1–6, 9–10, 20–21, 25); 14 deferred rules (7, 8, 11, 13–19, 22–24, 26–27); 35 gate self-tests; L0 release published at docs/releases/2026-05-13-L0-architecture-release-v2.en.md (current canonical); v1 superseded and archived at docs/archive/2026-05-13-l0-release-note-v1-superseded/ (frozen at SHA 82a1397); v2 re-cut to match canonical baseline 50/52/29/35 and re-audited by six parallel reviewer agents; thirteenth-cycle Whitepaper-Alignment Remediation via ADR-0049/0050/0051/0052 + §4 #47-#50 — C/S Dynamic Hydration Protocol named at L0 contract level; Workflow Intermediary + Mailbox Backpressure + Rhythm track restored as independent third cross-service bus track; Memory and Knowledge Ownership Boundary codified (C-side business ontology vs S-side trajectory; Placeholder Preservation first-class); Skill Topology Scheduler + Capability Bidding named (two-axis tenant×global arbitration); ADR-0048 narrowed; Gate Rules 28-29 added (release-note baseline truth; whitepaper alignment matrix presence); +5 self-tests (30→35); twelfth-cycle Service-Layer Microservice-Architecture Commitment via ADR-0048 + §4 #46."
+    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here. Architecture baseline: 52 §4 constraints (#1–#52); 54 ADRs (0001–0054); 29 active gate rules; 11 active engineering rules (1–6, 9–10, 20–21, 25); 14 deferred rules (7, 8, 11, 13–19, 22–24, 26–27); 35 gate self-tests; L0 release published at docs/releases/2026-05-13-L0-architecture-release-v2.en.md (current canonical); v1 superseded and archived at docs/archive/2026-05-13-l0-release-note-v1-superseded/ (frozen at SHA 82a1397); v2 re-cut to match canonical baseline (originally 50/52/29/35; bumped to 52/54/29/35 by 14th cycle) and re-audited by six parallel reviewer agents; fourteenth-cycle Cohesive Agent Swarm Execution + Long-Connection Containment via ADR-0053/0054 + §4 #51-#52; class-based self-audit (per the 6th+7th cycle methodology) surfaced 11-dimension SpawnEnvelope propagation gap (Class 3 hidden defects) and 3 uncovered resource-explosion vectors (socket-per-tenant cap, file-descriptor bound, in-flight Runs pool cap — Class 7 hidden defects); B/B'/B''/P capability-label notation REJECTED with mapping to existing C-Side/S-Side (ADR-0051) and S-Cloud/S-Edge/C-Device (ADR-0033) vocabularies documented in docs/reviews/2026-05-13-l0-capability-labels-platformization-response.en.md; thirteenth-cycle Whitepaper-Alignment Remediation via ADR-0049/0050/0051/0052 + §4 #47-#50 — C/S Dynamic Hydration Protocol named at L0 contract level; Workflow Intermediary + Mailbox Backpressure + Rhythm track restored as independent third cross-service bus track; Memory and Knowledge Ownership Boundary codified (C-side business ontology vs S-side trajectory; Placeholder Preservation first-class); Skill Topology Scheduler + Capability Bidding named (two-axis tenant×global arbitration); ADR-0048 narrowed; Gate Rules 28-29 added (release-note baseline truth; whitepaper alignment matrix presence); +5 self-tests (30→35); twelfth-cycle Service-Layer Microservice-Architecture Commitment via ADR-0048 + §4 #46."
 
   spring_ai_ascend_dependencies_bom:
     status: implemented_unverified
@@ -1062,7 +1062,7 @@ capabilities:
       - gate/check_architecture_sync.ps1
     tests:
       - gate/test_architecture_sync_gate.sh
-    allowed_claim: "Gate Rule 28 (release_note_baseline_truth) cross-checks docs/releases/*.md baseline tables against canonical architecture_sync_gate.allowed_claim counts UNLESS the release note declares itself a historical artifact via the marker 'Historical artifact frozen at SHA <sha>'. Closes GATE-SCOPE-GAP for release-note baseline drift (Gate Rule 27 only covers README.md). Self-tests: rule28_baseline_pos + rule28_baseline_neg + rule28_baseline_neg_no_freeze_marker. L0 release note v2 at docs/releases/2026-05-13-L0-architecture-release-v2.en.md is the current canonical baseline (50/52/29/35); the v1 historical artifact is archived under docs/archive/2026-05-13-l0-release-note-v1-superseded/ (frozen at SHA 82a1397; out of gate scope by virtue of relocation). Closes reviewer P0-1."
+    allowed_claim: "Gate Rule 28 (release_note_baseline_truth) cross-checks docs/releases/*.md baseline tables against canonical architecture_sync_gate.allowed_claim counts UNLESS the release note declares itself a historical artifact via the marker 'Historical artifact frozen at SHA <sha>'. Closes GATE-SCOPE-GAP for release-note baseline drift (Gate Rule 27 only covers README.md). Self-tests: rule28_baseline_pos + rule28_baseline_neg + rule28_baseline_neg_no_freeze_marker. L0 release note v2 at docs/releases/2026-05-13-L0-architecture-release-v2.en.md is the current canonical baseline (originally 50/52/29/35; bumped to 52/54/29/35 after the 14th cycle landed §4 #51-#52 and ADRs 0053-0054); the v1 historical artifact is archived under docs/archive/2026-05-13-l0-release-note-v1-superseded/ (frozen at SHA 82a1397; out of gate scope by virtue of relocation). Closes reviewer P0-1."
 
   whitepaper_alignment_self_audit:
     status: design_accepted
@@ -1073,3 +1073,117 @@ capabilities:
     tests:
       - gate/test_architecture_sync_gate.sh
     allowed_claim: "Mandatory whitepaper-alignment self-audit produced at docs/reviews/2026-05-13-whitepaper-alignment-self-audit.en.md per reviewer requirement. Eight required sections (whitepaper concept inventory; exact architecture mapping; contract-equivalence check; over-design check; gate-coverage check; release-note truth check; negative-test discipline; explicit residual-risk statement). Conclusion: PASS (L0 is whitepaper-aligned at architecture-contract level; all non-shipped concepts explicitly mapped as design-only or deferred). 3 concept gaps (#4 N:1 multiplexing; #17 hot migration; #23 monolithic-async-loss-of-control as anti-trap) identified honestly with low risk + forward path."
+
+  # --- Fourteenth review cycle: Cohesive Swarm Execution + Long-Connection Containment (2026-05-13) ---
+
+  agent_swarm_cohesive_execution_invariant:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0053-cohesive-agent-swarm-execution.md
+    l2_documents:
+      - ARCHITECTURE.md
+      - docs/adr/0053-cohesive-agent-swarm-execution.md
+    implementation: null
+    tests: []
+    allowed_claim: "Section 4 #51 invariant: agent-spawned child work remains under the same workflow authority by default. SwarmRun is alias for Run with RunScope.SWARM (ADR-0032). ParentRunRef is alias for Run.parentRunId+Run.parentNodeKey (Section 4 #9, W0 shipped). SwarmJoinPolicy is alias for JoinPolicy ALL/ANY/N_OF (ADR-0019). W0 reference impl: single ChildRun via SyncOrchestrator. W2: full taxonomy. See ADR-0053."
+
+  spawn_envelope_contract:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0053-cohesive-agent-swarm-execution.md
+    l2_documents:
+      - docs/adr/0053-cohesive-agent-swarm-execution.md
+    implementation: null
+    tests: []
+    allowed_claim: "15-dimension consolidated envelope: parentRunRef, tenantId, permissionEnvelopeRef, budgetEnvelope, cancellationPolicy, deadline, traceCorrelation, attemptId, posture, sessionId, businessRuleSubsetRef, placeholderPolicy, memoryOwnershipScope, idempotencyContext, observabilityTags. W0 dimensions shipped: 1 (tenantId via RunContext.tenantId). W0 partial: 5 (cancellationPolicy, deadline, attemptId, posture, observabilityTags). W2 design gaps: 7 (permission scope, budget, trace correlation, session, businessRuleSubset, placeholder policy, memory ownership boundary, audit/actor identity). W1 deferred: 1 (idempotency dedup per ADR-0027). Java type for SpawnEnvelope deferred to W2. See ADR-0053 dimension table."
+
+  cross_workflow_handoff_contract:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0053-cohesive-agent-swarm-execution.md
+    l2_documents:
+      - docs/adr/0053-cohesive-agent-swarm-execution.md
+    implementation: null
+    tests: []
+    allowed_claim: "Explicit escape-hatch contract for child execution genuinely belonging to a different workflow authority. Produces (a) new lifecycle boundary, (b) fresh resume contract, (c) explicit ownership transfer, (d) audit-grade attestation. W0 status: contract-level only; Java type deferred to W2. Implicit cross-workflow execution is forbidden by Section 4 #51. See ADR-0053."
+
+  authority_transfer_boundary_taxonomy:
+    status: design_accepted
+    shipped: true
+    l0_decision: docs/adr/0053-cohesive-agent-swarm-execution.md
+    l2_documents:
+      - docs/adr/0053-cohesive-agent-swarm-execution.md
+      - ARCHITECTURE.md
+    implementation:
+      - agent-platform/src/main/java/ascend/springai/platform/tenant/TenantContextFilter.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/RunContext.java
+    tests:
+      - agent-platform/src/test/java/ascend/springai/platform/tenant/TenantContextFilterIT.java
+      - agent-runtime/src/test/java/ascend/springai/runtime/architecture/TenantPropagationPurityTest.java
+    allowed_claim: "Five named authority-transfer boundaries: (1) HTTP edge to Runtime via TenantContextFilter+RunContext.tenantId (W0 shipped); (2) C-Side to S-Side via HydrationRequest/ResumeEnvelope (L0 contract, ADR-0049); (3) Parent Run to Child Run via SpawnEnvelope (L0 contract, ADR-0053); (4) Run to External Skill via PermissionEnvelope (L0 contract, ADR-0052); (5) Cross-Workflow via CrossWorkflowHandoff (L0 contract, ADR-0053). Each boundary has a named carrier; implicit transfer is forbidden. The Envelope pattern is codified across boundaries."
+
+  long_connection_containment_invariant:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0054-long-connection-containment-runtime-handles.md
+    l2_documents:
+      - ARCHITECTURE.md
+      - docs/adr/0054-long-connection-containment-runtime-handles.md
+    implementation: null
+    tests: []
+    allowed_claim: "Section 4 #52 invariant: long-running calls represented as bounded runtime handles, not unbounded threads/sockets/connections. Netty/epoll is W2+ implementation guidance, NOT L0 contract. See ADR-0054."
+
+  logical_call_handle_principle:
+    status: implemented_unverified
+    shipped: true
+    l0_decision: docs/adr/0054-long-connection-containment-runtime-handles.md
+    l2_documents:
+      - docs/adr/0054-long-connection-containment-runtime-handles.md
+    implementation:
+      - agent-runtime/src/main/java/ascend/springai/runtime/runs/Run.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/SuspendSignal.java
+    tests:
+      - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/spi/SuspendSignalTest.java
+    allowed_claim: "LogicalCallHandle is the L0 alias for Run+SuspendSignal: Run is the lifecycle identity; SuspendSignal is the one interrupt primitive that releases physical resources without losing the logical call. A LogicalCallHandle is NOT equivalent to a TCP connection, thread, or Netty channel. W0 shipped via Run entity + SuspendSignal."
+
+  suspend_instead_of_hold_principle:
+    status: implemented_unverified
+    shipped: true
+    l0_decision: docs/adr/0054-long-connection-containment-runtime-handles.md
+    l2_documents:
+      - docs/adr/0054-long-connection-containment-runtime-handles.md
+    implementation:
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/SuspendSignal.java
+    tests:
+      - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/spi/SuspendSignalTest.java
+    allowed_claim: "Named principle: a long wait MUST become a suspended workflow state when useful compute is not happening. W0 implemented via SuspendReason.RateLimited (ADR-0019) and SuspendReason.AwaitTimer. Idle waits must NOT consume scarce physical resources (threads, sockets, connections, event-loop slots). The principle composes with AdmissionDecision.Yielded (ADR-0050)."
+
+  socket_per_tenant_cap:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0054-long-connection-containment-runtime-handles.md
+    l2_documents:
+      - docs/adr/0054-long-connection-containment-runtime-handles.md
+    implementation: null
+    tests: []
+    allowed_claim: "W1+ deferred resource-explosion vector. Per-tenant socket cap to prevent one tenant from exhausting the cross-instance P2P transport pool. Named here per ADR-0054 so it cannot be silently dropped during W1+ design. Re-introduction trigger: first W1 deployment that supports more than one tenant on the same Agent Service instance."
+
+  file_descriptor_bound:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0054-long-connection-containment-runtime-handles.md
+    l2_documents:
+      - docs/adr/0054-long-connection-containment-runtime-handles.md
+    implementation: null
+    tests: []
+    allowed_claim: "W1+ deferred resource-explosion vector. Per-instance file-descriptor bound with per-tenant fairness. Named here per ADR-0054. Re-introduction trigger: first W1 deployment with file-based artifact handles (e.g. Tika document parsing, sandbox executor temp files)."
+
+  in_flight_runs_pool_cap:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0054-long-connection-containment-runtime-handles.md
+    l2_documents:
+      - docs/adr/0054-long-connection-containment-runtime-handles.md
+    implementation: null
+    tests: []
+    allowed_claim: "W1+ deferred resource-explosion vector. Per-Agent-Service-instance cap on the number of in-flight Runs. Prevents an instance from accepting Runs until JVM heap saturates. Named here per ADR-0054. Re-introduction trigger: first W1 deployment that supports concurrent Run admission via ADR-0050 Workflow Intermediary mailbox."

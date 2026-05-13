@@ -12,7 +12,7 @@
 
 - Formal release: [docs/releases/2026-05-13-L0-architecture-release-v2.en.md](docs/releases/2026-05-13-L0-architecture-release-v2.en.md) (v1 superseded — archived under `docs/archive/2026-05-13-l0-release-note-v1-superseded/`)
 - Per-capability shipped/deferred ledger: [docs/governance/architecture-status.yaml](docs/governance/architecture-status.yaml)
-- Architecture baseline: 50 §4 constraints · 52 ADRs · 29 gate rules · 35 self-tests · 11 active engineering rules · 101 Maven tests GREEN.
+- Architecture baseline: 52 §4 constraints · 54 ADRs · 29 gate rules · 35 self-tests · 11 active engineering rules · 101 Maven tests GREEN.
 
 ## Quick start
 

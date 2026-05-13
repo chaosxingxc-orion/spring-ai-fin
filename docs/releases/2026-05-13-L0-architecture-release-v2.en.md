@@ -4,7 +4,7 @@
 
 > Status: **L0 architecturally ready** (after multi-agent self-audit cycle — see Verification section for per-reviewer verdicts)
 > Released: 2026-05-13
-> Review cycles: 13 passes (2nd reviewer → post-seventh third-pass → L0 release-note contract review → L0 final entrypoint truth review → Service-Layer Microservice Commitment → Whitepaper-Alignment Remediation)
+> Review cycles: 14 passes (2nd reviewer → post-seventh third-pass → L0 release-note contract review → L0 final entrypoint truth review → Service-Layer Microservice Commitment → Whitepaper-Alignment Remediation → Cohesive Swarm Execution + Long-Connection Containment + Capability-Labels review)
 > Supersedes: v1 (archived)
 
 ---
@@ -29,8 +29,8 @@ The W0 kernel is intentionally small. W1–W4 capabilities are staged as design 
 
 | Metric | Value |
 |--------|-------|
-| §4 constraints | 50 (#1–#50) |
-| Active ADRs | 52 (ADR-0001–ADR-0052) |
+| §4 constraints | 52 (#1–#52) |
+| Active ADRs | 54 (ADR-0001–ADR-0054) |
 | Active gate rules | 29 (PowerShell + bash parity) |
 | Active engineering rules | 11 (Rules 1–6, 9–10, 20–21, 25) |
 | Deferred engineering rules | 14 (with documented re-introduction triggers) |
@@ -118,6 +118,27 @@ The four baseline counts above MUST match `docs/governance/architecture-status.y
 - `CapabilityRegistry` (extended — contract-level only at L0; Java implementation deferred to W2 per ADR-0052) — capability tags bound to domain permission identifiers; tenant-scoped pre-authorization; rejects with `Rejected(INSUFFICIENT_PERMISSION)` if the requesting tenant lacks the required identifier.
 - **Capability bidding:** only pre-authorized delegates see `BidRequest`; non-authorized bidders silently dropped at the Registry. Bidders respond with `BidResponse(capacityAvailable, expectedStartTime, requiredSubstitutions[], confidence, costEstimate)`.
 - `PermissionEnvelope` — short-lived, signed, subsumption-bounded; S-Side issues per-task action/tool permissions to the winning delegate; revokes on yield.
+
+### Cohesive Agent Swarm Execution (§4 #51, ADR-0053)
+
+- **Invariant**: agent-spawned child work MUST remain under the same workflow authority by default; cross-workflow execution requires an explicit `CrossWorkflowHandoff` and must not occur implicitly.
+- **`SwarmRun`** is the L0 contract alias for `Run` with `RunScope.SWARM` (ADR-0032).
+- **`ParentRunRef`** is the L0 contract alias for `Run.parentRunId` + `Run.parentNodeKey` (§4 #9).
+- **`SwarmJoinPolicy`** is the L0 contract alias for `JoinPolicy: ALL | ANY | N_OF` (ADR-0019).
+- **`SpawnEnvelope`** is the new L0 contract consolidating the 15 lifecycle dimensions that must flow from parent to child on `RunContext.suspendForChild(...)`. At W0, 1 dimension is fully propagated (`tenantId`), 5 are partial, 7 are documented design gaps (W2 contract level), 1 is W1-deferred (idempotency). Java type for `SpawnEnvelope` is deferred to W2 with the full field set.
+- **`CrossWorkflowHandoff`** is the new L0 escape-hatch contract: when child work genuinely belongs to a different workflow authority (e.g. handoff to an external Temporal workflow, peer Agent Service under a different tenant, off-platform partner system), this contract produces a new lifecycle boundary, fresh resume contract, explicit ownership transfer, and audit-grade attestation. Java type deferred to W2.
+- **Five named authority-transfer boundaries** are cataloged: HTTP edge → Runtime (via `TenantContextFilter`); C-Side → S-Side (via `HydrationRequest`/`ResumeEnvelope`); Parent Run → Child Run (via `SpawnEnvelope`); Run → External Skill (via `PermissionEnvelope`); Cross-Workflow (via `CrossWorkflowHandoff`). The "Envelope" pattern is codified across boundaries.
+
+### Long-Connection Containment (§4 #52, ADR-0054)
+
+- **Invariant**: long-running calls MUST be admitted through a bounded runtime-resource model. The architecture MUST NOT assume one logical call equals one blocking thread, one dedicated socket, or one permanently retained physical connection.
+- **`LogicalCallHandle`** is the L0 alias for `Run` + `SuspendSignal` (W0 shipped): the Run is the lifecycle identity; the SuspendSignal is the one interrupt primitive that releases physical resources without losing the logical call.
+- **`ConnectionLease`** is the L0 alias for the bounded transport-resource claim backed by three-track channel isolation (§4 #28, ADR-0031) + bus traffic split (§4 #46, ADR-0048). Implementation may back the lease with Netty channels, HTTP clients, SSE connections, WebSocket sessions, or gRPC streams.
+- **`AdmissionDecision`** (`Accepted | Delayed | Rejected | Yielded`, ADR-0050) is the canonical admission-policy contract — the reviewer-named `LongCallAdmissionPolicy` is the same contract.
+- **`BackpressureSignal`** (`LOCAL_SATURATION | SKILL_SATURATION | TENANT_QUOTA_EXCEEDED | SHUTDOWN`, ADR-0050) is the canonical pressure-signal contract — the reviewer-named `ConnectionPressureSignal` is the same contract.
+- **`SuspendInsteadOfHold`** is the named principle: idle waits MUST become suspended workflow states, implemented at W0 via `SuspendReason.RateLimited` and `SuspendReason.AwaitTimer` (ADR-0019).
+- **Three resource-explosion vectors remain W1+ deferred**: per-tenant socket cap, file-descriptor bound, in-flight Runs pool cap. Named in ADR-0054 + tracked as `architecture-status.yaml` rows so they cannot be silently dropped during W1+ design.
+- **Netty/epoll is W2+ implementation guidance, NOT L0 contract.** No active normative document cites Netty/epoll as required at L0.
 
 ---
 
@@ -255,6 +276,7 @@ None of the CI hardening changed runtime behaviour or contract surface. Architec
 | 12th — Service-Layer Microservice Commitment | Deployment-topology decision: microservice for Service Layer (not per-agent); data-P2P / control-event-bus split | ADR-0048; §4 #46; serverless analysis archived |
 | 13th — Whitepaper-Alignment Remediation | Whitepaper concepts named at L0 contract level: C/S Dynamic Hydration; Workflow Intermediary + Rhythm; Memory Ownership Boundary; Skill Topology + Bidding | ADRs 0049/0050/0051/0052; §4 #47-#50; Gate Rules 28-29; +5 self-tests; whitepaper-alignment matrix at `docs/governance/whitepaper-alignment-matrix.md` |
 | v2 release note + multi-agent self-audit | v1 superseded; six parallel reviewer agents (R1-R6) audit v2 to convergence | This document; reviewer reports under `docs/reviews/2026-05-13-l0-v2-multi-agent-self-audit-r{1-6}.en.md` |
+| 14th — Cohesive Swarm Execution + Long-Connection Containment + Capability-Labels review | Class-based self-audit (8 classes) of `docs/reviews/2026-05-13-l0-capability-labels-platformization.en.md`: PARTIAL ACCEPT parts 1+2 with named contracts cross-referencing existing semantics; REJECT B/B'/B''/P notation; hidden-defect clusters surfaced (11-dimension SpawnEnvelope propagation gap + 3 resource-explosion vectors); response doc organized by class with hidden-defect callouts | ADR-0053 (Cohesive Agent Swarm Execution + SpawnEnvelope + CrossWorkflowHandoff + 5-boundary taxonomy); ADR-0054 (Long-Connection Containment + LogicalCallHandle/ConnectionLease/SuspendInsteadOfHold); §4 #51, #52; 10 new architecture-status.yaml rows; response doc at `docs/reviews/2026-05-13-l0-capability-labels-platformization-response.en.md` |
 
 ---
 
@@ -277,8 +299,8 @@ v1 baseline → v2 baseline diff:
 
 | Dimension at v2 | v2 baseline | Change from v1 |
 |-----------------|-------------|----------------|
-| §4 constraints v2 | 50 | +5 over v1's 45 (#46–#50 from ADRs 0048–0052) |
-| Total ADRs v2 | 52 | +5 over v1's 47 (0048 Service Layer; 0049 C/S Hydration; 0050 Workflow Intermediary + Rhythm; 0051 Memory Ownership; 0052 Skill Topology) |
+| §4 constraints v2 | 52 | +7 over v1's 45 (#46–#50 from ADRs 0048–0052 in cycle 13; #51–#52 from ADRs 0053–0054 in cycle 14) |
+| Total ADRs v2 | 54 | +7 over v1's 47 (0048 Service Layer; 0049 C/S Hydration; 0050 Workflow Intermediary + Rhythm; 0051 Memory Ownership; 0052 Skill Topology; 0053 Cohesive Swarm Execution + SpawnEnvelope; 0054 Long-Connection Containment) |
 | Gate-rule count v2 | 29 | +2 over v1's 27 (Rule 28 `release_note_baseline_truth`; Rule 29 `whitepaper_alignment_matrix_present`) |
 | Self-test count v2 | 35 | +5 over v1's 30 (Rule 28 pos/neg/no-freeze + Rule 29 coverage) |
 | Active engineering rules v2 | 11 | unchanged from v1's 11 |
@@ -313,5 +335,9 @@ v1 baseline → v2 baseline diff:
 - `docs/adr/0050-workflow-intermediary-mailbox-rhythm-track.md` — §4 #48
 - `docs/adr/0051-memory-knowledge-ownership-boundary.md` — §4 #49
 - `docs/adr/0052-skill-topology-scheduler-and-capability-bidding.md` — §4 #50 + Gate Rule 29
+- `docs/adr/0053-cohesive-agent-swarm-execution.md` — §4 #51 (14th cycle); SpawnEnvelope + CrossWorkflowHandoff + 5-boundary taxonomy + 15-dimension propagation table
+- `docs/adr/0054-long-connection-containment-runtime-handles.md` — §4 #52 (14th cycle); LogicalCallHandle + ConnectionLease + SuspendInsteadOfHold + 3 W1+ deferred resource vectors
+- `docs/reviews/2026-05-13-l0-capability-labels-platformization.en.md` — 14th-cycle reviewer input
+- `docs/reviews/2026-05-13-l0-capability-labels-platformization-response.en.md` — class-organized response with hidden-defect callouts
 - `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md` — v1, retained for traceability
 - `docs/archive/2026-05-13-serverless-architecture-future-direction.md` — five-tier topology analysis (future direction)

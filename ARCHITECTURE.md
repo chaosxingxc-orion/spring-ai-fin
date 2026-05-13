@@ -1,6 +1,6 @@
 # spring-ai-ascend Platform — Architecture
 
-> Last updated: 2026-05-13 (Whitepaper-Alignment Remediation — §4 #47-#50, ADR-0049/0050/0051/0052, Gate Rules 28-29, +5 self-tests (30→35); C/S Dynamic Hydration Protocol named at L0 contract level (ADR-0049 — TaskCursor / BusinessRuleSubset / SkillPoolLimit / HydrationRequest / SyncStateResponse / SubStreamFrame / YieldResponse / ResumeEnvelope + degradation authority red line); Workflow Intermediary + Mailbox Backpressure + Rhythm track restored as independent third cross-service bus track (ADR-0050 — WorkflowIntermediary / IntentEvent / Mailbox / AdmissionDecision / BackpressureSignal / WorkStateEvent / SleepDeclaration / WakeupPulse / TickEngine / ChronosHydration); Memory & Knowledge Ownership Boundary (ADR-0051 — C-side business ontology vs S-side trajectory vs delegated; BusinessFactEvent / OntologyUpdateCandidate / PlaceholderPreservationPolicy / SymbolicReturnEnvelope); Skill Topology Scheduler + Capability Bidding (ADR-0052 — two-axis tenant×global arbitration; SkillResourceMatrix / CapabilityRegistry / BidRequest / BidResponse / PermissionEnvelope / SkillSaturationYield); ADR-0048 narrowed (deployment-topology only; subordinate to ADR-0049/0050/0051; heartbeats moved from control bus to Rhythm track per ADR-0050); whitepaper alignment matrix at docs/governance/whitepaper-alignment-matrix.md; mandatory self-audit at docs/reviews/2026-05-13-whitepaper-alignment-self-audit.en.md (PASS); release-note baseline truth gate (Rule 28) closes drift between release notes and canonical YAML; whitepaper-alignment-matrix presence gate (Rule 29) enforces 20 required concept rows; L0 release note frozen at SHA 82a1397 via freeze marker; closes reviewer findings P0-1/P0-2/P0-3/P0-4/P0-5/P1-1/P1-2/P2-1 from docs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md; Service-Layer Microservice-Architecture Commitment — §4 #46, ADR-0048, Service Layer deployed as long-running microservices coordinating via Agent Bus; bus traffic split locked at data-P2P / control-event-bus; serverless direction archived as future work at `docs/archive/2026-05-13-serverless-architecture-future-direction.md`; SPI primitives `SuspendSignal`/`Checkpointer`/`RunRepository`/`RunStateMachine` remain serverless-friendly so W4+ migration stays open; whitepaper §1.3 microservice-dictatorship trap mitigated by scoping microservice to the Service Layer and routing inter-agent calls through the bus by intent; L0 final entrypoint truth review — §4 #45, ADR-0047, Gate Rule 27, system-boundary prose split into target architecture vs W0 shipped subset, active-entrypoint baseline truth gate, header-metadata convention codified, +2 self-tests (28→30); L0 release-note contract review — §4 #44, ADR-0046, Gate Rule 26, GATE-SCOPE-GAP closure for `docs/releases/*.md`, +4 self-tests (24→28); post-seventh third-pass: §4 #42-#43, ADR-0045, Gate Rules 24-25, Rule 19 strengthened, Rule 22 PS case-sensitivity fix, REF-DRIFT path-existence gate, HISTORY-PARADOX W0-evidence-skeleton archived, PERIPHERAL-DRIFT entry-point wave-qualifier gate, shared ACTIVE_NORMATIVE_DOCS enumerator, self-tests for Rules 19/22/24/25, refresh-metadata reconciliation across 11 active-corpus files).
+> Last updated: 2026-05-13 (14th cycle — Cohesive Agent Swarm Execution + Long-Connection Containment via ADR-0053/0054 + §4 #51-#52; class-based self-audit surfaced 11-dimension SpawnEnvelope propagation gap + 3 uncovered resource-explosion vectors; B/B'/B''/P capability-label notation REJECTED with mapping documented in docs/reviews/2026-05-13-l0-capability-labels-platformization-response.en.md; Whitepaper-Alignment Remediation — §4 #47-#50, ADR-0049/0050/0051/0052, Gate Rules 28-29, +5 self-tests (30→35); C/S Dynamic Hydration Protocol named at L0 contract level (ADR-0049 — TaskCursor / BusinessRuleSubset / SkillPoolLimit / HydrationRequest / SyncStateResponse / SubStreamFrame / YieldResponse / ResumeEnvelope + degradation authority red line); Workflow Intermediary + Mailbox Backpressure + Rhythm track restored as independent third cross-service bus track (ADR-0050 — WorkflowIntermediary / IntentEvent / Mailbox / AdmissionDecision / BackpressureSignal / WorkStateEvent / SleepDeclaration / WakeupPulse / TickEngine / ChronosHydration); Memory & Knowledge Ownership Boundary (ADR-0051 — C-side business ontology vs S-side trajectory vs delegated; BusinessFactEvent / OntologyUpdateCandidate / PlaceholderPreservationPolicy / SymbolicReturnEnvelope); Skill Topology Scheduler + Capability Bidding (ADR-0052 — two-axis tenant×global arbitration; SkillResourceMatrix / CapabilityRegistry / BidRequest / BidResponse / PermissionEnvelope / SkillSaturationYield); ADR-0048 narrowed (deployment-topology only; subordinate to ADR-0049/0050/0051; heartbeats moved from control bus to Rhythm track per ADR-0050); whitepaper alignment matrix at docs/governance/whitepaper-alignment-matrix.md; mandatory self-audit at docs/reviews/2026-05-13-whitepaper-alignment-self-audit.en.md (PASS); release-note baseline truth gate (Rule 28) closes drift between release notes and canonical YAML; whitepaper-alignment-matrix presence gate (Rule 29) enforces 20 required concept rows; L0 release note frozen at SHA 82a1397 via freeze marker; closes reviewer findings P0-1/P0-2/P0-3/P0-4/P0-5/P1-1/P1-2/P2-1 from docs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md; Service-Layer Microservice-Architecture Commitment — §4 #46, ADR-0048, Service Layer deployed as long-running microservices coordinating via Agent Bus; bus traffic split locked at data-P2P / control-event-bus; serverless direction archived as future work at `docs/archive/2026-05-13-serverless-architecture-future-direction.md`; SPI primitives `SuspendSignal`/`Checkpointer`/`RunRepository`/`RunStateMachine` remain serverless-friendly so W4+ migration stays open; whitepaper §1.3 microservice-dictatorship trap mitigated by scoping microservice to the Service Layer and routing inter-agent calls through the bus by intent; L0 final entrypoint truth review — §4 #45, ADR-0047, Gate Rule 27, system-boundary prose split into target architecture vs W0 shipped subset, active-entrypoint baseline truth gate, header-metadata convention codified, +2 self-tests (28→30); L0 release-note contract review — §4 #44, ADR-0046, Gate Rule 26, GATE-SCOPE-GAP closure for `docs/releases/*.md`, +4 self-tests (24→28); post-seventh third-pass: §4 #42-#43, ADR-0045, Gate Rules 24-25, Rule 19 strengthened, Rule 22 PS case-sensitivity fix, REF-DRIFT path-existence gate, HISTORY-PARADOX W0-evidence-skeleton archived, PERIPHERAL-DRIFT entry-point wave-qualifier gate, shared ACTIVE_NORMATIVE_DOCS enumerator, self-tests for Rules 19/22/24/25, refresh-metadata reconciliation across 11 active-corpus files).
 
 ## 1. System boundary
 
@@ -619,6 +619,47 @@ only `java.*` (enforced by `OrchestrationSpiArchTest`, `MemorySpiArchTest`).
     subsumption-bounded; the S-Side issues per-task action/tool permissions to the
     winning delegate, propagated only within the declared subsumption boundary; revokes
     on yield. Java types and bidding-protocol wire format deferred W2-W3. See ADR-0052.
+
+51. **Cohesive Agent Swarm Execution.** Agent-spawned child work MUST remain under the same
+    workflow authority by default. A parent `Run` may spawn child `Run`s (aliased
+    `SwarmRun` when `RunScope.SWARM`), delegated tasks, or subprocess-like work only through
+    a **`SpawnEnvelope`** that preserves the 15 lifecycle dimensions enumerated in ADR-0053
+    (parent ref, tenant, permission scope, budget, cancellation policy, deadline, trace
+    correlation, attempt/retry, posture, session, business-rule subset, placeholder policy,
+    memory ownership scope, idempotency context, observability tags). `SpawnEnvelope` is
+    named at L0 contract level; the Java type is deferred to W2. **`SwarmJoinPolicy`** is
+    the L0 contract alias for `JoinPolicy: ALL | ANY | N_OF` (ADR-0019). **Cross-workflow
+    execution** — child work that genuinely belongs to a different workflow authority — MUST
+    use an explicit **`CrossWorkflowHandoff`** contract that produces a new lifecycle
+    boundary, a fresh resume contract, explicit ownership transfer, and audit-grade
+    attestation; cross-workflow execution MUST NOT be implicit. Five named authority-transfer
+    boundaries exist (HTTP→Runtime via `TenantContextFilter`; C-Side→S-Side via
+    `HydrationRequest`/`ResumeEnvelope`; Parent→Child Run via `SpawnEnvelope`; Run→Skill via
+    `PermissionEnvelope`; Cross-Workflow via `CrossWorkflowHandoff`); each boundary has a
+    named carrier and implicit transfer is forbidden. Per-dimension implementation status
+    is tracked in `docs/governance/architecture-status.yaml`. See ADR-0053.
+
+52. **Long-Connection Containment.** Long-running agent calls MUST be admitted through a
+    bounded runtime-resource model. The architecture MUST NOT assume one logical call equals
+    one blocking thread, one dedicated socket, or one permanently retained physical
+    connection. Logical calls are represented by runtime handles (**`LogicalCallHandle`** ≡
+    `Run` + `SuspendSignal`, §4 #9, ADR-0019) that can be suspended, resumed, streamed,
+    cancelled, and accounted for independently from the physical connection used at any
+    moment. **`ConnectionLease`** is the L0 alias for the bounded transport-resource claim
+    backed by three-track channel isolation (§4 #28, ADR-0031) and the data-P2P /
+    control-event-bus split (§4 #46, ADR-0048). Admission is enforced via
+    **`AdmissionDecision`** (`Accepted | Delayed | Rejected | Yielded` — ADR-0050;
+    reviewer-named `LongCallAdmissionPolicy` is the same contract). Resource pressure is
+    signaled via **`BackpressureSignal`** (`LOCAL_SATURATION | SKILL_SATURATION |
+    TENANT_QUOTA_EXCEEDED | SHUTDOWN` — ADR-0050; reviewer-named `ConnectionPressureSignal`
+    is the same contract). Idle waits MUST follow **`SuspendInsteadOfHold`**: a long wait
+    becomes a suspended workflow state when useful compute is not happening, implemented
+    at W0 via `SuspendReason.RateLimited` (ADR-0019) and `SuspendReason.AwaitTimer`. Three
+    resource-explosion vectors remain W1+ deferred (per-tenant socket cap, file-descriptor
+    bound, in-flight Runs pool cap); these are tracked in
+    `docs/governance/architecture-status.yaml`. Concrete transport mechanics (Netty, epoll,
+    channel pools, event-loop schedulers) are W2+ implementation guidance and MUST NOT
+    appear as L0 contract. See ADR-0054.
 
 ---
 
