@@ -78,3 +78,14 @@ is unchanged; the tier classification is a documentation constraint on how field
 - Rule 27 (deferred W3): posture-mandatory sandbox for UNTRUSTED skills
 - `ARCHITECTURE.md §337-347` (updated language shipped this cycle)
 - `architecture-status.yaml` row: `skill_resource_tier_classification`
+
+## Forward note — feeds the ADR-0052 distributed scheduler (whitepaper-alignment remediation, 2026-05-13)
+
+The four enforceability tiers defined here (hard-enforceable, sandbox-enforceable, advisory/receipt, hints) classify which `SkillResourceMatrix` fields can be enforced at runtime. Per ADR-0052 (Skill Topology Scheduler and Capability Bidding, §4 #50), the matrix feeds the distributed scheduler:
+
+- Hard-enforceable fields (quota key, token budget, wall-clock timeout, concurrency cap, trust tier) are consulted at three points in the ADR-0052 scheduler: pre-bid admission, bid scoring, and runtime saturation check.
+- Sandbox-enforceable fields (CPU millis, max memory bytes) are enforced only when ADR-0052's dispatch routes the work through a non-`NoOp` `SandboxExecutor` (ADR-0018).
+- Advisory/receipt fields appear in the `SkillCostReceipt` returned by ADR-0030's `execute()` and are logged for billing/observability; not enforced.
+- Skill-specific hints are passed through to the skill implementation; the scheduler doesn't interpret them.
+
+The enforceability classification is the contract between the local Java SPI (ADR-0030) and the distributed scheduler (ADR-0052): only hard-enforceable fields can drive admission decisions and saturation yields.

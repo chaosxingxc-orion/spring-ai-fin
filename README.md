@@ -12,7 +12,7 @@
 
 - Formal release: [docs/releases/2026-05-13-L0-architecture-release.en.md](docs/releases/2026-05-13-L0-architecture-release.en.md)
 - Per-capability shipped/deferred ledger: [docs/governance/architecture-status.yaml](docs/governance/architecture-status.yaml)
-- Architecture baseline: 46 §4 constraints · 48 ADRs · 27 gate rules · 30 self-tests · 11 active engineering rules · 101 Maven tests GREEN.
+- Architecture baseline: 50 §4 constraints · 52 ADRs · 29 gate rules · 35 self-tests · 11 active engineering rules · 101 Maven tests GREEN.
 
 ## Quick start
 
@@ -43,7 +43,7 @@ Posture is selected by the `APP_POSTURE` environment variable (`dev` / `research
 
 `Run.mode` discriminates `GRAPH` (deterministic state machine) from `AGENT_LOOP` (ReAct-style LLM reasoning). Both modes share one interrupt primitive — `SuspendSignal` — which the `Orchestrator` catches to checkpoint the parent, dispatch a child Run, and resume the parent with the child's result. Three-level bidirectional nesting (graph → agent-loop → graph) is proved by `NestedDualModeIT`.
 
-The full architectural constraint set (§4 #1–#46) and the deferred-capability roadmap (W1–W4) live in [ARCHITECTURE.md](ARCHITECTURE.md) and [docs/governance/architecture-status.yaml](docs/governance/architecture-status.yaml). They are not duplicated here.
+The full architectural constraint set (§4 #1–#50) and the deferred-capability roadmap (W1–W4) live in [ARCHITECTURE.md](ARCHITECTURE.md) and [docs/governance/architecture-status.yaml](docs/governance/architecture-status.yaml). They are not duplicated here.
 
 ## Posture model
 
@@ -61,12 +61,12 @@ Full matrix: [docs/cross-cutting/posture-model.md](docs/cross-cutting/posture-mo
 2. **[docs/STATE.md](docs/STATE.md)** — per-capability shipped/deferred table.
 3. **[ARCHITECTURE.md](ARCHITECTURE.md)** — system boundary, §4 constraints, SPI contracts, decision chains.
 4. **[docs/contracts/](docs/contracts/)** — HTTP API contracts, SPI semantic contracts, pinned OpenAPI snapshot.
-5. **[docs/adr/README.md](docs/adr/README.md)** — Architecture Decision Records (ADR-0001 … ADR-0048).
+5. **[docs/adr/README.md](docs/adr/README.md)** — Architecture Decision Records (ADR-0001 … ADR-0052).
 6. **[CLAUDE.md](CLAUDE.md)** — engineering rules (11 active, 14 deferred with re-introduction triggers).
 
 ## See also
 
 - [docs/releases/](docs/releases/) — formal release notes.
 - [docs/governance/architecture-status.yaml](docs/governance/architecture-status.yaml) — capability ledger.
-- [gate/README.md](gate/README.md) — architecture-sync gate (27 rules + 30 self-tests).
+- [gate/README.md](gate/README.md) — architecture-sync gate (29 rules + 35 self-tests).
 - [docs/cross-cutting/oss-bill-of-materials.md](docs/cross-cutting/oss-bill-of-materials.md) — OSS dependency policy.

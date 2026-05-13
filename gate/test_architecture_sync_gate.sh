@@ -3,7 +3,7 @@
 # PARTIAL COVERAGE: covers Rules 1-6 + Rules 16, 19, 22, 24, 25, 26, 27 (30 tests).
 # Full gate verification requires running: pwsh gate/check_architecture_sync.ps1
 # The full gate has 27 active rules; this self-test covers Rules 1-6 and 16/19/22/24/25/26/27.
-# Prints: Tests passed: N/30
+# Prints: Tests passed: N/35
 # Exits 0 if all 30 pass, 1 otherwise.
 
 set -uo pipefail
@@ -14,7 +14,7 @@ cd "$repo_root"
 
 passed=0
 failed=0
-TOTAL=30
+TOTAL=35
 
 ok() {
   echo "PASS [$1]: $2"
@@ -678,6 +678,154 @@ if [[ $_r27_neg_fail -eq 1 ]]; then
   ok "rule27_baseline_neg" "mismatched §4 baseline correctly detected (exp=$_r27_neg_exp act=$_r27_neg_act)"
 else
   fail "rule27_baseline_neg" "expected mismatched §4 baseline to be detected"
+fi
+
+# ---------------------------------------------------------------------------
+# RULE 28 — release_note_baseline_truth
+# Positive: release note matching canonical baseline → PASS
+# Negative: release note with stale counts and no freeze marker → FAIL
+# Exempt: release note with stale counts but freeze marker → PASS (exempt)
+# ---------------------------------------------------------------------------
+
+## Positive: release note matches canonical baseline → PASS
+_r28_pos="$scratch/r28_pos"
+mkdir -p "$_r28_pos/docs/governance" "$_r28_pos/docs/releases"
+cat > "$_r28_pos/docs/governance/architecture-status.yaml" <<'EOF'
+capabilities:
+  architecture_sync_gate:
+    allowed_claim: "Architecture baseline: 50 §4 constraints (#1–#50); 52 ADRs (0001–0052); 29 active gate rules; 35 gate self-tests."
+EOF
+cat > "$_r28_pos/docs/releases/some-release.md" <<'EOF'
+| §4 constraints | 50 (#1–#50) |
+| Active ADRs | 52 (ADR-0001–ADR-0052) |
+| Active gate rules | 29 |
+| Gate self-test cases | 35 |
+EOF
+_r28_pos_claim=$(awk '/^[[:space:]]+architecture_sync_gate:/{flag=1} flag && /allowed_claim:/{print; exit}' "$_r28_pos/docs/governance/architecture-status.yaml")
+_r28_pos_rf=$(cat "$_r28_pos/docs/releases/some-release.md")
+_r28_pos_exp=$(printf '%s' "$_r28_pos_claim" | grep -oE '[0-9]+[[:space:]]+§4[[:space:]]+constraints' | grep -oE '^[0-9]+' | head -1)
+_r28_pos_match=$(printf '%s' "$_r28_pos_rf" | grep -oE '§4[[:space:]]+constraints[[:space:]]*\|[[:space:]]*[0-9]+' | head -1)
+_r28_pos_act=$(printf '%s' "$_r28_pos_match" | grep -oE '[0-9]+' | tail -1)
+if [[ -n "$_r28_pos_exp" && "$_r28_pos_exp" == "$_r28_pos_act" ]]; then
+  ok "rule28_baseline_pos" "release note matching canonical baseline correctly passes (exp=$_r28_pos_exp act=$_r28_pos_act)"
+else
+  fail "rule28_baseline_pos" "expected matching release-note baseline to pass (exp=$_r28_pos_exp act=$_r28_pos_act)"
+fi
+
+## Negative: release note stale counts, NO freeze marker → FAIL
+_r28_neg="$scratch/r28_neg"
+mkdir -p "$_r28_neg/docs/governance" "$_r28_neg/docs/releases"
+cat > "$_r28_neg/docs/governance/architecture-status.yaml" <<'EOF'
+capabilities:
+  architecture_sync_gate:
+    allowed_claim: "Architecture baseline: 50 §4 constraints (#1–#50); 52 ADRs (0001–0052); 29 active gate rules; 35 gate self-tests."
+EOF
+cat > "$_r28_neg/docs/releases/some-release.md" <<'EOF'
+| §4 constraints | 45 (#1–#45) |
+| Active ADRs | 47 (ADR-0001–ADR-0047) |
+| Active gate rules | 27 |
+| Gate self-test cases | 30 |
+EOF
+_r28_neg_claim=$(awk '/^[[:space:]]+architecture_sync_gate:/{flag=1} flag && /allowed_claim:/{print; exit}' "$_r28_neg/docs/governance/architecture-status.yaml")
+_r28_neg_rf=$(cat "$_r28_neg/docs/releases/some-release.md")
+_r28_neg_has_freeze=0
+grep -qE 'Historical artifact frozen at SHA' "$_r28_neg/docs/releases/some-release.md" && _r28_neg_has_freeze=1
+_r28_neg_exp=$(printf '%s' "$_r28_neg_claim" | grep -oE '[0-9]+[[:space:]]+§4[[:space:]]+constraints' | grep -oE '^[0-9]+' | head -1)
+_r28_neg_match=$(printf '%s' "$_r28_neg_rf" | grep -oE '§4[[:space:]]+constraints[[:space:]]*\|[[:space:]]*[0-9]+' | head -1)
+_r28_neg_act=$(printf '%s' "$_r28_neg_match" | grep -oE '[0-9]+' | tail -1)
+if [[ $_r28_neg_has_freeze -eq 0 && -n "$_r28_neg_exp" && -n "$_r28_neg_act" && "$_r28_neg_exp" != "$_r28_neg_act" ]]; then
+  ok "rule28_baseline_neg" "stale release-note baseline without freeze marker correctly detected (exp=$_r28_neg_exp act=$_r28_neg_act)"
+else
+  fail "rule28_baseline_neg" "expected stale release-note baseline without freeze marker to be detected (has_freeze=$_r28_neg_has_freeze exp=$_r28_neg_exp act=$_r28_neg_act)"
+fi
+
+## Exempt: release note stale counts BUT freeze marker present → exempt (pass)
+_r28_exempt="$scratch/r28_exempt"
+mkdir -p "$_r28_exempt/docs/governance" "$_r28_exempt/docs/releases"
+cat > "$_r28_exempt/docs/governance/architecture-status.yaml" <<'EOF'
+capabilities:
+  architecture_sync_gate:
+    allowed_claim: "Architecture baseline: 50 §4 constraints (#1–#50); 52 ADRs (0001–0052); 29 active gate rules; 35 gate self-tests."
+EOF
+cat > "$_r28_exempt/docs/releases/frozen-release.md" <<'EOF'
+> Historical artifact frozen at SHA 82a1397 (L0 release). Baseline counts in this document reflect L0 release-time state.
+
+| §4 constraints | 45 (#1–#45) |
+| Active ADRs | 47 (ADR-0001–ADR-0047) |
+| Active gate rules | 27 |
+| Gate self-test cases | 30 |
+EOF
+_r28_exempt_has_freeze=0
+grep -qE 'Historical artifact frozen at SHA' "$_r28_exempt/docs/releases/frozen-release.md" && _r28_exempt_has_freeze=1
+if [[ $_r28_exempt_has_freeze -eq 1 ]]; then
+  ok "rule28_baseline_neg_no_freeze_marker" "freeze marker correctly exempts release note from baseline check"
+else
+  fail "rule28_baseline_neg_no_freeze_marker" "expected freeze marker to exempt release note"
+fi
+
+# ---------------------------------------------------------------------------
+# RULE 29 — whitepaper_alignment_matrix_present
+# Positive: matrix file exists with all 20 required concepts → PASS
+# Negative: matrix file missing OR missing a required concept → FAIL
+# ---------------------------------------------------------------------------
+
+## Positive: matrix file with all 20 concepts → PASS
+_r29_pos="$scratch/r29_pos"
+mkdir -p "$_r29_pos/docs/governance"
+cat > "$_r29_pos/docs/governance/whitepaper-alignment-matrix.md" <<'EOF'
+# Whitepaper Alignment Matrix
+- C/S separation
+- Task Cursor
+- Dynamic Hydration
+- Sync State
+- Sub-Stream
+- Yield & Handoff
+- Business ontology ownership
+- S-side execution trajectory ownership
+- Placeholder exemption
+- Full Trace vs Node Snapshot
+- Lazy mounting
+- Skill Topology Scheduler
+- C-side business degradation authority
+- Session/context decoupling
+- Workflow Intermediary
+- Three-track bus
+- Capability bidding
+- Permission issuance
+- Chronos Hydration
+- Service Layer microservice commitment
+EOF
+_r29_pos_missing=0
+for _concept29p in 'C/S separation' 'Task Cursor' 'Dynamic Hydration' 'Sync State' 'Sub-Stream' 'Yield & Handoff' 'Business ontology ownership' 'S-side execution trajectory ownership' 'Placeholder exemption' 'Full Trace vs Node Snapshot' 'Lazy mounting' 'Skill Topology Scheduler' 'C-side business degradation authority' 'Session/context decoupling' 'Workflow Intermediary' 'Three-track bus' 'Capability bidding' 'Permission issuance' 'Chronos Hydration' 'Service Layer microservice commitment'; do
+  if ! grep -qF "$_concept29p" "$_r29_pos/docs/governance/whitepaper-alignment-matrix.md"; then
+    _r29_pos_missing=1
+  fi
+done
+if [[ $_r29_pos_missing -eq 0 ]]; then
+  ok "rule29_matrix_pos" "matrix with all 20 required concepts correctly passes"
+else
+  fail "rule29_matrix_pos" "expected matrix with all 20 concepts to pass"
+fi
+
+## Negative: matrix missing a required concept → FAIL
+_r29_neg="$scratch/r29_neg"
+mkdir -p "$_r29_neg/docs/governance"
+cat > "$_r29_neg/docs/governance/whitepaper-alignment-matrix.md" <<'EOF'
+# Whitepaper Alignment Matrix
+- C/S separation
+- Task Cursor
+- Dynamic Hydration
+EOF
+_r29_neg_missing=0
+for _concept29n in 'C/S separation' 'Chronos Hydration' 'Workflow Intermediary'; do
+  if ! grep -qF "$_concept29n" "$_r29_neg/docs/governance/whitepaper-alignment-matrix.md"; then
+    _r29_neg_missing=1
+  fi
+done
+if [[ $_r29_neg_missing -eq 1 ]]; then
+  ok "rule29_matrix_neg" "matrix missing required concept correctly detected"
+else
+  fail "rule29_matrix_neg" "expected missing concept to be detected"
 fi
 
 # ---------------------------------------------------------------------------

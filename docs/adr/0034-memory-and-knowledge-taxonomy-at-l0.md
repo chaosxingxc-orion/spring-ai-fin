@@ -98,3 +98,12 @@ This is NOT a permanent exclusion of mem0 or Cognee. It is a clarification that 
 - `GraphMemoryRepository.java` — current minimal SPI
 - `docs/cross-cutting/oss-bill-of-materials.md` — Graphiti selected as W1 example; mem0/Cognee not-selected
 - `architecture-status.yaml` row: `memory_knowledge_taxonomy`
+
+## Forward note — ownership governed by ADR-0051 (whitepaper-alignment remediation, 2026-05-13)
+
+The M1–M6 taxonomy defined here is the **platform memory taxonomy** from the S-Side perspective. It does NOT define ownership. Per ADR-0051 (Memory and Knowledge Ownership Boundary, §4 #49):
+
+- M3 / M4 / M5 are **split** into platform-derived operational memory (S-Side owned) and business-owned ontology/fact events (C-Side owned by default; S-Side-stored only via explicit delegation contract).
+- `GraphMemoryRepository` is the platform SPI for M4 graph relationship memory. It is **NOT** the default owner of customer business ontology. Any M4 adapter (including the W1 reference adapter Graphiti) MUST declare whether it stores **platform graph state**, **delegated business graph state**, or **both** — and any delegated business graph state requires a `DelegationGrant` per ADR-0051.
+- The `PlaceholderPreservationPolicy` rule (ADR-0051) is a **first-class ship-blocking constraint** on every memory operation: placeholders (e.g. `[USER_ID_102]`) MUST be preserved verbatim through every memory read/write unless an explicit `DelegationGrant` authorises identity resolution at that scope.
+- Business facts discovered during agent execution flow back to the C-Side via `BusinessFactEvent` (ADR-0051), NOT into S-Side memory by default.

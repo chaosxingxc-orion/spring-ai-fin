@@ -1,5 +1,7 @@
 # spring-ai-ascend L0 Architecture Release — 2026-05-13
 
+> **Historical artifact frozen at SHA 82a1397 (L0 release).** This release note documents the L0 architecture release as of SHA `82a1397`. Baseline counts in this document (45 §4 constraints / 47 ADRs / 27 gate rules / 30 self-tests) reflect the state at L0 release time and are NOT retroactively updated. Subsequent canonical baseline changes — ADR-0048 (Service-Layer Microservice-Architecture Commitment, post-L0 commit 044bbb0) and the whitepaper-alignment remediation introducing ADR-0049/0050/0051/0052 per `docs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md` — are tracked separately via `ARCHITECTURE.md` §4, `docs/adr/`, and `docs/governance/architecture-status.yaml`. Per Gate Rule 28 (release_note_baseline_truth) this freeze marker exempts the release note from the canonical-count cross-check; the release note's historical status is unambiguous. Any future "L0.x" or "L1" release notes will have their own baseline table reflecting the canonical state at that release.
+
 > Status: **L0 architecturally ready** (final entrypoint truth review pass complete)
 > Semantic release SHA: 82a1397
 > Metadata follow-up SHAs: 776d4e7 (set `latest_semantic_pass_sha` to `82a1397`) + contract-review-response delivery (text-corrections + Gate Rule 26) + final entrypoint truth review delivery (boundary prose split + Gate Rule 27)

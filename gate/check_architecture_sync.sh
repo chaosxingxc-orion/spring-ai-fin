@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# spring-ai-ascend architecture-sync gate -- L0 final entrypoint truth review (27 rules).
+# spring-ai-ascend architecture-sync gate -- whitepaper-alignment remediation (29 rules).
 # Exits 0 if all rules pass, 1 if any fail.
 # Each rule prints PASS: <name> or FAIL: <name> -- <reason>.
 # Prints GATE: PASS or GATE: FAIL at the end.
@@ -32,6 +32,8 @@
 #  25.  peripheral_wave_qualifier                     -- SPI Javadoc and active docs must not name future-wave impls without wave qualifier (ADR-0045)
 #  26.  release_note_shipped_surface_truth            -- docs/releases/*.md must not overclaim RunLifecycle/RunContext.posture/ApiCompatibilityTest-as-OpenAPI/AppPostureGate-scope (ADR-0046)
 #  27.  active_entrypoint_baseline_truth              -- root README.md baseline counts must match architecture-status.yaml.architecture_sync_gate.allowed_claim (ADR-0047)
+#  28.  release_note_baseline_truth                   -- docs/releases/*.md baseline counts must match canonical YAML unless marked "Historical artifact frozen at SHA" (ADR-0049, whitepaper-alignment P0-1)
+#  29.  whitepaper_alignment_matrix_present           -- docs/governance/whitepaper-alignment-matrix.md must exist and list all 20 required whitepaper concepts (ADR-0049, whitepaper-alignment P2-1)
 
 set -uo pipefail
 export LC_ALL=C
@@ -900,6 +902,97 @@ if [[ -f docs/governance/architecture-status.yaml && -f README.md ]]; then
   fi
 fi
 if [[ $_r27_fail -eq 0 ]]; then pass_rule "active_entrypoint_baseline_truth"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 28 — release_note_baseline_truth
+# ADR-0049 (whitepaper-alignment remediation P0-1): every docs/releases/*.md
+# baseline table MUST match the canonical architecture_sync_gate.allowed_claim
+# counts, UNLESS the release note declares itself a historical artifact via
+# the marker "Historical artifact frozen at SHA". Closes GATE-SCOPE-GAP for
+# release-note baseline drift (Gate Rule 27 only covers README.md).
+# ---------------------------------------------------------------------------
+_r28_fail=0
+if [[ -f docs/governance/architecture-status.yaml ]]; then
+  _claim28=$(awk '/^[[:space:]]+architecture_sync_gate:/{flag=1} flag && /allowed_claim:/{print; exit}' docs/governance/architecture-status.yaml)
+  if [[ -n "$_claim28" ]]; then
+    while IFS= read -r _rf28; do
+      [[ -z "$_rf28" ]] && continue
+      if grep -qE 'Historical artifact frozen at SHA' "$_rf28"; then
+        continue
+      fi
+      _rfcontent28=$(cat "$_rf28")
+      _check_baseline28() {
+        _label="$1"; _yaml_re="$2"; _rf_re="$3"
+        _expected=$(printf '%s' "$_claim28" | grep -oE "$_yaml_re" | head -1 | grep -oE '^[0-9]+' | head -1)
+        [[ -z "$_expected" ]] && return 0
+        _rfmatches=$(printf '%s' "$_rfcontent28" | grep -oE "$_rf_re")
+        if [[ -z "$_rfmatches" ]]; then
+          fail_rule "release_note_baseline_truth" "$_rf28 missing baseline count for '$_label'. Per Gate Rule 28 active release notes must contain a table row matching '$_label | $_expected' or declare 'Historical artifact frozen at SHA <sha>'."
+          _r28_fail=1
+          return 0
+        fi
+        while IFS= read -r _rmline; do
+          # Release notes use markdown-table format: '| <label> | <number> ... |'.
+          # The number appears AFTER the label, so extract the trailing number.
+          _actual=$(printf '%s' "$_rmline" | grep -oE '[0-9]+' | tail -1)
+          if [[ "$_actual" != "$_expected" ]]; then
+            fail_rule "release_note_baseline_truth" "$_rf28 asserts '$_actual' for '$_label' but canonical baseline is '$_expected $_label'. Per Gate Rule 28 active release notes must match the canonical baseline or declare 'Historical artifact frozen at SHA <sha>'."
+            _r28_fail=1
+          fi
+        done <<< "$_rfmatches"
+      }
+      # Release-note table format: '| §4 constraints | 50 (#1–#50) |', etc.
+      _check_baseline28 '§4 constraints' '[0-9]+[[:space:]]+§4[[:space:]]+constraints' '§4[[:space:]]+constraints[[:space:]]*\|[[:space:]]*[0-9]+'
+      _check_baseline28 'ADRs' '[0-9]+[[:space:]]+ADRs' '(Active[[:space:]]+)?ADRs[[:space:]]*\|[[:space:]]*[0-9]+'
+      _check_baseline28 'gate rules' '[0-9]+[[:space:]]+active[[:space:]]+gate[[:space:]]+rules' '(Active[[:space:]]+)?gate[[:space:]]+rules[[:space:]]*\|[[:space:]]*[0-9]+'
+      _check_baseline28 'self-tests' '[0-9]+[[:space:]]+gate[[:space:]]+self-tests' '(Gate[[:space:]]+)?self-test[[:space:]]+cases[[:space:]]*\|[[:space:]]*[0-9]+'
+    done < <(find docs/releases -maxdepth 1 -name '*.md' -type f 2>/dev/null | sort || true)
+  fi
+fi
+if [[ $_r28_fail -eq 0 ]]; then pass_rule "release_note_baseline_truth"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 29 — whitepaper_alignment_matrix_present
+# ADR-0049 + P2-1: docs/governance/whitepaper-alignment-matrix.md must exist
+# and must contain rows for each of the 20 required whitepaper concepts.
+# Closes the concept-traceability gap from the whitepaper-alignment review.
+# ---------------------------------------------------------------------------
+_r29_fail=0
+_matrix29='docs/governance/whitepaper-alignment-matrix.md'
+if [[ ! -f "$_matrix29" ]]; then
+  fail_rule "whitepaper_alignment_matrix_present" "$_matrix29 missing. Per Gate Rule 29 / ADR-0049 the whitepaper alignment matrix must exist as concept-level traceability from whitepaper to active architecture."
+  _r29_fail=1
+else
+  _required29=(
+    'C/S separation'
+    'Task Cursor'
+    'Dynamic Hydration'
+    'Sync State'
+    'Sub-Stream'
+    'Yield & Handoff'
+    'Business ontology ownership'
+    'S-side execution trajectory ownership'
+    'Placeholder exemption'
+    'Full Trace vs Node Snapshot'
+    'Lazy mounting'
+    'Skill Topology Scheduler'
+    'C-side business degradation authority'
+    'Session/context decoupling'
+    'Workflow Intermediary'
+    'Three-track bus'
+    'Capability bidding'
+    'Permission issuance'
+    'Chronos Hydration'
+    'Service Layer microservice commitment'
+  )
+  for _concept29 in "${_required29[@]}"; do
+    if ! grep -qF "$_concept29" "$_matrix29"; then
+      fail_rule "whitepaper_alignment_matrix_present" "$_matrix29 missing required concept row '$_concept29'. Per Gate Rule 29 all 20 named whitepaper concepts must appear in the alignment matrix."
+      _r29_fail=1
+    fi
+  done
+fi
+if [[ $_r29_fail -eq 0 ]]; then pass_rule "whitepaper_alignment_matrix_present"; fi
 
 # ---------------------------------------------------------------------------
 # Summary

@@ -65,7 +65,7 @@ capabilities:
       - gate/test_architecture_sync_gate.sh
     latest_semantic_pass_sha: fc5be09
     latest_delivery_file: docs/delivery/2026-05-12-e0ccb6e.md
-    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here. Architecture baseline: 46 §4 constraints (#1–#46); 48 ADRs (0001–0048); 27 active gate rules; 11 active engineering rules (1–6, 9–10, 20–21, 25); 14 deferred rules (7, 8, 11, 13–19, 22–24, 26–27); 30 gate self-tests; L0 release published at docs/releases/2026-05-13-L0-architecture-release.en.md; twelfth-cycle Service-Layer Microservice-Architecture Commitment via ADR-0048 + §4 #46 — serverless analysis archived as future direction; bus traffic split locked at data-P2P / control-event-bus; SPI primitives remain serverless-friendly so W4+ migration stays open."
+    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here. Architecture baseline: 50 §4 constraints (#1–#50); 52 ADRs (0001–0052); 29 active gate rules; 11 active engineering rules (1–6, 9–10, 20–21, 25); 14 deferred rules (7, 8, 11, 13–19, 22–24, 26–27); 35 gate self-tests; L0 release published at docs/releases/2026-05-13-L0-architecture-release.en.md (frozen at SHA 82a1397 via freeze marker); thirteenth-cycle Whitepaper-Alignment Remediation via ADR-0049/0050/0051/0052 + §4 #47-#50 — C/S Dynamic Hydration Protocol named at L0 contract level; Workflow Intermediary + Mailbox Backpressure + Rhythm track restored as independent third cross-service bus track; Memory and Knowledge Ownership Boundary codified (C-side business ontology vs S-side trajectory; Placeholder Preservation first-class); Skill Topology Scheduler + Capability Bidding named (two-axis tenant×global arbitration); ADR-0048 narrowed; Gate Rules 28-29 added (release-note baseline truth; whitepaper alignment matrix presence); +5 self-tests (30→35); twelfth-cycle Service-Layer Microservice-Architecture Commitment via ADR-0048 + §4 #46."
 
   spring_ai_ascend_dependencies_bom:
     status: implemented_unverified
@@ -212,7 +212,7 @@ capabilities:
     implementation:
       - docs/adr/
     tests: []
-    allowed_claim: "48 per-file MADR 4.0 ADRs in docs/adr/ (0001–0048); README index present and refreshed 2026-05-13."
+    allowed_claim: "52 per-file MADR 4.0 ADRs in docs/adr/ (0001–0052); README index present and refreshed 2026-05-13."
 
   perf_evidence_path:
     status: design_accepted
@@ -963,4 +963,94 @@ capabilities:
     tests:
       - gate/test_architecture_sync_gate.sh
       - gate/check_architecture_sync.sh
-    allowed_claim: "Service Layer (agent-platform HTTP edge + agent-runtime cognitive runtime) deployed as long-running microservices coordinating via Agent Bus (cross-docker, cross-service). Bus traffic split LOCKED at ADR-0048: data flow P2P between instances (heavy payloads never traverse central broker); control flow on centralized event bus (PAUSE/KILL/RESUME/scheduling/bidding/heartbeats). Substrate choice deferred to expanded ADR-0031. SPI primitives (SuspendSignal/Checkpointer/RunRepository/RunStateMachine/ADR-0024 atomicity) remain serverless-friendly so W4+ migration stays open — deployment commitment is at service-layer level, not SPI level. Whitepaper §1.3 microservice-dictatorship trap mitigated by scoping microservice to the Service Layer (not per-agent) and routing inter-agent calls through the bus by intent. Serverless five-tier topology analysis archived at docs/archive/2026-05-13-serverless-architecture-future-direction.md. §4 #46. ADR-0048."
+    allowed_claim: "Service Layer (agent-platform HTTP edge + agent-runtime cognitive runtime) deployed as long-running microservices coordinating via Agent Bus (cross-docker, cross-service). Bus traffic split LOCKED at ADR-0048 and amended by ADR-0050: Track 1 Control (centralized event bus — PAUSE/KILL/RESUME/scheduling/bidding); Track 2 Data (P2P; heavy payloads never traverse central broker); Track 3 Rhythm (independent — heartbeats/WAKEUP/SleepDeclaration; restored per ADR-0050 P0-4 closure). Substrate choice deferred to expanded ADR-0031. SPI primitives (SuspendSignal/Checkpointer/RunRepository/RunStateMachine/ADR-0024 atomicity) remain serverless-friendly so W4+ migration stays open — deployment commitment is at service-layer level, not SPI level. Whitepaper §1.3 microservice-dictatorship trap mitigated by scoping microservice to the Service Layer (not per-agent) and routing inter-agent calls through the bus by intent. ADR-0048 is subordinate to ADR-0049/0050/0051/0052 per whitepaper-alignment remediation. Serverless five-tier topology analysis archived at docs/archive/2026-05-13-serverless-architecture-future-direction.md. §4 #46. ADR-0048."
+
+  c_s_dynamic_hydration_protocol:
+    status: design_accepted
+    shipped: true
+    l0_decision: docs/adr/0049-c-s-dynamic-hydration-protocol.md
+    implementation:
+      - ARCHITECTURE.md
+      - docs/adr/0049-c-s-dynamic-hydration-protocol.md
+      - docs/governance/whitepaper-alignment-matrix.md
+    tests:
+      - gate/test_architecture_sync_gate.sh
+      - gate/check_architecture_sync.sh
+    allowed_claim: "C/S Dynamic Hydration Protocol named at L0 contract level (ADR-0049). Request side: TaskCursor (C-side opaque progress coord), BusinessRuleSubset (C-side authoritative), SkillPoolLimit (C-side restrictions), HydrationRequest envelope, ResumeEnvelope. Server-internal: HydratedRunContext (NOT the C/S protocol; RunContext is internal S-side execution context). Response side: SyncStateResponse (cursor advancement), SubStreamFrame (pass-through UI stream, non-persistence), YieldResponse (permission suspension; composes with sealed SuspendReason). Degradation-authority red line (P1-2): ComputeCompensation (S-side authority; preserves task goal) vs BusinessDegradationRequest (C-side authority); GoalMutationProhibition forbids S-side from mutating task goal under any resilience strategy. Java types and wire bindings deferred W2+. §4 #47. ADR-0049. Closes reviewer P0-2 + P1-2."
+
+  workflow_intermediary_bus_and_three_track_cross_service:
+    status: design_accepted
+    shipped: true
+    l0_decision: docs/adr/0050-workflow-intermediary-mailbox-rhythm-track.md
+    implementation:
+      - ARCHITECTURE.md
+      - docs/adr/0050-workflow-intermediary-mailbox-rhythm-track.md
+      - docs/adr/0048-service-layer-microservice-architecture-commitment.md
+      - docs/adr/0031-three-track-channel-isolation.md
+      - docs/governance/whitepaper-alignment-matrix.md
+    tests:
+      - gate/test_architecture_sync_gate.sh
+      - gate/check_architecture_sync.sh
+    allowed_claim: "Workflow Intermediary Bus, Mailbox Backpressure, and Rhythm Track (ADR-0050). WorkflowIntermediary (per-Agent-Service local supervisor) owns mailbox polling + local admission + lease checks + dispatch into in-process workers. Hard rule: bus MUST NOT force-start computation. Contracts: IntentEvent (no heavy payloads; pointer-based), Mailbox (durable queue; pull-based), AdmissionDecision (Accepted|Delayed|Rejected|Yielded), BackpressureSignal (LOCAL_SATURATION|SKILL_SATURATION|TENANT_QUOTA|SHUTDOWN), WorkStateEvent (Claimed|Running|Yielded|Succeeded|Failed|Cancelled|Expired). Three-track cross-service bus: Track 1 Control (centralized event bus), Track 2 Data (P2P), Track 3 Heartbeat/Rhythm (RESTORED as independently protected — heartbeats moved off Track 1 per P0-4). ChronosHydration end-to-end: SleepDeclaration → snapshot durable → self-destruct → TickEngine → WakeupPulse on Rhythm track → local intermediary rehydrates. Amends ADR-0048 heartbeat placement; extends ADR-0031 cross-service. Java types and substrate selection deferred W2+. §4 #48. ADR-0050. Closes reviewer P0-3 + P0-4."
+
+  memory_knowledge_ownership_boundary:
+    status: design_accepted
+    shipped: true
+    l0_decision: docs/adr/0051-memory-knowledge-ownership-boundary.md
+    implementation:
+      - ARCHITECTURE.md
+      - docs/adr/0051-memory-knowledge-ownership-boundary.md
+      - docs/adr/0034-memory-and-knowledge-taxonomy-at-l0.md
+      - docs/governance/whitepaper-alignment-matrix.md
+    tests:
+      - gate/test_architecture_sync_gate.sh
+      - gate/check_architecture_sync.sh
+    allowed_claim: "Memory and Knowledge Ownership Boundary (ADR-0051). C-side owned by default: business ontology, business entity state, user preferences, domain facts discovered during agent execution, business knowledge graph / business DB. S-side owned: run trajectory, token usage, model version + gateway telemetry, tool-call trace, retry/failure diagnostics, execution snapshots for resume, platform scheduling/quota/billing. Shared/delegated only via explicit DelegationGrant (tenantScope, retention, redactionState, visibilityScope, exportDeleteSemantics, placeholderPolicy). S-side emits BusinessFactEvent + OntologyUpdateCandidate (proposalSemantics ∈ {HYPOTHESIS, OBSERVATION, INFERENCE}) on Data track; MUST NOT write to C-side knowledge graph directly. PlaceholderPreservationPolicy (first-class, ship-blocking): placeholders preserved verbatim through every memory op; SymbolicReturnEnvelope returns them unchanged. ADR-0034 M3/M4/M5 split into platform-derived vs business-owned; GraphMemoryRepository NOT default owner of customer business ontology. Java types and DelegationGrant template deferred W2+. §4 #49. ADR-0051. Closes reviewer P0-5."
+
+  skill_topology_scheduler_and_capability_bidding:
+    status: design_accepted
+    shipped: true
+    l0_decision: docs/adr/0052-skill-topology-scheduler-and-capability-bidding.md
+    implementation:
+      - ARCHITECTURE.md
+      - docs/adr/0052-skill-topology-scheduler-and-capability-bidding.md
+      - docs/adr/0030-skill-spi-lifecycle-resource-matrix.md
+      - docs/adr/0038-skill-spi-resource-tier-classification.md
+      - docs/governance/whitepaper-alignment-matrix.md
+    tests:
+      - gate/test_architecture_sync_gate.sh
+      - gate/check_architecture_sync.sh
+    allowed_claim: "Skill Topology Scheduler and Capability Bidding (ADR-0052). Two-axis arbitration (whitepaper §4.1): horizontal = Tenant Quota; vertical = Global Skill Capacity. SkillResourceMatrix extended (tenantQuotaBySkill, globalSkillCapacity, currentUtilization, reservedCapacity, saturationReason). CapabilityRegistry with tenant-scoped pre-authorization: capability tags bound to domain permission identifiers; non-authorized bidders silently dropped. Bidding (whitepaper §5.3): BidRequest, BidResponse (capacityAvailable, expectedStartTime, requiredSubstitutions[], confidence, costEstimate); bid-scoring rule defined. PermissionEnvelope (short-lived, signed, subsumption-bounded; revokes on yield) issued to winning delegate per Skill Subsumption Principle. SkillSaturationYield (SuspendReason.RateLimited) yields only the dependent agent step, releasing LLM inference thread. ADR-0030 (Java SPI) + ADR-0038 (resource tiers) feed this layer. Java types and bidding-protocol wire format deferred W2-W3. §4 #50. ADR-0052. Closes reviewer P1-1."
+
+  whitepaper_alignment_matrix:
+    status: test_verified
+    shipped: true
+    l0_decision: docs/adr/0049-c-s-dynamic-hydration-protocol.md
+    implementation:
+      - docs/governance/whitepaper-alignment-matrix.md
+      - gate/check_architecture_sync.sh
+      - gate/check_architecture_sync.ps1
+    tests:
+      - gate/test_architecture_sync_gate.sh
+    allowed_claim: "Whitepaper alignment matrix at docs/governance/whitepaper-alignment-matrix.md provides concept-level traceability from docs/spring-ai-ascend-architecture-whitepaper-en.md to active architecture artifacts. 20 required whitepaper concepts mapped with explicit status (shipped|active-design|deferred|archived|rejected), wave, owner side, gate coverage. Gate Rule 29 (whitepaper_alignment_matrix_present) mechanically verifies the matrix exists and contains all 20 required concept rows. Any release-note 'whitepaper aligned' claim must reference this matrix. Closes reviewer P2-1."
+
+  release_note_baseline_truth_gate:
+    status: test_verified
+    shipped: true
+    l0_decision: docs/adr/0049-c-s-dynamic-hydration-protocol.md
+    implementation:
+      - gate/check_architecture_sync.sh
+      - gate/check_architecture_sync.ps1
+    tests:
+      - gate/test_architecture_sync_gate.sh
+    allowed_claim: "Gate Rule 28 (release_note_baseline_truth) cross-checks docs/releases/*.md baseline tables against canonical architecture_sync_gate.allowed_claim counts UNLESS the release note declares itself a historical artifact via the marker 'Historical artifact frozen at SHA <sha>'. Closes GATE-SCOPE-GAP for release-note baseline drift (Gate Rule 27 only covers README.md). Self-tests: rule28_baseline_pos + rule28_baseline_neg + rule28_baseline_neg_no_freeze_marker. L0 release note at docs/releases/2026-05-13-L0-architecture-release.en.md is frozen at SHA 82a1397 via freeze marker. Closes reviewer P0-1."
+
+  whitepaper_alignment_self_audit:
+    status: design_accepted
+    shipped: true
+    l0_decision: docs/adr/0049-c-s-dynamic-hydration-protocol.md
+    implementation:
+      - docs/reviews/2026-05-13-whitepaper-alignment-self-audit.en.md
+    tests:
+      - gate/test_architecture_sync_gate.sh
+    allowed_claim: "Mandatory whitepaper-alignment self-audit produced at docs/reviews/2026-05-13-whitepaper-alignment-self-audit.en.md per reviewer requirement. Eight required sections (whitepaper concept inventory; exact architecture mapping; contract-equivalence check; over-design check; gate-coverage check; release-note truth check; negative-test discipline; explicit residual-risk statement). Conclusion: PASS (L0 is whitepaper-aligned at architecture-contract level; all non-shipped concepts explicitly mapped as design-only or deferred). 3 concept gaps (#4 N:1 multiplexing; #17 hot migration; #23 monolithic-async-loss-of-control as anti-trap) identified honestly with low risk + forward path."

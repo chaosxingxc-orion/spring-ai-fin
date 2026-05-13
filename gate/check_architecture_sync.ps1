@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-  spring-ai-ascend architecture-sync gate (L0 final entrypoint truth review, 27 rules).
+  spring-ai-ascend architecture-sync gate (whitepaper-alignment remediation, 29 rules).
 
 .DESCRIPTION
   Exits 0 if all rules pass, 1 if any fail.
@@ -36,6 +36,8 @@
    25. peripheral_wave_qualifier           -- SPI Javadoc and active docs must not name future-wave impls without wave qualifier (ADR-0045)
    26. release_note_shipped_surface_truth  -- docs/releases/*.md must not overclaim RunLifecycle as W0, invent RunContext.posture(), misattribute OpenAPI snapshot to ApiCompatibilityTest, or over-generalise AppPostureGate scope (ADR-0046)
    27. active_entrypoint_baseline_truth    -- root README.md baseline counts (§4 constraints, ADRs, gate rules, gate self-tests) must match architecture-status.yaml.architecture_sync_gate.allowed_claim (ADR-0047)
+   28. release_note_baseline_truth         -- docs/releases/*.md baseline counts must match canonical YAML unless marked "Historical artifact frozen at SHA" (ADR-0049, whitepaper-alignment P0-1)
+   29. whitepaper_alignment_matrix_present -- docs/governance/whitepaper-alignment-matrix.md must exist and list all 20 required whitepaper concepts (ADR-0049, whitepaper-alignment P2-1)
 
 .PARAMETER LocalOnly
   Not used by this script (kept for invocation parity with old version).
@@ -1000,6 +1002,103 @@ if ((Test-Path $statusYamlPath27) -and (Test-Path $readmePath27)) {
   }
 }
 if (-not $r27Fail) { Pass-Rule 'active_entrypoint_baseline_truth' }
+
+# ---------------------------------------------------------------------------
+# Rule 28 — release_note_baseline_truth
+# ADR-0049 (whitepaper-alignment remediation P0-1): every docs/releases/*.md
+# baseline table MUST match the canonical architecture_sync_gate.allowed_claim
+# counts, UNLESS the release note declares itself a historical artifact via
+# the marker "Historical artifact frozen at SHA". Closes GATE-SCOPE-GAP for
+# release-note baseline drift (Gate Rule 27 only covers README.md).
+# ---------------------------------------------------------------------------
+$r28Fail = $false
+$statusYamlPath28 = Join-Path $repoRoot 'docs/governance/architecture-status.yaml'
+if (Test-Path $statusYamlPath28) {
+  $yamlContent28 = Get-Content -Raw -LiteralPath $statusYamlPath28
+  $blockMatch28 = [regex]::Match($yamlContent28, 'architecture_sync_gate:[\s\S]*?allowed_claim:\s*"([^"]+)"')
+  if ($blockMatch28.Success) {
+    $claim28 = $blockMatch28.Groups[1].Value
+    $releaseDir28 = Join-Path $repoRoot 'docs/releases'
+    if (Test-Path $releaseDir28) {
+      $releaseFiles28 = Get-ChildItem -Path $releaseDir28 -Filter '*.md' -File -ErrorAction SilentlyContinue | Sort-Object Name
+      foreach ($rf28 in $releaseFiles28) {
+        $rfContent28 = Get-Content -Raw -LiteralPath $rf28.FullName
+        if ($rfContent28 -match 'Historical artifact frozen at SHA') {
+          continue
+        }
+        # Release-note table format: '| §4 constraints | 50 (#1–#50) |', etc.
+        # RfRegex captures the trailing number after '| <label> |'.
+        $checks28 = @(
+          @{ Label = '§4 constraints'; YamlRegex = '\b(\d+)\s+§4\s+constraints'; RfRegex = '§4\s+constraints\s*\|\s*(\d+)' },
+          @{ Label = 'ADRs'; YamlRegex = '\b(\d+)\s+ADRs'; RfRegex = '(?:Active\s+)?ADRs\s*\|\s*(\d+)' },
+          @{ Label = 'gate rules'; YamlRegex = '\b(\d+)\s+active\s+gate\s+rules'; RfRegex = '(?:Active\s+)?gate\s+rules\s*\|\s*(\d+)' },
+          @{ Label = 'self-tests'; YamlRegex = '\b(\d+)\s+gate\s+self-tests'; RfRegex = '(?:Gate\s+)?self-test\s+cases\s*\|\s*(\d+)' }
+        )
+        foreach ($chk in $checks28) {
+          $yamlM = [regex]::Match($claim28, $chk.YamlRegex)
+          if (-not $yamlM.Success) { continue }
+          $expectedN = $yamlM.Groups[1].Value
+          $rfMatches = [regex]::Matches($rfContent28, $chk.RfRegex)
+          if ($rfMatches.Count -eq 0) {
+            Fail-Rule 'release_note_baseline_truth' "$($rf28.FullName) missing baseline count for '$($chk.Label)'. Per Gate Rule 28 active release notes must contain '$expectedN $($chk.Label)' or declare 'Historical artifact frozen at SHA <sha>'."
+            $r28Fail = $true
+          } else {
+            foreach ($rm in $rfMatches) {
+              if ($rm.Groups[1].Value -ne $expectedN) {
+                Fail-Rule 'release_note_baseline_truth' "$($rf28.FullName) asserts '$($rm.Groups[1].Value) $($chk.Label)' but canonical baseline is '$expectedN $($chk.Label)'. Per Gate Rule 28 active release notes must match the canonical baseline or declare 'Historical artifact frozen at SHA <sha>'."
+                $r28Fail = $true
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+if (-not $r28Fail) { Pass-Rule 'release_note_baseline_truth' }
+
+# ---------------------------------------------------------------------------
+# Rule 29 — whitepaper_alignment_matrix_present
+# ADR-0049 + P2-1: docs/governance/whitepaper-alignment-matrix.md must exist
+# and must contain rows for each of the 20 required whitepaper concepts.
+# ---------------------------------------------------------------------------
+$r29Fail = $false
+$matrix29Path = Join-Path $repoRoot 'docs/governance/whitepaper-alignment-matrix.md'
+if (-not (Test-Path $matrix29Path)) {
+  Fail-Rule 'whitepaper_alignment_matrix_present' "$matrix29Path missing. Per Gate Rule 29 / ADR-0049 the whitepaper alignment matrix must exist as concept-level traceability from whitepaper to active architecture."
+  $r29Fail = $true
+} else {
+  $matrix29Content = Get-Content -Raw -LiteralPath $matrix29Path
+  $required29 = @(
+    'C/S separation',
+    'Task Cursor',
+    'Dynamic Hydration',
+    'Sync State',
+    'Sub-Stream',
+    'Yield & Handoff',
+    'Business ontology ownership',
+    'S-side execution trajectory ownership',
+    'Placeholder exemption',
+    'Full Trace vs Node Snapshot',
+    'Lazy mounting',
+    'Skill Topology Scheduler',
+    'C-side business degradation authority',
+    'Session/context decoupling',
+    'Workflow Intermediary',
+    'Three-track bus',
+    'Capability bidding',
+    'Permission issuance',
+    'Chronos Hydration',
+    'Service Layer microservice commitment'
+  )
+  foreach ($concept29 in $required29) {
+    if (-not $matrix29Content.Contains($concept29)) {
+      Fail-Rule 'whitepaper_alignment_matrix_present' "$matrix29Path missing required concept row '$concept29'. Per Gate Rule 29 all 20 named whitepaper concepts must appear in the alignment matrix."
+      $r29Fail = $true
+    }
+  }
+}
+if (-not $r29Fail) { Pass-Rule 'whitepaper_alignment_matrix_present' }
 
 # ---------------------------------------------------------------------------
 # Summary

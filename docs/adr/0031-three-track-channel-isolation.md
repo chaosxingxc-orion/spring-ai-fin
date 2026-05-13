@@ -193,12 +193,31 @@ three-track bus operates across multiple long-running Agent Service instances
 (cross-docker, cross-service). ADR-0048 locks the **bus traffic split** for the
 cross-process implementation: Track 2 (Data Channel) is **P2P** between Agent Service
 instances — heavy payloads never traverse a central broker — while Track 1 (Control
-Channel) and Track 3 (Heartbeat Channel) operate on a **centralized event bus**
-(Kafka / NATS JetStream / Redpanda; substrate choice deferred to expanded ADR-0031).
-The in-process Java-side SPI defined above remains the seam; the cross-process wire
-format and substrate selection are future work under expanded ADR-0031. Collapsing
-data + control onto a single broker would re-introduce the whitepaper §5.2
+Channel) operates on a **centralized event bus** (Kafka / NATS JetStream / Redpanda;
+substrate choice deferred). The in-process Java-side SPI defined above remains the seam.
+Collapsing data + control onto a single broker would re-introduce the whitepaper §5.2
 congestion-deadlock failure mode and is forbidden by ADR-0048.
+
+### Forward note — extended cross-service by ADR-0050 (Rhythm restored)
+
+Under ADR-0050 (Workflow Intermediary, Mailbox Backpressure, Rhythm Track, §4 #48,
+whitepaper-alignment remediation 2026-05-13), the three tracks are also enforced
+**cross-service** — not only in-process. Specifically:
+
+- **Track 1 (Control)** operates as ADR-0048 describes (centralized event bus).
+- **Track 2 (Data)** operates as ADR-0048 describes (P2P).
+- **Track 3 (Heartbeat / Rhythm)** is **restored as an independently protected
+  cross-service track** under ADR-0050. ADR-0048 originally placed heartbeats on
+  the centralized control event bus; that placement is **amended**. Heartbeats,
+  `SleepDeclaration`, `WakeupPulse`, `TickEngine` ticks, lease renewal, and
+  `ChronosHydration` triggers now flow on Track 3, physically isolated from Track 1
+  so that control-traffic congestion cannot delay survival signals.
+
+The in-process Java-side SPI defined in this ADR (`RunControlSink`, `Flux<RunEvent>`,
+`Flux<Instant>`) remains the seam for the northbound HTTP/SSE surface (C-Side ↔ S-Side
+`SubStreamFrame` per ADR-0049). The cross-process wire formats for the same three
+tracks are defined in ADR-0050; substrate selection and detailed wire formats are
+W2+ work.
 
 ## References
 

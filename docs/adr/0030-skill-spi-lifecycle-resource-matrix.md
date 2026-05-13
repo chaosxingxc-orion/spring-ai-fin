@@ -275,3 +275,14 @@ existing code.
 - Rule 27 (deferred W3 — Untrusted Skill Sandbox Mandate, defined in CLAUDE-deferred.md)
 - `architecture-status.yaml` rows: `skill_spi_lifecycle`, `skill_resource_matrix`, `untrusted_skill_sandbox_mandatory`
 - W2 wave plan: `docs/archive/2026-05-13-plans-archived/engineering-plan-W0-W4.md` §4.2 (archived per ADR-0037)
+
+## Forward note — operates within ADR-0052 distributed scheduler (whitepaper-alignment remediation, 2026-05-13)
+
+The Skill SPI lifecycle (`init / execute / suspend / teardown`) and `SkillResourceMatrix` defined here are the **Java SPI layer** — the inside of one capability, at the JVM level. Per ADR-0052 (Skill Topology Scheduler and Capability Bidding, §4 #50), the platform also defines a **distributed scheduling layer** above this Java SPI:
+
+- `CapabilityRegistry` (with tenant-scoped pre-authorization and domain permission identifiers).
+- `BidRequest` / `BidResponse` (capability bidding among eligible delegates).
+- `PermissionEnvelope` (cascading issuance of action/tool permissions to the winning delegate, with subsumption boundary and short expiry).
+- `SkillSaturationYield` (yields the dependent step via `SuspendReason.RateLimited`, releasing the LLM inference thread).
+
+The two layers compose: ADR-0030's Java SPI describes how one skill behaves locally; ADR-0052's distributed contract describes how skills are scheduled, bid for, and authorized across the cluster. Tenant quota × global skill capacity arbitration (whitepaper §4.1 two-axis) lives at the ADR-0052 layer.

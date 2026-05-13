@@ -1,6 +1,6 @@
 # spring-ai-ascend Platform — Architecture
 
-> Last updated: 2026-05-13 (Service-Layer Microservice-Architecture Commitment — §4 #46, ADR-0048, Service Layer deployed as long-running microservices coordinating via Agent Bus; bus traffic split locked at data-P2P / control-event-bus; serverless direction archived as future work at `docs/archive/2026-05-13-serverless-architecture-future-direction.md`; SPI primitives `SuspendSignal`/`Checkpointer`/`RunRepository`/`RunStateMachine` remain serverless-friendly so W4+ migration stays open; whitepaper §1.3 microservice-dictatorship trap mitigated by scoping microservice to the Service Layer and routing inter-agent calls through the bus by intent; L0 final entrypoint truth review — §4 #45, ADR-0047, Gate Rule 27, system-boundary prose split into target architecture vs W0 shipped subset, active-entrypoint baseline truth gate, header-metadata convention codified, +2 self-tests (28→30); L0 release-note contract review — §4 #44, ADR-0046, Gate Rule 26, GATE-SCOPE-GAP closure for `docs/releases/*.md`, +4 self-tests (24→28); post-seventh third-pass: §4 #42-#43, ADR-0045, Gate Rules 24-25, Rule 19 strengthened, Rule 22 PS case-sensitivity fix, REF-DRIFT path-existence gate, HISTORY-PARADOX W0-evidence-skeleton archived, PERIPHERAL-DRIFT entry-point wave-qualifier gate, shared ACTIVE_NORMATIVE_DOCS enumerator, self-tests for Rules 19/22/24/25, refresh-metadata reconciliation across 11 active-corpus files).
+> Last updated: 2026-05-13 (Whitepaper-Alignment Remediation — §4 #47-#50, ADR-0049/0050/0051/0052, Gate Rules 28-29, +5 self-tests (30→35); C/S Dynamic Hydration Protocol named at L0 contract level (ADR-0049 — TaskCursor / BusinessRuleSubset / SkillPoolLimit / HydrationRequest / SyncStateResponse / SubStreamFrame / YieldResponse / ResumeEnvelope + degradation authority red line); Workflow Intermediary + Mailbox Backpressure + Rhythm track restored as independent third cross-service bus track (ADR-0050 — WorkflowIntermediary / IntentEvent / Mailbox / AdmissionDecision / BackpressureSignal / WorkStateEvent / SleepDeclaration / WakeupPulse / TickEngine / ChronosHydration); Memory & Knowledge Ownership Boundary (ADR-0051 — C-side business ontology vs S-side trajectory vs delegated; BusinessFactEvent / OntologyUpdateCandidate / PlaceholderPreservationPolicy / SymbolicReturnEnvelope); Skill Topology Scheduler + Capability Bidding (ADR-0052 — two-axis tenant×global arbitration; SkillResourceMatrix / CapabilityRegistry / BidRequest / BidResponse / PermissionEnvelope / SkillSaturationYield); ADR-0048 narrowed (deployment-topology only; subordinate to ADR-0049/0050/0051; heartbeats moved from control bus to Rhythm track per ADR-0050); whitepaper alignment matrix at docs/governance/whitepaper-alignment-matrix.md; mandatory self-audit at docs/reviews/2026-05-13-whitepaper-alignment-self-audit.en.md (PASS); release-note baseline truth gate (Rule 28) closes drift between release notes and canonical YAML; whitepaper-alignment-matrix presence gate (Rule 29) enforces 20 required concept rows; L0 release note frozen at SHA 82a1397 via freeze marker; closes reviewer findings P0-1/P0-2/P0-3/P0-4/P0-5/P1-1/P1-2/P2-1 from docs/reviews/2026-05-13-whitepaper-alignment-remediation-proposal.en.md; Service-Layer Microservice-Architecture Commitment — §4 #46, ADR-0048, Service Layer deployed as long-running microservices coordinating via Agent Bus; bus traffic split locked at data-P2P / control-event-bus; serverless direction archived as future work at `docs/archive/2026-05-13-serverless-architecture-future-direction.md`; SPI primitives `SuspendSignal`/`Checkpointer`/`RunRepository`/`RunStateMachine` remain serverless-friendly so W4+ migration stays open; whitepaper §1.3 microservice-dictatorship trap mitigated by scoping microservice to the Service Layer and routing inter-agent calls through the bus by intent; L0 final entrypoint truth review — §4 #45, ADR-0047, Gate Rule 27, system-boundary prose split into target architecture vs W0 shipped subset, active-entrypoint baseline truth gate, header-metadata convention codified, +2 self-tests (28→30); L0 release-note contract review — §4 #44, ADR-0046, Gate Rule 26, GATE-SCOPE-GAP closure for `docs/releases/*.md`, +4 self-tests (24→28); post-seventh third-pass: §4 #42-#43, ADR-0045, Gate Rules 24-25, Rule 19 strengthened, Rule 22 PS case-sensitivity fix, REF-DRIFT path-existence gate, HISTORY-PARADOX W0-evidence-skeleton archived, PERIPHERAL-DRIFT entry-point wave-qualifier gate, shared ACTIVE_NORMATIVE_DOCS enumerator, self-tests for Rules 19/22/24/25, refresh-metadata reconciliation across 11 active-corpus files).
 
 ## 1. System boundary
 
@@ -522,25 +522,103 @@ only `java.*` (enforced by `OrchestrationSpiArchTest`, `MemorySpiArchTest`).
     scaled as **long-running microservices** — long-lived JVM processes, multiple replicas,
     horizontal scaling. Multiple Agent Service instances coordinate via the **Agent Bus**
     (cross-docker, cross-service); the bus is platform-owned, not middleware. **Agent Bus
-    traffic split (locked at ADR-0048; substrate choice deferred to expanded ADR-0031):**
-    data flow is **P2P** between Agent Service instances (heavy payloads such as LLM
-    context, tool results, scraped documents flow point-to-point — gRPC streaming over
-    mTLS or equivalent — and never traverse the central broker); control flow is on a
-    **centralized event bus** (PAUSE/KILL/RESUME/UPDATE_CONFIG commands, scheduling
-    decisions, capability bidding, heartbeats — Kafka / NATS JetStream / Redpanda choice
-    deferred). Collapsing data and control onto one broker is forbidden because it
-    re-introduces the network-congestion failure mode the whitepaper §5.2 warns about.
-    The SPI primitives (`SuspendSignal`, `Checkpointer`, `RunRepository`, `RunStateMachine`
-    DFA, ADR-0024 suspension atomicity) stay serverless-friendly so W4+ migration to
-    per-Run hydration as the deployment model remains open; the deployment commitment
-    is at the service-layer level, not the SPI level. **Microservice-trap mitigation
-    (whitepaper §1.3):** this is microservice for the *Service Layer* (the platform
-    itself), NOT for individual agents. Agents within an Agent Service instance are
-    in-process; cross-instance coordination uses the Agent Bus with the data-P2P /
-    control-event-bus split. Inter-agent calls are intent-routed through the bus, never
-    directly endpoint-addressed. The archived five-tier topology analysis (serverless
-    direction) is at `docs/archive/2026-05-13-serverless-architecture-future-direction.md`.
-    See ADR-0048.
+    traffic split (locked at ADR-0048; substrate choice deferred to expanded ADR-0031;
+    heartbeats moved to Rhythm track per ADR-0050 amendment):** data flow is **P2P**
+    between Agent Service instances (heavy payloads such as LLM context, tool results,
+    scraped documents flow point-to-point — gRPC streaming over mTLS or equivalent — and
+    never traverse the central broker); control flow is on a **centralized event bus**
+    (PAUSE/KILL/RESUME/UPDATE_CONFIG commands, scheduling decisions, capability bidding —
+    Kafka / NATS JetStream / Redpanda choice deferred); heartbeats / WAKEUP pulses /
+    sleep declarations live on **Track 3 (Rhythm)** per §4 #48. Collapsing data and
+    control onto one broker is forbidden because it re-introduces the network-congestion
+    failure mode the whitepaper §5.2 warns about. The SPI primitives (`SuspendSignal`,
+    `Checkpointer`, `RunRepository`, `RunStateMachine` DFA, ADR-0024 suspension atomicity)
+    stay serverless-friendly so W4+ migration to per-Run hydration as the deployment
+    model remains open; the deployment commitment is at the service-layer level, not the
+    SPI level. **Microservice-trap mitigation (whitepaper §1.3):** this is microservice
+    for the *Service Layer* (the platform itself), NOT for individual agents. Agents
+    within an Agent Service instance are in-process; cross-instance coordination uses
+    the Agent Bus with the data-P2P / control-event-bus / rhythm-independent split.
+    Inter-agent calls are intent-routed through the bus, never directly endpoint-addressed.
+    The archived five-tier topology analysis (serverless direction) is at
+    `docs/archive/2026-05-13-serverless-architecture-future-direction.md`. See ADR-0048.
+
+47. **C/S Dynamic Hydration Protocol and Degradation Authority Red Line.** The whitepaper's
+    central agent contract is C/S separation: the **C-Side** (business application) holds
+    the lightweight `TaskCursor` + `BusinessRuleSubset` + `SkillPoolLimit`; the **S-Side**
+    (platform runtime) hydrates the request into a `HydratedRunContext` and returns one
+    of three handoff modes — `SyncStateResponse` (cursor advancement), `SubStreamFrame`
+    (pass-through UI stream), or `YieldResponse` (permission suspension; composes with
+    sealed `SuspendReason` per §4 #19). C-Side resume occurs via `ResumeEnvelope`.
+    `RunContext` is the **internal S-Side execution context** — NOT the C/S protocol.
+    `SuspendSignal` is one possible internal cause of `YieldResponse`. `Checkpointer`
+    stores S-Side trajectory state, NEVER business facts. `RunRepository` stores platform
+    lifecycle and accounting state, NEVER business ontology. **Degradation authority red
+    line** (whitepaper §4.2): the S-Side MAY perform `ComputeCompensation` (substitute
+    tools/models/routes) while preserving the C-Side task goal; the S-Side MUST issue a
+    `BusinessDegradationRequest` (yield with reason code + options) when same-quality
+    completion is impossible — only the C-Side can accept a degraded business outcome.
+    `GoalMutationProhibition` forbids the S-Side from reinterpreting/narrowing/broadening/
+    replacing the C-Side task goal under any resilience strategy. Java types and wire
+    bindings deferred to W2+; protocol named at L0 contract level. See ADR-0049.
+
+48. **Workflow Intermediary + Three-Track Cross-Service Bus (with Rhythm restored).** The
+    Agent Bus is a **workflow intermediary hub**, not a work-dispatch broker. Every
+    Agent Service instance hosts a local `WorkflowIntermediary` (per ADR-0050) that owns
+    mailbox polling, local admission control, lease checks, and dispatch into in-process
+    workers. **The bus MUST NOT force-start computation inside an Agent Service instance.**
+    Admission decisions (`Accepted | Delayed | Rejected | Yielded`) are local; backpressure
+    propagates via `BackpressureSignal`. Cross-service traffic is split into three physical
+    tracks: **Track 1 — Control** (centralized event bus; PAUSE/KILL/RESUME/UPDATE_CONFIG/
+    scheduling/cancellation), **Track 2 — Data/Compute** (P2P between instances; heavy
+    payloads; pointer-based; NEVER on broker), and **Track 3 — Heartbeat/Rhythm**
+    (independently protected from Track 1 congestion; carries heartbeats, `SleepDeclaration`,
+    `WakeupPulse`, `TickEngine` ticks, lease renewal, `ChronosHydration` triggers). The
+    Rhythm track is the cross-service restoration of the whitepaper §5.2 three-track model;
+    ADR-0048's prior heartbeat placement on the control bus is amended. `ChronosHydration`
+    end-to-end flow (whitepaper §5.4): sleep declaration → snapshot durable → compute
+    self-destruct → `TickEngine` evaluates condition → `WakeupPulse` on Rhythm track →
+    local intermediary rehydrates. Wire formats / substrate selection deferred W2+ (expanded
+    ADR-0031). See ADR-0050.
+
+49. **Memory and Knowledge Ownership Boundary.** Memory is partitioned by ownership, not
+    only by category. **C-Side owned** (by default): business ontology, business entity
+    state, user preferences, domain facts discovered during agent execution, business
+    knowledge graph / business DB. **S-Side owned**: run trajectory, token usage, model
+    version + gateway telemetry, tool-call trace, retry/failure diagnostics, execution
+    snapshots for resume, platform scheduling/quota/billing. **Shared or delegated memory**:
+    only via explicit `DelegationGrant` declaring `(tenantScope, retention, redactionState,
+    visibilityScope, exportDeleteSemantics, placeholderPolicy)`. The S-Side emits
+    `BusinessFactEvent` / `OntologyUpdateCandidate` (with `proposalSemantics ∈ {HYPOTHESIS,
+    OBSERVATION, INFERENCE}`) on the Data track for the C-Side to consume; S-Side MUST
+    NOT directly write to C-Side knowledge graph. **`PlaceholderPreservationPolicy`
+    (first-class, ship-blocking)**: when C-Side passes placeholders (e.g. `[USER_ID_102]`),
+    S-Side MUST preserve them verbatim through every LLM prompt, tool call, intermediate
+    result, and final return; the LLM MUST NOT be asked to resolve placeholder identity
+    unless an explicit `DelegationGrant` authorises resolution at that scope. Results
+    return via `SymbolicReturnEnvelope` with placeholders unchanged. Under ADR-0034's
+    M1–M6 taxonomy: M3 / M4 / M5 are **split** into platform-derived operational memory
+    (S-Side) vs business-owned ontology (C-Side default). `GraphMemoryRepository` is the
+    platform SPI for M4 and is **NOT** the default owner of customer business ontology.
+    Java types and `DelegationGrant` template deferred W2+. See ADR-0051.
+
+50. **Skill Topology Scheduler and Capability Bidding.** Above the Java Skill SPI
+    (ADR-0030 lifecycle, ADR-0038 resource tiers), the platform defines a **distributed
+    scheduling layer** (ADR-0052). **Two-axis arbitration** (whitepaper §4.1):
+    horizontal = **Tenant Quota** (per-tenant caps), vertical = **Global Skill Capacity**
+    (cluster-wide caps per Skill). A Run that hits the vertical-axis cap yields only the
+    **dependent agent step** via `SuspendSignal` with `SuspendReason.RateLimited`
+    (`SkillSaturationYield`), releasing the LLM inference thread rather than starving
+    other Runs. **`CapabilityRegistry`** (extended) — capability tags bound to domain
+    permission identifiers; tenant-scoped pre-authorization; rejects with
+    `Rejected(INSUFFICIENT_PERMISSION)` if the requesting tenant lacks the required
+    identifier. **Capability bidding** (whitepaper §5.3): only pre-authorized delegates
+    see `BidRequest`; non-authorized bidders are silently dropped at the Registry. Bidders
+    respond with `BidResponse(capacityAvailable, expectedStartTime, requiredSubstitutions[],
+    confidence, costEstimate)`. **`PermissionEnvelope`** — short-lived, signed,
+    subsumption-bounded; the S-Side issues per-task action/tool permissions to the
+    winning delegate, propagated only within the declared subsumption boundary; revokes
+    on yield. Java types and bidding-protocol wire format deferred W2-W3. See ADR-0052.
 
 ---
 
