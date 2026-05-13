@@ -19,7 +19,7 @@ class IdempotencyHeaderFilterMethodScopeTest {
     @ValueSource(strings = {"GET", "DELETE", "HEAD", "OPTIONS"})
     void nonMutatingMethods_bypassFilter_evenWithoutHeader(String method) throws Exception {
         SimpleMeterRegistry registry = new SimpleMeterRegistry();
-        IdempotencyHeaderFilter filter = new IdempotencyHeaderFilter(registry, "research");
+        IdempotencyHeaderFilter filter = new IdempotencyHeaderFilter(null, registry, "research");
         MockHttpServletRequest req = new MockHttpServletRequest(method, "/v1/runs");
         MockHttpServletResponse res = new MockHttpServletResponse();
         MockFilterChain chain = new MockFilterChain();
@@ -36,7 +36,7 @@ class IdempotencyHeaderFilterMethodScopeTest {
     @ValueSource(strings = {"POST", "PUT", "PATCH"})
     void mutatingMethods_enforceHeader_inResearchPosture(String method) throws Exception {
         SimpleMeterRegistry registry = new SimpleMeterRegistry();
-        IdempotencyHeaderFilter filter = new IdempotencyHeaderFilter(registry, "research");
+        IdempotencyHeaderFilter filter = new IdempotencyHeaderFilter(null, registry, "research");
         MockHttpServletRequest req = new MockHttpServletRequest(method, "/v1/runs");
         MockHttpServletResponse res = new MockHttpServletResponse();
         MockFilterChain chain = new MockFilterChain();

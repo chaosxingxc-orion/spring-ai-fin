@@ -1,6 +1,7 @@
 package ascend.springai.platform.idempotency;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -10,9 +11,12 @@ import org.springframework.context.annotation.Configuration;
 public class IdempotencyFilterAutoConfiguration {
 
     @Bean
-    IdempotencyHeaderFilter idempotencyHeaderFilter(MeterRegistry registry,
-            @Value("${app.posture:dev}") String posture) {
-        return new IdempotencyHeaderFilter(registry, posture);
+    IdempotencyHeaderFilter idempotencyHeaderFilter(ObjectProvider<IdempotencyStore> storeProvider,
+                                                    MeterRegistry registry,
+                                                    @Value("${app.posture:dev}") String posture) {
+        // Store may be absent in dev posture without Postgres and without
+        // allow-in-memory; the filter degrades to header-only validation in that case.
+        return new IdempotencyHeaderFilter(storeProvider.getIfAvailable(), registry, posture);
     }
 
     @Bean

@@ -84,3 +84,9 @@ logging:
 app:
   posture: ${APP_POSTURE:dev}
   sha: ${APP_SHA:dev}
+  # L1 idempotency dedup defaults (ADR-0057). research/prod inherit; dev may
+  # override allow-in-memory=true to opt into the in-memory store when no
+  # Postgres is available.
+  idempotency:
+    ttl: PT24H
+    allow-in-memory: false

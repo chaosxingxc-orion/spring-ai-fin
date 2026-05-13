@@ -1,5 +1,8 @@
 package ascend.springai.platform.idempotency;
 
+import ascend.springai.platform.tenant.TenantContext;
+import ascend.springai.platform.tenant.TenantContextHolder;
+import ascend.springai.platform.web.ErrorEnvelopeWriter;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.FilterChain;
@@ -9,22 +12,61 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.ContentCachingRequestWrapper;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
+import java.util.Optional;
+import java.util.UUID;
 
+/**
+ * L1 idempotency filter (ADR-0057). At order 30 — runs after Spring Security,
+ * after {@link ascend.springai.platform.tenant.JwtTenantClaimCrossCheck} (15),
+ * and after {@link ascend.springai.platform.tenant.TenantContextFilter} (20),
+ * so {@link TenantContextHolder} is already populated.
+ *
+ * <p>Behaviour:
+ * <ol>
+ *   <li>Skip non-mutating methods and permit-list paths
+ *       ({@link #shouldNotFilter(HttpServletRequest)}).</li>
+ *   <li>Validate {@code Idempotency-Key} header as UUID (existing W0 contract).</li>
+ *   <li>If no {@link IdempotencyStore} bean was wired (dev posture, no Postgres,
+ *       no allow-in-memory) and posture is {@code dev}: pass through with a
+ *       warning. Otherwise demand the store.</li>
+ *   <li>Wrap the request in {@link ContentCachingRequestWrapper}, hash
+ *       {@code method:path:body} (SHA-256 → base64url), call
+ *       {@link IdempotencyStore#claimOrFind(UUID, UUID, String)}.</li>
+ *   <li>Empty result → claim taken; pass the wrapped request downstream.</li>
+ *   <li>Existing row with same hash → 409 {@code idempotency_conflict}.</li>
+ *   <li>Existing row with different hash → 409 {@code idempotency_body_drift}.</li>
+ * </ol>
+ *
+ * <p>Enforcer rows: docs/governance/enforcers.yaml#E12, #E13, #E14.
+ */
 public class IdempotencyHeaderFilter extends OncePerRequestFilter {
 
     private static final Logger LOG = LoggerFactory.getLogger(IdempotencyHeaderFilter.class);
 
+    private final IdempotencyStore store;
     private final String posture;
     private final Counter missingCounter;
     private final Counter invalidCounter;
+    private final Counter conflictCounter;
+    private final Counter bodyDriftCounter;
 
-    public IdempotencyHeaderFilter(MeterRegistry registry, String posture) {
+    public IdempotencyHeaderFilter(IdempotencyStore store, MeterRegistry registry, String posture) {
+        this.store = store;
         this.posture = posture;
         this.missingCounter = Counter.builder("springai_ascend_idempotency_header_missing_total")
                 .tag("posture", posture).register(registry);
         this.invalidCounter = Counter.builder("springai_ascend_idempotency_header_invalid_total")
+                .tag("posture", posture).register(registry);
+        this.conflictCounter = Counter.builder("springai_ascend_idempotency_conflict_total")
+                .tag("posture", posture).register(registry);
+        this.bodyDriftCounter = Counter.builder("springai_ascend_idempotency_body_drift_total")
                 .tag("posture", posture).register(registry);
     }
 
@@ -32,7 +74,7 @@ public class IdempotencyHeaderFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
         if (path.startsWith("/actuator") || "/v1/health".equals(path)) return true;
-        // Only POST/PUT/PATCH carry side-effects that require idempotency guarantees (ADR-0027).
+        if (path.startsWith("/v3/api-docs")) return true;
         String method = request.getMethod();
         return !"POST".equalsIgnoreCase(method)
                 && !"PUT".equalsIgnoreCase(method)
@@ -41,7 +83,7 @@ public class IdempotencyHeaderFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
-            FilterChain chain) throws ServletException, IOException {
+                                    FilterChain chain) throws ServletException, IOException {
         String header = request.getHeader(IdempotencyConstants.HEADER_NAME);
         if (header == null || header.isBlank()) {
             missingCounter.increment();
@@ -49,18 +91,79 @@ public class IdempotencyHeaderFilter extends OncePerRequestFilter {
                 LOG.warn("Idempotency-Key header missing; continuing in posture=dev");
                 chain.doFilter(request, response);
             } else {
-                response.sendError(400, "Idempotency-Key header is required");
+                ErrorEnvelopeWriter.write(response, 400, "idempotency_key_missing",
+                        "Idempotency-Key header is required.");
             }
             return;
         }
+
+        UUID key;
         try {
-            IdempotencyKey.parse(header);
+            key = IdempotencyKey.parse(header).value();
         } catch (IllegalArgumentException e) {
             invalidCounter.increment();
-            LOG.warn("Idempotency-Key header failed UUID validation; request rejected; posture={}", posture);
-            response.sendError(400, "Idempotency-Key must be a valid UUID");
+            ErrorEnvelopeWriter.write(response, 400, "idempotency_key_invalid",
+                    "Idempotency-Key must be a valid UUID.");
             return;
         }
-        chain.doFilter(request, response);
+
+        if (store == null) {
+            // dev posture without a wired store: behave as W0 header-only validation.
+            LOG.warn("No IdempotencyStore bean wired; idempotency check is header-only (posture={}).", posture);
+            chain.doFilter(request, response);
+            return;
+        }
+
+        TenantContext tenant = TenantContextHolder.get();
+        if (tenant == null) {
+            // TenantContextFilter must have populated this by now; if not, the
+            // request is malformed enough that returning 400 is the right answer.
+            ErrorEnvelopeWriter.write(response, 400, "tenant_context_missing",
+                    "Tenant context not resolved before idempotency check.");
+            return;
+        }
+
+        // 2 MiB cache limit comfortably covers the W1 max-http-form-post-size (1 MiB).
+        ContentCachingRequestWrapper wrapped = new ContentCachingRequestWrapper(request, 2 * 1024 * 1024);
+        // ContentCachingRequestWrapper.getContentAsByteArray() returns whatever has
+        // been read so far. We force a full read by draining getInputStream() once
+        // (downstream layers can still read again — the wrapper replays from its
+        // internal buffer).
+        wrapped.getInputStream().readAllBytes();
+        byte[] body = wrapped.getContentAsByteArray();
+        String requestHash = sha256Base64Url(request.getMethod(), request.getRequestURI(), body);
+
+        Optional<IdempotencyStore.IdempotencyRecord> existing =
+                store.claimOrFind(tenant.tenantId(), key, requestHash);
+        if (existing.isPresent()) {
+            IdempotencyStore.IdempotencyRecord rec = existing.get();
+            if (!rec.requestHash().equals(requestHash)) {
+                bodyDriftCounter.increment();
+                ErrorEnvelopeWriter.write(response, 409, "idempotency_body_drift",
+                        "Idempotency-Key was previously used with a different request body.");
+            } else {
+                conflictCounter.increment();
+                ErrorEnvelopeWriter.write(response, 409, "idempotency_conflict",
+                        "A request with this Idempotency-Key is already in flight or completed.");
+            }
+            return;
+        }
+
+        chain.doFilter(wrapped, response);
+    }
+
+    private static String sha256Base64Url(String method, String path, byte[] body) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            md.update(method.getBytes(StandardCharsets.UTF_8));
+            md.update((byte) ':');
+            md.update(path.getBytes(StandardCharsets.UTF_8));
+            md.update((byte) ':');
+            md.update(body);
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(md.digest());
+        } catch (NoSuchAlgorithmException e) {
+            // SHA-256 is mandatory in every standard JDK; absence indicates a broken JVM.
+            throw new IllegalStateException("SHA-256 unavailable", e);
+        }
     }
 }

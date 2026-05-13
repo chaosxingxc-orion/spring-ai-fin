@@ -1,57 +1,52 @@
 package ascend.springai.platform.idempotency;
 
-import jakarta.annotation.PostConstruct;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.core.env.Environment;
-
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
- * W0 dev-posture stub. Not registered as a Spring @Component at W0 — not injected anywhere.
- * W1 will wire this into IdempotencyHeaderFilter with (tenant_id, key) claim/replay semantics
- * backed by a Postgres unique-constraint table. See ADR-0027.
+ * L1 tenant-scoped idempotency dedup contract (ADR-0057).
+ *
+ * <p>One {@link #claimOrFind(UUID, UUID, String)} call per mutating HTTP request:
+ * the first request with a given {@code (tenantId, key)} pair claims the row;
+ * concurrent or replayed requests see {@link Optional#isPresent() the existing
+ * record} and the caller turns it into a 409 response.
+ *
+ * <p>L1 stops at the {@code CLAIMED} status. W2 will add {@code COMPLETED}/
+ * {@code FAILED} transitions plus response replay. Until then, retried failed
+ * runs recover via {@code expires_at} TTL.
+ *
+ * <p>Enforcer rows: docs/governance/enforcers.yaml#E12, #E13, #E14.
  */
-// @Component -- wired in W1 (ADR-0027); intentionally unregistered at W0
-public class IdempotencyStore {
-
-    private static final Logger LOG = LoggerFactory.getLogger(IdempotencyStore.class);
-
-    private final String posture;
-
-    public IdempotencyStore(Environment env) {
-        this.posture = env.getProperty("app.posture", "dev");
-    }
-
-    @PostConstruct
-    public void init() {
-        if (!"dev".equalsIgnoreCase(posture)) {
-            LOG.warn("IdempotencyStore[W0 stub] is active in posture={}. " +
-                "Configure a Postgres-backed IdempotencyStore bean (W1). " +
-                "Calls to claimOrFind will throw IllegalStateException.", posture);
-        }
-    }
+public interface IdempotencyStore {
 
     /**
-     * Attempt to claim the idempotency key for the given tenant and run.
-     * Returns empty on first claim (proceed). Returns the existing record on duplicate.
-     * Dev posture: always returns empty (no-op). Research/prod: throws until W1.
+     * Attempt to claim the {@code (tenantId, key)} composite for the given
+     * {@code requestHash}. Returns {@code Optional.empty()} when the claim was
+     * newly inserted (caller proceeds); {@code Optional.of(existing)} when a row
+     * already exists for the composite (caller compares {@code requestHash} and
+     * returns 409 with the appropriate code).
      */
-    public Optional<IdempotencyRecord> claimOrFind(String tenantId, String idempotencyKey, String runId) {
-        if ("dev".equalsIgnoreCase(posture)) {
-            LOG.warn("IdempotencyStore: no-op in dev posture; tenantId={} key={}", tenantId, idempotencyKey);
-            return Optional.empty();
-        }
-        throw new IllegalStateException(
-            "IdempotencyStore is not implemented for posture=" + posture +
-            ". W1 will add a Postgres-backed claim. Tenant: " + tenantId);
+    Optional<IdempotencyRecord> claimOrFind(UUID tenantId, UUID key, String requestHash);
+
+    /** Status values mirror the schema CHECK constraint. */
+    enum Status {
+        CLAIMED,
+        COMPLETED,
+        FAILED
     }
 
-    public record IdempotencyRecord(
-            String tenantId,
-            String idempotencyKey,
-            String runId,
-            Instant claimedAt
-    ) {}
+    /** Immutable snapshot of a dedup row. */
+    record IdempotencyRecord(
+            UUID tenantId,
+            UUID idempotencyKey,
+            String requestHash,
+            Status status,
+            Integer responseStatus,
+            String responseBodyRef,
+            Instant createdAt,
+            Instant completedAt,
+            Instant expiresAt
+    ) {
+    }
 }
