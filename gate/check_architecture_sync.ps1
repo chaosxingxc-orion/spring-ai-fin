@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-  spring-ai-ascend architecture-sync gate (post-seventh third-pass, 25 rules).
+  spring-ai-ascend architecture-sync gate (L0 release-note contract review, 26 rules).
 
 .DESCRIPTION
   Exits 0 if all rules pass, 1 if any fail.
@@ -34,6 +34,7 @@
    23. active_doc_internal_links_resolve   -- markdown links ](path) in active docs must resolve to existing files (ADR-0043)
    24. shipped_row_evidence_paths_exist    -- l2_documents: and latest_delivery_file: on shipped rows must exist on disk (ADR-0045)
    25. peripheral_wave_qualifier           -- SPI Javadoc and active docs must not name future-wave impls without wave qualifier (ADR-0045)
+   26. release_note_shipped_surface_truth  -- docs/releases/*.md must not overclaim RunLifecycle as W0, invent RunContext.posture(), misattribute OpenAPI snapshot to ApiCompatibilityTest, or over-generalise AppPostureGate scope (ADR-0046)
 
 .PARAMETER LocalOnly
   Not used by this script (kept for invocation parity with old version).
@@ -856,6 +857,102 @@ foreach ($af25 in $activeMdFiles25) {
   }
 }
 if (-not $r25Fail) { Pass-Rule 'peripheral_wave_qualifier' }
+
+# ---------------------------------------------------------------------------
+# Rule 26 — release_note_shipped_surface_truth
+# ADR-0046: docs/releases/*.md must not overclaim shipped surfaces.
+#   26a — RunLifecycle name guard: a line containing 'RunLifecycle' MUST be in a one-line
+#         context window (line i-1, i, i+1) that contains a wave qualifier W1/W2/W3/W4, OR
+#         the same line must contain one of: design-only, deferred, not shipped,
+#         remains design, materialised at W.
+#   26b — RunContext method-list guard: a line listing RunContext methods MUST NOT contain
+#         posture() and method-name tokens must be a subset of
+#         {runId, tenantId, checkpointer, suspendForChild}.
+#   26c — OpenAPI snapshot attribution: a line co-mentioning ApiCompatibilityTest with
+#         snapshot|OpenAPI.*spec|diverges fails — actual snapshot test is OpenApiContractIT.
+#   26d — AppPostureGate scope guard: 'AppPostureGate' on a line with 'HTTP Edge' fails
+#         (placement error); 'all runtime components.*posture.*constructor' fails (breadth).
+# Closes GATE-SCOPE-GAP for release artifact class.
+# ---------------------------------------------------------------------------
+$r26Fail = $false
+$releasesDir = Join-Path $repoRoot 'docs/releases'
+if (Test-Path $releasesDir) {
+  $releaseFiles26 = Get-ChildItem -Path $releasesDir -Filter '*.md' -File -ErrorAction SilentlyContinue
+  foreach ($rf26 in $releaseFiles26) {
+    $lines26 = Get-Content -LiteralPath $rf26.FullName -ErrorAction SilentlyContinue
+    if ($null -eq $lines26) { continue }
+    for ($i26 = 0; $i26 -lt $lines26.Count; $i26++) {
+      $line26 = $lines26[$i26]
+      # --- Narrative exemption: lines that explicitly describe Rule 26 itself are meta,
+      # not shipped-surface claims. Authors intentionally referencing the rule for
+      # documentation purposes are allowed to mention forbidden tokens.
+      if ($line26 -cmatch 'Gate Rule 26|ADR-0046|release_note_shipped_surface_truth') {
+        continue
+      }
+      # --- 26a: RunLifecycle name guard ---
+      if ($line26 -cmatch 'RunLifecycle') {
+        $lo26 = [Math]::Max(0, $i26 - 1); $hi26 = [Math]::Min($lines26.Count - 1, $i26 + 1)
+        $ctx26a = ($lines26[$lo26..$hi26] -join ' ')
+        $hasWave26a = $ctx26a -cmatch '\bW[1-4]\b'
+        $hasDeferMarker26a = $line26 -cmatch 'design-only|deferred|not shipped|remains design|materialised at W|materialized at W'
+        if (-not $hasWave26a -and -not $hasDeferMarker26a) {
+          Fail-Rule 'release_note_shipped_surface_truth' "$($rf26.FullName):$($i26+1) (26a) contains 'RunLifecycle' without a W1-W4 wave qualifier in context window or design-only/deferred/not shipped/remains design marker on the same line. Per ADR-0046 RunLifecycle is W2 design-only; the release note must qualify it."
+          $r26Fail = $true
+        }
+      }
+      # --- 26b: RunContext method-list guard ---
+      # Only fires on lines where RunContext appears in a methods-context: markdown table
+      # cell header, methods verb ("exposes"/"interface"/"methods"/"provides"/"carries"/"has"),
+      # or RunContext.method( direct-call syntax. Otherwise lines mentioning RunContext only
+      # in passing (e.g. disclaimers, cross-references) are skipped to avoid catching method
+      # calls owned by other classes on the same line (e.g. AppPostureGate.requireDev(...)).
+      if ($line26 -cmatch 'RunContext') {
+        $isMethodsCtx26b = ($line26 -cmatch '\|\s*`?RunContext`?\s*\|') -or `
+                          ($line26 -cmatch '\bRunContext\b[^.]{0,40}?\b(exposes|interface|methods?|provides|carries|has)\b') -or `
+                          ($line26 -cmatch 'RunContext\.[A-Za-z_]')
+        if ($isMethodsCtx26b) {
+          # Extract method tokens AFTER the first RunContext occurrence to avoid catching
+          # method calls owned by other classes that appear earlier in the line.
+          $idxRC26 = $line26.IndexOf('RunContext')
+          $afterRC26 = $line26.Substring($idxRC26)
+          if ($afterRC26 -cmatch '\bposture\(') {
+            Fail-Rule 'release_note_shipped_surface_truth' "$($rf26.FullName):$($i26+1) (26b) contains 'RunContext' co-mentioned with 'posture()'. Per ADR-0046 the actual RunContext interface has no posture() method; canonical methods are runId/tenantId/checkpointer/suspendForChild."
+            $r26Fail = $true
+          }
+          $methodTokens26 = [regex]::Matches($afterRC26, '\b([A-Za-z_][A-Za-z0-9_]*)\(') | ForEach-Object { $_.Groups[1].Value }
+          $canonical26b = @('runId','tenantId','checkpointer','suspendForChild')
+          $neutral26b = @('exposes','lists','returns','threads','carries','provides','sourced','interface','method','methods','requires','reads','writes','sees','gets','fails')
+          foreach ($mt26 in $methodTokens26) {
+            if ($canonical26b -notcontains $mt26 -and $neutral26b -notcontains $mt26) {
+              if ($mt26 -cmatch '^[a-z][A-Za-z0-9_]*$') {
+                Fail-Rule 'release_note_shipped_surface_truth' "$($rf26.FullName):$($i26+1) (26b) lists method '$mt26()' alongside 'RunContext' in a methods-context. Per ADR-0046 canonical RunContext methods are {runId, tenantId, checkpointer, suspendForChild}; other method tokens flag an invented method."
+                $r26Fail = $true
+              }
+            }
+          }
+        }
+      }
+      # --- 26c: OpenAPI snapshot test attribution ---
+      if ($line26 -cmatch 'ApiCompatibilityTest' -and $line26 -cmatch 'snapshot|OpenAPI\s*(snapshot|spec|v1)|diverges|live\s*spec') {
+        # Exempt clarifying lines that explicitly disclaim the misattribution.
+        if ($line26 -notmatch 'ArchUnit\s*-?\s*only|not\s+the\s+OpenAPI|is\s+not\s+the\s+OpenAPI') {
+          Fail-Rule 'release_note_shipped_surface_truth' "$($rf26.FullName):$($i26+1) (26c) attributes OpenAPI snapshot enforcement to ApiCompatibilityTest. Per ADR-0046 the snapshot diff lives in OpenApiContractIT (via OpenApiSnapshotComparator). ApiCompatibilityTest is ArchUnit-only."
+          $r26Fail = $true
+        }
+      }
+      # --- 26d: AppPostureGate scope guard ---
+      if ($line26 -cmatch 'AppPostureGate' -and $line26 -cmatch 'HTTP\s*Edge') {
+        Fail-Rule 'release_note_shipped_surface_truth' "$($rf26.FullName):$($i26+1) (26d) co-mentions 'AppPostureGate' with 'HTTP Edge'. Per ADR-0046 AppPostureGate lives in agent-runtime; it does not belong under HTTP Edge."
+        $r26Fail = $true
+      }
+      if ($line26 -cmatch 'all\s+runtime\s+components.*posture.*constructor|posture.*constructor.*all\s+runtime\s+components') {
+        Fail-Rule 'release_note_shipped_surface_truth' "$($rf26.FullName):$($i26+1) (26d) claims posture is a constructor argument for all runtime components. Per ADR-0046 only SyncOrchestrator, InMemoryRunRegistry, InMemoryCheckpointer call AppPostureGate; the claim is over-generalised."
+        $r26Fail = $true
+      }
+    }
+  }
+}
+if (-not $r26Fail) { Pass-Rule 'release_note_shipped_surface_truth' }
 
 # ---------------------------------------------------------------------------
 # Summary

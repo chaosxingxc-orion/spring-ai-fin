@@ -55,6 +55,7 @@ options considered, decision, and consequences.
 | [0043](0043-active-normative-doc-catalog-and-peripheral-drift-prevention.md) | Active normative doc catalog and peripheral drift prevention: ACTIVE_NORMATIVE_DOCS + Gate Rules 20-23 | accepted |
 | [0044](0044-spi-contract-precision-and-memory-metadata-reconciliation.md) | SPI contract precision and memory metadata reconciliation: RunContext interface, per-SPI scope, embeddingModelVersion | accepted |
 | [0045](0045-shipped-row-evidence-path-existence-and-peripheral-wave-qualifier.md) | Shipped-row evidence path existence (Gate Rule 24) and peripheral wave-qualifier (Gate Rule 25): closes REF-DRIFT and PERIPHERAL-DRIFT patterns | accepted |
+| [0046](0046-release-note-shipped-surface-truth.md) | Release-note shipped-surface truth (Gate Rule 26): closes GATE-SCOPE-GAP for `docs/releases/*.md` with four sub-checks (RunLifecycle name guard, RunContext method-list guard, OpenAPI test attribution, AppPostureGate scope guard) | accepted |
 
 ## Process
 

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# spring-ai-ascend architecture-sync gate self-test (L0 release).
-# PARTIAL COVERAGE: covers Rules 1-6 + Rules 16, 19, 22, 24, 25 (24 tests).
+# spring-ai-ascend architecture-sync gate self-test (L0 release-note contract review).
+# PARTIAL COVERAGE: covers Rules 1-6 + Rules 16, 19, 22, 24, 25, 26 (28 tests).
 # Full gate verification requires running: pwsh gate/check_architecture_sync.ps1
-# The full gate has 25 active rules; this self-test covers Rules 1-6 and 16/19/22/24/25.
-# Prints: Tests passed: N/24
-# Exits 0 if all 24 pass, 1 otherwise.
+# The full gate has 26 active rules; this self-test covers Rules 1-6 and 16/19/22/24/25/26.
+# Prints: Tests passed: N/28
+# Exits 0 if all 28 pass, 1 otherwise.
 
 set -uo pipefail
 export LC_ALL=C
@@ -14,7 +14,7 @@ cd "$repo_root"
 
 passed=0
 failed=0
-TOTAL=24
+TOTAL=28
 
 ok() {
   echo "PASS [$1]: $2"
@@ -518,6 +518,114 @@ if [[ $_r25_neg_fail -eq 1 ]]; then
   ok "rule25_wave_qualifier_neg" "unqualified 'Primary sidecar impl:' correctly detected"
 else
   fail "rule25_wave_qualifier_neg" "expected unqualified impl claim to be detected"
+fi
+
+# ---------------------------------------------------------------------------
+# RULE 26 — release_note_shipped_surface_truth
+# 26a — RunLifecycle name guard:
+#   Positive: line with W2 wave qualifier or design-only marker → PASS
+#   Negative: line listing RunLifecycle as W0 shipped SPI with no qualifier → FAIL
+# 26b — RunContext method-list guard:
+#   Positive: canonical method list (runId, tenantId, checkpointer, suspendForChild) → PASS
+#   Negative: line includes posture() alongside RunContext → FAIL
+# ---------------------------------------------------------------------------
+
+## 26a Positive: wave-qualified RunLifecycle passes
+_r26a_pos="$scratch/r26a_pos.md"
+cat > "$_r26a_pos" <<'EOF'
+| `Orchestration` SPI | Pure-Java SPIs; no framework imports. `RunLifecycle` (cancel/resume/retry) remains design-only for W2 — see ADR-0020 |
+EOF
+_r26a_pos_fail=0
+while IFS= read -r _ln; do
+  if printf '%s' "$_ln" | grep -q 'RunLifecycle'; then
+    if ! printf '%s' "$_ln" | grep -qE '(^|[^A-Za-z0-9])W[1-4]([^A-Za-z0-9]|$)' && \
+       ! printf '%s' "$_ln" | grep -qE 'design-only|deferred|not shipped|remains design|materialised at W|materialized at W'; then
+      _r26a_pos_fail=1
+    fi
+  fi
+done < "$_r26a_pos"
+if [[ $_r26a_pos_fail -eq 0 ]]; then
+  ok "rule26_runlifecycle_pos" "wave-qualified RunLifecycle correctly passes"
+else
+  fail "rule26_runlifecycle_pos" "expected wave-qualified RunLifecycle line to pass"
+fi
+
+## 26a Negative: unqualified RunLifecycle as W0 SPI label
+_r26a_neg="$scratch/r26a_neg.md"
+cat > "$_r26a_neg" <<'EOF'
+| `RunLifecycle` SPI | `Orchestrator`, `GraphExecutor`, `AgentLoopExecutor` — pure-Java SPIs |
+EOF
+_r26a_neg_fail=0
+_lines_count=0
+mapfile -t _r26a_neg_lines < "$_r26a_neg"
+_lines_count=${#_r26a_neg_lines[@]}
+for ((_i=0; _i < _lines_count; _i++)); do
+  _ln="${_r26a_neg_lines[$_i]}"
+  if printf '%s' "$_ln" | grep -q 'RunLifecycle'; then
+    _lo=$((_i > 0 ? _i - 1 : 0))
+    _hi=$((_i + 1 < _lines_count ? _i + 1 : _i))
+    _ctx=""
+    for ((_j=_lo; _j <= _hi; _j++)); do _ctx="$_ctx ${_r26a_neg_lines[$_j]}"; done
+    if ! printf '%s' "$_ctx" | grep -qE '(^|[^A-Za-z0-9])W[1-4]([^A-Za-z0-9]|$)' && \
+       ! printf '%s' "$_ln" | grep -qE 'design-only|deferred|not shipped|remains design|materialised at W|materialized at W'; then
+      _r26a_neg_fail=1
+    fi
+  fi
+done
+if [[ $_r26a_neg_fail -eq 1 ]]; then
+  ok "rule26_runlifecycle_neg" "unqualified RunLifecycle correctly detected"
+else
+  fail "rule26_runlifecycle_neg" "expected unqualified RunLifecycle line to be detected"
+fi
+
+## 26b Positive: canonical RunContext method list passes
+_r26b_pos="$scratch/r26b_pos.md"
+cat > "$_r26b_pos" <<'EOF'
+| `RunContext` | Interface methods: `runId()`, `tenantId()`, `checkpointer()`, `suspendForChild()` |
+EOF
+_r26b_pos_fail=0
+while IFS= read -r _ln; do
+  if printf '%s' "$_ln" | grep -q 'RunContext' && printf '%s' "$_ln" | grep -qE '[A-Za-z_][A-Za-z0-9_]*\(\)'; then
+    if printf '%s' "$_ln" | grep -qE '\bposture[[:space:]]*\(\)'; then
+      _r26b_pos_fail=1
+    fi
+    for _mt in $(printf '%s' "$_ln" | grep -oE '\b[A-Za-z_][A-Za-z0-9_]*\(' | sed 's/($//'); do
+      case "$_mt" in
+        [a-z]*)
+          case "$_mt" in
+            runId|tenantId|checkpointer|suspendForChild) : ;;
+            exposes|lists|returns|threads|carries|provides|sourced|interface|method|methods|requires|reads|writes|sees|gets|fails) : ;;
+            *) _r26b_pos_fail=1 ;;
+          esac
+          ;;
+        *) : ;;
+      esac
+    done
+  fi
+done < "$_r26b_pos"
+if [[ $_r26b_pos_fail -eq 0 ]]; then
+  ok "rule26_runcontext_pos" "canonical RunContext method list correctly passes"
+else
+  fail "rule26_runcontext_pos" "expected canonical RunContext methods to pass"
+fi
+
+## 26b Negative: RunContext with invented posture() method
+_r26b_neg="$scratch/r26b_neg.md"
+cat > "$_r26b_neg" <<'EOF'
+| `RunContext` | Interface: `tenantId()`, `runId()`, `posture()`; sourced from SPIs |
+EOF
+_r26b_neg_fail=0
+while IFS= read -r _ln; do
+  if printf '%s' "$_ln" | grep -q 'RunContext' && printf '%s' "$_ln" | grep -qE '[A-Za-z_][A-Za-z0-9_]*\(\)'; then
+    if printf '%s' "$_ln" | grep -qE '\bposture[[:space:]]*\(\)'; then
+      _r26b_neg_fail=1
+    fi
+  fi
+done < "$_r26b_neg"
+if [[ $_r26b_neg_fail -eq 1 ]]; then
+  ok "rule26_runcontext_neg" "RunContext with posture() correctly detected"
+else
+  fail "rule26_runcontext_neg" "expected posture() alongside RunContext to be detected"
 fi
 
 # ---------------------------------------------------------------------------

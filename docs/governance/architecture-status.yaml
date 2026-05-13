@@ -1,4 +1,4 @@
-# spring-ai-ascend architecture status ledger -- 2026-05-13 post-seventh third pass
+# spring-ai-ascend architecture status ledger -- 2026-05-13 L0 release-note contract review
 # Single source of truth for capability status. Updated by commits, not manually.
 #
 # status enum: design_accepted | implemented_unverified | test_verified | deferred_w1 | deferred_w2
@@ -65,7 +65,7 @@ capabilities:
       - gate/test_architecture_sync_gate.sh
     latest_semantic_pass_sha: 82a1397
     latest_delivery_file: docs/delivery/2026-05-12-e0ccb6e.md
-    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here. Architecture baseline: 43 §4 constraints (#1–#43); 45 ADRs (0001–0045); 25 active gate rules; 11 active engineering rules (1–6, 9–10, 20–21, 25); 14 deferred rules (7, 8, 11, 13–19, 22–24, 26–27); 24 gate self-tests; L0 release published at docs/releases/2026-05-13-L0-architecture-release.en.md."
+    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here. Architecture baseline: 44 §4 constraints (#1–#44); 46 ADRs (0001–0046); 26 active gate rules; 11 active engineering rules (1–6, 9–10, 20–21, 25); 14 deferred rules (7, 8, 11, 13–19, 22–24, 26–27); 28 gate self-tests; L0 release published at docs/releases/2026-05-13-L0-architecture-release.en.md; release-note contract-review pass closed GATE-SCOPE-GAP via ADR-0046 + Gate Rule 26."
 
   spring_ai_ascend_dependencies_bom:
     status: implemented_unverified
@@ -212,7 +212,7 @@ capabilities:
     implementation:
       - docs/adr/
     tests: []
-    allowed_claim: "41 per-file MADR 4.0 ADRs in docs/adr/ (0001–0041); README index present and refreshed 2026-05-13."
+    allowed_claim: "46 per-file MADR 4.0 ADRs in docs/adr/ (0001–0046); README index present and refreshed 2026-05-13."
 
   perf_evidence_path:
     status: design_accepted
@@ -912,3 +912,17 @@ capabilities:
       - agent-runtime/src/main/java/ascend/springai/runtime/memory/spi/GraphMemoryRepository.java
     tests: []
     allowed_claim: "RunContext classified as interface in contract-catalog.md; per-SPI scope table added; embeddingModelVersion canonical name normalized across ARCHITECTURE.md and architecture-status.yaml; GraphMetadata documented as pre-W2 minimal subset. Gate Rule 17 extended. §4 #41."
+
+  # --- Tenth review cycle: L0 release-note contract review (2026-05-13) ---
+
+  release_note_shipped_surface_truth_gate:
+    status: test_verified
+    shipped: true
+    l0_decision: docs/adr/0046-release-note-shipped-surface-truth.md
+    implementation:
+      - gate/check_architecture_sync.ps1
+      - gate/check_architecture_sync.sh
+      - docs/releases/2026-05-13-L0-architecture-release.en.md
+    tests:
+      - gate/test_architecture_sync_gate.sh
+    allowed_claim: "Gate Rule 26 (release_note_shipped_surface_truth) scoped to docs/releases/*.md; four sub-checks: 26a RunLifecycle name guard (must carry W1-W4 wave qualifier OR design-only/deferred/not-shipped/remains-design marker), 26b RunContext method-list guard (no posture(); only runId/tenantId/checkpointer/suspendForChild), 26c OpenAPI snapshot test attribution (OpenApiContractIT, not ApiCompatibilityTest), 26d AppPostureGate scope guard (not under HTTP Edge; not 'all runtime components ... constructor'). Closes GATE-SCOPE-GAP class defect for release-artifact class. §4 #44. ADR-0046."

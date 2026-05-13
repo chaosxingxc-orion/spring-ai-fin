@@ -1,8 +1,9 @@
 # spring-ai-ascend L0 Architecture Release — 2026-05-13
 
-> Status: **L0 architecturally ready**
-> HEAD SHA: 82a1397
-> Review cycles: 9 passes (2nd reviewer → post-seventh third-pass)
+> Status: **L0 architecturally ready** (release-note contract-review pass complete)
+> Semantic release SHA: 82a1397
+> Metadata follow-up SHAs: 776d4e7 (set `latest_semantic_pass_sha` to `82a1397`) + contract-review-response delivery (text-corrections + Gate Rule 26)
+> Review cycles: 10 passes (2nd reviewer → post-seventh third-pass → L0 release-note contract review)
 > Released: 2026-05-13
 
 ---
@@ -19,12 +20,12 @@ The W0 kernel is intentionally small. W1–W4 capabilities are staged as design 
 
 | Metric | Value |
 |--------|-------|
-| §4 constraints | 43 (#1–#43) |
-| Active ADRs | 45 (ADR-0001–ADR-0045) |
-| Active gate rules | 25 (PowerShell + bash parity) |
+| §4 constraints | 44 (#1–#44) |
+| Active ADRs | 46 (ADR-0001–ADR-0046) |
+| Active gate rules | 26 (PowerShell + bash parity) |
 | Active engineering rules | 11 (Rules 1–6, 9–10, 20–21, 25) |
 | Deferred engineering rules | 14 (with documented re-introduction triggers) |
-| Gate self-test cases | 24 (covering Rules 1–6, 16, 19, 22, 24, 25) |
+| Gate self-test cases | 28 (covering Rules 1–6, 16, 19, 22, 24, 25, 26) |
 | Maven tests | 101 (all GREEN) |
 
 ---
@@ -38,7 +39,6 @@ The W0 kernel is intentionally small. W1–W4 capabilities are staged as design 
 | `GET /v1/health` | Health probe — no auth required, exempt from tenant/idempotency filters |
 | `TenantContextFilter` | Binds `X-Tenant-Id` header to `TenantContextHolder` + MDC `tenant_id`; reads header only at W0 |
 | `IdempotencyHeaderFilter` | Validates UUID shape of `Idempotency-Key` on POST/PUT/PATCH; 400 in research/prod on missing key; validation only (no dedup at W0) |
-| `AppPostureGate` | Single construction path for posture-aware defaults; dev=permissive+WARN, research/prod=fail-closed |
 | `WebSecurityConfig` | Permits `GET /v1/health`; requires auth on all other routes |
 
 ### Runtime Kernel (agent-runtime)
@@ -46,9 +46,10 @@ The W0 kernel is intentionally small. W1–W4 capabilities are staged as design 
 | Capability | Description |
 |-----------|-------------|
 | `Run` entity + DFA | 7 statuses (PENDING, RUNNING, SUSPENDED, SUCCEEDED, FAILED, CANCELLED, EXPIRED); `RunStateMachine` validates every transition |
-| `RunLifecycle` SPI | `Orchestrator`, `GraphExecutor`, `AgentLoopExecutor`, `SuspendSignal`, `Checkpointer` — pure-Java SPIs; no framework imports |
-| `RunContext` | Interface: `tenantId()`, `runId()`, `posture()`; sourced from SPIs, not HTTP ThreadLocal |
+| `Orchestration` SPI | `Orchestrator`, `GraphExecutor`, `AgentLoopExecutor`, `SuspendSignal`, `Checkpointer`, `ExecutorDefinition`, `RunContext` — pure-Java SPIs (verified by `OrchestrationSpiArchTest`); no framework imports. `RunLifecycle` (cancel/resume/retry) remains design-only for W2 — see ADR-0020 |
+| `RunContext` | Interface methods: `runId()`, `tenantId()`, `checkpointer()`, `suspendForChild(parentNodeKey, childMode, childDef, resumePayload)`. Tenant identity is sourced from the runtime context, not from the HTTP ThreadLocal (Rule 21). Posture is **not** carried on `RunContext` at W0; posture is enforced via construction-time `AppPostureGate` calls in in-memory components |
 | Dev-posture executors | `SyncOrchestrator`, `SequentialGraphExecutor`, `IterativeAgentLoopExecutor`, `InMemoryRunRegistry`, `InMemoryCheckpointer` |
+| `AppPostureGate` | Construction-time posture guard (ADR-0035, Rule 6 single-construction-path). Called by `SyncOrchestrator`, `InMemoryRunRegistry`, `InMemoryCheckpointer` to fail-closed in research/prod when used as in-memory components. Not threaded through every runtime component — only the in-memory ones that require dev-only gating |
 | `ResilienceContract` + `YamlResilienceContract` | Posture-aware circuit-breaker and retry configuration |
 | Memory SPI scaffold | `GraphMemoryRepository` interface — no adapter ships at W0; Graphiti REST reference lands W1 (ADR-0034) |
 
@@ -56,9 +57,9 @@ The W0 kernel is intentionally small. W1–W4 capabilities are staged as design 
 
 | Capability | Description |
 |-----------|-------------|
-| OpenAPI v1 snapshot | `docs/contracts/openapi-v1.yaml` pinned; `ApiCompatibilityTest` fails if the snapshot diverges from the live spec |
-| ArchUnit guards | `OrchestrationSpiArchTest`, `MemorySpiArchTest` (SPI-purity: no Spring imports in SPIs); `TenantPropagationPurityTest` (no HTTP ThreadLocal in runtime) |
-| Architecture-sync gate | 25 active rules on PowerShell + bash; covers path existence, version consistency, route exposure, module dep direction, SPI contract truth, wave qualifiers, and 4-shape defect patterns |
+| OpenAPI v1 snapshot | `docs/contracts/openapi-v1.yaml` pinned; `OpenApiContractIT` (via `OpenApiSnapshotComparator`) fails if the pinned snapshot diverges from the live spec at `/v3/api-docs`. `ApiCompatibilityTest` is ArchUnit-only — it enforces SPI purity and module-dependency direction, not the OpenAPI snapshot diff |
+| ArchUnit guards | `OrchestrationSpiArchTest`, `MemorySpiArchTest` (SPI-purity: no Spring imports in SPIs); `ApiCompatibilityTest` (no `com.alibaba.cloud.ai.*` imports + agent-platform→agent-runtime dep ban); `TenantPropagationPurityTest` (no HTTP ThreadLocal in runtime) |
+| Architecture-sync gate | 26 active rules on PowerShell + bash; covers path existence, version consistency, route exposure, module dep direction, SPI contract truth, wave qualifiers, 4-shape defect patterns, and release-note shipped-surface truth |
 
 ---
 
@@ -72,7 +73,7 @@ Set `APP_POSTURE` environment variable:
 | `research` | Fail-closed — required config present or ISE; durable persistence expected |
 | `prod` | Fail-closed — same as research; stricter enforcement planned for W2 |
 
-`AppPostureGate` is the single construction point; all runtime components receive their posture as a constructor argument, never via a call-site check.
+`AppPostureGate.requireDevForInMemoryComponent(name)` is the single construction-time read of `APP_POSTURE` (Rule 6 single-construction-path; ADR-0035). It is called by the three in-memory runtime components that require dev-only gating — `SyncOrchestrator`, `InMemoryRunRegistry`, `InMemoryCheckpointer` — during construction. Posture is **not** threaded through `RunContext` or passed as an argument to every runtime component; only those in-memory ones that must fail-closed in research/prod call the gate.
 
 ---
 
@@ -121,33 +122,34 @@ Set `APP_POSTURE` environment variable:
 
 ```
 Maven:        101 tests, 0 failures, 0 errors — BUILD SUCCESS
-Gate (PS):    25/25 rules PASS — GATE: PASS
-Gate (bash):  25/25 rules PASS — GATE: PASS
-Self-tests:   24/24 PASS
+Gate (PS):    26/26 rules PASS — GATE: PASS
+Gate (bash):  26/26 rules PASS — GATE: PASS
+Self-tests:   28/28 PASS
 ```
 
-All `shipped: true` capability rows in `docs/governance/architecture-status.yaml` have resolvable evidence on disk (validated by Gate Rule 24).
+All `shipped: true` capability rows in `docs/governance/architecture-status.yaml` have resolvable evidence on disk (validated by Gate Rule 24). The release-note text itself is validated for shipped-surface truth by Gate Rule 26 — `RunLifecycle`, `RunContext.posture()`, `ApiCompatibilityTest`-as-OpenAPI-snapshot, and `AppPostureGate` placement/breadth overclaims are mechanically rejected before commit.
 
 ---
 
-## The 4-Shape Defect Model
+## The 4-Shape Defect Model (+ GATE-SCOPE-GAP)
 
-The nine review cycles revealed a recurring meta-pattern: each round of central-doc repair left peripheral entry-point drift behind. The third-pass cycle codified this as four defect shapes, each now with a structural prevention mechanism:
+The first nine review cycles revealed a recurring meta-pattern: each round of central-doc repair left peripheral entry-point drift behind. The third-pass cycle codified this as four defect shapes. The tenth cycle (L0 release-note contract review) surfaced a fifth: **GATE-SCOPE-GAP** — a truth-rule's pattern catalog is exhaustive but its *token catalog* is artifact-specific, so a new artifact class (e.g. `docs/releases/*.md`) entering the active corpus inherits zero instrumentation until a dedicated rule is added. ADR-0046 + Gate Rule 26 close this gap for release notes.
 
 | Shape | Structural prevention | Gate rule |
 |-------|-----------------------|-----------|
 | **REF-DRIFT** — reference resolves but points to wrong file/wave/non-existent artifact | Every evidence field on a `shipped: true` row validated against disk at gate time | Rule 24 (`shipped_row_evidence_paths_exist`) |
 | **HISTORY-PARADOX** — document simultaneously active and historical; body stale | `docs/plans/**` entirely historical; module ARCHITECTURE tables distinguish current vs planned | Archive policy + ADR-0043 |
 | **PERIPHERAL-DRIFT** — central canonical file correct; README/Javadoc/sidebar still carries old claim | Case-sensitive scan of SPI Javadoc and active markdown for future-wave impl claims without wave qualifier; widened Rule 16a for W1 tenant-model replacement claims | Rule 25 (`peripheral_wave_qualifier`) + Rule 16 (`http_contract_w1_tenant_and_cancel_consistency`) |
-| **GATE-PROMISE-GAP** — ARCHITECTURE/ADR prose promises semantic rule; gate enforces narrow literal | PS `-cmatch` for case-sensitive checks; bash `[[:space:]]` for POSIX portability; cross-platform parity tests; self-test coverage for new/strengthened rules | Rules 16a/19/22/24/25 + 24 self-tests |
+| **GATE-PROMISE-GAP** — ARCHITECTURE/ADR prose promises semantic rule; gate enforces narrow literal | PS `-cmatch` for case-sensitive checks; bash `[[:space:]]` for POSIX portability; cross-platform parity tests; self-test coverage for new/strengthened rules | Rules 16a/19/22/24/25 + 28 self-tests |
+| **GATE-SCOPE-GAP** — truth-rule's pattern catalog is right but token catalog doesn't cover a sibling artifact class | Dedicated rule per release artifact: name guards, method-list guards, test-attribution guards, scope-claim guards | Rule 26 (`release_note_shipped_surface_truth`) |
 
-Any future architecture review should audit using these four shapes before declaring a cycle clean.
+Any future architecture review should audit using these five shapes before declaring a cycle clean.
 
 ---
 
 ## Historical Cycle Summary
 
-9 review cycles, 2026-05-12 → 2026-05-13:
+10 review cycles, 2026-05-12 → 2026-05-13:
 
 | Phase | Focus | Mechanism landed |
 |-------|-------|-----------------|
@@ -160,6 +162,7 @@ Any future architecture review should audit using these four shapes before decla
 | Post-7th 2nd pass | META pattern — active corpus drift | ACTIVE_NORMATIVE_DOCS catalog; test-evidence gate; Rules 19–23 |
 | Post-7th 3rd pass | 4-shape defect model canonized | Rules 24–25; Rule 19/22 strengthened; bash cut-field fix; 22→24 self-tests |
 | L0 release | Final residual fix — Rule 16a widened | Rule 16a catches "switches-to-JWT" class; agent-platform README corrected |
+| L0 release-note contract review | Release-note shipped-surface drift caught: P1×2 (`RunLifecycle` SPI label, `RunContext.posture()`), P2 (`ApiCompatibilityTest` test-attribution), P3 (`AppPostureGate` placement + breadth), P4 (HEAD-SHA ambiguity) | ADR-0046 + Gate Rule 26 (`release_note_shipped_surface_truth`) with 4 sub-checks (RunLifecycle name guard, RunContext method-list guard, OpenAPI test attribution, AppPostureGate scope guard); §4 #44; +4 self-tests (24→28); release-note text corrected to match Java surface |
 
 ---
 
@@ -178,10 +181,12 @@ The following are known, intentional, and documented:
 
 ## References
 
-- `ARCHITECTURE.md` — full §4 constraint list (#1–#43)
-- `docs/adr/README.md` — ADR index (0001–0045)
+- `ARCHITECTURE.md` — full §4 constraint list (#1–#44)
+- `docs/adr/README.md` — ADR index (0001–0046)
 - `docs/governance/architecture-status.yaml` — capability status ledger with shipped evidence
 - `docs/cross-cutting/posture-model.md` — posture matrix
-- `gate/check_architecture_sync.ps1` + `gate/check_architecture_sync.sh` — 25 gate rules
-- `gate/test_architecture_sync_gate.sh` — 24 self-tests
+- `gate/check_architecture_sync.ps1` + `gate/check_architecture_sync.sh` — 26 gate rules
+- `gate/test_architecture_sync_gate.sh` — 28 self-tests
 - `CLAUDE.md` — 11 active engineering rules
+- `docs/reviews/2026-05-13-l0-release-note-contract-review.en.md` — tenth-cycle review input
+- `docs/adr/0046-release-note-shipped-surface-truth.md` — Gate Rule 26 + GATE-SCOPE-GAP closure

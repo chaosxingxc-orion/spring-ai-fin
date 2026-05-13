@@ -1,6 +1,6 @@
 # spring-ai-ascend Platform — Architecture
 
-> Last updated: 2026-05-13 (post-seventh third-pass — §4 #42-#43, ADR-0045, Gate Rules 24-25, Rule 19 strengthened, Rule 22 PS case-sensitivity fix, REF-DRIFT path-existence gate, HISTORY-PARADOX W0-evidence-skeleton archived, PERIPHERAL-DRIFT entry-point wave-qualifier gate, shared ACTIVE_NORMATIVE_DOCS enumerator, self-tests for Rules 19/22/24/25, refresh-metadata reconciliation across 11 active-corpus files).
+> Last updated: 2026-05-13 (L0 release-note contract review — §4 #44, ADR-0046, Gate Rule 26, GATE-SCOPE-GAP closure for `docs/releases/*.md`, +4 self-tests (24→28); post-seventh third-pass: §4 #42-#43, ADR-0045, Gate Rules 24-25, Rule 19 strengthened, Rule 22 PS case-sensitivity fix, REF-DRIFT path-existence gate, HISTORY-PARADOX W0-evidence-skeleton archived, PERIPHERAL-DRIFT entry-point wave-qualifier gate, shared ACTIVE_NORMATIVE_DOCS enumerator, self-tests for Rules 19/22/24/25, refresh-metadata reconciliation across 11 active-corpus files).
 
 ## 1. System boundary
 
@@ -487,6 +487,21 @@ only `java.*` (enforced by `OrchestrationSpiArchTest`, `MemorySpiArchTest`).
     "Sidecar adapter —" without a wave qualifier are gate-failing (ADR-0045). Gate Rule 25
     (`peripheral_wave_qualifier`) enforces this at commit time. Closes the PERIPHERAL-DRIFT
     class defect at the gate level. See ADR-0045, `peripheral_wave_qualifier`.
+
+44. **Release-note shipped-surface truth.** Every shipped row in `docs/releases/*.md` MUST
+    reference real Java symbols and real test classes. Group labels (e.g. "Orchestration SPI")
+    must match the actual Java surface, or carry an explicit `W1`/`W2`/`W3`/`W4` qualifier or
+    `design-only` / `deferred` / `not shipped` / `remains design` marker for future-wave names.
+    Method lists on shipped SPIs must be a subset of the canonical interface (e.g. `RunContext`
+    is `runId`/`tenantId`/`checkpointer`/`suspendForChild` — `posture()` is forbidden because
+    it does not exist on the interface). Test attributions must name the test that actually
+    performs the asserted check (`OpenApiContractIT` for OpenAPI snapshot diff; `ApiCompatibilityTest`
+    is ArchUnit-only). Module placement and component-breadth claims must match the code's call
+    sites (`AppPostureGate` belongs under Runtime Kernel, not HTTP Edge; only `SyncOrchestrator`,
+    `InMemoryRunRegistry`, `InMemoryCheckpointer` call it — not "all runtime components"). Gate
+    Rule 26 (`release_note_shipped_surface_truth`) enforces this with four sub-checks (26a name
+    guard, 26b method-list guard, 26c test attribution, 26d scope guard). Closes the
+    GATE-SCOPE-GAP class defect for the release-artifact class. See ADR-0046.
 
 ---
 
