@@ -63,7 +63,7 @@ capabilities:
       - gate/check_architecture_sync.sh
     tests:
       - gate/test_architecture_sync_gate.sh
-    latest_semantic_pass_sha: fc5be09
+    latest_semantic_pass_sha: 404d13a
     latest_delivery_file: docs/delivery/2026-05-12-e0ccb6e.md
     allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here. Architecture baseline: 50 §4 constraints (#1–#50); 52 ADRs (0001–0052); 29 active gate rules; 11 active engineering rules (1–6, 9–10, 20–21, 25); 14 deferred rules (7, 8, 11, 13–19, 22–24, 26–27); 35 gate self-tests; L0 release published at docs/releases/2026-05-13-L0-architecture-release.en.md (frozen at SHA 82a1397 via freeze marker); thirteenth-cycle Whitepaper-Alignment Remediation via ADR-0049/0050/0051/0052 + §4 #47-#50 — C/S Dynamic Hydration Protocol named at L0 contract level; Workflow Intermediary + Mailbox Backpressure + Rhythm track restored as independent third cross-service bus track; Memory and Knowledge Ownership Boundary codified (C-side business ontology vs S-side trajectory; Placeholder Preservation first-class); Skill Topology Scheduler + Capability Bidding named (two-axis tenant×global arbitration); ADR-0048 narrowed; Gate Rules 28-29 added (release-note baseline truth; whitepaper alignment matrix presence); +5 self-tests (30→35); twelfth-cycle Service-Layer Microservice-Architecture Commitment via ADR-0048 + §4 #46."
 
