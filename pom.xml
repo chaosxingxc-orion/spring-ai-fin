@@ -56,7 +56,7 @@
     <flyway.version>11.19.1</flyway.version>
     <testcontainers.version>1.21.4</testcontainers.version>
     <wiremock.version>3.9.1</wiremock.version>
-    <restassured.version>5.5.0</restassured.version>
+    <restassured.version>5.5.2</restassured.version>
     <opentelemetry-agent.version>2.10.0</opentelemetry-agent.version>
     <logstash-logback.version>8.0</logstash-logback.version>
     <springdoc.version>3.0.3</springdoc.version>
