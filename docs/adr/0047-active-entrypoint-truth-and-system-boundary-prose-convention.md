@@ -95,7 +95,7 @@ Practical effect: this cycle refreshes headers in only the files it actually edi
 | `docs/adr/0047-active-entrypoint-truth-and-system-boundary-prose-convention.md` | New ADR (this file) |
 | `docs/adr/README.md` | ADR-0047 index row appended |
 | `docs/governance/architecture-status.yaml` | `active_entrypoint_baseline_truth_gate` row added; `architecture_sync_gate.allowed_claim` counts bumped (44→45, 46→47, 26→27, 28→30); `adr_per_file.allowed_claim` corrected (46→47) |
-| `docs/releases/2026-05-13-L0-architecture-release.en.md` | Baseline metrics table bumped; 11th historical-cycle row added |
+| `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md` (then at `docs/releases/`) | Baseline metrics table bumped; 11th historical-cycle row added |
 | `README.md` | Baseline counts bumped to 45/47/27/30 |
 | `gate/README.md` | Rule count 26→27; Rule 27 added to catalog; self-test coverage extended |
 | `gate/check_architecture_sync.ps1` | Rule 27 block added after Rule 26; banner updated |

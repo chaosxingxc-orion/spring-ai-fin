@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# spring-ai-ascend architecture-sync gate self-test (L0 final entrypoint truth review).
-# PARTIAL COVERAGE: covers Rules 1-6 + Rules 16, 19, 22, 24, 25, 26, 27 (30 tests).
+# spring-ai-ascend architecture-sync gate self-test (L0 v2 release multi-agent self-audit).
+# PARTIAL COVERAGE: covers Rules 1-6 + Rules 16, 19, 22, 24, 25, 26, 27, 28, 29 (35 tests).
 # Full gate verification requires running: pwsh gate/check_architecture_sync.ps1
-# The full gate has 27 active rules; this self-test covers Rules 1-6 and 16/19/22/24/25/26/27.
+# The full gate has 29 active rules; this self-test covers Rules 1-6 and 16/19/22/24/25/26/27/28/29.
 # Prints: Tests passed: N/35
-# Exits 0 if all 30 pass, 1 otherwise.
+# Exits 0 if all 35 pass, 1 otherwise.
 
 set -uo pipefail
 export LC_ALL=C

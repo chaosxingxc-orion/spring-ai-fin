@@ -176,7 +176,7 @@ Verify that release notes, README, ADR index, `architecture-status.yaml`, and ro
 | `architecture-status.yaml` `architecture_sync_gate.allowed_claim` (post-PR) | 50 | 52 | 29 | 35 |
 | `architecture-status.yaml` `adr_index.allowed_claim` (post-PR) | N/A | 52 (0001–0052) | N/A | N/A |
 | `README.md` baseline + range (post-PR) | 50 (`§4 #1–#50`) | 52 (`ADR-0001 … ADR-0052`) | 29 | 35 |
-| `docs/releases/2026-05-13-L0-architecture-release.en.md` | 45 (frozen at L0 SHA `82a1397`) | 47 (frozen) | 27 (frozen) | 30 (frozen) |
+| `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md` | 45 (frozen at L0 SHA `82a1397`) | 47 (frozen) | 27 (frozen) | 30 (frozen) |
 | `docs/adr/README.md` | N/A | rows for 0049/0050/0051/0052 added (52 total) | N/A | N/A |
 
 The L0 release note is **exempt** by virtue of its freeze marker ("Historical artifact frozen at SHA 82a1397"). All active artifacts agree on 50/52/29/35 post-PR. Gate Rule 27 (README cross-check) and Gate Rule 28 (release-note cross-check, exempting frozen artifacts) both PASS.
@@ -269,4 +269,4 @@ What is not shipped, what is not contract-complete, and what remains outside L0:
 - Amended ADRs: 0048 / 0034 / 0030 / 0038 / 0031
 - New gate rules: 28 / 29 (in `gate/check_architecture_sync.{sh,ps1}`)
 - New self-tests: `rule28_baseline_pos` / `rule28_baseline_neg` / `rule28_baseline_neg_no_freeze_marker` / `rule29_matrix_pos` / `rule29_matrix_neg` (in `gate/test_architecture_sync_gate.sh`)
-- L0 release note: `docs/releases/2026-05-13-L0-architecture-release.en.md` (frozen at SHA 82a1397)
+- L0 release note: `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md` (frozen at SHA 82a1397)

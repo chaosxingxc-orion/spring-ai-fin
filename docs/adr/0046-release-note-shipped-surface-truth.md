@@ -4,7 +4,7 @@
 
 ## Context
 
-After the L0 architecture release (`docs/releases/2026-05-13-L0-architecture-release.en.md` at SHA `82a1397`), a tenth review cycle was conducted as a release-note contract review (`docs/reviews/2026-05-13-l0-release-note-contract-review.en.md`). The reviewer found that all 25 prior gate rules passed but the release-note text itself overclaimed four W0 shipped surfaces:
+After the L0 v1 architecture release (then at `docs/releases/2026-05-13-L0-architecture-release.en.md`, SHA `82a1397`; subsequently superseded by v2 and archived under `docs/archive/2026-05-13-l0-release-note-v1-superseded/`), a tenth review cycle was conducted as a release-note contract review (`docs/reviews/2026-05-13-l0-release-note-contract-review.en.md`). The reviewer found that all 25 prior gate rules passed but the release-note text itself overclaimed four W0 shipped surfaces:
 
 | Finding | Overclaim | Truth |
 |---|---|---|
@@ -75,7 +75,7 @@ Sub-checks 26c and 26d are exercised end-to-end by running the real gate against
 
 | Document | Change |
 |---|---|
-| `docs/releases/2026-05-13-L0-architecture-release.en.md` | SHA field renamed (`HEAD SHA:` → `Semantic release SHA:` + `Metadata follow-up SHAs:`); `AppPostureGate` row moved from HTTP Edge to Runtime Kernel and narrowed; `RunLifecycle` SPI row renamed to `Orchestration` SPI with W2 qualifier on `RunLifecycle`; `RunContext` method list corrected to actual interface; `ApiCompatibilityTest` correctly attributed to ArchUnit, `OpenApiContractIT` correctly attributed to OpenAPI snapshot diff; Posture Defaults section narrowed to three actual callers; baseline counts bumped to 44/46/26/28; tenth cycle row added; 4-shape table extended with GATE-SCOPE-GAP |
+| `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md` (then at `docs/releases/`) | SHA field renamed (`HEAD SHA:` → `Semantic release SHA:` + `Metadata follow-up SHAs:`); `AppPostureGate` row moved from HTTP Edge to Runtime Kernel and narrowed; `RunLifecycle` SPI row renamed to `Orchestration` SPI with W2 qualifier on `RunLifecycle`; `RunContext` method list corrected to actual interface; `ApiCompatibilityTest` correctly attributed to ArchUnit, `OpenApiContractIT` correctly attributed to OpenAPI snapshot diff; Posture Defaults section narrowed to three actual callers; baseline counts bumped to 44/46/26/28; tenth cycle row added; 4-shape table extended with GATE-SCOPE-GAP |
 | `docs/adr/0046-release-note-shipped-surface-truth.md` | New ADR (this file) |
 | `docs/adr/README.md` | ADR-0046 index row appended |
 | `ARCHITECTURE.md` | §4 #44 added; header date refreshed |

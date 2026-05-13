@@ -2,7 +2,7 @@
 
 Date: 2026-05-13
 Reviewer role: Java microservices and agentic runtime architecture reviewer
-Input reviewed: `docs/releases/2026-05-13-L0-architecture-release.en.md`, root and module `ARCHITECTURE.md` files, `README.md`, `docs/governance/architecture-status.yaml`, Java runtime SPI sources, and gate rules.
+Input reviewed: `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md`, root and module `ARCHITECTURE.md` files, `README.md`, `docs/governance/architecture-status.yaml`, Java runtime SPI sources, and gate rules.
 
 ## Verdict
 
@@ -17,7 +17,7 @@ However, I found residual active-entrypoint documentation drift outside the rele
 ## Verification Performed Before This Review Document
 
 - Inspected latest commit chain: `56f52e3` metadata follow-up after `862be85` release-note contract-review response.
-- Confirmed `docs/releases/2026-05-13-L0-architecture-release.en.md` now declares 44 architecture constraints, 46 ADRs, 26 gate rules, and 28 gate self-tests.
+- Confirmed `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md` now declares 44 architecture constraints, 46 ADRs, 26 gate rules, and 28 gate self-tests.
 - Cross-checked `RunContext`, orchestration SPI, `AppPostureGate`, OpenAPI tests, `RunLifecycle`, skill, planner, and memory/knowledge claims against Java sources and `architecture-status.yaml`.
 
 Final command verification is still required after this document lands.
@@ -37,8 +37,8 @@ Evidence:
 - `README.md:34`
 - `ARCHITECTURE.md:491-504`
 - `docs/governance/architecture-status.yaml:66-68`
-- `docs/releases/2026-05-13-L0-architecture-release.en.md:24-28`
-- `docs/releases/2026-05-13-L0-architecture-release.en.md:165`
+- `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md:24-28`
+- `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md:165`
 
 Required fix:
 
@@ -62,8 +62,8 @@ Evidence:
 - `ARCHITECTURE.md:5-10`
 - `agent-runtime/ARCHITECTURE.md:7-11`
 - `agent-runtime/ARCHITECTURE.md:53-57`
-- `docs/releases/2026-05-13-L0-architecture-release.en.md:44-55`
-- `docs/releases/2026-05-13-L0-architecture-release.en.md:170-176`
+- `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md:44-55`
+- `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md:170-176`
 - Java source search shows only `OssApiProbe` references Spring AI `ChatClient`; no production `LlmRouter`, `RunController`, `OutboxPublisher`, `ActionGuard`, `CapabilityRegistry`, or `PostgresCheckpointer` exists at W0.
 
 Required fix:
@@ -100,7 +100,7 @@ Evidence:
 - `docs/cross-cutting/posture-model.md:3`
 - `docs/cross-cutting/non-functional-requirements.md:3`
 - `docs/observability/policy.md:4`
-- Current release baseline: `docs/releases/2026-05-13-L0-architecture-release.en.md:3-6`
+- Current release baseline: `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md:3-6`
 
 Required fix:
 

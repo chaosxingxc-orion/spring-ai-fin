@@ -2,7 +2,7 @@
 
 Date: 2026-05-13
 Reviewer role: Java microservices and agentic runtime architecture reviewer
-Input reviewed: `docs/releases/2026-05-13-L0-architecture-release.en.md`
+Input reviewed: `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md`
 
 ## Verdict
 
@@ -31,14 +31,14 @@ There is no strong evidence of overdesign at L0 as long as the release artifact 
 
 ### P1. Release note lists `RunLifecycle` as a W0 shipped SPI
 
-Observed failure: `docs/releases/2026-05-13-L0-architecture-release.en.md:49` lists "`RunLifecycle` SPI" in the W0 Runtime Kernel shipped table and describes actual orchestration SPI types under that name.
+Observed failure: `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md:49` lists "`RunLifecycle` SPI" in the W0 Runtime Kernel shipped table and describes actual orchestration SPI types under that name.
 
 Execution path: A downstream implementer reads the release note, treats `RunLifecycle` as a W0 Java SPI, and looks for lifecycle operations such as cancel/resume/retry in the shipped runtime package. The implementation does not contain a `RunLifecycle` class or interface, while the canonical governance row marks it as `shipped: false`.
 
 Root cause statement: The release note reused the future-wave `RunLifecycle` name as a grouping label for the already-shipped orchestration SPIs, which turns a W2 design-only interface into an apparent W0 contract.
 
 Evidence:
-- `docs/releases/2026-05-13-L0-architecture-release.en.md:49`
+- `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md:49`
 - `docs/governance/architecture-status.yaml:556-562`
 - `docs/adr/0020-runlifecycle-spi-and-runstatus-formal-dfa.md:72-73`
 - Shipped W0 source contains `Orchestrator`, `GraphExecutor`, `AgentLoopExecutor`, `SuspendSignal`, `Checkpointer`, and `RunContext`, but no `RunLifecycle` interface.
@@ -53,14 +53,14 @@ Suggested wording:
 
 ### P1. Release note claims `RunContext.posture()` exists
 
-Observed failure: `docs/releases/2026-05-13-L0-architecture-release.en.md:50` says `RunContext` exposes `tenantId()`, `runId()`, and `posture()`.
+Observed failure: `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md:50` says `RunContext` exposes `tenantId()`, `runId()`, and `posture()`.
 
 Execution path: A node, graph executor, or agent-loop implementation compiled against the release note would call `RunContext.posture()`. The actual W0 interface does not provide that method, so the documented contract cannot compile.
 
 Root cause statement: The release note conflates posture enforcement with `RunContext`; W0 posture is enforced through `AppPostureGate` and posture-aware constructors/policies, not through a `RunContext` accessor.
 
 Evidence:
-- `docs/releases/2026-05-13-L0-architecture-release.en.md:50`
+- `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md:50`
 - `agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/RunContext.java:18-37`
 - `docs/governance/architecture-status.yaml:312`
 
@@ -74,14 +74,14 @@ Suggested wording:
 
 ### P2. OpenAPI snapshot enforcement is attributed to the wrong test
 
-Observed failure: `docs/releases/2026-05-13-L0-architecture-release.en.md:59` says `ApiCompatibilityTest` fails if the OpenAPI snapshot diverges from the live spec.
+Observed failure: `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md:59` says `ApiCompatibilityTest` fails if the OpenAPI snapshot diverges from the live spec.
 
 Execution path: A reviewer or CI owner looking for the OpenAPI contract check opens `ApiCompatibilityTest` and finds ArchUnit SPI/dependency-direction rules, not the live OpenAPI snapshot comparison. The actual snapshot check is in `OpenApiContractIT` and `OpenApiSnapshotComparator`.
 
 Root cause statement: The release note names the general compatibility ArchUnit test instead of the specific OpenAPI integration test that performs the snapshot diff.
 
 Evidence:
-- `docs/releases/2026-05-13-L0-architecture-release.en.md:59`
+- `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md:59`
 - `docs/governance/architecture-status.yaml:128-147`
 - `agent-platform/src/test/java/ascend/springai/platform/contracts/OpenApiContractIT.java`
 - `agent-platform/src/test/java/ascend/springai/platform/contracts/OpenApiSnapshotComparator.java`
@@ -91,15 +91,15 @@ Required fix: Change the release note to say `OpenApiContractIT` performs the li
 
 ### P3. `AppPostureGate` is placed under the HTTP edge and described too broadly
 
-Observed failure: `docs/releases/2026-05-13-L0-architecture-release.en.md:41` places `AppPostureGate` under "HTTP Edge (agent-platform)", and `docs/releases/2026-05-13-L0-architecture-release.en.md:75` says all runtime components receive posture as a constructor argument.
+Observed failure: `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md:41` places `AppPostureGate` under "HTTP Edge (agent-platform)", and `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md:75` says all runtime components receive posture as a constructor argument.
 
 Execution path: A reader infers that `AppPostureGate` is an agent-platform HTTP component and that every runtime component has a posture constructor parameter. In code, `AppPostureGate` lives in `agent-runtime`, and the hard evidence is narrower: `SyncOrchestrator`, `InMemoryRunRegistry`, and `InMemoryCheckpointer` call `AppPostureGate.requireDevForInMemoryComponent(...)` from construction.
 
 Root cause statement: The release note generalized a correct in-memory-component posture guard into a broader module and constructor contract than the implementation and architecture-status row assert.
 
 Evidence:
-- `docs/releases/2026-05-13-L0-architecture-release.en.md:41`
-- `docs/releases/2026-05-13-L0-architecture-release.en.md:75`
+- `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md:41`
+- `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md:75`
 - `agent-runtime/src/main/java/ascend/springai/runtime/posture/AppPostureGate.java`
 - `agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/SyncOrchestrator.java:40`
 - `agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/InMemoryRunRegistry.java:24`
@@ -117,7 +117,7 @@ Execution path: A reviewer checking out the current branch runs `git rev-parse -
 Root cause statement: The release note uses "HEAD SHA" for what appears to be the semantic release commit, while the branch has advanced by a metadata-only commit.
 
 Evidence:
-- `docs/releases/2026-05-13-L0-architecture-release.en.md:4`
+- `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md:4`
 - `docs/governance/architecture-status.yaml:66`
 - Current `git log`: `776d4e7` after `82a1397`
 

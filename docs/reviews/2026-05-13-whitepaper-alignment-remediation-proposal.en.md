@@ -8,7 +8,7 @@ Reviewer stance: Java microservice architecture and agent-driven architecture, w
 
 Primary reference: `docs/spring-ai-ascend-architecture-whitepaper-en.md`
 
-Current architecture baseline reviewed: `ARCHITECTURE.md`, `docs/governance/architecture-status.yaml`, ADR-0030, ADR-0031, ADR-0034, ADR-0046, ADR-0047, ADR-0048, and `docs/releases/2026-05-13-L0-architecture-release.en.md`.
+Current architecture baseline reviewed: `ARCHITECTURE.md`, `docs/governance/architecture-status.yaml`, ADR-0030, ADR-0031, ADR-0034, ADR-0046, ADR-0047, ADR-0048, and `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md`.
 
 ## Executive Verdict
 
@@ -32,7 +32,7 @@ Until the remediation is complete, the architecture team should treat this as a 
 
 Observed failure:
 
-`docs/releases/2026-05-13-L0-architecture-release.en.md` still reports 45 Section 4 constraints and 47 ADRs, while the canonical governance baseline now reports 46 Section 4 constraints and 48 ADRs after ADR-0048.
+`docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md` still reports 45 Section 4 constraints and 47 ADRs, while the canonical governance baseline now reports 46 Section 4 constraints and 48 ADRs after ADR-0048.
 
 Execution path:
 
@@ -44,10 +44,10 @@ Release-note baseline drift happens because Gate Rule 27 only compares README ba
 
 Evidence:
 
-- `docs/releases/2026-05-13-L0-architecture-release.en.md:23` reports `45 (#1-#45)`.
-- `docs/releases/2026-05-13-L0-architecture-release.en.md:24` reports `47 (ADR-0001-ADR-0047)`.
-- `docs/releases/2026-05-13-L0-architecture-release.en.md:185` references `ARCHITECTURE.md` as full Section 4 constraint list `#1-#45`.
-- `docs/releases/2026-05-13-L0-architecture-release.en.md:186` references ADR index `0001-0047`.
+- `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md:23` reports `45 (#1-#45)`.
+- `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md:24` reports `47 (ADR-0001-ADR-0047)`.
+- `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md:185` references `ARCHITECTURE.md` as full Section 4 constraint list `#1-#45`.
+- `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md:186` references ADR index `0001-0047`.
 - `docs/governance/architecture-status.yaml:68` states the canonical baseline is `46 Section 4 constraints (#1-#46); 48 ADRs (0001-0048)`.
 - `ARCHITECTURE.md:520` introduces Section 4 constraint #46.
 - `docs/adr/README.md:60` indexes ADR-0048.
@@ -502,7 +502,7 @@ Owner: Architecture governance.
 
 Deliverables:
 
-- Patch `docs/releases/2026-05-13-L0-architecture-release.en.md`.
+- Patch `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md`.
 - Add a release-note baseline-count gate or extend Gate Rule 26/27.
 - Add self-tests for stale release-note count detection.
 

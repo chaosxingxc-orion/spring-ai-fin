@@ -43,16 +43,35 @@ capabilities:
     allowed_claim: "W0: /v1/health GREEN; ArchUnit rules GREEN. SPI contracts frozen."
 
   agent_runtime_kernel:
-    status: design_accepted
+    status: test_verified
     shipped: true
     l0_decision: ARCHITECTURE.md
     l2_documents:
       - agent-runtime/ARCHITECTURE.md
     implementation:
       - agent-runtime/src/main/java/ascend/springai/runtime/probe/OssApiProbe.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/runs/Run.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/runs/RunStatus.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/runs/RunStateMachine.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/SyncOrchestrator.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/SequentialGraphExecutor.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/IterativeAgentLoopExecutor.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/InMemoryRunRegistry.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/InMemoryCheckpointer.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/posture/AppPostureGate.java
     tests:
       - agent-runtime/src/test/java/ascend/springai/runtime/probe/OssApiProbeTest.java
-    allowed_claim: "W0: OssApiProbe shell (3 tests GREEN). Kernel logic shipped: Run entity, RunStatus DFA, RunStateMachine, SyncOrchestrator, SequentialGraphExecutor, IterativeAgentLoopExecutor, InMemoryRunRegistry, InMemoryCheckpointer, AppPostureGate. 101 unit tests GREEN in agent-runtime."
+      - agent-runtime/src/test/java/ascend/springai/runtime/runs/RunTest.java
+      - agent-runtime/src/test/java/ascend/springai/runtime/runs/RunStateMachineTest.java
+      - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/inmemory/SyncOrchestratorPostureGuardTest.java
+      - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/inmemory/IterativeAgentLoopExecutorResumeCursorTest.java
+      - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/inmemory/InMemoryCheckpointerTest.java
+      - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/inmemory/InMemoryCheckpointerSizeCapTest.java
+      - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/inmemory/InMemoryRunRegistryFindRootRunsTest.java
+      - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/NestedDualModeIT.java
+      - agent-runtime/src/test/java/ascend/springai/runtime/orchestration/RunStatusTransitionIT.java
+      - agent-runtime/src/test/java/ascend/springai/runtime/posture/AppPostureGateTest.java
+    allowed_claim: "W0: OssApiProbe shell (3 tests GREEN) + kernel logic test-verified by 11 named test classes covering Run/RunStatus/RunStateMachine DFA, SyncOrchestrator posture guard, IterativeAgentLoopExecutor resume cursor, InMemoryCheckpointer (basic + size cap), InMemoryRunRegistry findRootRuns, AppPostureGate, NestedDualModeIT (3-level bidirectional graph↔agent-loop), RunStatusTransitionIT. Structured implementation: and tests: lists carry these symbols (no prose-only evidence — closes R5 audit's EVIDENCE-LAUNDERING-VIA-PROSE-FIELD finding). 101 unit tests GREEN in agent-runtime."
 
   architecture_sync_gate:
     status: implemented_unverified
@@ -65,7 +84,7 @@ capabilities:
       - gate/test_architecture_sync_gate.sh
     latest_semantic_pass_sha: 404d13a
     latest_delivery_file: docs/delivery/2026-05-12-e0ccb6e.md
-    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here. Architecture baseline: 50 §4 constraints (#1–#50); 52 ADRs (0001–0052); 29 active gate rules; 11 active engineering rules (1–6, 9–10, 20–21, 25); 14 deferred rules (7, 8, 11, 13–19, 22–24, 26–27); 35 gate self-tests; L0 release published at docs/releases/2026-05-13-L0-architecture-release.en.md (frozen at SHA 82a1397 via freeze marker); thirteenth-cycle Whitepaper-Alignment Remediation via ADR-0049/0050/0051/0052 + §4 #47-#50 — C/S Dynamic Hydration Protocol named at L0 contract level; Workflow Intermediary + Mailbox Backpressure + Rhythm track restored as independent third cross-service bus track; Memory and Knowledge Ownership Boundary codified (C-side business ontology vs S-side trajectory; Placeholder Preservation first-class); Skill Topology Scheduler + Capability Bidding named (two-axis tenant×global arbitration); ADR-0048 narrowed; Gate Rules 28-29 added (release-note baseline truth; whitepaper alignment matrix presence); +5 self-tests (30→35); twelfth-cycle Service-Layer Microservice-Architecture Commitment via ADR-0048 + §4 #46."
+    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here. Architecture baseline: 50 §4 constraints (#1–#50); 52 ADRs (0001–0052); 29 active gate rules; 11 active engineering rules (1–6, 9–10, 20–21, 25); 14 deferred rules (7, 8, 11, 13–19, 22–24, 26–27); 35 gate self-tests; L0 release published at docs/releases/2026-05-13-L0-architecture-release-v2.en.md (current canonical); v1 superseded and archived at docs/archive/2026-05-13-l0-release-note-v1-superseded/ (frozen at SHA 82a1397); v2 re-cut to match canonical baseline 50/52/29/35 and re-audited by six parallel reviewer agents; thirteenth-cycle Whitepaper-Alignment Remediation via ADR-0049/0050/0051/0052 + §4 #47-#50 — C/S Dynamic Hydration Protocol named at L0 contract level; Workflow Intermediary + Mailbox Backpressure + Rhythm track restored as independent third cross-service bus track; Memory and Knowledge Ownership Boundary codified (C-side business ontology vs S-side trajectory; Placeholder Preservation first-class); Skill Topology Scheduler + Capability Bidding named (two-axis tenant×global arbitration); ADR-0048 narrowed; Gate Rules 28-29 added (release-note baseline truth; whitepaper alignment matrix presence); +5 self-tests (30→35); twelfth-cycle Service-Layer Microservice-Architecture Commitment via ADR-0048 + §4 #46."
 
   spring_ai_ascend_dependencies_bom:
     status: implemented_unverified
@@ -922,7 +941,7 @@ capabilities:
     implementation:
       - gate/check_architecture_sync.ps1
       - gate/check_architecture_sync.sh
-      - docs/releases/2026-05-13-L0-architecture-release.en.md
+      - docs/releases/2026-05-13-L0-architecture-release-v2.en.md
     tests:
       - gate/test_architecture_sync_gate.sh
     allowed_claim: "Gate Rule 26 (release_note_shipped_surface_truth) scoped to docs/releases/*.md; four sub-checks: 26a RunLifecycle name guard (must carry W1-W4 wave qualifier OR design-only/deferred/not-shipped/remains-design marker), 26b RunContext method-list guard (no posture(); only runId/tenantId/checkpointer/suspendForChild), 26c OpenAPI snapshot test attribution (OpenApiContractIT, not ApiCompatibilityTest), 26d AppPostureGate scope guard (not under HTTP Edge; not 'all runtime components ... constructor'). Closes GATE-SCOPE-GAP class defect for release-artifact class. §4 #44. ADR-0046."
@@ -1043,7 +1062,7 @@ capabilities:
       - gate/check_architecture_sync.ps1
     tests:
       - gate/test_architecture_sync_gate.sh
-    allowed_claim: "Gate Rule 28 (release_note_baseline_truth) cross-checks docs/releases/*.md baseline tables against canonical architecture_sync_gate.allowed_claim counts UNLESS the release note declares itself a historical artifact via the marker 'Historical artifact frozen at SHA <sha>'. Closes GATE-SCOPE-GAP for release-note baseline drift (Gate Rule 27 only covers README.md). Self-tests: rule28_baseline_pos + rule28_baseline_neg + rule28_baseline_neg_no_freeze_marker. L0 release note at docs/releases/2026-05-13-L0-architecture-release.en.md is frozen at SHA 82a1397 via freeze marker. Closes reviewer P0-1."
+    allowed_claim: "Gate Rule 28 (release_note_baseline_truth) cross-checks docs/releases/*.md baseline tables against canonical architecture_sync_gate.allowed_claim counts UNLESS the release note declares itself a historical artifact via the marker 'Historical artifact frozen at SHA <sha>'. Closes GATE-SCOPE-GAP for release-note baseline drift (Gate Rule 27 only covers README.md). Self-tests: rule28_baseline_pos + rule28_baseline_neg + rule28_baseline_neg_no_freeze_marker. L0 release note v2 at docs/releases/2026-05-13-L0-architecture-release-v2.en.md is the current canonical baseline (50/52/29/35); the v1 historical artifact is archived under docs/archive/2026-05-13-l0-release-note-v1-superseded/ (frozen at SHA 82a1397; out of gate scope by virtue of relocation). Closes reviewer P0-1."
 
   whitepaper_alignment_self_audit:
     status: design_accepted
