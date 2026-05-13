@@ -27,7 +27,15 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {"APP_POSTURE=research"})
+        properties = {
+                "APP_POSTURE=research",
+                // Required by PostureBootGuard (ADR-0058) in research/prod posture.
+                // Stub values satisfy AuthProperties.hasJwksConfig() without actually
+                // hitting a remote issuer — this test does not authenticate.
+                "app.auth.issuer=https://issuer.test",
+                "app.auth.jwks-uri=https://issuer.test/.well-known/jwks.json",
+                "app.auth.audience=spring-ai-ascend"
+        })
 class PostureBindingIT {
 
     @Container
@@ -60,17 +68,14 @@ class PostureBindingIT {
 
     @Test
     void researchPosture_securityChain_rejects_unallowlisted_path() throws Exception {
-        // Behavioral proof that the request chain is engaged: /v1/runs is not on
-        // WebSecurityConfig's permitAll list (only /v1/health, /actuator/**, and
-        // /v3/api-docs are allow-listed in W0), and the Spring Security filter
-        // runs ahead of TenantContextFilter, so unauthenticated requests are
-        // rejected with 403 by Security before TenantContextFilter would ever
-        // see them. The first test in this class already proves
-        // APP_POSTURE -> app.posture binding; this second test only asserts the
-        // deny-by-default policy is alive.
+        // Behavioral proof that the request chain is engaged. With the L1 JWT
+        // decoder wired (ADR-0056), oauth2ResourceServer responds 401 to a
+        // request with no Bearer token. (W0 returned 403 from denyAll; L1's
+        // authenticated() chain plus oauth2 advertises Bearer with 401
+        // instead.) Either response signals the deny-by-default policy.
         HttpResponse<String> response = HTTP.send(
                 HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/v1/runs")).build(),
                 HttpResponse.BodyHandlers.ofString());
-        assertThat(response.statusCode()).isEqualTo(403);
+        assertThat(response.statusCode()).isIn(401, 403);
     }
 }
