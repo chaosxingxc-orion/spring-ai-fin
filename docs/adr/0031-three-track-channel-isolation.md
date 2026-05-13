@@ -186,6 +186,20 @@ proves too rigid for a specific use case, the Orchestrator SPI is replaced with 
 Medium — the three-channel contract is a W2 API surface. Once operators build clients against it,
 collapsing to a single channel would break them. Design carefully.
 
+### Forward note — operates under ADR-0048 microservice commitment
+
+Under ADR-0048 (Service-Layer Microservice-Architecture Commitment, §4 #46), the
+three-track bus operates across multiple long-running Agent Service instances
+(cross-docker, cross-service). ADR-0048 locks the **bus traffic split** for the
+cross-process implementation: Track 2 (Data Channel) is **P2P** between Agent Service
+instances — heavy payloads never traverse a central broker — while Track 1 (Control
+Channel) and Track 3 (Heartbeat Channel) operate on a **centralized event bus**
+(Kafka / NATS JetStream / Redpanda; substrate choice deferred to expanded ADR-0031).
+The in-process Java-side SPI defined above remains the seam; the cross-process wire
+format and substrate selection are future work under expanded ADR-0031. Collapsing
+data + control onto a single broker would re-introduce the whitepaper §5.2
+congestion-deadlock failure mode and is forbidden by ADR-0048.
+
 ## References
 
 - Fifth-reviewer document: `docs/reviews/spring-ai-ascend-implementation-guidelines-en.md` §4
@@ -193,9 +207,11 @@ collapsing to a single channel would break them. Design carefully.
 - ADR-0019: SuspendReason taxonomy (Cancel → RunStatus.CANCELLED via RunControlSink)
 - ADR-0021: Layered SPI taxonomy (CapabilityRegistry, W4 Temporal tier)
 - ADR-0022: PayloadCodec SPI (NodeCompleted.output is EncodedPayload)
+- ADR-0048: Service-Layer Microservice-Architecture Commitment (data-P2P / control-event-bus split locked; substrate choice deferred to expanded ADR-0031)
 - §4 #9 (dual-mode runtime — Orchestrator SPI is the tier seam)
 - §4 #11 (northbound handoff contract — amended by this ADR to reference #28)
 - §4 #28 (new, this ADR)
+- §4 #46 (Service-Layer Microservice-Architecture Commitment — under which the cross-process bus operates)
 - Rule 15 (deferred W2 — Streamed Handoff Mode Conformance)
-- `architecture-status.yaml` rows: `three_track_channel_isolation`, `run_dispatcher_spi`
+- `architecture-status.yaml` rows: `three_track_channel_isolation`, `run_dispatcher_spi`, `service_layer_microservice_commitment`
 - W2 wave plan: `docs/archive/2026-05-13-plans-archived/engineering-plan-W0-W4.md` §4.2 (archived per ADR-0037)

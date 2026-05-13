@@ -1,6 +1,6 @@
 # spring-ai-ascend Platform — Architecture
 
-> Last updated: 2026-05-13 (L0 final entrypoint truth review — §4 #45, ADR-0047, Gate Rule 27, system-boundary prose split into target architecture vs W0 shipped subset, active-entrypoint baseline truth gate, header-metadata convention codified, +2 self-tests (28→30); L0 release-note contract review — §4 #44, ADR-0046, Gate Rule 26, GATE-SCOPE-GAP closure for `docs/releases/*.md`, +4 self-tests (24→28); post-seventh third-pass: §4 #42-#43, ADR-0045, Gate Rules 24-25, Rule 19 strengthened, Rule 22 PS case-sensitivity fix, REF-DRIFT path-existence gate, HISTORY-PARADOX W0-evidence-skeleton archived, PERIPHERAL-DRIFT entry-point wave-qualifier gate, shared ACTIVE_NORMATIVE_DOCS enumerator, self-tests for Rules 19/22/24/25, refresh-metadata reconciliation across 11 active-corpus files).
+> Last updated: 2026-05-13 (Service-Layer Microservice-Architecture Commitment — §4 #46, ADR-0048, Service Layer deployed as long-running microservices coordinating via Agent Bus; bus traffic split locked at data-P2P / control-event-bus; serverless direction archived as future work at `docs/archive/2026-05-13-serverless-architecture-future-direction.md`; SPI primitives `SuspendSignal`/`Checkpointer`/`RunRepository`/`RunStateMachine` remain serverless-friendly so W4+ migration stays open; whitepaper §1.3 microservice-dictatorship trap mitigated by scoping microservice to the Service Layer and routing inter-agent calls through the bus by intent; L0 final entrypoint truth review — §4 #45, ADR-0047, Gate Rule 27, system-boundary prose split into target architecture vs W0 shipped subset, active-entrypoint baseline truth gate, header-metadata convention codified, +2 self-tests (28→30); L0 release-note contract review — §4 #44, ADR-0046, Gate Rule 26, GATE-SCOPE-GAP closure for `docs/releases/*.md`, +4 self-tests (24→28); post-seventh third-pass: §4 #42-#43, ADR-0045, Gate Rules 24-25, Rule 19 strengthened, Rule 22 PS case-sensitivity fix, REF-DRIFT path-existence gate, HISTORY-PARADOX W0-evidence-skeleton archived, PERIPHERAL-DRIFT entry-point wave-qualifier gate, shared ACTIVE_NORMATIVE_DOCS enumerator, self-tests for Rules 19/22/24/25, refresh-metadata reconciliation across 11 active-corpus files).
 
 ## 1. System boundary
 
@@ -516,6 +516,31 @@ only `java.*` (enforced by `OrchestrationSpiArchTest`, `MemorySpiArchTest`).
     Gate Rule 27 (`active_entrypoint_baseline_truth`) enforces sub-constraint (a)
     mechanically. Sub-constraint (b) is enforced by review and by the §1 structure itself.
     See ADR-0047.
+
+46. **Service-Layer Microservice-Architecture Commitment.** The Service Layer
+    (`agent-platform` HTTP edge + `agent-runtime` cognitive runtime) is deployed and
+    scaled as **long-running microservices** — long-lived JVM processes, multiple replicas,
+    horizontal scaling. Multiple Agent Service instances coordinate via the **Agent Bus**
+    (cross-docker, cross-service); the bus is platform-owned, not middleware. **Agent Bus
+    traffic split (locked at ADR-0048; substrate choice deferred to expanded ADR-0031):**
+    data flow is **P2P** between Agent Service instances (heavy payloads such as LLM
+    context, tool results, scraped documents flow point-to-point — gRPC streaming over
+    mTLS or equivalent — and never traverse the central broker); control flow is on a
+    **centralized event bus** (PAUSE/KILL/RESUME/UPDATE_CONFIG commands, scheduling
+    decisions, capability bidding, heartbeats — Kafka / NATS JetStream / Redpanda choice
+    deferred). Collapsing data and control onto one broker is forbidden because it
+    re-introduces the network-congestion failure mode the whitepaper §5.2 warns about.
+    The SPI primitives (`SuspendSignal`, `Checkpointer`, `RunRepository`, `RunStateMachine`
+    DFA, ADR-0024 suspension atomicity) stay serverless-friendly so W4+ migration to
+    per-Run hydration as the deployment model remains open; the deployment commitment
+    is at the service-layer level, not the SPI level. **Microservice-trap mitigation
+    (whitepaper §1.3):** this is microservice for the *Service Layer* (the platform
+    itself), NOT for individual agents. Agents within an Agent Service instance are
+    in-process; cross-instance coordination uses the Agent Bus with the data-P2P /
+    control-event-bus split. Inter-agent calls are intent-routed through the bus, never
+    directly endpoint-addressed. The archived five-tier topology analysis (serverless
+    direction) is at `docs/archive/2026-05-13-serverless-architecture-future-direction.md`.
+    See ADR-0048.
 
 ---
 
