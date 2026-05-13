@@ -256,24 +256,37 @@ capabilities:
     allowed_claim: "L1: OssApiProbeTest 3 tests (classIsLoadable, probeReturnsNonNullString, temporalGetVersionShapeReturnsMinusOne) GREEN."
 
   posture_module_bootstrap:
-    status: deferred_w1
-    shipped: false
+    status: test_verified
+    shipped: true
     l0_decision: ARCHITECTURE.md
     l2_documents:
       - docs/cross-cutting/posture-model.md
       - agent-runtime/ARCHITECTURE.md
-    implementation: []
+    implementation:
+      - agent-platform/src/main/java/ascend/springai/platform/posture/PostureBootGuard.java
+      - agent-platform/src/main/java/ascend/springai/platform/posture/RequiredConfig.java
     tests:
       - agent-platform/src/test/java/ascend/springai/platform/posture/PostureBindingIT.java
-    allowed_claim: "L0: APP_POSTURE env-var bridges to app.posture property via application.yml placeholder. PostureBindingIT proves the bridge. AppPosture class, PostureBootGuard, RequiredConfig, and all associated ITs deferred to W1."
+      - agent-platform/src/test/java/ascend/springai/platform/posture/PostureBootGuardIT.java
+      - agent-platform/src/test/java/ascend/springai/platform/auth/JwtDevLocalModeGuardIT.java
+    allowed_claim: "L1 (ADR-0058): PostureBootGuard listens on ApplicationReadyEvent and aborts startup in research/prod when any of {AuthProperties.hasJwksConfig(), DataSource bean, JdbcIdempotencyStore bean, MeterRegistry bean} is absent OR when InMemoryIdempotencyStore is present OR when app.auth.dev-local-mode=true. Silent in dev. RequiredConfig annotation lands as documentation for future-wave scanner use. Enforcer rows E11, E21, E22."
 
   idempotency_store:
-    status: deferred_w1
-    shipped: false
+    status: test_verified
+    shipped: true
     l0_decision: ARCHITECTURE.md
-    implementation: null
-    tests: []
-    allowed_claim: "L0: deferred to W1. W0 stub (IdempotencyStore) logs WARNING at startup for research/prod via @PostConstruct; claimOrFind throws IllegalStateException (not UnsupportedOperationException) for research/prod. No UOE on any call path."
+    implementation:
+      - agent-platform/src/main/java/ascend/springai/platform/idempotency/IdempotencyStore.java
+      - agent-platform/src/main/java/ascend/springai/platform/idempotency/JdbcIdempotencyStore.java
+      - agent-platform/src/main/java/ascend/springai/platform/idempotency/InMemoryIdempotencyStore.java
+      - agent-platform/src/main/java/ascend/springai/platform/idempotency/IdempotencyStoreAutoConfiguration.java
+      - agent-platform/src/main/java/ascend/springai/platform/idempotency/IdempotencyProperties.java
+      - agent-platform/src/main/resources/db/migration/V2__idempotency_dedup.sql
+    tests:
+      - agent-platform/src/test/java/ascend/springai/platform/idempotency/IdempotencyStoreTest.java
+      - agent-platform/src/test/java/ascend/springai/platform/idempotency/IdempotencyStorePostgresIT.java
+      - agent-platform/src/test/java/ascend/springai/platform/idempotency/InMemoryIdempotencyAllowFlagIT.java
+    allowed_claim: "L1 (ADR-0057): IdempotencyStore SPI with JdbcIdempotencyStore (Postgres-backed, INSERT ... ON CONFLICT, PRIMARY KEY (tenant_id, idempotency_key)) and InMemoryIdempotencyStore (posture=dev + allow-in-memory=true required, both gated). IdempotencyHeaderFilter calls claimOrFind with SHA-256-of-method+path+body request_hash; collisions return 409 idempotency_conflict or 409 idempotency_body_drift. Response replay deferred to W2. Enforcer rows E12, E13, E14, E22."
 
   resilience_contract:
     status: implemented_unverified
