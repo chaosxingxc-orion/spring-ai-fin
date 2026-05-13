@@ -1,23 +1,27 @@
 # spring-ai-ascend-graphmemory-starter
 
-E2 middleware shell for graph-memory integration. This starter contributes an
-`@AutoConfiguration` that registers **no beans by default**. It activates only
-when `springai.ascend.graphmemory.enabled=true` is set — and even then, it
-contributes nothing unless you provide your own `GraphMemoryRepository` bean.
+> Spring Boot auto-configuration scaffold for the `GraphMemoryRepository` SPI. No bean shipped at W0.
 
-## How to plug in your own implementation
+## What is this?
 
-This starter is a W0 scaffold. No `GraphMemoryRepository` bean is registered by default.
-Provide your own implementation bean in your application configuration:
+A Spring Boot starter that wires a `GraphMemoryRepository` bean into the agent runtime when one is provided. At W0 it registers **no beans by default** — it is a placeholder so consumers can plug in their own implementation (or wait for the W1 Graphiti REST reference adapter, ADR-0034) without restructuring their application.
+
+## Status
+
+**W0 scaffold.** No `GraphMemoryRepository` bean is registered by default. The Graphiti REST reference adapter is the W1 integration target (ADR-0034); no adapter class ships at W0.
+
+## Quick start
+
+Provide your own `GraphMemoryRepository` implementation in your application configuration:
 
 ```java
-// In your @Configuration class:
-@Bean
-public GraphMemoryRepository graphMemoryRepository() {
-    // Provide your own GraphMemoryRepository implementation.
-    // Graphiti REST client is the W1 reference integration (ADR-0034);
-    // no Graphiti adapter class ships at W0.
-    return myCustomGraphMemoryRepository;
+@Configuration
+class GraphMemoryConfig {
+
+    @Bean
+    GraphMemoryRepository graphMemoryRepository() {
+        return new MyGraphMemoryRepository();
+    }
 }
 ```
 
@@ -31,7 +35,19 @@ springai:
       base-url: ${SPRINGAI_ASCEND_GRAPHITI_BASE_URL:http://localhost:8001}
 ```
 
-The SPI contract is at:
-`agent-runtime/src/main/java/ascend/springai/runtime/memory/spi/GraphMemoryRepository.java`
+The SPI contract lives at [`agent-runtime/src/main/java/ascend/springai/runtime/memory/spi/GraphMemoryRepository.java`](../agent-runtime/src/main/java/ascend/springai/runtime/memory/spi/GraphMemoryRepository.java).
 
-Auto-discovery uses Spring Boot 2.7+ `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.
+## Configuration
+
+| Property | Default | Purpose |
+|----------|---------|---------|
+| `springai.ascend.graphmemory.enabled` | `false` | Master toggle. Auto-config contributes nothing when `false` or absent. |
+| `springai.ascend.graphmemory.base-url` | `${SPRINGAI_ASCEND_GRAPHITI_BASE_URL:http://localhost:8001}` | Reserved for the W1 Graphiti REST reference adapter; ignored at W0. |
+
+Auto-discovery uses the Spring Boot 2.7+ contract: `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.
+
+## See also
+
+- [ARCHITECTURE.md](../ARCHITECTURE.md) — system boundary and SPI contracts.
+- [docs/adr/0034-memory-and-knowledge-taxonomy-at-l0.md](../docs/adr/0034-memory-and-knowledge-taxonomy-at-l0.md) — memory taxonomy + Graphiti selection rationale.
+- [agent-runtime/src/main/java/ascend/springai/runtime/memory/spi/GraphMemoryRepository.java](../agent-runtime/src/main/java/ascend/springai/runtime/memory/spi/GraphMemoryRepository.java) — the SPI interface.

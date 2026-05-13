@@ -1,6 +1,6 @@
 # Runbooks Index
 
-> Owner: platform-engineering | Maturity: L0 | Posture: all | Last refreshed: 2026-05-10
+> Owner: platform-engineering | Maturity: L0 | Posture: all | Last refreshed: 2026-05-13
 
 Operational runbooks for spring-ai-ascend. Each runbook covers trigger,
 scope, prerequisites, step-by-step procedure, verification, and rollback.

@@ -1,18 +1,16 @@
-# delivery -- Operator-shape gate evidence
+# docs/delivery/ — Gate Evidence Files
 
-> **Refresh-aware (2026-05-08+)**: every wave (W0..W4 per
-> `docs/plans/engineering-plan-W0-W4.md`) closes with a delivery file
-> recording the wave's gate evidence. Architecture-sync and
-> operator-shape gates are recorded here per the cycle-1..8 conventions
-> below; the wave's score lift on the 32-dimension framework
-> (`docs/architecture-meta-reflection-2026-05-08.en.md`) and the
-> 240-dimension self-audit
-> (`docs/architecture-design-self-audit.md`) is reported in the
-> wave-close PR description, not in this delivery file.
+> Every release SHA records its gate evidence as `docs/delivery/<date>-<short-sha>.md`. A release without a delivery file at its SHA is unreleased.
 
-Per CLAUDE.md Rule 8 and `docs/systematic-architecture-improvement-plan-2026-05-07.en.md` sec-4.8.
+## What is this?
 
-Every release SHA records its operator-shape gate run as `docs/delivery/<date>-<sha>.md`. Format:
+`docs/delivery/` is the audit trail for every release SHA. Each file is the formal evidence — gate logs, posture, deployment shape, real-dependency verification — that authorized the SHA to ship. The format is fixed (see template below) so a reviewer can confirm at a glance that a given SHA actually passed the gates it claims to have passed.
+
+## How to write a delivery file
+
+**Filename.** `docs/delivery/<yyyy-mm-dd>-<short-sha>.md`, where `<short-sha>` is the first 7 hex chars of `git rev-parse HEAD`.
+
+**Template.**
 
 ```markdown
 # Delivery <date> <short-sha>
@@ -56,37 +54,42 @@ Every release SHA records its operator-shape gate run as `docs/delivery/<date>-<
 - log attached: gate/log/<sha>.json
 ```
 
-A release without a delivery file at its SHA is unreleased.
+Every delivery file **must classify itself in its header**:
 
-## Dirty-tree rule
+- **Architecture-sync evidence** — produced by `gate/check_architecture_sync.{ps1,sh}`. Proves the document corpus is internally consistent. Cannot authorize ship by itself.
+- **Operator-shape evidence (CLAUDE.md Rule 8)** — produced by `gate/run_operator_shape_smoke.{ps1,sh}`. Proves the running system behaves under a real deployment shape. The only evidence that can authorize ship. (Currently fail-closed until a W4 runnable-artifact target lands; until then these scripts produce only `FAIL_ARTIFACT_MISSING`, which is honest absence-evidence, not delivery evidence.)
 
-**Delivery files MUST NOT attach dirty-tree gate logs.** Per `docs/systematic-architecture-remediation-plan-2026-05-08-cycle-2.en.md` sec-8, a clean working tree is a precondition for any delivery file:
+A file that mixes the two classifications, or omits the classification entirely, is rejected.
 
-- The gate log referenced by a delivery file MUST have `working_tree_clean: true` and `evidence_valid_for_delivery: true`.
-- Logs produced under `--local-only` mode have `evidence_valid_for_delivery: false` and CANNOT be referenced from a delivery file.
-- A delivery file that references a `evidence_valid_for_delivery: false` log is rejected by the next remediation gate.
-- The architecture-sync gate fails by default when `git status --porcelain` is non-empty; `--local-only` is the only escape, and it is explicitly non-delivery evidence.
-- `gate/run_operator_shape_smoke.*` (W0 deliverable) MUST never accept dirty-tree input under any flag -- there is no local-only mode for the operator-shape gate.
+## Policies
 
-A delivery file's `Gate result` section must record the gate log path AND assert `evidence_valid_for_delivery: true`. Anything else is a draft, not a delivery file.
+### Dirty-tree rule
 
-## SHA-current rule (cycle-3)
+A delivery file **must not** attach a dirty-tree gate log. The referenced log MUST have `working_tree_clean: true` AND `evidence_valid_for_delivery: true`.
 
-Per `docs/systematic-architecture-remediation-plan-2026-05-08-cycle-3.en.md` sec-5, every review or release decision must be evaluated against the **exact SHA being reviewed**, not an earlier SHA:
+- The architecture-sync gate fails by default when `git status --porcelain` is non-empty. The `--local-only` flag is the only escape, and logs produced under it carry `evidence_valid_for_delivery: false` — they cannot be referenced from a delivery file.
+- `gate/run_operator_shape_smoke.*` has no local-only mode; it must never accept dirty-tree input under any flag.
 
-- A delivery file at `docs/delivery/<date>-<X>.md` is evidence for SHA `X` only. It cannot be reused as evidence for any later SHA `Y`, even when `Y` differs from `X` only by documentation edits.
-- A reviewer evaluating SHA `Y` must confirm:
-  1. there is a `gate/log/<Y>.json` with `working_tree_clean: true`, `semantic_pass: true`, and `evidence_valid_for_delivery: true`;
-  2. there is a `docs/delivery/<date>-<Y>.md` referencing that log;
-  3. the delivery file states explicitly whether it is **architecture-sync evidence** or **Rule 8 operator-shape evidence**;
-  4. for Rule 8 claims, the log was produced by `gate/run_operator_shape_smoke.*` (not `gate/check_architecture_sync.*`).
-- If any condition fails, the SHA is unreviewed for that purpose. Older delivery files are retained as historical record only.
+### SHA-current rule
 
-## Architecture-sync evidence vs Rule 8 evidence
+Delivery evidence is valid only for the **exact SHA** it was produced at. A `docs/delivery/<date>-<X>.md` file is evidence for SHA `X` only; it cannot be reused for any later SHA `Y`, even when `Y` differs from `X` only by documentation edits.
 
-Every delivery file MUST classify itself in its header:
+A reviewer evaluating SHA `Y` must confirm all of:
 
-- **Architecture-sync evidence** -- produced by `gate/check_architecture_sync.{ps1,sh}`. Proves the document corpus is internally consistent at a SHA. Does NOT prove the system runs. Cannot authorize ship.
-- **Rule 8 operator-shape evidence** -- produced by `gate/run_operator_shape_smoke.{ps1,sh}`. The scripts exist in fail-closed form (cycle-4-fail-closed) and will produce only `FAIL_ARTIFACT_MISSING` until W0 lands a runnable artifact. Once W0 lands, the scripts run the real Rule 8 flow (long-lived process, real dependencies, sequential runs, cancellation, lifecycle, fallback-zero) and the resulting PASS log is the only kind of evidence that can authorize ship. A `FAIL_ARTIFACT_MISSING` log is NOT delivery evidence -- it is honest absence-evidence.
+1. `gate/log/<Y>.json` exists with `working_tree_clean: true`, `semantic_pass: true`, `evidence_valid_for_delivery: true`.
+2. `docs/delivery/<date>-<Y>.md` exists and references that log.
+3. The delivery file explicitly states whether it is architecture-sync evidence or Rule 8 operator-shape evidence.
+4. For Rule 8 claims, the log was produced by `gate/run_operator_shape_smoke.*` (not `gate/check_architecture_sync.*`).
 
-A delivery file that mixes the two classifications, or omits the classification entirely, is rejected by the next remediation gate.
+If any check fails, the SHA is unreviewed for that purpose.
+
+### Architecture-sync vs operator-shape (the ship boundary)
+
+Architecture-sync evidence answers "is the document corpus self-consistent?" Operator-shape evidence answers "does the system run correctly under deployment?" Only the latter authorizes a production ship. Conflating them is a common reviewer error and is explicitly prohibited.
+
+## See also
+
+- [gate/README.md](../../gate/README.md) — architecture-sync gate (26 rules) and self-tests.
+- [ARCHITECTURE.md](../../ARCHITECTURE.md) — wave-boundary constraints and §4 #1–#44.
+- [CLAUDE.md](../../CLAUDE.md) — engineering Rule 9 (self-audit is a ship gate) defines the ship-blocking categories.
+- [docs/governance/architecture-status.yaml](../governance/architecture-status.yaml) — per-capability ledger (the truth `architecture-sync` evidence proves consistent with).

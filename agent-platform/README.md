@@ -2,6 +2,16 @@
 
 > Northbound HTTP facade; accepts HTTP requests, validates tenant + idempotency headers, and forwards to agent-runtime via SPI contracts. Maturity: W0.
 
+## What is this?
+
+`agent-platform` is the public-facing HTTP entry-point of `spring-ai-ascend`. It owns the filter chain (security, tenant binding, idempotency), the health probe, and the contract-truth tests that freeze the public API surface. It does not import `agent-runtime` Java types directly — it consumes the runtime SPIs.
+
+## Quick start
+
+```bash
+./mvnw -pl agent-platform -am test
+```
+
 ## SPI surface
 
 | Interface | Method | Semantic guarantee |
@@ -35,7 +45,7 @@ W2: `SET LOCAL app.tenant_id` GUC + RLS policies enabled.
 `GET /v1/health` -- stable, no required headers, exempt from idempotency and tenant filters.
 
 - Response 200: `{"status":"UP","sha":"<git-sha>","posture":"<dev|research|prod>"}`
-- `HealthEndpointIT` is GREEN at commit 97b0827.
+- Covered by `HealthEndpointIT` in CI.
 
 ## Drop-in override (@Bean recipe)
 

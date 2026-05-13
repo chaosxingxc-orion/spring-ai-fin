@@ -1,63 +1,18 @@
 # spring-ai-ascend
 
-Enterprise agent platform scaffold for financial services teams building on Spring AI 2.0.0-M5 + Spring Boot 4.0.5.
+> Enterprise agent platform on Spring AI 2.0.0-M5 + Spring Boot 4.0.5 + Java 21.
 
-**Status**: W0 scaffold; 4 modules; dual-mode orchestration SPI (graph + agent-loop) with SuspendSignal nesting shipped (C32–C34); §4 #16–#18 + Rules 18–19 + ADR-0016/0017/0018 + 9 design_accepted rows added (competitive analysis 2026-05-12); §4 #19–#23 + Rules 20–21 (active) + Rules 22–24 (deferred) + ADR-0019–0024 + 12 yaml rows + RunStateMachine + TenantPropagationPurityTest + EXPIRED status + MDC tenant_id (third-review 2026-05-12); architecture-code consistency cleanup: W0/W1/W2 contract split, idempotency narrowed, checkpoint ownership clarified, ADR-0025/0026/0027 (fourth-review 2026-05-12); data-plane typing + cognition-action separation + skill SPI + three-track channels: §4 #25–#28 + ADR-0028/0029/0030/0031 + Rules 26–27 (deferred) + 9 yaml rows + Gate Rule 11 + HD-A.8/HD-A.10 fixes (fifth-review 2026-05-12); scope hierarchy + posture consolidation + wave authority + contract-surface truth generalization + memory taxonomy + skill tiers + payload migration: §4 #29–#36 + ADR-0032–0039 + Gate Rules 12–14 + AppPostureGate + findRootRuns + plans archived + 8 stale starter coords removed + 101 tests GREEN (sixth+seventh combined review 2026-05-13); corpus truth sweep + W1 HTTP contract reconciliation + deleted plan paths frozen + contract-catalog SPI table split + module-tree comment fixes + mem0/Docling/langchain4j-profile stripped from active BoM: §4 #37–#38 + ADR-0040–0041 + Gate Rules 15–18 (post-seventh follow-up 2026-05-13); peripheral drift prevention + test-evidence gate + SPI catalog precision + memory metadata normalization + active-doc link repair + lowercase metrics + graphmemory-starter scaffold truth + BoM glue-path split: §4 #39–#41 + ADR-0042–0044 + Gate Rules 19–23 + widen Rules 17/18 (post-seventh second-pass 2026-05-13); REF-DRIFT path-existence gate + HISTORY-PARADOX archive + PERIPHERAL-DRIFT entry-point wave-qualifier gate + gate self-tests + PS case-sensitivity fix + refresh-metadata reconciliation: §4 #42–#43 + ADR-0045 + Gate Rules 24–25 + Rule 19 strengthened (post-seventh third-pass 2026-05-13)
+## What is this?
 
----
+`spring-ai-ascend` is a self-hostable agent runtime for financial-services teams. It ships a dual-mode orchestration kernel — deterministic graph state machines and ReAct-style agent loops sharing a single interrupt primitive — with audit-grade evidence, posture-aware fail-closed defaults, and an OSS-first integration model. Build on top of it the same way you would build on Spring Boot itself: pull in the BoM, write `@Bean` overrides for the SPI surface you need, and ship.
 
-## Modules
+## Status
 
-| Module | Role |
-|--------|------|
-| `agent-platform` | Northbound HTTP facade — filter chain, health endpoint, idempotency |
-| `agent-runtime` | Cognitive runtime — SPI contracts, OSS API probe |
-| `spring-ai-ascend-dependencies` | BoM — pins all SDK and OSS dependency versions |
-| `spring-ai-ascend-graphmemory-starter` | Graph memory SPI scaffold — no bean registered at W0; Graphiti REST reference lands W1 (ADR-0034) |
+**L0 architecturally ready.** W0 runtime kernel + contract-guard layer shipped; W1–W4 capabilities are staged as design contracts (ADRs + per-capability ledger).
 
----
-
-## Integration paths
-
-| Path | When to use | Entry point |
-|------|-------------|-------------|
-| Drop-in `@Bean` override | Provide your own `GraphMemoryRepository` impl; starter auto-config wires it | `spring-ai-ascend-graphmemory-starter` |
-| Direct Spring AI / Spring Data | Use `ChatMemory`, `VectorStore`, `CrudRepository` directly without starters | No starter needed |
-| BoM import only | Pin all SDK versions; manage wiring yourself | `spring-ai-ascend-dependencies` BoM |
-
----
-
-## Runtime model
-
-`Run.mode` discriminates `GRAPH` (deterministic state machine) from `AGENT_LOOP` (ReAct-style LLM reasoning). Both modes share one interrupt primitive — `SuspendSignal` — which the `Orchestrator` catches to checkpoint the parent, dispatch a child Run, and resume the parent with the child's result. Three-level bidirectional nesting (graph → agent-loop → graph) is proved by `NestedDualModeIT`.
-
-Forty-one architectural constraints govern the design path from W0 to W4+ (see `ARCHITECTURE.md §4 #1–#41`):
-- **#10** Long-horizon lifecycle: typed suspend reasons + `AgentSubject` identity + paged `RunRepository` queries.
-- **#11** Northbound handoff contract: sync (shipped) + streamed `Flux<RunEvent>` + yield; all with cancel, heartbeat ≤ 30 s, typed progress events.
-- **#12** Two-axis resource arbitration: tenant × skill capacity matrix; saturation suspends, not fails.
-- **#13** Payload serialization: inline bytes ≤ 16 KiB; `resumePayload` must be byte-serializable by W2.
-- **#14** Resume re-authorization: every resume re-validates `tenantId`; mismatch returns 403.
-- **#15** SPI serialization path: `NodeFunction`/`Reasoner` lambdas become named `CapabilityRegistry` entries before W2 async orchestrator.
-- **#16** Runtime Hook SPI: every LLM/tool/agent boundary flows through `HookChain`; hook positions `PRE_LLM_CALL`/`POST_LLM_CALL`/`PRE_TOOL_INVOKE`/`POST_TOOL_INVOKE`/`PRE_AGENT_TURN`/`POST_AGENT_TURN`; reference hooks: PII filter, token counter, summariser, tool-call-limit. (W2)
-- **#17** Graph DSL conformance: `GraphDefinition` gains `StateReducer` registry (OverwriteReducer/AppendReducer/DeepMergeReducer) + typed conditional edges + JSON/Mermaid export. (W3)
-- **#18** Eval Harness Contract: every shipped capability must have golden corpus + LLM-as-judge + regression threshold gate. (W4)
-- **#19** Suspend-reason taxonomy: sealed `SuspendReason` with `deadline()` on every variant; `JoinPolicy`/`ChildFailurePolicy` for fan-out; W0 single-child only. (ADR-0019)
-- **#20** RunStatus formal DFA + audit trail: `RunStateMachine.validate(from, to)` enforced in `Run.withStatus`; `EXPIRED` terminal state added; `run_state_change` audit log at W2. (ADR-0020)
-- **#21** Typed payload + `PayloadCodec` SPI: every cross-JVM payload encoded via `PayloadCodec<T>` with `codecId`; `RunEvent` sealed interface for streaming. (ADR-0022)
-- **#22** Canonical run context: `RunContext.tenantId()` is sole tenant carrier in `agent-runtime`; `TenantContextHolder` HTTP-edge-only; MDC `tenant_id` populated at W0. (ADR-0023)
-- **#23** Suspension write atomicity: `RunRepository.save(suspended)` + `Checkpointer.save(payload)` must be atomically observable; tiered contract per Checkpointer backend. (ADR-0024)
-- **#29** Scope-based run hierarchy: `RunScope{STEP_LOCAL,SWARM}` discriminator; `SuspendReason.SwarmDelegation`; `PlanState`/`RunPlanRef` minimal contract; `findRootRuns` shipped W0. (ADR-0032)
-- **#30** Logical identity equivalence: S-Cloud/S-Edge/C-Device deployment-locus vocabulary; no edge posture variant; Rule 17 S-side/C-side preserved. (ADR-0033)
-- **#31** Memory taxonomy: 6 categories M1–M6 + common `MemoryMetadata` schema; Graphiti selected W1 reference; mem0/Cognee not-selected. (ADR-0034)
-- **#32** Posture single-construction-path: `AppPostureGate` is the sole `APP_POSTURE` reader; Gate Rule 12 enforces literal presence in all 3 in-memory components. (ADR-0035)
-- **#33** Contract-surface truth generalization: Gate Rule 13 (no deleted SPI names in contract-catalog); Gate Rule 14 (method names in ARCHITECTURE.md code-fences must exist in Java class). (ADR-0036)
-- **#34** Wave authority consolidation: ARCHITECTURE.md §1 + `architecture-status.yaml` + `CLAUDE-deferred.md` are the single wave authority; stale plans archived. (ADR-0037)
-- **#35** Skill SPI resource tiering: 4 enforceability tiers (hard/sandbox/advisory/hints); enforcement claims in docs must qualify tier. (ADR-0038)
-- **#36** Payload migration adapter: single normative path `Object → Payload → CausalPayloadEnvelope`; `PayloadAdapter.wrap(Object)` required; `@Deprecated` window mandatory. (ADR-0039)
-- **#37** W1 HTTP contract: `X-Tenant-Id` stays required; W1 adds JWT `tenant_id` claim cross-check (not replacement); initial Run status = `PENDING`; cancel = `POST /v1/runs/{id}/cancel`. (ADR-0040)
-- **#38** Active-corpus truth contract: active `.md` files must not reference deleted plan paths; architecture-systems-engineering-plan archived alongside engineering-plan-W0-W4; Gate Rule 15 enforces. (ADR-0041)
-
----
+- Formal release: [docs/releases/2026-05-13-L0-architecture-release.en.md](docs/releases/2026-05-13-L0-architecture-release.en.md)
+- Per-capability shipped/deferred ledger: [docs/governance/architecture-status.yaml](docs/governance/architecture-status.yaml)
+- Architecture baseline: 44 §4 constraints · 46 ADRs · 26 gate rules · 28 self-tests · 11 active engineering rules · 101 Maven tests GREEN.
 
 ## Quick start
 
@@ -65,13 +20,53 @@ Forty-one architectural constraints govern the design path from W0 to W4+ (see `
 ./mvnw clean test
 ```
 
-Posture is set via `APP_POSTURE` env var (`dev` / `research` / `prod`).
-Research and prod reject sentinel stubs at startup; provide real `@Bean` overrides before deploying.
+Posture is selected by the `APP_POSTURE` environment variable (`dev` / `research` / `prod`). `dev` is permissive (in-memory backends allowed, missing config emits WARN); `research` and `prod` fail-closed at startup if required config is missing.
 
----
+## Modules
+
+| Module | Role |
+|--------|------|
+| `agent-platform` | Northbound HTTP facade — filter chain, health endpoint, idempotency, tenant binding |
+| `agent-runtime` | Cognitive runtime — Orchestration SPI, in-memory dev-posture executors, posture gate, SPI scaffolding |
+| `spring-ai-ascend-dependencies` | Bill of Materials — pins all SDK + OSS transitive versions |
+| `spring-ai-ascend-graphmemory-starter` | Graph-memory SPI scaffold; no bean registered at W0; Graphiti REST reference adapter lands W1 (ADR-0034) |
+
+## Integration paths
+
+| Path | When to use | Entry point |
+|------|-------------|-------------|
+| Drop-in `@Bean` override | You implement `GraphMemoryRepository`; starter auto-config wires it | `spring-ai-ascend-graphmemory-starter` |
+| Direct Spring AI / Spring Data | Use `ChatMemory`, `VectorStore`, `CrudRepository` directly without starters | No starter needed |
+| BoM import only | Pin SDK + OSS versions; manage wiring yourself | `spring-ai-ascend-dependencies` BoM |
+
+## Runtime model
+
+`Run.mode` discriminates `GRAPH` (deterministic state machine) from `AGENT_LOOP` (ReAct-style LLM reasoning). Both modes share one interrupt primitive — `SuspendSignal` — which the `Orchestrator` catches to checkpoint the parent, dispatch a child Run, and resume the parent with the child's result. Three-level bidirectional nesting (graph → agent-loop → graph) is proved by `NestedDualModeIT`.
+
+The full architectural constraint set (§4 #1–#44) and the deferred-capability roadmap (W1–W4) live in [ARCHITECTURE.md](ARCHITECTURE.md) and [docs/governance/architecture-status.yaml](docs/governance/architecture-status.yaml). They are not duplicated here.
+
+## Posture model
+
+| Posture | Behavior |
+|---------|----------|
+| `dev` (default) | Permissive — in-memory backends allowed; missing config emits WARN, not exception |
+| `research` | Fail-closed — required config present or `IllegalStateException`; durable persistence expected |
+| `prod` | Fail-closed — same as research; stricter enforcement planned for W2 |
+
+Full matrix: [docs/cross-cutting/posture-model.md](docs/cross-cutting/posture-model.md).
 
 ## Reading order
 
-1. `README.md` — this file, current status
-2. `docs/STATE.md` — per-capability shipped/deferred table
-3. `ARCHITECTURE.md` — system boundary, decision chains, SPI contracts
+1. **README.md** — you are here.
+2. **[docs/STATE.md](docs/STATE.md)** — per-capability shipped/deferred table.
+3. **[ARCHITECTURE.md](ARCHITECTURE.md)** — system boundary, §4 constraints, SPI contracts, decision chains.
+4. **[docs/contracts/](docs/contracts/)** — HTTP API contracts, SPI semantic contracts, pinned OpenAPI snapshot.
+5. **[docs/adr/README.md](docs/adr/README.md)** — Architecture Decision Records (ADR-0001 … ADR-0046).
+6. **[CLAUDE.md](CLAUDE.md)** — engineering rules (11 active, 14 deferred with re-introduction triggers).
+
+## See also
+
+- [docs/releases/](docs/releases/) — formal release notes.
+- [docs/governance/architecture-status.yaml](docs/governance/architecture-status.yaml) — capability ledger.
+- [gate/README.md](gate/README.md) — architecture-sync gate (26 rules + 28 self-tests).
+- [docs/cross-cutting/oss-bill-of-materials.md](docs/cross-cutting/oss-bill-of-materials.md) — OSS dependency policy.
