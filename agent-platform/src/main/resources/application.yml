@@ -5,6 +5,13 @@
 spring:
   application:
     name: spring-ai-ascend
+  autoconfigure:
+    exclude:
+      # Resilience4j 2.4.0 ships a SpringBoot3Verifier that hard-fails when run
+      # under Spring Boot 4. Rule 7 (Resilience) is deferred to W2 per
+      # docs/CLAUDE-deferred.md, so the autoconfig is excluded here; the
+      # dependency is retained so PlatformOssApiProbe still compiles.
+      - io.github.resilience4j.springboot3.verifier.autoconfigure.SpringBoot3VerifierAutoConfiguration
   threads:
     virtual:
       enabled: true   # ADR-01 + Loom; HikariCP 5 pool is virtual-thread-friendly.
