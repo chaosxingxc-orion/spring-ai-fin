@@ -22,8 +22,10 @@ spring:
     locations: classpath:db/migration
   jackson:
     default-property-inclusion: non_null
-    serialization:
-      WRITE_DATES_AS_TIMESTAMPS: false
+    # Jackson 3.x default already serializes java.time.* as ISO-8601 strings;
+    # WRITE_DATES_AS_TIMESTAMPS was removed from tools.jackson.databind.SerializationFeature
+    # in Jackson 3 (moved to DateTimeFeature). Boot 4 binder fails when the legacy key
+    # is bound to the new SerializationFeature enum, so the explicit override is dropped.
 
 server:
   port: 8080
