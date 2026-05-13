@@ -1,7 +1,7 @@
-# agent-runtime -- L1 architecture (2026-05-12 fourth-review refresh)
+# agent-runtime -- L1 architecture (2026-05-13 post-seventh third-pass refresh)
 
 > Owner: runtime | Wave: W0..W4 | Maturity: W0
-> Last updated: 2026-05-12
+> Last updated: 2026-05-13 (post-seventh third-pass)
 
 ## 1. System boundary
 
@@ -39,7 +39,7 @@ context test). `OssApiProbeTest` runs 3 tests:
 
 Green OssApiProbeTest is a required gate for every wave.
 
-## 4. Active submodules
+## 4. Submodules (current + planned)
 
 | Package | Purpose | Wave |
 |---|---|---|

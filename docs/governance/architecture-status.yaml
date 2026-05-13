@@ -1,4 +1,4 @@
-# spring-ai-ascend architecture status ledger -- 2026-05-13 post-seventh follow-up pass
+# spring-ai-ascend architecture status ledger -- 2026-05-13 post-seventh third pass
 # Single source of truth for capability status. Updated by commits, not manually.
 #
 # status enum: design_accepted | implemented_unverified | test_verified | deferred_w1 | deferred_w2
@@ -7,7 +7,7 @@
 version: 4
 generated_at: 2026-05-13
 
-# Source: root pom.xml <modules> list updated 2026-05-12 fourth-review pass
+# Source: root pom.xml <modules> list updated 2026-05-13 post-seventh third pass
 repository_counts:
   note: "Canonical counts -- derived from root pom.xml modules list. All documents reference these; no document may claim a different count without updating this block."
   reactor_modules: 4
@@ -58,17 +58,14 @@ capabilities:
     status: implemented_unverified
     shipped: true
     l0_decision: CLAUDE.md (Rule 8)
-    l2_documents:
-      - docs/plans/W0-evidence-skeleton.md
-      - docs/governance/evidence-manifest.yaml
     implementation:
       - gate/check_architecture_sync.ps1
       - gate/check_architecture_sync.sh
     tests:
       - gate/test_architecture_sync_gate.sh
     latest_semantic_pass_sha: 984fb76
-    latest_delivery_file: docs/delivery/2026-05-10-68c07f1.md
-    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here and in evidence-manifest.yaml. Architecture baseline: 41 §4 constraints (#1–#41); 44 ADRs (0001–0044); 23 active gate rules; 11 active engineering rules (1–6, 9–10, 20–21, 25); 15 deferred rules (7, 8, 11, 13–19, 22–24, 26–27)."
+    latest_delivery_file: docs/delivery/2026-05-12-e0ccb6e.md
+    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here. Architecture baseline: 43 §4 constraints (#1–#43); 45 ADRs (0001–0045); 25 active gate rules; 11 active engineering rules (1–6, 9–10, 20–21, 25); 15 deferred rules (7, 8, 11, 13–19, 22–24, 26–27)."
 
   spring_ai_ascend_dependencies_bom:
     status: implemented_unverified

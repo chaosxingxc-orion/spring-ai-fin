@@ -6,8 +6,8 @@ import java.util.List;
  * SPI: knowledge-graph memory store for relationship-aware retrieval.
  *
  * No default in-JVM impl (graph structure requires an external store).
- * Primary sidecar impl: spring-ai-ascend-graphmemory-starter (Graphiti REST).
- * ADR-0034: Graphiti selected as W1 reference sidecar; Cognee not selected.
+ * W1 reference sidecar (per ADR-0034): spring-ai-ascend-graphmemory-starter wires a Graphiti REST
+ * client at W1; no adapter implementation ships at W0.
  *
  * Rule 11: every operation carries tenantId.
  */

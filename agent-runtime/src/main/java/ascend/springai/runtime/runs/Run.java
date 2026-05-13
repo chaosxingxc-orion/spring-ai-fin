@@ -6,7 +6,8 @@ import java.util.UUID;
 
 /**
  * Contract-spine entity for the run lifecycle. Rule 11: tenant_id is mandatory.
- * W1-W2: backed by a Postgres table via RunRepository (Spring Data JDBC CrudRepository).
+ * W2: backed by a Postgres table via RunRepository (Spring Data JDBC CrudRepository). W0 dev: held
+ * in-memory by InMemoryRunRegistry. See ADR-0021.
  * mode discriminates whether this run is executing a deterministic graph or a ReAct agent loop.
  * parentNodeKey and suspendedAt are populated only when status = SUSPENDED.
  */

@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-  spring-ai-ascend architecture-sync gate (post-seventh second-pass, 23 rules).
+  spring-ai-ascend architecture-sync gate (post-seventh third-pass, 25 rules).
 
 .DESCRIPTION
   Exits 0 if all rules pass, 1 if any fail.
@@ -9,29 +9,31 @@
   Prints GATE: PASS or GATE: FAIL at the end.
 
   Rules:
-    1. status_enum_invalid            -- architecture-status.yaml status values
-    2. delivery_log_parity            -- gate/log/*.json sha field matches filename
-    3. eol_policy                     -- *.sh files in gate/ must be LF (not CRLF)
-    4. ci_no_or_true_mask             -- no gate/run_* || true in CI workflows
-    5. required_files_present         -- contract-catalog.md and openapi-v1.yaml must exist
-    6. metric_naming_namespace        -- springai_ascend_ prefix in Java metric names
-    7. shipped_impl_paths_exist       -- every shipped: true implementation: path exists on disk
-    8. no_hardcoded_versions_in_arch  -- module ARCHITECTURE.md files must not pin OSS versions inline
-    9. openapi_path_consistency       -- /v3/api-docs must appear in WebSecurityConfig + platform ARCH
-   10. module_dep_direction           -- agent-runtime must not depend on agent-platform (and vice versa)
+    1. status_enum_invalid                  -- architecture-status.yaml status values
+    2. delivery_log_parity                  -- gate/log/*.json sha field matches filename
+    3. eol_policy                           -- *.sh files in gate/ must be LF (not CRLF)
+    4. ci_no_or_true_mask                   -- no gate/run_* || true in CI workflows
+    5. required_files_present               -- contract-catalog.md and openapi-v1.yaml must exist
+    6. metric_naming_namespace              -- springai_ascend_ prefix in Java metric names
+    7. shipped_impl_paths_exist             -- every shipped: true implementation: path exists on disk
+    8. no_hardcoded_versions_in_arch        -- module ARCHITECTURE.md files must not pin OSS versions inline
+    9. openapi_path_consistency             -- /v3/api-docs must appear in WebSecurityConfig + platform ARCH
+   10. module_dep_direction                 -- agent-runtime must not depend on agent-platform (and vice versa)
    11. shipped_envelope_fingerprint_present -- InMemoryCheckpointer enforces §4 #13 16-KiB cap (MAX_INLINE_PAYLOAD_BYTES present)
    12. inmemory_orchestrator_posture_guard_present -- SyncOrchestrator, InMemoryRunRegistry, InMemoryCheckpointer each contain AppPostureGate.requireDev (ADR-0035)
    13. contract_catalog_no_deleted_spi_or_starter_names -- contract-catalog.md must not reference deleted SPI interface names or deleted starter coords
-   14. module_arch_method_name_truth  -- method names in ARCHITECTURE.md code-fences must exist in named Java class
-   15. no_active_refs_deleted_wave_plan_paths  -- active .md files must not reference docs/plans/engineering-plan-W0-W4.md or roadmap-W0-W4.md
-   16. http_contract_w1_tenant_and_cancel_consistency  -- W1 HTTP contract: no replace-X-Tenant-Id wording, no CREATED initial status, no DELETE cancel route
-   17. contract_catalog_spi_table_matches_source  -- SPI sub-table must list 7 known SPIs; OssApiProbe must not appear before Probes sub-table
-   18. deleted_spi_starter_names_outside_catalog  -- ACTIVE_NORMATIVE_DOCS corpus must not reference deleted SPI/starter names (widened from 3 files, ADR-0043)
-   19. shipped_row_tests_evidence                 -- every shipped: true row in architecture-status.yaml must have non-empty tests: (ADR-0042)
-   20. module_metadata_truth                      -- module README.md must not reference Java class names absent from the repo (ADR-0043)
-   21. bom_glue_paths_exist                       -- BoM must not contain known ghost implementation paths unless they exist on disk (ADR-0043)
-   22. lowercase_metrics_in_contract_docs         -- docs/contracts/*.md must not contain SPRINGAI_ASCEND_<lowercase> metric patterns (ADR-0043)
-   23. active_doc_internal_links_resolve          -- markdown links ](path) in active docs must resolve to existing files (ADR-0043)
+   14. module_arch_method_name_truth        -- method names in ARCHITECTURE.md code-fences must exist in named Java class
+   15. no_active_refs_deleted_wave_plan_paths -- active .md files must not reference docs/plans/engineering-plan-W0-W4.md or roadmap-W0-W4.md
+   16. http_contract_w1_tenant_and_cancel_consistency -- W1 HTTP contract: no replace-X-Tenant-Id wording, no CREATED initial status, no DELETE cancel route
+   17. contract_catalog_spi_table_matches_source -- SPI sub-table must list 7 known SPIs; OssApiProbe must not appear before Probes sub-table
+   18. deleted_spi_starter_names_outside_catalog -- ACTIVE_NORMATIVE_DOCS corpus must not reference deleted SPI/starter names (widened, ADR-0043)
+   19. shipped_row_tests_evidence           -- every shipped: true row must have non-empty tests: pointing to real files (ADR-0042, strengthened)
+   20. module_metadata_truth               -- module README.md must not reference Java class names absent from the repo (ADR-0043)
+   21. bom_glue_paths_exist                -- BoM must not contain known ghost implementation paths unless they exist on disk (ADR-0043)
+   22. lowercase_metrics_in_contract_docs  -- ACTIVE_NORMATIVE_DOCS must not contain SPRINGAI_ASCEND_<lowercase> metric patterns (ADR-0043, widened)
+   23. active_doc_internal_links_resolve   -- markdown links ](path) in active docs must resolve to existing files (ADR-0043)
+   24. shipped_row_evidence_paths_exist    -- l2_documents: and latest_delivery_file: on shipped rows must exist on disk (ADR-0045)
+   25. peripheral_wave_qualifier           -- SPI Javadoc and active docs must not name future-wave impls without wave qualifier (ADR-0045)
 
 .PARAMETER LocalOnly
   Not used by this script (kept for invocation parity with old version).
@@ -604,20 +606,56 @@ foreach ($target18 in $r18ActiveFiles) {
 if (-not $r18Fail) { Pass-Rule 'deleted_spi_starter_names_outside_catalog' }
 
 # ---------------------------------------------------------------------------
-# Rule 19 — shipped_row_tests_evidence
-# ADR-0042: every shipped: true row in architecture-status.yaml must have a
-# non-empty tests: list. tests: [] on a shipped row is a gate failure.
+# Rule 19 — shipped_row_tests_evidence (strengthened per ADR-0042 + ADR-0045)
+# Every shipped: true row must have:
+#   (a) tests: key present (not absent),
+#   (b) tests: non-empty (not [] and not block-empty),
+#   (c) every listed test path exists on disk.
 # ---------------------------------------------------------------------------
 $r19Fail = $false
-$yamlLines19 = Get-Content -LiteralPath $statusPath -ErrorAction SilentlyContinue
-$currentKey19 = ''
-$inShippedBlock19 = $false
-foreach ($line19 in $yamlLines19) {
-  if ($line19 -match '^\s{2}(\w[\w_]+):') { $currentKey19 = $Matches[1]; $inShippedBlock19 = $false }
-  if ($line19 -match '^\s+shipped:\s+true') { $inShippedBlock19 = $true }
-  if ($inShippedBlock19 -and $line19 -match '^\s+tests:\s*\[\]') {
-    Fail-Rule 'shipped_row_tests_evidence' "$statusPath capability '$currentKey19' has shipped: true but tests: []. Per ADR-0042 Gate Rule 19 all shipped rows must have non-empty test evidence."
-    $r19Fail = $true
+if (Test-Path $statusPath) {
+  $yamlLines19 = Get-Content -LiteralPath $statusPath
+  $currentKey19 = ''; $inShippedBlock19 = $false
+  $inTestsList19 = $false; $testsFound19 = $false
+  $testsHasItems19 = $false; $currentTestPaths19 = [System.Collections.Generic.List[string]]::new()
+
+  foreach ($i19 in 0..($yamlLines19.Count)) {
+    $line19 = if ($i19 -lt $yamlLines19.Count) { $yamlLines19[$i19] } else { '  __sentinel__:' }
+
+    if ($line19 -cmatch '^  [a-z][a-z_]+:') {
+      # Flush previous shipped block before moving to next capability
+      if ($inShippedBlock19) {
+        if (-not $testsFound19) {
+          Fail-Rule 'shipped_row_tests_evidence' "$statusPath capability '$currentKey19' shipped:true but tests: key absent. Per ADR-0042 Gate Rule 19 all shipped rows must have non-empty test evidence."
+          $r19Fail = $true
+        } elseif (-not $testsHasItems19) {
+          Fail-Rule 'shipped_row_tests_evidence' "$statusPath capability '$currentKey19' shipped:true but tests: is empty ([] or no items). Per ADR-0042 Gate Rule 19 all shipped rows must have non-empty test evidence."
+          $r19Fail = $true
+        } else {
+          foreach ($tp19 in $currentTestPaths19) {
+            if (-not (Test-Path -LiteralPath $tp19)) {
+              Fail-Rule 'shipped_row_tests_evidence' "$statusPath capability '$currentKey19' lists test path '$tp19' not found on disk. Per ADR-0042 Gate Rule 19 all test paths must resolve."
+              $r19Fail = $true
+            }
+          }
+        }
+      }
+      $currentKey19 = ($line19.Trim() -replace ':.*', '')
+      $inShippedBlock19 = $false; $inTestsList19 = $false
+      $testsFound19 = $false; $testsHasItems19 = $false
+      $currentTestPaths19 = [System.Collections.Generic.List[string]]::new()
+      continue
+    }
+    if ($line19 -cmatch '^\s+shipped:\s+true') { $inShippedBlock19 = $true }
+    if ($inShippedBlock19) {
+      if ($line19 -cmatch '^\s+tests:\s*\[\]') { $testsFound19 = $true; $inTestsList19 = $false }
+      elseif ($line19 -cmatch '^\s+tests:\s*$') { $testsFound19 = $true; $inTestsList19 = $true }
+      elseif ($line19 -cmatch '^\s+tests:') { $testsFound19 = $true; $inTestsList19 = $false }
+      elseif ($inTestsList19 -and $line19 -cmatch '^\s+-\s+(.+)$') {
+        $testsHasItems19 = $true
+        $currentTestPaths19.Add($Matches[1].Trim())
+      } elseif ($inTestsList19 -and $line19 -notmatch '^\s+-') { $inTestsList19 = $false }
+    }
   }
 }
 if (-not $r19Fail) { Pass-Rule 'shipped_row_tests_evidence' }
@@ -672,16 +710,25 @@ if (Test-Path $bomPath21) {
 if (-not $r21Fail) { Pass-Rule 'bom_glue_paths_exist' }
 
 # ---------------------------------------------------------------------------
-# Rule 22 — lowercase_metrics_in_contract_docs
-# ADR-0043: docs/contracts/*.md must not contain SPRINGAI_ASCEND_<lowercase>
-# metric name patterns. Env-var names (all-uppercase suffix) remain acceptable.
+# Rule 22 — lowercase_metrics_in_contract_docs (widened + case-sensitive fix)
+# ADR-0043: the full ACTIVE_NORMATIVE_DOCS corpus must not contain
+# SPRINGAI_ASCEND_<lowercase> metric name patterns. Case-SENSITIVE check
+# (use -cmatch to avoid PowerShell's default case-insensitive -match).
 # ---------------------------------------------------------------------------
 $r22Fail = $false
-$contractDocs22 = Get-ChildItem -Path 'docs/contracts' -Filter '*.md' -File -ErrorAction SilentlyContinue
-foreach ($cd22 in $contractDocs22) {
-  $content22 = Get-Content -Raw -LiteralPath $cd22.FullName -ErrorAction SilentlyContinue
-  if ($content22 -match 'SPRINGAI_ASCEND_[a-z]') {
-    Fail-Rule 'lowercase_metrics_in_contract_docs' "$($cd22.FullName) contains uppercase metric namespace 'SPRINGAI_ASCEND_<lowercase>'. Per ADR-0043 Gate Rule 22 metric names must use lowercase springai_ascend_ prefix."
+$activeFiles22 = Get-ChildItem -Path $repoRoot -Recurse -Include '*.md','*.yaml' -File -ErrorAction SilentlyContinue |
+  Where-Object {
+    $p = $_.FullName.Replace('\', '/')
+    $p -notmatch '/docs/archive/' -and $p -notmatch '/docs/reviews/' -and
+    $p -notmatch '/docs/adr/' -and $p -notmatch '/docs/delivery/' -and
+    $p -notmatch '/docs/v6-rationale/' -and $p -notmatch '/docs/plans/' -and
+    $p -notmatch '/third_party/' -and $p -notmatch '/target/' -and
+    $p -notmatch '/\.git/'
+  }
+foreach ($af22 in $activeFiles22) {
+  $content22 = Get-Content -Raw -LiteralPath $af22.FullName -ErrorAction SilentlyContinue
+  if ($content22 -cmatch 'SPRINGAI_ASCEND_[a-z]') {
+    Fail-Rule 'lowercase_metrics_in_contract_docs' "$($af22.FullName) contains uppercase metric namespace 'SPRINGAI_ASCEND_<lowercase>'. Per ADR-0043 Gate Rule 22 (widened) metric names must use lowercase springai_ascend_ prefix."
     $r22Fail = $true
   }
 }
@@ -719,6 +766,96 @@ foreach ($af23 in $activeFiles23) {
   }
 }
 if (-not $r23Fail) { Pass-Rule 'active_doc_internal_links_resolve' }
+
+# ---------------------------------------------------------------------------
+# Rule 24 — shipped_row_evidence_paths_exist
+# ADR-0045: every l2_documents: entry and latest_delivery_file: value on a
+# shipped: true row must resolve to an existing file on disk. Closes the
+# REF-DRIFT pattern where references are syntactically valid but point at
+# non-existent artifacts. (implementation: covered by Rule 7; tests: by Rule 19.)
+# ---------------------------------------------------------------------------
+$r24Fail = $false
+if (Test-Path $statusPath) {
+  $yamlLines24 = Get-Content -LiteralPath $statusPath
+  $currentKey24 = ''; $inShippedBlock24 = $false; $inL2List24 = $false
+
+  foreach ($i24 in 0..($yamlLines24.Count)) {
+    $line24 = if ($i24 -lt $yamlLines24.Count) { $yamlLines24[$i24] } else { '  __sentinel__:' }
+
+    if ($line24 -cmatch '^  [a-z][a-z_]+:') {
+      $currentKey24 = ($line24.Trim() -replace ':.*', '')
+      $inShippedBlock24 = $false; $inL2List24 = $false
+    }
+    if ($line24 -cmatch '^\s+shipped:\s+true') { $inShippedBlock24 = $true }
+    if ($inShippedBlock24) {
+      if ($line24 -cmatch '^\s+latest_delivery_file:\s+(.+)$') {
+        $ldf24 = $Matches[1].Trim()
+        if ($ldf24 -and -not (Test-Path -LiteralPath $ldf24)) {
+          Fail-Rule 'shipped_row_evidence_paths_exist' "$statusPath capability '$currentKey24' latest_delivery_file '$ldf24' not found on disk. Per ADR-0045 Gate Rule 24 all shipped-row evidence paths must resolve."
+          $r24Fail = $true
+        }
+      }
+      if ($line24 -cmatch '^\s+l2_documents:\s*\[\]') { $inL2List24 = $false }
+      elseif ($line24 -cmatch '^\s+l2_documents:\s*$') { $inL2List24 = $true }
+      elseif ($line24 -cmatch '^\s+l2_documents:') { $inL2List24 = $false }
+      elseif ($inL2List24 -and $line24 -cmatch '^\s+-\s+(.+)$') {
+        $l2p24 = $Matches[1].Trim()
+        if ($l2p24 -and -not (Test-Path -LiteralPath $l2p24)) {
+          Fail-Rule 'shipped_row_evidence_paths_exist' "$statusPath capability '$currentKey24' l2_documents entry '$l2p24' not found on disk. Per ADR-0045 Gate Rule 24 all shipped-row evidence paths must resolve."
+          $r24Fail = $true
+        }
+      } elseif ($inL2List24 -and $line24 -notmatch '^\s+-') { $inL2List24 = $false }
+    }
+  }
+}
+if (-not $r24Fail) { Pass-Rule 'shipped_row_evidence_paths_exist' }
+
+# ---------------------------------------------------------------------------
+# Rule 25 — peripheral_wave_qualifier
+# ADR-0045: SPI Javadoc in agent-runtime/src/main/java must not use
+# "Primary sidecar impl:" or "Primary impl:" without a wave qualifier
+# (W0/W1/W2/W3/W4) in the surrounding context. Active markdown docs must
+# not use "Sidecar adapter —" without a wave qualifier or ADR reference.
+# Closes the PERIPHERAL-DRIFT pattern at gate level.
+# ---------------------------------------------------------------------------
+$r25Fail = $false
+# 25a: SPI Java source
+$spiJavaFiles25 = Get-ChildItem -Path 'agent-runtime/src/main/java' -Filter '*.java' -Recurse -File -ErrorAction SilentlyContinue
+foreach ($sf25 in $spiJavaFiles25) {
+  $lines25j = Get-Content -LiteralPath $sf25.FullName -ErrorAction SilentlyContinue
+  for ($j25 = 0; $j25 -lt $lines25j.Count; $j25++) {
+    if ($lines25j[$j25] -cmatch 'Primary sidecar impl:|Primary impl:') {
+      $lo = [Math]::Max(0, $j25 - 2); $hi = [Math]::Min($lines25j.Count - 1, $j25 + 3)
+      $ctx25 = ($lines25j[$lo..$hi] -join ' ')
+      if ($ctx25 -notmatch '\bW[0-4]\b') {
+        Fail-Rule 'peripheral_wave_qualifier' "$($sf25.FullName):$($j25+1) contains 'Primary.*impl:' without wave qualifier (W0-W4) in surrounding context. Per ADR-0045 Gate Rule 25 future-wave impl claims must carry wave qualifiers."
+        $r25Fail = $true
+      }
+    }
+  }
+}
+# 25b: active markdown docs
+$activeMdFiles25 = Get-ChildItem -Path $repoRoot -Recurse -Filter '*.md' -File -ErrorAction SilentlyContinue |
+  Where-Object {
+    $p = $_.FullName.Replace('\', '/')
+    $p -notmatch '/docs/archive/' -and $p -notmatch '/docs/reviews/' -and
+    $p -notmatch '/docs/adr/' -and $p -notmatch '/docs/delivery/' -and
+    $p -notmatch '/docs/v6-rationale/' -and $p -notmatch '/docs/plans/' -and
+    $p -notmatch '/third_party/' -and $p -notmatch '/target/' -and $p -notmatch '/\.git/'
+  }
+foreach ($af25 in $activeMdFiles25) {
+  $lines25m = Get-Content -LiteralPath $af25.FullName -ErrorAction SilentlyContinue
+  for ($k25 = 0; $k25 -lt $lines25m.Count; $k25++) {
+    $ln25 = $lines25m[$k25]
+    if ($ln25 -cmatch 'Sidecar adapter —|Primary sidecar impl:') {
+      if ($ln25 -notmatch '\bW[0-4]\b' -and $ln25 -notmatch 'ADR-') {
+        Fail-Rule 'peripheral_wave_qualifier' "$($af25.FullName):$($k25+1) contains 'Sidecar adapter —' or 'Primary sidecar impl:' without wave qualifier or ADR reference. Per ADR-0045 Gate Rule 25 future-wave impl claims must carry wave qualifiers."
+        $r25Fail = $true
+      }
+    }
+  }
+}
+if (-not $r25Fail) { Pass-Rule 'peripheral_wave_qualifier' }
 
 # ---------------------------------------------------------------------------
 # Summary

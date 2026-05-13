@@ -6,7 +6,8 @@ import java.util.UUID;
 
 /**
  * Contract-spine entity for idempotency. Rule 11: tenant_id is mandatory.
- * W1: backed by a Postgres unique-constraint table via Spring Data JDBC.
+ * W0: contract-spine entity only — not persisted. W1: backed by a Postgres unique-constraint
+ * table via Spring Data JDBC (per idempotency_store_promotion_to_interface; ADR-0027).
  */
 public record IdempotencyRecord(
     String idempotencyKey,

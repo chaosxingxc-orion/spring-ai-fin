@@ -1,7 +1,7 @@
 # OSS Bill of Materials -- cross-cutting policy
 
 > Owner: architecture | Wave: W0 (introduce); per-wave verification advances | Maturity: L2
-> Last refreshed: 2026-05-13 (sixth + seventh reviewer response; Graphiti selected as W1 example; mem0/Cognee not-selected; deleted SPI refs removed; see ADR-0034)
+> Last refreshed: 2026-05-13 (post-seventh third-pass; Graphiti selected as W1 example; mem0/Cognee not-selected; deleted SPI refs removed; see ADR-0034)
 
 ## 1. Purpose
 

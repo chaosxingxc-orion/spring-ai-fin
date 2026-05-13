@@ -30,5 +30,6 @@ single-wave-authority principle established by ADR-0037.
 | `roadmap-W0-W4.md` | Original W0–W4 roadmap (superseded; contains Spring AI 1.0.x and LangChain4j references) |
 | `engineering-plan-W0-W4.md` | Original engineering plan (superseded; contains 32-dimension scoring framework) |
 | `architecture-systems-engineering-plan.md` | L0/L1/L2 doc drill-down execution plan (superseded; was a companion to engineering-plan-W0-W4.md) |
+| `W0-evidence-skeleton.md` | Original W0 evidence skeleton (archived 2026-05-13 post-seventh third-pass; content references stale W0 artifacts that no longer exist; see ADR-0043 + ADR-0045) |
 
 These files are preserved for historical context only. Do not use them to make wave-planning decisions.

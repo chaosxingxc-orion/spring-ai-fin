@@ -1,6 +1,6 @@
 # Non-Functional Requirements
 
-> Owner: architecture | Wave: W0 | Last updated: 2026-05-12 Occam pass
+> Owner: architecture | Wave: W0 | Last updated: 2026-05-13 (post-seventh third-pass)
 
 ## W0 shipped SLOs (GET /v1/health only)
 

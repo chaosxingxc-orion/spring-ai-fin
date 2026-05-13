@@ -1,6 +1,6 @@
 # spring-ai-ascend Platform — Architecture
 
-> Last updated: 2026-05-13 (post-seventh second-pass — §4 #39-#41, ADR-0042-0044, Gate Rules 19-23, widen Rule 17/18, peripheral drift prevention, SPI catalog precision, memory metadata normalization).
+> Last updated: 2026-05-13 (post-seventh third-pass — §4 #42-#43, ADR-0045, Gate Rules 24-25, Rule 19 strengthened, Rule 22 PS case-sensitivity fix, REF-DRIFT path-existence gate, HISTORY-PARADOX W0-evidence-skeleton archived, PERIPHERAL-DRIFT entry-point wave-qualifier gate, shared ACTIVE_NORMATIVE_DOCS enumerator, self-tests for Rules 19/22/24/25, refresh-metadata reconciliation across 11 active-corpus files).
 
 ## 1. System boundary
 
@@ -468,6 +468,22 @@ only `java.*` (enforced by `OrchestrationSpiArchTest`, `MemorySpiArchTest`).
     `embeddingModelVersion` is the canonical field name per ADR-0034. Gate Rule 17 is extended
     to verify `RunContext` is labeled "interface" in the catalog. See ADR-0044,
     `spi_contract_precision_and_memory_metadata_reconciliation`.
+
+42. **Shipped-row evidence paths must resolve on disk.** Every `l2_documents:` entry and
+    `latest_delivery_file:` value on a `shipped: true` capability row in
+    `docs/governance/architecture-status.yaml` MUST point to a file that exists on disk.
+    Syntactically valid references to non-existent artifacts are a REF-DRIFT class defect.
+    Gate Rule 24 (`shipped_row_evidence_paths_exist`) enforces this at commit time. Note:
+    `implementation:` paths are covered by Gate Rule 7; `tests:` paths are covered by Gate Rule 19.
+    See ADR-0045, `shipped_row_evidence_paths_exist`.
+
+43. **Entry-point prose must carry wave qualifiers for future-wave impl claims.** SPI Javadoc
+    in `agent-runtime/src/main/java` and active normative markdown docs must not name a
+    future-wave implementation or sidecar adapter without a wave qualifier (W0/W1/W2/W3/W4) or
+    an ADR reference in the same text block. Patterns "Primary sidecar impl:" and
+    "Sidecar adapter —" without a wave qualifier are gate-failing (ADR-0045). Gate Rule 25
+    (`peripheral_wave_qualifier`) enforces this at commit time. Closes the PERIPHERAL-DRIFT
+    class defect at the gate level. See ADR-0045, `peripheral_wave_qualifier`.
 
 ---
 

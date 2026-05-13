@@ -1,7 +1,7 @@
 # Observability Policy
 
 > Owner: observability | Wave: W0 (logs + metrics) + W1 (traces) + W2 (cardinality + dashboards) | Maturity: L0
-> Last refreshed: 2026-05-09
+> Last refreshed: 2026-05-13 (post-seventh third-pass)
 
 ## 1. Purpose
 

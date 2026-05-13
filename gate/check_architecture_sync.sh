@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# spring-ai-ascend architecture-sync gate -- post-seventh second-pass (23 rules).
+# spring-ai-ascend architecture-sync gate -- post-seventh third-pass (25 rules).
 # Exits 0 if all rules pass, 1 if any fail.
 # Each rule prints PASS: <name> or FAIL: <name> -- <reason>.
 # Prints GATE: PASS or GATE: FAIL at the end.
@@ -23,11 +23,13 @@
 #  16.  http_contract_w1_tenant_and_cancel_consistency -- W1 HTTP contract: no replace-X-Tenant-Id wording, no CREATED initial status, no DELETE cancel route
 #  17.  contract_catalog_spi_table_matches_source     -- SPI sub-table must list 7 known SPIs; OssApiProbe must not appear before Probes sub-table
 #  18.  deleted_spi_starter_names_outside_catalog     -- ACTIVE_NORMATIVE_DOCS corpus must not reference deleted SPI/starter names (widened, ADR-0043)
-#  19.  shipped_row_tests_evidence                    -- every shipped: true row in architecture-status.yaml must have non-empty tests: (ADR-0042)
+#  19.  shipped_row_tests_evidence                    -- every shipped: true row must have non-empty tests: pointing to real files (ADR-0042, strengthened)
 #  20.  module_metadata_truth                         -- module README.md must not reference Java class names absent from the repo (ADR-0043)
 #  21.  bom_glue_paths_exist                          -- BoM must not contain known ghost implementation paths unless they exist (ADR-0043)
-#  22.  lowercase_metrics_in_contract_docs            -- docs/contracts/*.md must not contain SPRINGAI_ASCEND_<lowercase> patterns (ADR-0043)
+#  22.  lowercase_metrics_in_contract_docs            -- ACTIVE_NORMATIVE_DOCS must not contain SPRINGAI_ASCEND_<lowercase> patterns (ADR-0043, widened)
 #  23.  active_doc_internal_links_resolve             -- markdown links ](path) in active docs must resolve to existing files (ADR-0043)
+#  24.  shipped_row_evidence_paths_exist              -- l2_documents: and latest_delivery_file: on shipped rows must exist on disk (ADR-0045)
+#  25.  peripheral_wave_qualifier                     -- SPI Javadoc and active docs must not name future-wave impls without wave qualifier (ADR-0045)
 
 set -uo pipefail
 export LC_ALL=C
@@ -515,24 +517,66 @@ done < <(find . -name '*.md' -o -name '*.yaml' | grep -v '/docs/archive/' | grep
 if [[ $_r18_fail -eq 0 ]]; then pass_rule "deleted_spi_starter_names_outside_catalog"; fi
 
 # ---------------------------------------------------------------------------
-# Rule 19 — shipped_row_tests_evidence
-# ADR-0042: every shipped: true row in architecture-status.yaml must have a
-# non-empty tests: list. tests: [] on a shipped row is a gate failure.
+# Rule 19 — shipped_row_tests_evidence (strengthened per ADR-0042 + ADR-0045)
+# Every shipped: true row must have:
+#   (a) tests: key present (not absent),
+#   (b) tests: non-empty (not [] and not block-empty),
+#   (c) every listed test path exists on disk.
+# Uses [[:space:]] instead of \s for POSIX portability.
 # ---------------------------------------------------------------------------
 _r19_fail=0
 _current_key19=''
 _in_shipped19=0
-while IFS= read -r _line19 || [[ -n "$_line19" ]]; do
-  if echo "$_line19" | grep -qE '^  [a-zA-Z][a-zA-Z_]+:'; then
-    _current_key19=$(echo "$_line19" | sed 's/^  \([a-zA-Z][a-zA-Z_]*\):.*/\1/')
-    _in_shipped19=0
+_in_tests_list19=0
+_tests_found19=0
+_tests_has_items19=0
+_current_test_paths19=()
+
+_flush_shipped19() {
+  if [[ $_in_shipped19 -eq 1 ]]; then
+    if [[ $_tests_found19 -eq 0 ]]; then
+      fail_rule "shipped_row_tests_evidence" "$_status_path capability '$_current_key19' shipped:true but tests: key absent. Per ADR-0042 Gate Rule 19 all shipped rows must have non-empty test evidence."
+      _r19_fail=1
+    elif [[ $_tests_has_items19 -eq 0 ]]; then
+      fail_rule "shipped_row_tests_evidence" "$_status_path capability '$_current_key19' shipped:true but tests: is empty. Per ADR-0042 Gate Rule 19 all shipped rows must have non-empty test evidence."
+      _r19_fail=1
+    else
+      for _tp19 in "${_current_test_paths19[@]}"; do
+        if [[ ! -e "$_tp19" ]]; then
+          fail_rule "shipped_row_tests_evidence" "$_status_path capability '$_current_key19' lists test path '$_tp19' not found on disk. Per ADR-0042 Gate Rule 19 all test paths must resolve."
+          _r19_fail=1
+        fi
+      done
+    fi
   fi
-  if echo "$_line19" | grep -qE '^\s+shipped:\s+true'; then _in_shipped19=1; fi
-  if [[ $_in_shipped19 -eq 1 ]] && echo "$_line19" | grep -qE '^\s+tests:\s*\[\]'; then
-    fail_rule "shipped_row_tests_evidence" "$_status_path capability '$_current_key19' has shipped: true but tests: []. Per ADR-0042 Gate Rule 19 all shipped rows must have non-empty test evidence."
-    _r19_fail=1
+}
+
+while IFS= read -r _line19 || [[ -n "$_line19" ]]; do
+  if printf '%s\n' "$_line19" | grep -qE '^  [a-zA-Z][a-zA-Z_]+:'; then
+    _flush_shipped19
+    _current_key19=$(printf '%s\n' "$_line19" | sed 's/^  \([a-zA-Z][a-zA-Z_]*\):.*/\1/')
+    _in_shipped19=0; _in_tests_list19=0
+    _tests_found19=0; _tests_has_items19=0; _current_test_paths19=()
+    continue
+  fi
+  if printf '%s\n' "$_line19" | grep -qE '^[[:space:]]+shipped:[[:space:]]+true'; then _in_shipped19=1; fi
+  if [[ $_in_shipped19 -eq 1 ]]; then
+    if printf '%s\n' "$_line19" | grep -qE '^[[:space:]]+tests:[[:space:]]*\[\]'; then
+      _tests_found19=1; _in_tests_list19=0
+    elif printf '%s\n' "$_line19" | grep -qE '^[[:space:]]+tests:[[:space:]]*$'; then
+      _tests_found19=1; _in_tests_list19=1
+    elif printf '%s\n' "$_line19" | grep -qE '^[[:space:]]+tests:'; then
+      _tests_found19=1; _in_tests_list19=0
+    elif [[ $_in_tests_list19 -eq 1 ]] && printf '%s\n' "$_line19" | grep -qE '^[[:space:]]+-[[:space:]]+'; then
+      _tests_has_items19=1
+      _tp19_val=$(printf '%s\n' "$_line19" | sed -E 's/^[[:space:]]+-[[:space:]]+(.*)/\1/')
+      _current_test_paths19+=("$_tp19_val")
+    elif [[ $_in_tests_list19 -eq 1 ]] && ! printf '%s\n' "$_line19" | grep -qE '^[[:space:]]+-'; then
+      _in_tests_list19=0
+    fi
   fi
 done < "$_status_path"
+_flush_shipped19
 if [[ $_r19_fail -eq 0 ]]; then pass_rule "shipped_row_tests_evidence"; fi
 
 # ---------------------------------------------------------------------------
@@ -580,18 +624,20 @@ fi
 if [[ $_r21_fail -eq 0 ]]; then pass_rule "bom_glue_paths_exist"; fi
 
 # ---------------------------------------------------------------------------
-# Rule 22 — lowercase_metrics_in_contract_docs
-# ADR-0043: docs/contracts/*.md must not contain SPRINGAI_ASCEND_<lowercase>
-# metric name patterns.
+# Rule 22 — lowercase_metrics_in_contract_docs (widened per ADR-0043/ADR-0045)
+# The full ACTIVE_NORMATIVE_DOCS corpus must not contain SPRINGAI_ASCEND_<lowercase>
+# metric name patterns. grep -E is case-sensitive by default (LC_ALL=C set above).
 # ---------------------------------------------------------------------------
 _r22_fail=0
-while IFS= read -r _cd22; do
-  [[ -z "$_cd22" ]] && continue
-  if grep -qE 'SPRINGAI_ASCEND_[a-z]' "$_cd22" 2>/dev/null; then
-    fail_rule "lowercase_metrics_in_contract_docs" "$_cd22 contains uppercase metric namespace 'SPRINGAI_ASCEND_<lowercase>'. Per ADR-0043 Gate Rule 22 metric names must use lowercase springai_ascend_ prefix."
+while IFS= read -r _af22; do
+  [[ -z "$_af22" ]] && continue
+  if grep -qE 'SPRINGAI_ASCEND_[a-z]' "$_af22" 2>/dev/null; then
+    fail_rule "lowercase_metrics_in_contract_docs" "$_af22 contains uppercase metric namespace 'SPRINGAI_ASCEND_<lowercase>'. Per ADR-0043 Gate Rule 22 (widened) metric names must use lowercase springai_ascend_ prefix."
     _r22_fail=1
   fi
-done < <(find docs/contracts -name '*.md' 2>/dev/null | sort || true)
+done < <(find . -name '*.md' -o -name '*.yaml' | grep -v '/docs/archive/' | grep -v '/docs/reviews/' | \
+  grep -v '/docs/adr/' | grep -v '/docs/delivery/' | grep -v '/docs/v6-rationale/' | \
+  grep -v '/docs/plans/' | grep -v '/third_party/' | grep -v '/target/' | grep -v '/.git/' | sort 2>/dev/null || true)
 if [[ $_r22_fail -eq 0 ]]; then pass_rule "lowercase_metrics_in_contract_docs"; fi
 
 # ---------------------------------------------------------------------------
@@ -624,6 +670,93 @@ done < <(find . -name '*.md' \
   ! -path './.git/*' \
   -type f 2>/dev/null | sort || true)
 if [[ $_r23_fail -eq 0 ]]; then pass_rule "active_doc_internal_links_resolve"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 24 — shipped_row_evidence_paths_exist
+# ADR-0045: every l2_documents: entry and latest_delivery_file: value on a
+# shipped: true row must resolve to an existing file. Closes REF-DRIFT.
+# ---------------------------------------------------------------------------
+_r24_fail=0
+_current_key24=''
+_in_shipped24=0
+_in_l2_list24=0
+while IFS= read -r _line24 || [[ -n "$_line24" ]]; do
+  if printf '%s\n' "$_line24" | grep -qE '^  [a-zA-Z][a-zA-Z_]+:'; then
+    _current_key24=$(printf '%s\n' "$_line24" | sed 's/^  \([a-zA-Z][a-zA-Z_]*\):.*/\1/')
+    _in_shipped24=0; _in_l2_list24=0
+    continue
+  fi
+  if printf '%s\n' "$_line24" | grep -qE '^[[:space:]]+shipped:[[:space:]]+true'; then _in_shipped24=1; fi
+  if [[ $_in_shipped24 -eq 1 ]]; then
+    # latest_delivery_file
+    if printf '%s\n' "$_line24" | grep -qE '^[[:space:]]+latest_delivery_file:[[:space:]]+'; then
+      _ldf24=$(printf '%s\n' "$_line24" | sed -E 's/^[[:space:]]+latest_delivery_file:[[:space:]]+(.*)/\1/')
+      if [[ -n "$_ldf24" && ! -e "$_ldf24" ]]; then
+        fail_rule "shipped_row_evidence_paths_exist" "$_status_path capability '$_current_key24' latest_delivery_file '$_ldf24' not found on disk. Per ADR-0045 Gate Rule 24 all shipped-row evidence paths must resolve."
+        _r24_fail=1
+      fi
+    fi
+    # l2_documents list
+    if printf '%s\n' "$_line24" | grep -qE '^[[:space:]]+l2_documents:[[:space:]]*\[\]'; then
+      _in_l2_list24=0
+    elif printf '%s\n' "$_line24" | grep -qE '^[[:space:]]+l2_documents:[[:space:]]*$'; then
+      _in_l2_list24=1
+    elif printf '%s\n' "$_line24" | grep -qE '^[[:space:]]+l2_documents:'; then
+      _in_l2_list24=0
+    elif [[ $_in_l2_list24 -eq 1 ]] && printf '%s\n' "$_line24" | grep -qE '^[[:space:]]+-[[:space:]]+'; then
+      _l2p24=$(printf '%s\n' "$_line24" | sed -E 's/^[[:space:]]+-[[:space:]]+(.*)/\1/')
+      if [[ -n "$_l2p24" && ! -e "$_l2p24" ]]; then
+        fail_rule "shipped_row_evidence_paths_exist" "$_status_path capability '$_current_key24' l2_documents entry '$_l2p24' not found on disk. Per ADR-0045 Gate Rule 24."
+        _r24_fail=1
+      fi
+    elif [[ $_in_l2_list24 -eq 1 ]] && ! printf '%s\n' "$_line24" | grep -qE '^[[:space:]]+-'; then
+      _in_l2_list24=0
+    fi
+  fi
+done < "$_status_path"
+if [[ $_r24_fail -eq 0 ]]; then pass_rule "shipped_row_evidence_paths_exist"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 25 — peripheral_wave_qualifier
+# ADR-0045: SPI Javadoc must not use "Primary sidecar impl:" or "Primary impl:"
+# without a wave qualifier (W0-W4) in context. Active markdown docs must not use
+# "Sidecar adapter —" without a wave qualifier or ADR reference. Closes PERIPHERAL-DRIFT.
+# ---------------------------------------------------------------------------
+_r25_fail=0
+# 25a: SPI Java source in agent-runtime
+while IFS= read -r _sf25; do
+  [[ -z "$_sf25" ]] && continue
+  if grep -q 'Primary sidecar impl:\|Primary impl:' "$_sf25" 2>/dev/null; then
+    # For each matching line, check surrounding context for wave qualifier
+    while IFS= read -r _hit25; do
+      _ln25=$(printf '%s\n' "$_hit25" | grep -oE ':[0-9]+:' | tr -d ':' | head -1)
+      _ctx25=$(sed -n "$((${_ln25:-0} > 2 ? ${_ln25} - 2 : 1)),$((${_ln25:-0} + 3))p" "$_sf25" 2>/dev/null | tr '\n' ' ')
+      if ! printf '%s\n' "$_ctx25" | grep -qE '\bW[0-4]\b'; then
+        fail_rule "peripheral_wave_qualifier" "$_sf25:$_ln25 contains 'Primary.*impl:' without wave qualifier (W0-W4) in context. Per ADR-0045 Gate Rule 25 future-wave impl claims must carry wave qualifiers."
+        _r25_fail=1
+      fi
+    done < <(grep -nF 'Primary sidecar impl:' "$_sf25" 2>/dev/null; grep -nF 'Primary impl:' "$_sf25" 2>/dev/null)
+  fi
+done < <(find agent-runtime/src/main/java -name '*.java' ! -path './target/*' 2>/dev/null || true)
+# 25b: active markdown docs
+while IFS= read -r _af25; do
+  [[ -z "$_af25" ]] && continue
+  while IFS= read -r _mhit25; do
+    _ln25m=$(printf '%s\n' "$_mhit25" | cut -d: -f1)
+    _content25m=$(printf '%s\n' "$_mhit25" | cut -d: -f2-)
+    if ! printf '%s\n' "$_content25m" | grep -qE '\bW[0-4]\b' && ! printf '%s\n' "$_content25m" | grep -q 'ADR-'; then
+      fail_rule "peripheral_wave_qualifier" "$_af25:$_ln25m contains 'Sidecar adapter —' without wave qualifier or ADR reference. Per ADR-0045 Gate Rule 25."
+      _r25_fail=1
+    fi
+  done < <(grep -nF 'Sidecar adapter —' "$_af25" 2>/dev/null || true)
+done < <(find . -name '*.md' \
+  ! -path './docs/archive/*' ! -path './docs/reviews/*' \
+  ! -path './docs/adr/*' ! -path './docs/delivery/*' \
+  ! -path './docs/v6-rationale/*' ! -path './docs/plans/*' \
+  ! -path './third_party/*' ! -path './target/*' \
+  ! -path './.git/*' \
+  -type f 2>/dev/null | sort || true)
+if [[ $_r25_fail -eq 0 ]]; then pass_rule "peripheral_wave_qualifier"; fi
 
 # ---------------------------------------------------------------------------
 # Summary

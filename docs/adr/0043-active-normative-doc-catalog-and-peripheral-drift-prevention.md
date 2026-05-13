@@ -72,7 +72,7 @@ reflects decisions made at the time; they are excluded from drift-detection scan
 | `docs/adr/**` | Immutable decision records; may reference past text and rejected options |
 | `docs/delivery/**` | Delivery-log snapshots frozen at commit time |
 | `docs/v6-rationale/**` | Pre-refresh design rationale; ARCHIVED banner present |
-| `docs/plans/**` | Planning documents (active: W0-evidence-skeleton.md; archived: others) |
+| `docs/plans/**` | Planning documents — entirely historical; archived alongside peers under `docs/archive/` |
 | `third_party/<name>/**` | Cloned OSS repos; not maintained by this project |
 | `target/**` | Maven build output |
 | `.git/**` | Repository metadata |

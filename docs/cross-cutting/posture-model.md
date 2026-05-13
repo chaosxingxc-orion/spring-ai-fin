@@ -1,6 +1,6 @@
 # Posture Model
 
-> Owner: architecture | Wave: W0 | Last updated: 2026-05-13 (sixth + seventh reviewer response)
+> Owner: architecture | Wave: W0 | Last updated: 2026-05-13 (post-seventh third-pass)
 
 ## The three postures
 

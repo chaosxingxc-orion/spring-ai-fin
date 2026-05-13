@@ -1,7 +1,7 @@
-# agent-platform -- L1 architecture (2026-05-12 fourth-review refresh)
+# agent-platform -- L1 architecture (2026-05-13 post-seventh third-pass refresh)
 
 > Owner: platform | Wave: W0..W3 | Maturity: W0
-> Last refreshed: 2026-05-12
+> Last refreshed: 2026-05-13 (post-seventh third-pass)
 
 ## 1. Purpose
 
