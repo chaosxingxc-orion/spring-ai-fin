@@ -59,11 +59,18 @@ class PostureBindingIT {
     }
 
     @Test
-    void researchPosture_tenantFilter_rejects_missing_header() throws Exception {
-        // Behavioral proof: posture-sensitive filter received research from the bridge.
+    void researchPosture_securityChain_rejects_unallowlisted_path() throws Exception {
+        // Behavioral proof that the request chain is engaged: /v1/runs is not on
+        // WebSecurityConfig's permitAll list (only /v1/health, /actuator/**, and
+        // /v3/api-docs are allow-listed in W0), and the Spring Security filter
+        // runs ahead of TenantContextFilter, so unauthenticated requests are
+        // rejected with 403 by Security before TenantContextFilter would ever
+        // see them. The first test in this class already proves
+        // APP_POSTURE -> app.posture binding; this second test only asserts the
+        // deny-by-default policy is alive.
         HttpResponse<String> response = HTTP.send(
                 HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/v1/runs")).build(),
                 HttpResponse.BodyHandlers.ofString());
-        assertThat(response.statusCode()).isEqualTo(400);
+        assertThat(response.statusCode()).isEqualTo(403);
     }
 }
