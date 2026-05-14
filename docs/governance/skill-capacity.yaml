@@ -1,0 +1,46 @@
+# Skill-dimensional capacity matrix (Rule 41).
+#
+# The L0 ironclad rule (LucioIT W1 §7.3) requires a 2D defence net:
+#     Tenant Quota × Global Skill Capacity
+# preventing a single high-frequency skill (slow external API) from exhausting
+# the cluster's connection pool. When a skill capacity pool is full, the
+# scheduler precisely suspends only specific Agent compute processes that
+# depend on that skill, yielding underlying OS thread resources to other
+# Agent instances executing lightweight reasoning.
+#
+# Authority: ADR-0069 (L0 ironclad rules) + LucioIT W1 L0 draft §7.3.
+# Enforced by gate rule 51 (skill_capacity_yaml_present_and_wellformed).
+# Consumed by ResilienceContract.resolve(tenant, skill) at runtime.
+
+version: 1
+generated_at: 2026-05-15
+
+# Per-skill capacity declarations. At W1 entry the platform ships with two
+# baseline skills wired into the runtime (model-call, memory-write); additional
+# skills add rows here as they ship.
+skills:
+  - id: model-call
+    description: "OpenAI / Anthropic / Ascend-Pangu model invocation"
+    capacity_per_tenant: 8                            # max concurrent in-flight calls per tenant
+    global_capacity: 256                              # max concurrent in-flight calls across cluster
+    queue_strategy: suspend                           # suspend > fail; over-cap callers are CHRONOS_HYDRATED, not rejected
+    timeout_ms: 60000                                 # 60s upper bound; longer waits MUST go through resume mechanism
+    realised_by:
+      module_l0: agent-middleware
+      reactor_module: agent-runtime-java              # current platform module hosts the gateway
+      enforcer: ResilienceContract.resolve
+
+  - id: memory-write
+    description: "GraphMemory / vector store write"
+    capacity_per_tenant: 32                           # higher per-tenant cap; memory writes are short-lived
+    global_capacity: 1024
+    queue_strategy: suspend
+    timeout_ms: 5000
+    realised_by:
+      module_l0: agent-middleware
+      reactor_module: spring-ai-ascend-graphmemory-starter
+      enforcer: ResilienceContract.resolve
+
+# Future skills (sandbox-execute, vector-search, tool-call) add rows here as
+# the corresponding executors ship. Until then the gate rule only validates
+# schema well-formedness, not coverage.

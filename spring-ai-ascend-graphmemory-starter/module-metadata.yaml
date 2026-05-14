@@ -14,3 +14,4 @@ allowed_dependencies:
   - agent-runtime          # SPI consumer
 forbidden_dependencies:
   - agent-platform
+deployment_plane: bus_state   # Rule 39 / P-I — graph memory persistence belongs on the Bus & State Hub plane (Postgres + Graphiti)

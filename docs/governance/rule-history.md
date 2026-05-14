@@ -51,6 +51,14 @@ review-cycle scaffolding here.
 | 32 | Layer-0 governing principles cycle (2026-05-14) | Active | SPI + DFX + TCK co-design. ADR-0067. |
 | 33 | Layered 4+1 + Graph wave (2026-05-14) | Active | Layered 4+1 discipline — every architecture artefact declares level: + view: front-matter; phase-released L0/L1 docs are frozen. ADR-0068. |
 | 34 | Layered 4+1 + Graph wave (2026-05-14) | Active | Architecture-Graph truth — docs/governance/architecture-graph.yaml is generated from authoritative inputs and validated for DAG-ness + endpoint resolution + anchor resolution + idempotency. ADR-0068. |
+| 35 | W1.x L0 ironclad-rules wave (2026-05-15) | Active | Three-Track Channel Isolation — control/data/rhythm channels physically separated; bus-channels.yaml schema. ADR-0069. |
+| 36 | W1.x L0 ironclad-rules wave (2026-05-15) | Active | Cursor Flow Mandate — long-horizon endpoints return Task Cursor immediately; no synchronous blocking. ADR-0069. |
+| 37 | W1.x L0 ironclad-rules wave (2026-05-15) | Active | Reactive External I/O — runtime main MUST NOT import RestTemplate or JdbcTemplate. ADR-0069. |
+| 38 | W1.x L0 ironclad-rules wave (2026-05-15) | Active | No Thread.sleep in business code — long waits via SuspendSignal + bus Tick Engine (Chronos Hydration). ADR-0069. |
+| 39 | W1.x L0 ironclad-rules wave (2026-05-15) | Active | Five-Plane Manifest — every module-metadata.yaml declares deployment_plane:. ADR-0069. |
+| 40 | W1.x L0 ironclad-rules wave (2026-05-15) | Active | Storage-Engine Tenant Isolation — new Flyway migrations enable RLS on tenant-scoped tables. ADR-0069. |
+| 41 | W1.x L0 ironclad-rules wave (2026-05-15) | Active | Skill Capacity Matrix — skill-capacity.yaml per-tenant + global capacity for every skill. ADR-0069. |
+| 42 | W1.x L0 ironclad-rules wave (2026-05-15) | Active | Sandbox Permission Subsumption — sandbox-policies.yaml default_policy + per-skill physical limits. ADR-0069. |
 
 ## Gate-Rule additions (Layer-1 enforcement scripts, not engineering rules)
 
@@ -66,6 +74,14 @@ The following are gate-script rules in `gate/check_architecture_sync.sh` introdu
 | 42 | Phase M (2026-05-14) | Active | architecture_graph_idempotent — twice-run graph build is byte-identical. Enforcer E61. |
 | 43 | Phase M (2026-05-14) | Active | new_adr_must_be_yaml — highest-numbered ADR is .yaml, not .md. Enforcer E62. |
 | 44 | Phase M (2026-05-14) | Active | frozen_doc_edit_path_compliance — modifications to freeze_id-tagged files require an accompanying docs/reviews/*.md proposal. Enforcer E63. |
+| 45 | W1.x L0 ironclad-rules wave (2026-05-15) | Active | bus_channels_three_track_present — bus-channels.yaml schema check (Rule 35). Enforcer E64. |
+| 46 | W1.x L0 ironclad-rules wave (2026-05-15) | Active | cursor_flow_documented — openapi-v1.yaml declares 202 + cursor for long-horizon endpoint (Rule 36). Enforcer E65. |
+| 47 | W1.x L0 ironclad-rules wave (2026-05-15) | Active | no_blocking_io_in_runtime_main — agent-runtime main excludes RestTemplate / JdbcTemplate (Rule 37). Enforcer E66. |
+| 48 | W1.x L0 ironclad-rules wave (2026-05-15) | Active | no_thread_sleep_in_business_code — main java sources exclude Thread.sleep / TimeUnit.sleep (Rule 38). Enforcer E67. |
+| 49 | W1.x L0 ironclad-rules wave (2026-05-15) | Active | deployment_plane_in_module_metadata — every module-metadata.yaml declares deployment_plane (Rule 39). Enforcer E68. |
+| 50 | W1.x L0 ironclad-rules wave (2026-05-15) | Active | rls_for_new_tenant_tables — Flyway migrations with tenant_id enable RLS or are grandfathered (Rule 40). Enforcer E69. |
+| 51 | W1.x L0 ironclad-rules wave (2026-05-15) | Active | skill_capacity_yaml_present_and_wellformed — skill-capacity.yaml schema check (Rule 41). Enforcer E70. |
+| 52 | W1.x L0 ironclad-rules wave (2026-05-15) | Active | sandbox_policies_yaml_present_and_wellformed — sandbox-policies.yaml schema check (Rule 42). Enforcer E71. |
 
 ---
 

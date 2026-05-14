@@ -1,0 +1,65 @@
+# Three-track bus channel declaration (Rule 35).
+#
+# The L0 ironclad rule (LucioIT W1 §6.4) requires that cross-service internal
+# communication is mandatorily sliced into three independent physical channels:
+#   - control: out-of-band, highest priority (PAUSE / KILL / cancel intents)
+#   - data:    in-band, heavy-load (text-to-video file streams, payload bodies)
+#   - rhythm:  heartbeat / liveness pulses, taken over by bus-level Tick Engine
+#
+# The three tracks must be absolutely isolated to prevent any single type of
+# network congestion from causing global paralysis.
+#
+# Authority: ADR-0069 (L0 ironclad rules) + LucioIT W1 L0 draft §6.4.
+# Enforced by gate rule 45 (bus_channels_three_track_present).
+# Consumed by gate/build_architecture_graph.py to emit (concept Three-Track
+# Channel Isolation) -> (channel) -> (physical_channel) edges.
+
+version: 1
+generated_at: 2026-05-15
+
+channels:
+  - id: control
+    priority: highest
+    physical_channel: in_memory_priority_queue_w0   # W0: in-memory priority queue; W2: dedicated Kafka topic with idempotent control headers
+    delivery_guarantee: at_least_once
+    isolation: out_of_band
+    intents:
+      - PAUSE
+      - KILL
+      - CANCEL
+      - RESUME
+      - DEADLINE_SHIFT
+    realised_by:
+      module_l0: agent-bus
+      reactor_module: agent-bus-java          # scaffold lands in W1.x Phase 2
+      stub_implementation: in-process channel; agent-bus-java module not yet shipped at W1
+    deferred_until_wave: W2
+
+  - id: data
+    priority: normal
+    physical_channel: in_memory_unbounded_queue_w0  # W0: in-memory; W2: dedicated Kafka topic, body bytes go to object storage with reference passed inline
+    delivery_guarantee: at_least_once
+    isolation: in_band_heavy
+    payload_size_cap_bytes: 16384                   # 16 KiB inline cap (matches §4 #13 / E11); larger payloads use envelope+ref pattern (PayloadCodec SPI, deferred Rule 22)
+    realised_by:
+      module_l0: agent-bus
+      reactor_module: agent-bus-java
+      stub_implementation: in-process channel
+    deferred_until_wave: W2
+
+  - id: rhythm
+    priority: low
+    physical_channel: in_memory_tick_w0             # W0: scheduler thread tick; W2: bus-level Tick Engine emitting periodic bus-wide pulse
+    delivery_guarantee: at_most_once                # heartbeat is naturally lossy; one missed pulse triggers re-evaluation, not failure
+    isolation: out_of_band
+    period_millis: 1000                              # 1 Hz baseline; per-tenant override allowed
+    realised_by:
+      module_l0: agent-bus
+      reactor_module: agent-bus-java
+      stub_implementation: scheduled executor
+    deferred_until_wave: W2
+
+# At W1 entry the agent-bus-java reactor module is a scaffold (Phase 2 of W1.x
+# wave). The three channels are declared here so the contract surface is
+# enumerable and gate-checkable today; physical implementation lands W2 per
+# CLAUDE-deferred.md 35.b.

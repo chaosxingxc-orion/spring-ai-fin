@@ -1,0 +1,66 @@
+# Sandbox permission subsumption policy (Rule 42).
+#
+# The L0 ironclad rule (LucioIT W1 §7.4) requires:
+#   1. Pre-Authorized Access — capability-registration nodes bound to platform-issued credentials.
+#   2. Sandbox Permission Subsumption — when bus issues execution permissions
+#      downward, the logical authz scope MUST 1:1 map to system-level
+#      restrictions of the physical sandbox (outbound IP whitelist, CPU cap).
+#      A logical grant MUST NOT exceed what the physical sandbox enforces.
+#
+# Authority: ADR-0069 (L0 ironclad rules) + LucioIT W1 L0 draft §7.4.
+# Enforced by gate rule 52 (sandbox_policies_yaml_present_and_wellformed).
+# Consumed by SandboxExecutor SPI at runtime to refuse logical scope wider
+# than physical limits.
+
+version: 1
+generated_at: 2026-05-15
+
+# Default deny — any skill not explicitly declared below has zero outbound
+# network access and zero filesystem access.
+default_policy:
+  outbound_network: deny_all
+  filesystem_read: deny_all
+  filesystem_write: deny_all
+  cpu_cap_millicores: 100                             # 0.1 vCPU per skill instance
+  memory_cap_megabytes: 128
+  wall_clock_cap_seconds: 30
+  syscalls: minimum_needed_seccomp_profile             # default seccomp profile, see deployment/sandbox/seccomp.json (W2)
+
+# Per-skill overrides. Each explicitly widens the default policy and the
+# SandboxExecutor enforces that the runtime cannot grant scope beyond what
+# is declared here.
+skills:
+  - id: model-call
+    description: "outbound HTTPS to model providers; no filesystem; bounded CPU"
+    outbound_network:
+      mode: allowlist
+      destinations:
+        - "api.openai.com:443"
+        - "api.anthropic.com:443"
+        - "pangu.ascend-cloud.com:443"
+    filesystem_read: deny_all
+    filesystem_write: deny_all
+    cpu_cap_millicores: 200
+    memory_cap_megabytes: 256
+    wall_clock_cap_seconds: 60
+
+  - id: memory-write
+    description: "outbound to local pgvector + graph store; no external network"
+    outbound_network:
+      mode: allowlist
+      destinations:
+        - "127.0.0.1:5432"
+        - "127.0.0.1:6379"
+    filesystem_read: deny_all
+    filesystem_write: deny_all
+    cpu_cap_millicores: 100
+    memory_cap_megabytes: 128
+    wall_clock_cap_seconds: 5
+
+# Future skills (code-interpreter, file-read, web-search) add rows here as the
+# corresponding executors ship. Until then default_policy applies.
+#
+# The gate rule today validates schema well-formedness and the presence of
+# default_policy with all six required keys. The runtime enforcement of
+# logical-grant subsumption (subsumption_check) lands in W2 per
+# CLAUDE-deferred.md 42.b.

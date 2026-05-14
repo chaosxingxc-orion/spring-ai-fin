@@ -261,6 +261,34 @@ components:
               additionalProperties: true
               description: Optional structured payload (field errors, retry hints, etc.).
 
+    TaskCursor:
+      type: object
+      required: [runId, status, cursor_url]
+      description: "Cursor Flow envelope returned by long-horizon POST endpoints per Rule 36 / Layer-0 principle P-F (Cursor Flow & Asynchronous Client Boundary). The client polls cursor_url (GET) or subscribes via SSE; the original request never blocks the connection."
+      properties:
+        runId:
+          type: string
+          format: uuid
+          description: Server-allocated run identifier; stable across the run's lifetime.
+        status:
+          type: string
+          enum: [PENDING, RUNNING, SUSPENDED, SUCCEEDED, FAILED, CANCELLED, EXPIRED]
+          description: "Initial run lifecycle state per RunStateMachine DFA (Rule 20). Always PENDING at cursor issuance."
+        cursor_url:
+          type: string
+          format: uri
+          description: "Absolute URL the client uses to poll run status (GET) or subscribe to event stream (SSE). Stable for the lifetime of the run."
+        webhook_url:
+          type: string
+          format: uri
+          description: "Optional callback URL the platform invokes for blocking checkpoints (Human-in-the-loop intervention points)."
+
 x-stability-tier: stable
 x-contract-owner: agent-platform
 x-w-note: "W1 surface — adds the run lifecycle endpoints (POST /v1/runs, GET /v1/runs/{runId}, POST /v1/runs/{runId}/cancel). Cancel is a state transition; DELETE is intentionally NOT used for run resources. W2+ additions (streaming Flux<RunEvent>, three-track RunDispatcher) are out of scope at this version."
+
+x-cursor-flow:
+  declared_in_w: W1.x
+  pattern: "long-horizon POST returns 202 + TaskCursor; client polls cursor_url for state OR subscribes via SSE; webhook callback for blocking checkpoints"
+  applies_to: ["/v1/runs"]
+  note: "POST /v1/runs currently returns 201 + RunResponse (W1 baseline); the 202+TaskCursor migration is W1.x Phase 6 (paired with idempotency body-lifetime fix). The TaskCursor schema is declared in components.schemas NOW as the contract surface, so Rule 36 / Gate Rule 46 are operative today (per Code-as-Contract Rule 28 — no deferred enforcers). See CLAUDE-deferred.md 36.b for the integration-test re-introduction trigger."

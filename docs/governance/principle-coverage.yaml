@@ -65,6 +65,99 @@ principles:
     deferred_operationalisers:
       - Rule-22   # PayloadCodec — deferred
 
+  # ---------------------------------------------------------------------
+  # L0 ironclad-rule principles (W1.x absorption of LucioIT L0 §6/§7)
+  # Authority: ADR-0069 (L0 ironclad rules)
+  # ---------------------------------------------------------------------
+
+  - id: P-E
+    name: "Multi-Track Bus Physical Channel Isolation"
+    motivation: |
+      Cross-service internal communication is sliced into three physically
+      isolated channels — control (out-of-band PAUSE/KILL/CANCEL intents,
+      highest priority), data (in-band heavy-load payload bodies), and
+      rhythm (heartbeat/liveness pulses). No congestion on one channel can
+      paralyse another. (LucioIT W1 §6.4.)
+    operationalised_by_rules:
+      - Rule-35
+
+  - id: P-F
+    name: "Cursor Flow & Asynchronous Client Boundary"
+    motivation: |
+      The Client → Runtime boundary is non-blocking. Long-horizon task
+      submissions return a Task Cursor immediately; clients consume process
+      state via SSE and intermediate-result checkpoints via Webhook. No
+      long-poll, no synchronous blocking. (LucioIT W1 §6.1.)
+    operationalised_by_rules:
+      - Rule-36
+
+  - id: P-G
+    name: "Absolute Non-Blocking I/O"
+    motivation: |
+      External I/O calls (model gateway, vector DB, sandbox dispatch) MUST
+      use Reactive or Virtual Threads. The OS-level worker thread MUST be
+      released during the I/O wait so other Agents can proceed. (LucioIT W1 §6.3.)
+    operationalised_by_rules:
+      - Rule-37
+    deferred_operationalisers:
+      - Rule-37.c   # agent-platform JdbcTemplate migration to R2DBC — W2
+
+  - id: P-H
+    name: "Chronos Hydration"
+    motivation: |
+      Long-horizon waits in business code MUST be declarative suspension
+      (SuspendSignal), not physical thread sleep. The sleeping process
+      self-destructs and re-hydrates on the bus wake-pulse. (LucioIT W1 §6.4.)
+    operationalised_by_rules:
+      - Rule-38
+
+  - id: P-I
+    name: "Five-Plane Distributed Topology"
+    motivation: |
+      Production deployment is divided into five physically isolated planes —
+      Edge Access (Client SDK), Compute & Control (Runtime + Engine), Bus &
+      State Hub (Bus + Middleware persistence), Sandbox Execution (untrusted
+      code), and Evolution (Python ML). Workloads with different
+      characteristics MUST NOT share infrastructure. (LucioIT W1 §7.1.)
+    operationalised_by_rules:
+      - Rule-39
+
+  - id: P-J
+    name: "Storage-Engine Tenant Isolation"
+    motivation: |
+      Tenant isolation lives at the storage engine, not the application code.
+      Every tenant-scoped table MUST enable Row-Level Security policies; even
+      a fully-compromised application tier cannot leak across tenants.
+      (LucioIT W1 §7.2.)
+    operationalised_by_rules:
+      - Rule-40
+    deferred_operationalisers:
+      - Rule-40.b   # V1/V2 grandfathered RLS retrofit — W2
+
+  - id: P-K
+    name: "Skill-Dimensional Resource Arbitration"
+    motivation: |
+      A 2D defence net — Tenant Quota × Global Skill Capacity — protects the
+      cluster. When a skill capacity pool fills, the scheduler suspends only
+      the Agent processes blocked on that specific skill, freeing OS threads
+      for unrelated work. (LucioIT W1 §7.3.)
+    operationalised_by_rules:
+      - Rule-41
+    deferred_operationalisers:
+      - Rule-41.b   # ResilienceContract.resolve runtime enforcement — W1.x Phase 6
+
+  - id: P-L
+    name: "Sandbox Permission Subsumption"
+    motivation: |
+      Logical authorizations issued by the bus MUST 1:1 map to physical
+      sandbox restrictions (outbound IP whitelist, CPU cap, filesystem access).
+      A logical grant cannot exceed what the physical sandbox enforces;
+      otherwise the runtime authority is fictional. (LucioIT W1 §7.4.)
+    operationalised_by_rules:
+      - Rule-42
+    deferred_operationalisers:
+      - Rule-42.b   # SandboxExecutor runtime subsumption check — W2
+
 # Legacy first-principle labels preserved for graph backward-compatibility.
 legacy_principles:
   - id: P1

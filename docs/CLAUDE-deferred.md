@@ -284,3 +284,63 @@ Composes with: ARCHITECTURE.md §4 #63; ADR-0067; Rule 32.
 **Rule (draft)**: A CI workflow MUST run a CVE/SCA scanner (Dependency-Check, Snyk, Trivy, or equivalent) on every PR. Findings at severity ≥ HIGH block merge unless an allow-list entry with a `risk_acceptance_adr:` reference is present.
 
 Composes with: ARCHITECTURE.md §4 #63; ADR-0067; Rule 32; per-module `docs/dfx/<module>.yaml` `vulnerability:` block.
+
+---
+
+## Rule 35.b — Three-Track Channel Physical Implementation [Deferred to W2]
+
+**Re-introduction trigger**: first deployable `agent-bus-java` reactor module shipping in research/prod posture with > 1 service instance (target: W2).
+
+**Rule (draft)**: Each of the three channels declared in `docs/governance/bus-channels.yaml` MUST be backed by a distinct physical transport — Kafka topics with isolated partitions, separate Redis Streams, OR equivalent broker primitives. The `physical_channel:` identifier in the YAML MUST map to a concrete broker resource. Co-locating two channels on the same physical transport (even with different routing keys) is forbidden — the failure-isolation guarantee requires distinct underlying queues.
+
+Composes with: ARCHITECTURE.md §6.4; ADR-0069; Rule 35; LucioIT W1 §6.4.
+
+---
+
+## Rule 36.b — Cursor Flow Integration Test [Deferred to W1.x Phase 6]
+
+**Re-introduction trigger**: JWT test fixture for `RunHttpContractIT` lands (W1.x Phase 6).
+
+**Rule (draft)**: An integration test MUST assert that `POST /v1/runs` returns HTTP 202 within 200 ms with a Task Cursor payload (`{"runId": "...", "status": "PENDING", "cursor_url": "..."}`), regardless of how long the underlying work takes. The test MUST inject a synthetic 30-second-blocking executor and verify the response still returns within 200 ms.
+
+Composes with: ARCHITECTURE.md §6.1; ADR-0069; Rule 36; LucioIT W1 §6.1.
+
+---
+
+## Rule 37.c — agent-platform JdbcTemplate → R2DBC Migration [Deferred to W2]
+
+**Re-introduction trigger**: first move of any HTTP edge endpoint from blocking Servlet to reactive WebFlux (target: W2 telemetry vertical).
+
+**Rule (draft)**: `HealthCheckRepository` and `PlatformOssApiProbe` (the two existing `JdbcTemplate` consumers in `agent-platform`) MUST be migrated to `R2dbcEntityTemplate`. Once migrated, Rule 37 widens to cover `agent-platform/src/main/java/**` in addition to the current `agent-runtime` scope.
+
+Composes with: ARCHITECTURE.md §6.3; ADR-0069; Rule 37; LucioIT W1 §6.3.
+
+---
+
+## Rule 40.b — RLS Retrofit for Grandfathered Tables [Deferred to W2]
+
+**Re-introduction trigger**: first multi-tenant production tenant goes live with the `idempotency_dedup` table populated (target: W2).
+
+**Rule (draft)**: A new Flyway migration (V3 or later) MUST `ALTER TABLE idempotency_dedup ENABLE ROW LEVEL SECURITY` and add per-tenant `CREATE POLICY` rules. After landing, the table is removed from `gate/rls-baseline-grandfathered.txt` and Rule 40 enforces RLS on it directly.
+
+Composes with: ARCHITECTURE.md §7.2; ADR-0069; Rule 40; LucioIT W1 §7.2.
+
+---
+
+## Rule 41.b — ResilienceContract.resolve Runtime Enforcement [Deferred to W1.x Phase 6]
+
+**Re-introduction trigger**: idempotency body-lifetime fix (W1.x Phase 6) lands and JWT fixture is in place — ResilienceContract sits on the same execution path.
+
+**Rule (draft)**: `ResilienceContract.resolve(tenant, skill)` MUST consult `docs/governance/skill-capacity.yaml` at runtime; over-cap callers transition to `RunStatus.SUSPENDED` with `suspendReason = SKILL_CAPACITY_EXCEEDED`, NOT to `FAILED`. An integration test MUST inject a 1-capacity skill and assert the second concurrent caller suspends rather than fails.
+
+Composes with: ARCHITECTURE.md §7.3; ADR-0069; Rule 41; LucioIT W1 §7.3.
+
+---
+
+## Rule 42.b — SandboxExecutor Subsumption Runtime Check [Deferred to W2]
+
+**Re-introduction trigger**: first sandboxed skill ships (`code-interpreter` or `untrusted-tool`) in research or prod posture (target: W2).
+
+**Rule (draft)**: `SandboxExecutor.execute(skill, logical_grant)` MUST cross-reference `logical_grant` against the per-skill row in `docs/governance/sandbox-policies.yaml`. If `logical_grant` declares any capability (outbound destination, filesystem path, syscall) wider than what the per-skill physical limit allows, the executor MUST reject the call with `SandboxSubsumptionViolation` BEFORE invoking the sandboxed code. Test: a synthetic request granting `outbound_network: allow_all` to a skill whose YAML declares an allowlist of `["api.openai.com:443"]` MUST be rejected.
+
+Composes with: ARCHITECTURE.md §7.4; ADR-0069; Rule 42; LucioIT W1 §7.4.

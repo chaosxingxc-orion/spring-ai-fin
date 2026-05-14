@@ -543,3 +543,72 @@
   view: scenarios
   artifact: gate/check_architecture_sync.sh#frozen_doc_edit_path_compliance
   asserts: "any modification to a file carrying freeze_id: <non-null> in front-matter is accompanied (same commit, vs $BASE_REF) by a new docs/reviews/*.md proposal naming the file under affects_artefact: — no-op today (all freeze_id values are null); arms automatically at first phase release."
+
+# ---------------------------------------------------------------------------
+# Phase 1 of W1.x — L0 ironclad rules promoted from LucioIT W1 §6/§7.
+# Authority: ADR-0069. Each enforcer fails on a detected violation today.
+# ---------------------------------------------------------------------------
+
+- id: E64
+  constraint_ref: "CLAUDE.md Rule 35 (Three-Track Channel Isolation); ADR-0069; LucioIT W1 §6.4"
+  kind: gate-script
+  level: L0
+  view: physical
+  artifact: gate/check_architecture_sync.sh#bus_channels_three_track_present
+  asserts: "docs/governance/bus-channels.yaml exists; declares exactly 3 channels (control/data/rhythm) each with a unique physical_channel: identifier; data channel inherits the 16-KiB inline payload cap."
+
+- id: E65
+  constraint_ref: "CLAUDE.md Rule 36 (Cursor Flow Mandate); ADR-0069; LucioIT W1 §6.1"
+  kind: gate-script
+  level: L0
+  view: process
+  artifact: gate/check_architecture_sync.sh#cursor_flow_documented
+  asserts: "docs/contracts/openapi-v1.yaml declares at least one 202-returning operation OR an explicit cursor: schema — Cursor Flow surface enumerable in machine form."
+
+- id: E66
+  constraint_ref: "CLAUDE.md Rule 37 (Reactive External I/O); ADR-0069; LucioIT W1 §6.3"
+  kind: gate-script
+  level: L0
+  view: process
+  artifact: gate/check_architecture_sync.sh#no_blocking_io_in_runtime_main
+  asserts: "no production class under agent-runtime/src/main/java/** imports org.springframework.web.client.RestTemplate or org.springframework.jdbc.core.JdbcTemplate (agent-platform-side existing JdbcTemplate uses are out of scope per ADR-0069 / CLAUDE-deferred 37.c)."
+
+- id: E67
+  constraint_ref: "CLAUDE.md Rule 38 (No Thread.sleep in Business Code); ADR-0069; LucioIT W1 §6.4"
+  kind: gate-script
+  level: L0
+  view: process
+  artifact: gate/check_architecture_sync.sh#no_thread_sleep_in_business_code
+  asserts: "no production class under agent-platform/src/main/java/** or agent-runtime/src/main/java/** invokes Thread.sleep(...) or TimeUnit.<unit>.sleep(...); test code, gate scripts, and Awaitility usage are excluded."
+
+- id: E68
+  constraint_ref: "CLAUDE.md Rule 39 (Five-Plane Manifest); ADR-0069; LucioIT W1 §7.1"
+  kind: gate-script
+  level: L0
+  view: physical
+  artifact: gate/check_architecture_sync.sh#deployment_plane_in_module_metadata
+  asserts: "every <module>/module-metadata.yaml declares deployment_plane: ∈ {edge, compute_control, bus_state, sandbox, evolution, none}."
+
+- id: E69
+  constraint_ref: "CLAUDE.md Rule 40 (Storage-Engine Tenant Isolation); ADR-0069; LucioIT W1 §7.2"
+  kind: gate-script
+  level: L0
+  view: physical
+  artifact: gate/check_architecture_sync.sh#rls_for_new_tenant_tables
+  asserts: "every Flyway migration creating a table with a tenant_id column either includes ENABLE ROW LEVEL SECURITY in the same file OR is listed in gate/rls-baseline-grandfathered.txt."
+
+- id: E70
+  constraint_ref: "CLAUDE.md Rule 41 (Skill Capacity Matrix); ADR-0069; LucioIT W1 §7.3"
+  kind: gate-script
+  level: L0
+  view: physical
+  artifact: gate/check_architecture_sync.sh#skill_capacity_yaml_present_and_wellformed
+  asserts: "docs/governance/skill-capacity.yaml exists; each skill row declares capacity_per_tenant + global_capacity + queue_strategy ∈ {suspend, fail}."
+
+- id: E71
+  constraint_ref: "CLAUDE.md Rule 42 (Sandbox Permission Subsumption); ADR-0069; LucioIT W1 §7.4"
+  kind: gate-script
+  level: L0
+  view: physical
+  artifact: gate/check_architecture_sync.sh#sandbox_policies_yaml_present_and_wellformed
+  asserts: "docs/governance/sandbox-policies.yaml exists with default_policy: declaring all 6 required keys (outbound_network, filesystem_read, filesystem_write, cpu_cap_millicores, memory_cap_megabytes, wall_clock_cap_seconds)."

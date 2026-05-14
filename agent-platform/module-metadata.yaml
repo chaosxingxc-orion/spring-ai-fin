@@ -13,3 +13,4 @@ spi_packages: []         # platform has no SPI packages; consumes runtime SPIs o
 allowed_dependencies:
   - agent-runtime         # via SPI imports only (E34 PlatformImportsOnlyRuntimePublicApiTest)
 forbidden_dependencies: []
+deployment_plane: compute_control   # Rule 39 / P-I — five-plane topology; HTTP gateway lives on the Compute & Control plane (stateless K8s pods)

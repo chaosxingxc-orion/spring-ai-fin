@@ -18,6 +18,22 @@ Every Layer-0 principle is operationalised by one or more Layer-1 rules whose en
 
 - **P-D — SPI-Aligned, DFX-Explicit, Spec-Driven, TCK-Tested.** Every domain module ships an SPI; every platform/domain module declares its Design-for-X posture (releasability, resilience, availability, vulnerability, observability); contracts precede implementation; alternative implementations must pass a TCK to be conformant. Enforced by Rule 32 (TCK content deferred per `CLAUDE-deferred.md` 32.b/32.c).
 
+- **P-E — Multi-Track Bus Physical Channel Isolation.** Cross-service internal communication is sliced into three physically isolated channels — `control` (out-of-band PAUSE/KILL/CANCEL intents, highest priority), `data` (in-band heavy-load payload bodies), and `rhythm` (heartbeat / liveness pulses). No congestion on one channel can paralyse another. Enforced by Rule 35.
+
+- **P-F — Cursor Flow & Asynchronous Client Boundary.** The Client → Runtime boundary is non-blocking by ironclad rule. Long-horizon task submissions return a Task Cursor immediately; clients consume process state via SSE and intermediate-result checkpoints via Webhook. No long-poll, no synchronous blocking. Enforced by Rule 36.
+
+- **P-G — Absolute Non-Blocking I/O.** External I/O calls (model gateway, vector DB, sandbox dispatch) MUST use Reactive or Virtual Threads. The OS-level worker thread MUST be released during the I/O wait so other Agents can proceed. Enforced by Rule 37.
+
+- **P-H — Chronos Hydration.** Long-horizon waits in business code MUST be declarative suspension (`SuspendSignal`), not physical thread sleep. The sleeping process self-destructs and re-hydrates on the bus wake-pulse. Enforced by Rule 38.
+
+- **P-I — Five-Plane Distributed Topology.** Production deployment is divided into five physically isolated planes — Edge Access (Client SDK), Compute & Control (Runtime + Engine), Bus & State Hub (Bus + Middleware persistence), Sandbox Execution (untrusted code), and Evolution (Python ML). Workloads with different characteristics MUST NOT share infrastructure. Enforced by Rule 39.
+
+- **P-J — Storage-Engine Tenant Isolation.** Tenant isolation lives at the storage engine, not the application code. Every tenant-scoped table MUST enable Row-Level Security policies; even a fully-compromised application tier cannot leak across tenants. Enforced by Rule 40 (V1/V2 grandfathered per `gate/rls-baseline-grandfathered.txt`; W2 retrofit per `CLAUDE-deferred.md` 40.b).
+
+- **P-K — Skill-Dimensional Resource Arbitration.** A 2D defence net — Tenant Quota × Global Skill Capacity — protects the cluster. When a skill capacity pool fills, the scheduler suspends only the Agent processes blocked on that specific skill, freeing OS threads for unrelated work. Enforced by Rule 41.
+
+- **P-L — Sandbox Permission Subsumption.** Logical authorizations issued by the bus MUST 1:1 map to physical sandbox restrictions (outbound IP whitelist, CPU cap, filesystem access). A logical grant cannot exceed what the physical sandbox enforces; otherwise the runtime authority is fictional. Enforced by Rule 42.
+
 History of how the rule set evolved: [`docs/governance/rule-history.md`](docs/governance/rule-history.md). Principle ↔ rule mapping: [`docs/governance/principle-coverage.yaml`](docs/governance/principle-coverage.yaml) (machine-readable; the prior `.md` form was retired in Phase M per ADR-0068 — duplicate truth eliminated; humans read the YAML directly or traverse the graph via `docs/governance/SESSION-START-CONTEXT.md`).
 
 ---
@@ -250,6 +266,88 @@ Enforced by Gate Rule 38 (`architecture_graph_well_formed`) and Gate Rule 40 (`e
 
 ---
 
+### L0 ironclad rules (W1.x absorption of LucioIT L0 §6/§7)
+
+#### Rule 35 — Three-Track Channel Isolation
+
+**Cross-service internal communication MUST be sliced into three physically isolated channels declared in `docs/governance/bus-channels.yaml`: `control` (out-of-band, highest priority), `data` (in-band, heavy-load), and `rhythm` (heartbeat/liveness). No two channels may share a `physical_channel:` identifier. The `data` channel inherits the 16 KiB inline-payload cap from §4 #13.**
+
+The L0 motivation (LucioIT W1 §6.4): any single network-congestion event must NOT cause global paralysis. A slow text-to-video transfer on `data` cannot block a `PAUSE` intent on `control`.
+
+Enforced by Gate Rule 45 (`bus_channels_three_track_present`) — schema check on the YAML and uniqueness of `physical_channel`. Architecture reference: ADR-0069 / LucioIT W1 §6.4. Physical channel implementation deferred to W2 per `CLAUDE-deferred.md` 35.b.
+
+---
+
+#### Rule 36 — Cursor Flow Mandate
+
+**Every long-horizon Runtime API endpoint MUST return a Task Cursor immediately and MUST NOT hold the client connection while work executes. The contract surface (request → cursor → polled status / SSE / Webhook) MUST be declared in `docs/contracts/openapi-v1.yaml` for at least one runs operation; new long-running endpoints MUST follow the same shape.**
+
+The L0 motivation (LucioIT W1 §6.1): synchronous long-poll dies under enterprise load — clients holding 10s+ HTTP connections exhaust threadpools client-side AND server-side. The Task Cursor + SSE/Webhook pattern eliminates client busy-waiting.
+
+Enforced by Gate Rule 46 (`cursor_flow_documented`) — checks `docs/contracts/openapi-v1.yaml` declares at least one 202-returning endpoint or an explicit `cursor:` schema. Architecture reference: ADR-0069 / LucioIT W1 §6.1. Integration-test enforcement deferred to W1.x Phase 6 per `CLAUDE-deferred.md` 36.b.
+
+---
+
+#### Rule 37 — Reactive External I/O
+
+**No production class under `agent-runtime/src/main/java/**` may import `org.springframework.web.client.RestTemplate` or `org.springframework.jdbc.core.JdbcTemplate`. External I/O in runtime code MUST go through Reactive (`WebClient` / `R2dbcEntityTemplate`) or Virtual-Thread-backed clients.**
+
+The L0 motivation (LucioIT W1 §6.3): a single blocking external call holds an OS thread for tens of seconds; ~10 stuck calls paralyse a 256-thread cluster. Reactive / Virtual Threads release the OS thread during the wait.
+
+Enforced by Gate Rule 47 (`no_blocking_io_in_runtime_main`) — source scan for the forbidden imports. Scope is intentionally narrow to `agent-runtime` (the cognitive kernel); existing `agent-platform` `JdbcTemplate` uses (`HealthCheckRepository`, `PlatformOssApiProbe`) are out of scope and migrate to R2DBC in W2 per `CLAUDE-deferred.md` 37.c. Architecture reference: ADR-0069 / LucioIT W1 §6.3.
+
+---
+
+#### Rule 38 — No Thread.sleep in Business Code
+
+**No production class under `agent-platform/src/main/java/**` or `agent-runtime/src/main/java/**` may invoke `Thread.sleep(...)` or `TimeUnit.<unit>.sleep(...)`. Long-horizon waits MUST be expressed as declarative suspension (`SuspendSignal`) and resumed by the bus-level Tick Engine.**
+
+The L0 motivation (LucioIT W1 §6.4): physical sleep holds a thread for the wait duration; with 1000 sleeping agents, the system is paralysed. Chronos Hydration self-destructs the sleeping process and re-hydrates it on the bus wake-pulse.
+
+Enforced by Gate Rule 48 (`no_thread_sleep_in_business_code`) — source scan for `Thread.sleep` and `TimeUnit.<x>.sleep`. Test code (`src/test/java`), gate scripts, and Awaitility usage are excluded. Architecture reference: ADR-0069 / LucioIT W1 §6.4.
+
+---
+
+#### Rule 39 — Five-Plane Manifest
+
+**Every `<module>/module-metadata.yaml` MUST declare `deployment_plane:` whose value is one of `edge | compute_control | bus_state | sandbox | evolution | none`. The plane assignment MUST match the L0 §7.1 topology — Edge Access (Agent Client SDK), Compute & Control (Runtime + Execution Engine), Bus & State Hub (Bus + Middleware persistence), Sandbox Execution (untrusted code), Evolution (Python ML). BoMs and build-time-only modules use `none`.**
+
+The L0 motivation (LucioIT W1 §7.1): workloads with different characteristics (latency-sensitive HTTP vs. throughput-sensitive ML training vs. untrusted sandbox code) MUST NOT share infrastructure. Interference between them produces the avalanche failure mode that costs production AI platforms most uptime.
+
+Enforced by Gate Rule 49 (`deployment_plane_in_module_metadata`) — schema check on every module-metadata.yaml. Architecture reference: ADR-0069 / LucioIT W1 §7.1.
+
+---
+
+#### Rule 40 — Storage-Engine Tenant Isolation
+
+**Every Flyway migration that creates a table with a `tenant_id` column MUST enable Postgres Row-Level Security in the same migration (`ALTER TABLE <name> ENABLE ROW LEVEL SECURITY` plus per-tenant `CREATE POLICY`). Migrations predating this rule are listed in `gate/rls-baseline-grandfathered.txt` and MUST be retrofitted in W2.**
+
+The L0 motivation (LucioIT W1 §7.2): application-layer tenant isolation is "insecure" — a single bypass (path traversal, ORM injection, broken filter) breaks every tenant. RLS at the storage engine ensures even a fully-compromised application tier cannot read across tenants.
+
+Enforced by Gate Rule 50 (`rls_for_new_tenant_tables`) — scans every `agent-*/src/main/resources/db/migration/V*.sql` for tables with `tenant_id` and requires either matching `ENABLE ROW LEVEL SECURITY` in the same file OR an entry in the grandfather list. Architecture reference: ADR-0069 / LucioIT W1 §7.2. Grandfather retrofit deferred to W2 per `CLAUDE-deferred.md` 40.b.
+
+---
+
+#### Rule 41 — Skill Capacity Matrix
+
+**`docs/governance/skill-capacity.yaml` MUST exist and declare, per skill, both `capacity_per_tenant` and `global_capacity` fields plus a `queue_strategy` (`suspend` or `fail`). The runtime `ResilienceContract.resolve(tenant, skill)` MUST consult this matrix; over-cap callers are SUSPENDED, not rejected (Chronos Hydration interlock with Rule 38).**
+
+The L0 motivation (LucioIT W1 §7.3): a single high-frequency skill (slow external API) can exhaust the cluster's connection pool and CPU. The 2D defence net (Tenant Quota × Global Skill Capacity) lets the scheduler suspend only the Agent processes blocked on that specific skill, leaving lightweight reasoning tasks free to proceed on freed OS threads.
+
+Enforced by Gate Rule 51 (`skill_capacity_yaml_present_and_wellformed`) — schema check. Architecture reference: ADR-0069 / LucioIT W1 §7.3. Runtime enforcement (ResilienceContract.resolve consulting the matrix) deferred to W1.x Phase 6 per `CLAUDE-deferred.md` 41.b.
+
+---
+
+#### Rule 42 — Sandbox Permission Subsumption
+
+**`docs/governance/sandbox-policies.yaml` MUST exist with a `default_policy:` block (six required keys: `outbound_network`, `filesystem_read`, `filesystem_write`, `cpu_cap_millicores`, `memory_cap_megabytes`, `wall_clock_cap_seconds`). Per-skill rows MUST NOT widen the default policy beyond what the physical sandbox can enforce. The runtime `SandboxExecutor` MUST refuse a logical permission grant whose scope exceeds the declared physical limits.**
+
+The L0 motivation (LucioIT W1 §7.4): a logical authorization issued by the bus to a downstream node MUST NOT exceed what the physical sandbox enforces. Otherwise the bus's authorization is a paper grant — the sandbox refuses at runtime, but the failure mode is unpredictable. Subsumption makes the logical-vs-physical mapping 1:1.
+
+Enforced by Gate Rule 52 (`sandbox_policies_yaml_present_and_wellformed`) — schema check. Architecture reference: ADR-0069 / LucioIT W1 §7.4. Runtime enforcement (SandboxExecutor refusing over-wide grants) deferred to W2 per `CLAUDE-deferred.md` 42.b.
+
+---
+
 ## Deferred Rules
 
-See [`docs/CLAUDE-deferred.md`](docs/CLAUDE-deferred.md). Currently deferred: Rules 7, 8, 11, 13, 14, 15, 16, 17, 18, 19, 22, 23, 24, 26, 27 — plus new sub-clauses 29.c, 30.b, 30.d, 31.b, 32.b, 32.c, 32.d. Each has an explicit re-introduction trigger.
+See [`docs/CLAUDE-deferred.md`](docs/CLAUDE-deferred.md). Currently deferred: Rules 7, 8, 11, 13, 14, 15, 16, 17, 18, 19, 22, 23, 24, 26, 27 — plus sub-clauses 29.c, 30.b, 30.d, 31.b, 32.b, 32.c, 32.d, 35.b, 36.b, 37.c, 40.b, 41.b, 42.b. Each has an explicit re-introduction trigger.

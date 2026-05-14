@@ -12,3 +12,4 @@ dfx_doc: null            # DFX is optional for kind:bom per Rule 32
 spi_packages: []
 allowed_dependencies: []
 forbidden_dependencies: []
+deployment_plane: none   # Rule 39 / P-I — BoM is build-time only; no runtime deployment surface

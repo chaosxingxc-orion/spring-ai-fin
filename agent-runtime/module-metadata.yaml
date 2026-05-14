@@ -15,3 +15,4 @@ spi_packages:
 allowed_dependencies: []
 forbidden_dependencies:
   - agent-platform        # Rule 10 module_dep_direction; runtime is independent of platform
+deployment_plane: compute_control   # Rule 39 / P-I — five-plane topology; cognitive engine lives on the Compute & Control plane alongside the gateway

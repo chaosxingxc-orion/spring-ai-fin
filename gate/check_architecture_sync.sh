@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# spring-ai-ascend architecture-sync gate -- L1 Rule-28 expansion + Phase K + L1.x Telemetry Vertical + Layer-0 governing principles (47 rules; 36 base + 11 Rule-28 sub-checks).
+# spring-ai-ascend architecture-sync gate -- L1 Rule-28 expansion + Phase K + L1.x Telemetry Vertical + Layer-0 governing principles + W1.x L0 ironclad rules (60 rules; Rules 1-29 + 28a-28j sub-checks + Rules 30-44 + Rules 45-52 W1.x).
 # Exits 0 if all rules pass, 1 if any fail.
 # Each rule prints PASS: <name> or FAIL: <name> -- <reason>.
 # Prints GATE: PASS or GATE: FAIL at the end.
@@ -54,6 +54,24 @@
 #  34.  module_metadata_present_and_complete            -- every <module>/pom.xml has a sibling module-metadata.yaml with required keys (Rule 31, enforcer E52)
 #  35.  dfx_yaml_present_and_wellformed                 -- every kind:platform|domain module has docs/dfx/<module>.yaml with 5 DFX dimensions (Rule 32, enforcer E53)
 #  36.  domain_module_has_spi_package                   -- every kind:domain module declares spi_packages and each one resolves on disk (Rule 32, enforcer E54)
+#  --- W1 Layered 4+1 + Architecture Graph (ADR-0068) ---
+#  37.  architecture_artefact_front_matter             -- every ARCH/L2/ADR.yaml carries level: + view: front-matter (Rule 33, enforcer E55)
+#  38.  architecture_graph_well_formed                 -- generated architecture-graph.yaml builds + validates (Rule 34, enforcer E56)
+#  39.  review_proposal_front_matter                   -- docs/reviews/*.md declare affects_level: + affects_view: (Rule 33, enforcer E57)
+#  40.  enforcer_reachable_from_principle              -- every enforcer has at least one rule-edge (Rule 34, enforcer E58)
+#  41.  enforcer_anchor_resolves                       -- every artifact: anchor resolves to real method/heading (Phase M, enforcer E60)
+#  42.  architecture_graph_idempotent                  -- twice-run graph build is byte-identical (Phase M, enforcer E61)
+#  43.  new_adr_must_be_yaml                           -- highest-numbered ADR is .yaml not .md (Phase M, enforcer E62)
+#  44.  frozen_doc_edit_path_compliance                -- freeze_id-tagged file edits require docs/reviews/*.md proposal (Phase M, enforcer E63)
+#  --- W1.x L0 ironclad-rule enforcers (ADR-0069) ---
+#  45.  bus_channels_three_track_present               -- bus-channels.yaml declares 3 channels with unique physical_channel (Rule 35 / P-E, enforcer E64)
+#  46.  cursor_flow_documented                         -- openapi-v1.yaml declares TaskCursor schema + x-cursor-flow annotation (Rule 36 / P-F, enforcer E65)
+#  47.  no_blocking_io_in_runtime_main                 -- agent-runtime/src/main excludes RestTemplate / JdbcTemplate (Rule 37 / P-G, enforcer E66)
+#  48.  no_thread_sleep_in_business_code               -- main java sources exclude Thread.sleep / TimeUnit.sleep (Rule 38 / P-H, enforcer E67)
+#  49.  deployment_plane_in_module_metadata            -- every module-metadata.yaml declares deployment_plane (Rule 39 / P-I, enforcer E68)
+#  50.  rls_for_new_tenant_tables                      -- Flyway migrations with tenant_id enable RLS or are grandfathered (Rule 40 / P-J, enforcer E69)
+#  51.  skill_capacity_yaml_present_and_wellformed     -- skill-capacity.yaml schema check (Rule 41 / P-K, enforcer E70)
+#  52.  sandbox_policies_yaml_present_and_wellformed   -- sandbox-policies.yaml default_policy 6 keys (Rule 42 / P-L, enforcer E71)
 
 set -uo pipefail
 export LC_ALL=C
@@ -1887,6 +1905,229 @@ if [[ -n "$_r44_frozen" ]] && command -v git >/dev/null 2>&1 && git rev-parse --
   done <<< "$(printf "%b" "$_r44_frozen")"
 fi
 if [[ $_r44_fail -eq 0 ]]; then pass_rule "frozen_doc_edit_path_compliance"; fi
+
+# ===========================================================================
+# W1.x Phase 1 — L0 ironclad-rule enforcers (Gate Rules 45-52)
+# Authority: ADR-0069. Each rule fails on a detected violation today.
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# Rule 45 — bus_channels_three_track_present (enforcer E64, Rule 35 / P-E)
+#
+# docs/governance/bus-channels.yaml MUST exist; declare 3 channels with ids
+# control / data / rhythm; each MUST have a unique physical_channel: value.
+# ---------------------------------------------------------------------------
+_r45_fail=0
+_r45_path="docs/governance/bus-channels.yaml"
+if [[ ! -f "$_r45_path" ]]; then
+  fail_rule "bus_channels_three_track_present" "$_r45_path missing — Rule 35 / P-E ironclad rule unenforced"
+  _r45_fail=1
+else
+  # Extract id: values under channels:
+  _r45_ids="$(awk '/^channels:[[:space:]]*$/{in_ch=1; next} /^[a-zA-Z]/{in_ch=0} in_ch && /^[[:space:]]+- id:/{sub(/^[[:space:]]+- id:[[:space:]]*/,""); sub(/[[:space:]].*$/,""); print}' "$_r45_path")"
+  _r45_count="$(printf '%s\n' "$_r45_ids" | grep -c .)"
+  if [[ "$_r45_count" -ne 3 ]]; then
+    fail_rule "bus_channels_three_track_present" "$_r45_path declares $_r45_count channel ids; expected exactly 3 (control/data/rhythm)"
+    _r45_fail=1
+  else
+    for _expected in control data rhythm; do
+      if ! printf '%s\n' "$_r45_ids" | grep -qx "$_expected"; then
+        fail_rule "bus_channels_three_track_present" "$_r45_path missing required channel id: $_expected"
+        _r45_fail=1
+      fi
+    done
+    # Extract physical_channel: values; must be unique
+    _r45_phys="$(grep -E '^[[:space:]]+physical_channel:' "$_r45_path" | sed -E 's/^[[:space:]]+physical_channel:[[:space:]]*//; s/[[:space:]].*$//')"
+    _r45_phys_count="$(printf '%s\n' "$_r45_phys" | grep -c .)"
+    _r45_phys_uniq="$(printf '%s\n' "$_r45_phys" | sort -u | grep -c .)"
+    if [[ "$_r45_phys_count" -ne "$_r45_phys_uniq" ]]; then
+      fail_rule "bus_channels_three_track_present" "$_r45_path channels share physical_channel: identifiers (got $_r45_phys_count entries, $_r45_phys_uniq unique) — isolation guarantee violated"
+      _r45_fail=1
+    fi
+  fi
+fi
+if [[ $_r45_fail -eq 0 ]]; then pass_rule "bus_channels_three_track_present"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 46 — cursor_flow_documented (enforcer E65, Rule 36 / P-F)
+#
+# docs/contracts/openapi-v1.yaml MUST declare a TaskCursor schema in
+# components.schemas AND a top-level x-cursor-flow: annotation. Either alone
+# is insufficient — the annotation declares INTENT, the schema declares the
+# WIRE shape; both are needed for an LLM or codegen consumer to act on it.
+# ---------------------------------------------------------------------------
+_r46_fail=0
+_r46_path="docs/contracts/openapi-v1.yaml"
+if [[ ! -f "$_r46_path" ]]; then
+  fail_rule "cursor_flow_documented" "$_r46_path missing"
+  _r46_fail=1
+else
+  if ! grep -qE '^[[:space:]]+TaskCursor:[[:space:]]*$' "$_r46_path"; then
+    fail_rule "cursor_flow_documented" "$_r46_path does not declare a TaskCursor schema in components.schemas — Cursor Flow wire shape missing"
+    _r46_fail=1
+  fi
+  if ! grep -qE '^x-cursor-flow:[[:space:]]*$' "$_r46_path"; then
+    fail_rule "cursor_flow_documented" "$_r46_path missing top-level x-cursor-flow: annotation — Cursor Flow intent not declared"
+    _r46_fail=1
+  fi
+fi
+if [[ $_r46_fail -eq 0 ]]; then pass_rule "cursor_flow_documented"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 47 — no_blocking_io_in_runtime_main (enforcer E66, Rule 37 / P-G)
+#
+# No production class under agent-runtime/src/main/java/** may import
+# org.springframework.web.client.RestTemplate or
+# org.springframework.jdbc.core.JdbcTemplate. Scope is intentionally narrow
+# to agent-runtime (the cognitive kernel). Existing agent-platform JdbcTemplate
+# uses migrate to R2DBC in W2 per CLAUDE-deferred.md 37.c.
+# ---------------------------------------------------------------------------
+_r47_fail=0
+_r47_root="agent-runtime/src/main/java"
+if [[ -d "$_r47_root" ]]; then
+  _r47_hits="$(grep -rEln '^import[[:space:]]+org\.springframework\.(web\.client\.RestTemplate|jdbc\.core\.JdbcTemplate);' "$_r47_root" 2>/dev/null || true)"
+  if [[ -n "$_r47_hits" ]]; then
+    while IFS= read -r _f; do
+      [[ -z "$_f" ]] && continue
+      fail_rule "no_blocking_io_in_runtime_main" "$_f imports a forbidden blocking-I/O client (RestTemplate or JdbcTemplate) — use WebClient or R2dbcEntityTemplate instead"
+      _r47_fail=1
+    done <<< "$_r47_hits"
+  fi
+fi
+if [[ $_r47_fail -eq 0 ]]; then pass_rule "no_blocking_io_in_runtime_main"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 48 — no_thread_sleep_in_business_code (enforcer E67, Rule 38 / P-H)
+#
+# No production class under agent-platform/src/main/java/** or
+# agent-runtime/src/main/java/** may invoke Thread.sleep(...) or
+# TimeUnit.<unit>.sleep(...). Test code is excluded.
+# ---------------------------------------------------------------------------
+_r48_fail=0
+for _r48_root in agent-platform/src/main/java agent-runtime/src/main/java; do
+  [[ ! -d "$_r48_root" ]] && continue
+  _r48_hits="$(grep -rEn 'Thread\.sleep[[:space:]]*\(|TimeUnit\.[A-Z_]+\.sleep[[:space:]]*\(' "$_r48_root" 2>/dev/null || true)"
+  if [[ -n "$_r48_hits" ]]; then
+    while IFS= read -r _line; do
+      [[ -z "$_line" ]] && continue
+      fail_rule "no_thread_sleep_in_business_code" "$_line — physical sleep is forbidden (Chronos Hydration Rule 38); use SuspendSignal + bus Tick Engine"
+      _r48_fail=1
+    done <<< "$_r48_hits"
+  fi
+done
+if [[ $_r48_fail -eq 0 ]]; then pass_rule "no_thread_sleep_in_business_code"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 49 — deployment_plane_in_module_metadata (enforcer E68, Rule 39 / P-I)
+#
+# Every <module>/module-metadata.yaml MUST declare deployment_plane: with
+# value in {edge, compute_control, bus_state, sandbox, evolution, none}.
+# ---------------------------------------------------------------------------
+_r49_fail=0
+_r49_allowed_re='^(edge|compute_control|bus_state|sandbox|evolution|none)$'
+while IFS= read -r _r49_meta; do
+  [[ -z "$_r49_meta" ]] && continue
+  _r49_plane="$(grep -E '^deployment_plane:' "$_r49_meta" | head -1 | sed -E 's/^deployment_plane:[[:space:]]*([A-Za-z_]+).*/\1/')"
+  if [[ -z "$_r49_plane" ]]; then
+    fail_rule "deployment_plane_in_module_metadata" "$_r49_meta missing deployment_plane: field"
+    _r49_fail=1
+  elif ! [[ "$_r49_plane" =~ $_r49_allowed_re ]]; then
+    fail_rule "deployment_plane_in_module_metadata" "$_r49_meta declares deployment_plane: $_r49_plane (not in {edge, compute_control, bus_state, sandbox, evolution, none})"
+    _r49_fail=1
+  fi
+done <<< "$(find . -maxdepth 3 -name module-metadata.yaml -not -path './target/*' -not -path './.claude/*' 2>/dev/null)"
+if [[ $_r49_fail -eq 0 ]]; then pass_rule "deployment_plane_in_module_metadata"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 50 — rls_for_new_tenant_tables (enforcer E69, Rule 40 / P-J)
+#
+# Every Flyway migration creating a table with a tenant_id column MUST
+# enable RLS in the same file (ENABLE ROW LEVEL SECURITY) OR be listed in
+# gate/rls-baseline-grandfathered.txt.
+# ---------------------------------------------------------------------------
+_r50_fail=0
+_r50_baseline="gate/rls-baseline-grandfathered.txt"
+_r50_baseline_paths=""
+if [[ -f "$_r50_baseline" ]]; then
+  _r50_baseline_paths="$(grep -vE '^[[:space:]]*(#|$)' "$_r50_baseline" 2>/dev/null || true)"
+fi
+while IFS= read -r _r50_mig; do
+  [[ -z "$_r50_mig" ]] && continue
+  # Does this migration create a table with tenant_id?
+  if ! grep -qE 'tenant_id[[:space:]]+(UUID|uuid|VARCHAR|varchar|TEXT|text)' "$_r50_mig" 2>/dev/null; then
+    continue
+  fi
+  if ! grep -qiE 'CREATE[[:space:]]+TABLE' "$_r50_mig" 2>/dev/null; then
+    continue
+  fi
+  # Has it enabled RLS in the same file?
+  if grep -qiE 'ENABLE[[:space:]]+ROW[[:space:]]+LEVEL[[:space:]]+SECURITY' "$_r50_mig" 2>/dev/null; then
+    continue
+  fi
+  # Is it grandfathered?
+  _r50_norm="$(printf '%s' "$_r50_mig" | sed -E 's|^\./||')"
+  if printf '%s\n' "$_r50_baseline_paths" | grep -qFx "$_r50_norm"; then
+    continue
+  fi
+  fail_rule "rls_for_new_tenant_tables" "$_r50_mig creates a tenant-scoped table without ENABLE ROW LEVEL SECURITY; not in $_r50_baseline either"
+  _r50_fail=1
+done <<< "$(find agent-platform/src/main/resources/db/migration agent-runtime/src/main/resources/db/migration -maxdepth 1 -type f -name 'V*.sql' 2>/dev/null || true)"
+if [[ $_r50_fail -eq 0 ]]; then pass_rule "rls_for_new_tenant_tables"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 51 — skill_capacity_yaml_present_and_wellformed (enforcer E70, Rule 41 / P-K)
+#
+# docs/governance/skill-capacity.yaml MUST exist; each skill row MUST have
+# capacity_per_tenant + global_capacity + queue_strategy ∈ {suspend, fail}.
+# ---------------------------------------------------------------------------
+_r51_fail=0
+_r51_path="docs/governance/skill-capacity.yaml"
+if [[ ! -f "$_r51_path" ]]; then
+  fail_rule "skill_capacity_yaml_present_and_wellformed" "$_r51_path missing — Rule 41 / P-K ironclad rule unenforced"
+  _r51_fail=1
+else
+  # Count skill ids vs required-field occurrences. Each id row should be
+  # followed by capacity_per_tenant, global_capacity, queue_strategy.
+  _r51_ids="$(grep -cE '^[[:space:]]+- id:[[:space:]]+' "$_r51_path" 2>/dev/null || echo 0)"
+  _r51_caps_per="$(grep -cE '^[[:space:]]+capacity_per_tenant:' "$_r51_path" 2>/dev/null || echo 0)"
+  _r51_caps_global="$(grep -cE '^[[:space:]]+global_capacity:' "$_r51_path" 2>/dev/null || echo 0)"
+  _r51_queue="$(grep -cE '^[[:space:]]+queue_strategy:[[:space:]]+(suspend|fail)([[:space:]#].*)?$' "$_r51_path" 2>/dev/null || echo 0)"
+  if [[ "$_r51_ids" -lt 1 ]]; then
+    fail_rule "skill_capacity_yaml_present_and_wellformed" "$_r51_path declares zero skills — at least one required"
+    _r51_fail=1
+  fi
+  if [[ "$_r51_caps_per" -ne "$_r51_ids" ]] || [[ "$_r51_caps_global" -ne "$_r51_ids" ]] || [[ "$_r51_queue" -ne "$_r51_ids" ]]; then
+    fail_rule "skill_capacity_yaml_present_and_wellformed" "$_r51_path schema-incomplete: $_r51_ids skill ids vs $_r51_caps_per capacity_per_tenant / $_r51_caps_global global_capacity / $_r51_queue queue_strategy(suspend|fail)"
+    _r51_fail=1
+  fi
+fi
+if [[ $_r51_fail -eq 0 ]]; then pass_rule "skill_capacity_yaml_present_and_wellformed"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 52 — sandbox_policies_yaml_present_and_wellformed (enforcer E71, Rule 42 / P-L)
+#
+# docs/governance/sandbox-policies.yaml MUST exist with default_policy:
+# declaring all 6 required keys.
+# ---------------------------------------------------------------------------
+_r52_fail=0
+_r52_path="docs/governance/sandbox-policies.yaml"
+if [[ ! -f "$_r52_path" ]]; then
+  fail_rule "sandbox_policies_yaml_present_and_wellformed" "$_r52_path missing — Rule 42 / P-L ironclad rule unenforced"
+  _r52_fail=1
+else
+  if ! grep -qE '^default_policy:[[:space:]]*$' "$_r52_path"; then
+    fail_rule "sandbox_policies_yaml_present_and_wellformed" "$_r52_path missing default_policy: block"
+    _r52_fail=1
+  else
+    for _r52_key in outbound_network filesystem_read filesystem_write cpu_cap_millicores memory_cap_megabytes wall_clock_cap_seconds; do
+      if ! grep -qE "^[[:space:]]+${_r52_key}:" "$_r52_path"; then
+        fail_rule "sandbox_policies_yaml_present_and_wellformed" "$_r52_path default_policy missing required key: $_r52_key"
+        _r52_fail=1
+      fi
+    done
+  fi
+fi
+if [[ $_r52_fail -eq 0 ]]; then pass_rule "sandbox_policies_yaml_present_and_wellformed"; fi
 
 # ---------------------------------------------------------------------------
 # Summary

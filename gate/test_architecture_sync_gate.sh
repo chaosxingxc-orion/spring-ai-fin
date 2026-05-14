@@ -1189,10 +1189,333 @@ else
   fail "rule44_frozen_doc_neg" "expected non-null freeze_id to be detected"
 fi
 
+# ===========================================================================
+# W1.x Phase 1 self-tests — Rules 45-52 (L0 ironclad rules; ADR-0069)
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# Rule 45 positive: bus-channels.yaml with 3 channels + unique physical_channel
+# ---------------------------------------------------------------------------
+_r45_pos="$scratch/r45_pos"
+mkdir -p "$_r45_pos/docs/governance"
+cat > "$_r45_pos/docs/governance/bus-channels.yaml" <<'EOF'
+channels:
+  - id: control
+    physical_channel: ctrl_q
+  - id: data
+    physical_channel: data_q
+  - id: rhythm
+    physical_channel: tick_q
+EOF
+_r45_pos_ids="$(awk '/^channels:[[:space:]]*$/{in_ch=1; next} /^[a-zA-Z]/{in_ch=0} in_ch && /^[[:space:]]+- id:/{sub(/^[[:space:]]+- id:[[:space:]]*/,""); sub(/[[:space:]].*$/,""); print}' "$_r45_pos/docs/governance/bus-channels.yaml")"
+_r45_pos_count="$(printf '%s\n' "$_r45_pos_ids" | grep -c .)"
+_r45_pos_phys="$(grep -E '^[[:space:]]+physical_channel:' "$_r45_pos/docs/governance/bus-channels.yaml" | sed -E 's/^[[:space:]]+physical_channel:[[:space:]]*//; s/[[:space:]].*$//')"
+_r45_pos_phys_uniq="$(printf '%s\n' "$_r45_pos_phys" | sort -u | grep -c .)"
+if [[ "$_r45_pos_count" -eq 3 ]] && [[ "$_r45_pos_phys_uniq" -eq 3 ]]; then
+  ok "rule45_bus_channels_pos" "3 channels with unique physical_channel"
+else
+  fail "rule45_bus_channels_pos" "expected 3 channels + 3 unique physical_channel; got $_r45_pos_count / $_r45_pos_phys_uniq"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 45 negative: two channels share physical_channel → flagged
+# ---------------------------------------------------------------------------
+_r45_neg="$scratch/r45_neg"
+mkdir -p "$_r45_neg/docs/governance"
+cat > "$_r45_neg/docs/governance/bus-channels.yaml" <<'EOF'
+channels:
+  - id: control
+    physical_channel: shared_q
+  - id: data
+    physical_channel: shared_q
+  - id: rhythm
+    physical_channel: tick_q
+EOF
+_r45_neg_phys="$(grep -E '^[[:space:]]+physical_channel:' "$_r45_neg/docs/governance/bus-channels.yaml" | sed -E 's/^[[:space:]]+physical_channel:[[:space:]]*//; s/[[:space:]].*$//')"
+_r45_neg_phys_count="$(printf '%s\n' "$_r45_neg_phys" | grep -c .)"
+_r45_neg_phys_uniq="$(printf '%s\n' "$_r45_neg_phys" | sort -u | grep -c .)"
+if [[ "$_r45_neg_phys_count" -ne "$_r45_neg_phys_uniq" ]]; then
+  ok "rule45_bus_channels_neg" "shared physical_channel correctly flagged ($_r45_neg_phys_count entries / $_r45_neg_phys_uniq unique)"
+else
+  fail "rule45_bus_channels_neg" "expected shared physical_channel to be detected"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 46 positive: openapi-v1.yaml with TaskCursor + x-cursor-flow → pass
+# ---------------------------------------------------------------------------
+_r46_pos="$scratch/r46_pos"
+mkdir -p "$_r46_pos/docs/contracts"
+cat > "$_r46_pos/docs/contracts/openapi-v1.yaml" <<'EOF'
+openapi: 3.0.1
+components:
+  schemas:
+    TaskCursor:
+      type: object
+x-cursor-flow:
+  pattern: "POST → 202 + TaskCursor"
+EOF
+_r46_pos_ts=0
+_r46_pos_ann=0
+grep -qE '^[[:space:]]+TaskCursor:[[:space:]]*$' "$_r46_pos/docs/contracts/openapi-v1.yaml" && _r46_pos_ts=1
+grep -qE '^x-cursor-flow:[[:space:]]*$' "$_r46_pos/docs/contracts/openapi-v1.yaml" && _r46_pos_ann=1
+if [[ "$_r46_pos_ts" -eq 1 ]] && [[ "$_r46_pos_ann" -eq 1 ]]; then
+  ok "rule46_cursor_flow_pos" "TaskCursor schema + x-cursor-flow annotation present"
+else
+  fail "rule46_cursor_flow_pos" "expected both schema and annotation"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 46 negative: openapi-v1.yaml missing both → flagged
+# ---------------------------------------------------------------------------
+_r46_neg="$scratch/r46_neg"
+mkdir -p "$_r46_neg/docs/contracts"
+cat > "$_r46_neg/docs/contracts/openapi-v1.yaml" <<'EOF'
+openapi: 3.0.1
+components:
+  schemas:
+    Foo:
+      type: object
+EOF
+_r46_neg_ts=0
+grep -qE '^[[:space:]]+TaskCursor:[[:space:]]*$' "$_r46_neg/docs/contracts/openapi-v1.yaml" && _r46_neg_ts=1
+if [[ "$_r46_neg_ts" -eq 0 ]]; then
+  ok "rule46_cursor_flow_neg" "missing TaskCursor schema correctly flagged"
+else
+  fail "rule46_cursor_flow_neg" "expected missing TaskCursor to be detected"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 47 positive: agent-runtime main without RestTemplate / JdbcTemplate
+# ---------------------------------------------------------------------------
+_r47_pos="$scratch/r47_pos"
+mkdir -p "$_r47_pos/agent-runtime/src/main/java/x"
+cat > "$_r47_pos/agent-runtime/src/main/java/x/Foo.java" <<'EOF'
+package x;
+import org.springframework.web.reactive.function.client.WebClient;
+public class Foo {}
+EOF
+_r47_pos_hits="$(grep -rEln '^import[[:space:]]+org\.springframework\.(web\.client\.RestTemplate|jdbc\.core\.JdbcTemplate);' "$_r47_pos/agent-runtime/src/main/java" 2>/dev/null || true)"
+if [[ -z "$_r47_pos_hits" ]]; then
+  ok "rule47_no_blocking_io_pos" "WebClient-only runtime correctly passes"
+else
+  fail "rule47_no_blocking_io_pos" "expected zero hits; got $_r47_pos_hits"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 47 negative: agent-runtime main with JdbcTemplate import → flagged
+# ---------------------------------------------------------------------------
+_r47_neg="$scratch/r47_neg"
+mkdir -p "$_r47_neg/agent-runtime/src/main/java/x"
+cat > "$_r47_neg/agent-runtime/src/main/java/x/BadDao.java" <<'EOF'
+package x;
+import org.springframework.jdbc.core.JdbcTemplate;
+public class BadDao {}
+EOF
+_r47_neg_hits="$(grep -rEln '^import[[:space:]]+org\.springframework\.(web\.client\.RestTemplate|jdbc\.core\.JdbcTemplate);' "$_r47_neg/agent-runtime/src/main/java" 2>/dev/null || true)"
+if [[ -n "$_r47_neg_hits" ]]; then
+  ok "rule47_no_blocking_io_neg" "JdbcTemplate import correctly flagged"
+else
+  fail "rule47_no_blocking_io_neg" "expected JdbcTemplate import to be detected"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 48 positive: main java without Thread.sleep
+# ---------------------------------------------------------------------------
+_r48_pos="$scratch/r48_pos"
+mkdir -p "$_r48_pos/agent-platform/src/main/java/x"
+cat > "$_r48_pos/agent-platform/src/main/java/x/Clean.java" <<'EOF'
+package x;
+public class Clean { void wait_(){ /* SuspendSignal here */ } }
+EOF
+_r48_pos_hits="$(grep -rEn 'Thread\.sleep[[:space:]]*\(|TimeUnit\.[A-Z_]+\.sleep[[:space:]]*\(' "$_r48_pos/agent-platform/src/main/java" 2>/dev/null || true)"
+if [[ -z "$_r48_pos_hits" ]]; then
+  ok "rule48_no_thread_sleep_pos" "clean main java passes"
+else
+  fail "rule48_no_thread_sleep_pos" "expected zero hits; got $_r48_pos_hits"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 48 negative: Thread.sleep in main → flagged
+# ---------------------------------------------------------------------------
+_r48_neg="$scratch/r48_neg"
+mkdir -p "$_r48_neg/agent-platform/src/main/java/x"
+cat > "$_r48_neg/agent-platform/src/main/java/x/Sleeper.java" <<'EOF'
+package x;
+public class Sleeper { void w() throws Exception { Thread.sleep(1000); } }
+EOF
+_r48_neg_hits="$(grep -rEn 'Thread\.sleep[[:space:]]*\(|TimeUnit\.[A-Z_]+\.sleep[[:space:]]*\(' "$_r48_neg/agent-platform/src/main/java" 2>/dev/null || true)"
+if [[ -n "$_r48_neg_hits" ]]; then
+  ok "rule48_no_thread_sleep_neg" "Thread.sleep correctly flagged"
+else
+  fail "rule48_no_thread_sleep_neg" "expected Thread.sleep to be detected"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 49 positive: module-metadata.yaml with valid deployment_plane
+# ---------------------------------------------------------------------------
+_r49_pos="$scratch/r49_pos"
+mkdir -p "$_r49_pos/x"
+cat > "$_r49_pos/x/module-metadata.yaml" <<'EOF'
+module: x
+kind: domain
+deployment_plane: compute_control
+EOF
+_r49_pos_plane="$(grep -E '^deployment_plane:' "$_r49_pos/x/module-metadata.yaml" | head -1 | sed -E 's/^deployment_plane:[[:space:]]*([A-Za-z_]+).*/\1/')"
+_r49_allowed='^(edge|compute_control|bus_state|sandbox|evolution|none)$'
+if [[ -n "$_r49_pos_plane" ]] && [[ "$_r49_pos_plane" =~ $_r49_allowed ]]; then
+  ok "rule49_deployment_plane_pos" "deployment_plane=$_r49_pos_plane (valid)"
+else
+  fail "rule49_deployment_plane_pos" "expected valid plane; got '$_r49_pos_plane'"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 49 negative: module-metadata.yaml missing or invalid deployment_plane
+# ---------------------------------------------------------------------------
+_r49_neg="$scratch/r49_neg"
+mkdir -p "$_r49_neg/x"
+cat > "$_r49_neg/x/module-metadata.yaml" <<'EOF'
+module: x
+kind: domain
+deployment_plane: stratosphere
+EOF
+_r49_neg_plane="$(grep -E '^deployment_plane:' "$_r49_neg/x/module-metadata.yaml" | head -1 | sed -E 's/^deployment_plane:[[:space:]]*([A-Za-z_]+).*/\1/')"
+if ! [[ "$_r49_neg_plane" =~ $_r49_allowed ]]; then
+  ok "rule49_deployment_plane_neg" "invalid plane '$_r49_neg_plane' correctly flagged"
+else
+  fail "rule49_deployment_plane_neg" "expected invalid plane to be detected"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 50 positive: migration with tenant_id + ENABLE ROW LEVEL SECURITY
+# ---------------------------------------------------------------------------
+_r50_pos="$scratch/r50_pos"
+mkdir -p "$_r50_pos/db/migration"
+cat > "$_r50_pos/db/migration/V3__rls_table.sql" <<'EOF'
+CREATE TABLE foo (tenant_id UUID NOT NULL, x INT);
+ALTER TABLE foo ENABLE ROW LEVEL SECURITY;
+EOF
+_r50_pos_has_tid=0
+_r50_pos_has_rls=0
+grep -qE 'tenant_id[[:space:]]+UUID' "$_r50_pos/db/migration/V3__rls_table.sql" && _r50_pos_has_tid=1
+grep -qiE 'ENABLE[[:space:]]+ROW[[:space:]]+LEVEL[[:space:]]+SECURITY' "$_r50_pos/db/migration/V3__rls_table.sql" && _r50_pos_has_rls=1
+if [[ "$_r50_pos_has_tid" -eq 1 ]] && [[ "$_r50_pos_has_rls" -eq 1 ]]; then
+  ok "rule50_rls_pos" "tenant_id table with RLS enabled"
+else
+  fail "rule50_rls_pos" "expected both tenant_id and RLS"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 50 negative: migration with tenant_id but NO RLS, NOT grandfathered
+# ---------------------------------------------------------------------------
+_r50_neg="$scratch/r50_neg"
+mkdir -p "$_r50_neg/db/migration"
+cat > "$_r50_neg/db/migration/V99__bad.sql" <<'EOF'
+CREATE TABLE bar (tenant_id UUID NOT NULL, y INT);
+EOF
+_r50_neg_has_tid=0
+_r50_neg_has_rls=0
+grep -qE 'tenant_id[[:space:]]+UUID' "$_r50_neg/db/migration/V99__bad.sql" && _r50_neg_has_tid=1
+grep -qiE 'ENABLE[[:space:]]+ROW[[:space:]]+LEVEL[[:space:]]+SECURITY' "$_r50_neg/db/migration/V99__bad.sql" && _r50_neg_has_rls=1
+if [[ "$_r50_neg_has_tid" -eq 1 ]] && [[ "$_r50_neg_has_rls" -eq 0 ]]; then
+  ok "rule50_rls_neg" "tenant_id table without RLS correctly flagged"
+else
+  fail "rule50_rls_neg" "expected missing-RLS detection (tid=$_r50_neg_has_tid rls=$_r50_neg_has_rls)"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 51 positive: skill-capacity.yaml with all required keys
+# ---------------------------------------------------------------------------
+_r51_pos="$scratch/r51_pos"
+mkdir -p "$_r51_pos/docs/governance"
+cat > "$_r51_pos/docs/governance/skill-capacity.yaml" <<'EOF'
+skills:
+  - id: foo
+    capacity_per_tenant: 8
+    global_capacity: 256
+    queue_strategy: suspend
+EOF
+_r51_pos_ids="$(grep -cE '^[[:space:]]+- id:[[:space:]]+' "$_r51_pos/docs/governance/skill-capacity.yaml" 2>/dev/null || echo 0)"
+_r51_pos_caps_per="$(grep -cE '^[[:space:]]+capacity_per_tenant:' "$_r51_pos/docs/governance/skill-capacity.yaml" 2>/dev/null || echo 0)"
+_r51_pos_caps_global="$(grep -cE '^[[:space:]]+global_capacity:' "$_r51_pos/docs/governance/skill-capacity.yaml" 2>/dev/null || echo 0)"
+_r51_pos_queue="$(grep -cE '^[[:space:]]+queue_strategy:[[:space:]]+(suspend|fail)([[:space:]#].*)?$' "$_r51_pos/docs/governance/skill-capacity.yaml" 2>/dev/null || echo 0)"
+if [[ "$_r51_pos_ids" -eq 1 ]] && [[ "$_r51_pos_caps_per" -eq 1 ]] && [[ "$_r51_pos_caps_global" -eq 1 ]] && [[ "$_r51_pos_queue" -eq 1 ]]; then
+  ok "rule51_skill_capacity_pos" "skill row complete with all 3 required keys"
+else
+  fail "rule51_skill_capacity_pos" "expected complete row; got ids=$_r51_pos_ids per=$_r51_pos_caps_per global=$_r51_pos_caps_global queue=$_r51_pos_queue"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 51 negative: skill-capacity.yaml missing global_capacity
+# ---------------------------------------------------------------------------
+_r51_neg="$scratch/r51_neg"
+mkdir -p "$_r51_neg/docs/governance"
+cat > "$_r51_neg/docs/governance/skill-capacity.yaml" <<'EOF'
+skills:
+  - id: foo
+    capacity_per_tenant: 8
+    queue_strategy: suspend
+EOF
+_r51_neg_ids="$(grep -cE '^[[:space:]]+- id:[[:space:]]+' "$_r51_neg/docs/governance/skill-capacity.yaml" 2>/dev/null || echo 0)"
+_r51_neg_caps_global="$(grep -cE '^[[:space:]]+global_capacity:' "$_r51_neg/docs/governance/skill-capacity.yaml" 2>/dev/null || echo 0)"
+if [[ "$_r51_neg_caps_global" -ne "$_r51_neg_ids" ]]; then
+  ok "rule51_skill_capacity_neg" "missing global_capacity correctly flagged ($_r51_neg_ids ids vs $_r51_neg_caps_global global)"
+else
+  fail "rule51_skill_capacity_neg" "expected missing-key detection"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 52 positive: sandbox-policies.yaml with all 6 default_policy keys
+# ---------------------------------------------------------------------------
+_r52_pos="$scratch/r52_pos"
+mkdir -p "$_r52_pos/docs/governance"
+cat > "$_r52_pos/docs/governance/sandbox-policies.yaml" <<'EOF'
+default_policy:
+  outbound_network: deny_all
+  filesystem_read: deny_all
+  filesystem_write: deny_all
+  cpu_cap_millicores: 100
+  memory_cap_megabytes: 128
+  wall_clock_cap_seconds: 30
+EOF
+_r52_pos_ok=1
+for _r52_key in outbound_network filesystem_read filesystem_write cpu_cap_millicores memory_cap_megabytes wall_clock_cap_seconds; do
+  if ! grep -qE "^[[:space:]]+${_r52_key}:" "$_r52_pos/docs/governance/sandbox-policies.yaml"; then
+    _r52_pos_ok=0
+  fi
+done
+if [[ "$_r52_pos_ok" -eq 1 ]]; then
+  ok "rule52_sandbox_policies_pos" "default_policy with all 6 required keys"
+else
+  fail "rule52_sandbox_policies_pos" "expected all 6 keys"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 52 negative: sandbox-policies.yaml missing wall_clock_cap_seconds
+# ---------------------------------------------------------------------------
+_r52_neg="$scratch/r52_neg"
+mkdir -p "$_r52_neg/docs/governance"
+cat > "$_r52_neg/docs/governance/sandbox-policies.yaml" <<'EOF'
+default_policy:
+  outbound_network: deny_all
+  filesystem_read: deny_all
+  filesystem_write: deny_all
+  cpu_cap_millicores: 100
+  memory_cap_megabytes: 128
+EOF
+_r52_neg_missing=0
+if ! grep -qE '^[[:space:]]+wall_clock_cap_seconds:' "$_r52_neg/docs/governance/sandbox-policies.yaml"; then
+  _r52_neg_missing=1
+fi
+if [[ "$_r52_neg_missing" -eq 1 ]]; then
+  ok "rule52_sandbox_policies_neg" "missing wall_clock_cap_seconds correctly flagged"
+else
+  fail "rule52_sandbox_policies_neg" "expected missing-key detection"
+fi
+
 # ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
-TOTAL=50
+TOTAL=66
 echo ""
 echo "Tests passed: ${passed}/${TOTAL}"
 

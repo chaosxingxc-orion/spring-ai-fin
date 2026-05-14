@@ -1,0 +1,257 @@
+id: ADR-0069
+title: "Layer-0 Ironclad Rules — promotion of LucioIT W1 §6/§7 to governing principles"
+status: accepted
+date: 2026-05-15
+level: L0
+view: scenarios
+freeze_id: null
+
+supersedes: []
+extends:
+  - ADR-0064
+  - ADR-0068
+relates_to:
+  - ADR-0067
+
+decision_one_liner: |
+  The eight ironclad rules embedded in LucioIT's W1 L0 draft (§6 Process View
+  and §7 Physical View) are promoted from prose claims to first-class Layer-0
+  governing principles P-E through P-L in CLAUDE.md, each operationalised by a
+  Layer-1 rule (Rules 35-42) with a shipped enforcer (gate rules 45-52).
+
+triggering_inputs:
+  external_reviews:
+    - path: docs/reviews/2026-05-14-L0Architecture-LucioIT-wave-1-request.en.md
+      authors: ["LucioIT"]
+      thesis: |
+        The L0 draft §3 ("Architectural Principles") is intentionally blank,
+        reserved for domain architects to supplement system-level core
+        ironclad rules in subsequent reviews. §6 (Process View) and §7
+        (Physical View) embed eight ironclad constraints that read as
+        principles-by-prose: Absolute Non-Blocking I/O, Cursor Flow,
+        Three-Track Channel Isolation, Five-Plane Topology, Chronos
+        Hydration, Storage-Engine RLS, Skill-Dimensional Arbitration, and
+        Sandbox Permission Subsumption.
+  internal_signal:
+    historical_defect_rounds: 9
+    historical_defects_closed: 158
+    related_defect_categories: 3
+    related_defect_categories_detail: |
+      - "Resource governance & skill" (~20 findings) — addressed by P-K (Rule 41).
+      - "Data plane & payload" (~25 findings) — partially addressed by P-G (Rule 37) + P-J (Rule 40).
+      - "Trust, authz, audit" (~22 findings) — addressed by P-J (Rule 40) + P-L (Rule 42).
+    governance_gap: |
+      Without these principles the eight constraints lived only in the L0
+      draft prose; an LLM agent reasoning about a new feature could not
+      see them as graph nodes, and a reviewer could not gate on them
+      mechanically. The W1 wave shipped substrate (Rule 33+34, graph,
+      gate rules 37-44) but left the substrate empty with respect to L0
+      domain content; this ADR fills that gap for the eight ironclad
+      rules.
+
+context: |
+  The W1 wave (ADR-0068) established Rule 33 (Layered 4+1 Discipline) and
+  Rule 34 (Architecture-Graph Truth) as the structural answer to the
+  governance-text-drift defect family (~50% of historical findings). The
+  graph schema accepts principle/rule/enforcer/test/module nodes but at
+  W1 entry contained only four principles (P-A..P-D from ADR-0064). The
+  LucioIT L0 draft introduces eight L0-scope ironclad rules in prose.
+  Without explicit promotion they remain prose-only and cannot be
+  enforced under Rule 28 (Code-as-Contract).
+
+  The user's 2026-05-15 scoping decision authorises:
+    1. Comprehensive W1.x wave (all 5 defect groups closed in one wave).
+    2. Module-name reconciliation to LucioIT L0 names (sibling ADR-0070).
+    3. L0 §3 fill — promote 8 ironclad rules to Layer-0 principles now.
+
+decision: |
+  Eight new Layer-0 principles enter CLAUDE.md alongside P-A..P-D:
+
+    P-E — Multi-Track Bus Physical Channel Isolation
+          (control / data / rhythm tracks physically separated;
+           single-track congestion cannot cause global paralysis)
+    P-F — Cursor Flow & Asynchronous Client Boundary
+          (Client → Runtime is non-blocking; Task Cursor returned
+           immediately; SSE for process state, Webhook for blocking
+           checkpoints)
+    P-G — Absolute Non-Blocking I/O
+          (external API calls MUST use Reactive or Virtual Threads;
+           OS-level threads MUST be released during I/O wait)
+    P-H — Chronos Hydration
+          (no Thread.sleep in business code; long-horizon waits are
+           declarative suspension + bus-driven re-hydration; sleeping
+           process self-destructs and re-hydrates on bus pulse)
+    P-I — Five-Plane Distributed Topology
+          (Edge / Compute&Control / Bus&State / Sandbox / Evolution;
+           workloads with different characteristics physically separated)
+    P-J — Storage-Engine Tenant Isolation
+          (Row-Level Security at storage engine; app-code isolation
+           insufficient; even runtime vulnerability cannot leak across
+           tenants at the DB layer)
+    P-K — Skill-Dimensional Resource Arbitration
+          (2D defence net: Tenant Quota × Global Skill Capacity;
+           full-pool skill suspends only that skill's callers, not whole
+           Agent processes)
+    P-L — Sandbox Permission Subsumption
+          (logical authz scope MUST 1:1 map to physical sandbox limits;
+           a logical grant cannot exceed what the physical sandbox enforces)
+
+  Each principle is operationalised by a Layer-1 Rule (35-42) shipping in
+  the same PR. Each Layer-1 Rule has a working enforcer per Rule 28
+  (Code-as-Contract) — gate rules 45-52 that fail on detected violations.
+
+  Supporting authoritative inputs land at the same time:
+    - docs/governance/bus-channels.yaml      (Rule 35 / P-E)
+    - docs/governance/skill-capacity.yaml    (Rule 41 / P-K)
+    - docs/governance/sandbox-policies.yaml  (Rule 42 / P-L)
+    - gate/rls-baseline-grandfathered.txt    (Rule 40 / P-J — V1/V2 grandfathered)
+    - deployment_plane: field on every module-metadata.yaml (Rule 39 / P-I)
+
+consequences: |
+  - CLAUDE.md gains 8 new Layer-0 principles (P-E..P-L) and 8 new
+    Layer-1 Rules (35-42). Engineering-rule lifecycle:
+      Active: 26 rules (Rules 1-6, 9-10, 20-21, 25, 28-42)
+      Deferred: 14 rules (unchanged; Rules 7-8, 11, 13-19, 22-24, 26-27)
+      Retired: 1 (Rule 12)
+    Layer-0 principles: 12 (P-A..P-L).
+  - docs/governance/principle-coverage.yaml gains 8 new principle entries
+    with operationalised_by_rules pointers.
+  - docs/governance/enforcers.yaml gains rows E64-E71 (one per new rule).
+  - gate/check_architecture_sync.sh gains Gate Rules 45-52 (eight
+    additional sub-rules). Total active gate rules: 52.
+  - gate/test_architecture_sync_gate.sh gains 8 new positive + negative
+    self-tests. Total self-tests: 50 + 16 = 66.
+  - docs/governance/rule-history.md table gains rows 35-42.
+  - Three new YAML side-files (bus-channels, skill-capacity, sandbox-policies)
+    enter the authoritative-inputs corpus consumed by the architecture-graph
+    generator (Rule 34); the graph schema gains channel / skill /
+    sandbox-policy node types.
+  - Each existing module-metadata.yaml gains deployment_plane: ∈
+    {edge, compute_control, bus_state, sandbox, evolution, none}.
+  - V2__idempotency_dedup.sql is grandfathered for Rule 40; a follow-up
+    W2 migration (V3+) enables RLS on idempotency_dedup. Documented in
+    CLAUDE-deferred.md sub-clause 40.b.
+
+rationale: |
+  The first-pass W1 wave proved the structural answer (Rule 33+34, graph,
+  gate rules 37-44) was correct but exposed a complementary gap: the
+  graph encoded governance machinery but not domain ontology. An LLM
+  reasoning about "how do I add admission control to a Workflow
+  Intermediary?" still had to read prose for the L0 domain side, then
+  hop to the graph for the rule side. That hop is exactly where drift
+  re-appears.
+
+  Promoting the eight ironclad rules to Layer-0 closes the gap by
+  making the L0 process / physical concepts first-class graph nodes,
+  with typed edges to the Layer-1 rules and concrete gate enforcers.
+
+  Why "8 principles, not 4 deeper categories." Each ironclad rule has
+  distinct enforcer character (yaml schema vs source scan vs migration
+  scan) and distinct violation locus (bus vs runtime vs migration vs
+  metadata). Collapsing them into 4 principles would require composite
+  enforcers that mix unrelated checks, hurting readability and
+  per-violation reporting.
+
+  Why Layer-0, not Layer-1. The eight rules describe system-wide
+  invariants that hold across modules and across waves — exactly the
+  Layer-0 / governing-principle level. Layer-1 rules express those
+  invariants in mechanical form for one specific shape of violation.
+  Conflating the two would re-introduce the prose-vs-machine drift
+  ADR-0068 was designed to eliminate.
+
+  Why ship enforcers today (no deferred sub-clauses except documented
+  ones). Rule 28 forbids deferred enforcers. Each new gate rule has an
+  honest enforcer that detects new violations TODAY. Where existing
+  code violates a new rule (V2 migration without RLS) the violation is
+  documented in a baseline/grandfather file (gate/rls-baseline-
+  grandfathered.txt), and the deferred re-mediation is logged in
+  CLAUDE-deferred.md with a wave-specific re-introduction trigger.
+
+alternatives_considered:
+  - id: ALT-A
+    label: "Stage 8 ironclad rules as Layer-1 only (no new Layer-0 principles)"
+    rejected_because: |
+      Layer-1 rules describe one mechanical violation shape; Layer-0
+      principles describe a system-wide invariant. The 8 rules ARE
+      system-wide invariants, not just mechanical patterns. Demoting
+      them to Layer-1 would lose the L0 framing and force every Layer-1
+      rule to re-derive context from prose — exactly the drift Rule 33+34
+      were designed to prevent.
+
+  - id: ALT-B
+    label: "Defer L0 fill to a separate post-W1.x wave"
+    rejected_because: |
+      The user's 2026-05-15 scoping decision explicitly chose comprehensive
+      scope. Splitting the wave leaves the graph empty of L0 domain
+      content for an unspecified additional duration, during which more
+      domain-drift defects can accrete. The comprehensive scope is also
+      cheaper because all 8 principles share the same review context.
+
+  - id: ALT-C
+    label: "Group 8 ironclad rules into 2-3 super-principles (Bus, Compute, Storage)"
+    rejected_because: |
+      Same problem as ALT-A: composite enforcers mix unrelated checks
+      and hurt per-violation reporting. The 1:1 principle-to-rule shape
+      keeps the graph simple to traverse.
+
+enforced_by:
+  rules:
+    - Rule-35
+    - Rule-36
+    - Rule-37
+    - Rule-38
+    - Rule-39
+    - Rule-40
+    - Rule-41
+    - Rule-42
+  gate_rules:
+    - 45    # bus_channels_three_track_present
+    - 46    # cursor_flow_documented
+    - 47    # no_blocking_io_in_runtime_main
+    - 48    # no_thread_sleep_in_business_code
+    - 49    # deployment_plane_in_module_metadata
+    - 50    # rls_for_new_tenant_tables
+    - 51    # skill_capacity_yaml_present_and_wellformed
+    - 52    # sandbox_policies_yaml_present_and_wellformed
+  archunit_tests: []        # ArchUnit additions deferred to Phase 2 (rename) per CLAUDE-deferred.md 37.b
+  build_scripts:
+    - gate/check_architecture_sync.sh
+
+artefacts:
+  introduced:
+    - docs/governance/bus-channels.yaml
+    - docs/governance/skill-capacity.yaml
+    - docs/governance/sandbox-policies.yaml
+    - gate/rls-baseline-grandfathered.txt
+    - docs/adr/0069-l0-ironclad-rules.yaml
+  modified:
+    - CLAUDE.md
+    - docs/governance/principle-coverage.yaml
+    - docs/governance/enforcers.yaml
+    - docs/governance/rule-history.md
+    - docs/CLAUDE-deferred.md
+    - gate/check_architecture_sync.sh
+    - gate/test_architecture_sync_gate.sh
+    - agent-platform/module-metadata.yaml
+    - agent-runtime/module-metadata.yaml
+    - spring-ai-ascend-dependencies/module-metadata.yaml
+    - spring-ai-ascend-graphmemory-starter/module-metadata.yaml
+
+verification:
+  - "bash gate/check_architecture_sync.sh exits 0 with Gate Rules 45-52 added; all gate sub-rules pass on the populated YAML inputs."
+  - "bash gate/test_architecture_sync_gate.sh exits 0 with 8 new positive + 8 new negative cases (TOTAL=66)."
+  - "yq '.principles[] | select(.id == \"P-E\")' docs/governance/principle-coverage.yaml returns the new principle entry."
+  - "grep -c '^- id: E' docs/governance/enforcers.yaml returns 71 (was 63)."
+  - "Rule 38 (no Thread.sleep) gate scan returns zero matches in agent-platform/src/main/java + agent-runtime/src/main/java (verified pre-landing)."
+  - "Rule 47 (no_blocking_io_in_runtime_main) gate scan returns zero matches in agent-runtime/src/main/java (agent-platform's existing JdbcTemplate uses are out of scope; rule scoped to agent-runtime per ADR-0069)."
+
+deferred_sub_clauses:
+  - id: 37.b
+    description: "ArchUnit tests for Rules 35-42 (currently enforced via gate-script source scan only)."
+    re_introduction_trigger: "After Phase 2 module rename completes; ArchUnit assertions live in the renamed module test packages."
+  - id: 40.b
+    description: "RLS migration V3 retrofitting Row-Level Security onto idempotency_dedup."
+    re_introduction_trigger: "W2 — first multi-tenant tenant goes into production with the dedup table populated."
+  - id: 42.b
+    description: "Runtime enforcement of sandbox subsumption check (SandboxExecutor refuses logical scope wider than declared physical limits)."
+    re_introduction_trigger: "W2 — first sandboxed skill ships (code-interpreter or untrusted-tool)."
