@@ -1,8 +1,8 @@
 openapi: "3.0.1"
 info:
   title: spring-ai-ascend API v1
-  description: "Northbound facade for the spring-ai-ascend agent platform. Stability: stable (W0 surface). Non-health routes are added in W1+."
-  version: "1.0.0-W0"
+  description: "Northbound facade for the spring-ai-ascend agent platform. Stability: stable (W1 surface — adds /v1/runs lifecycle endpoints in addition to W0 /v1/health). All non-health routes require Bearer authentication and the X-Tenant-Id + Idempotency-Key headers (the latter for mutating verbs only)."
+  version: "1.0.0-W1"
   contact:
     name: spring-ai-ascend platform team
 
@@ -10,13 +10,17 @@ servers:
   - url: http://localhost:8080
     description: Local dev server
 
+security:
+  - bearerAuth: []
+
 paths:
   /v1/health:
     get:
       summary: Platform health check
-      description: "Returns UP status, git SHA, DB round-trip latency, and timestamp. Exempt from X-Tenant-Id and Idempotency-Key header requirements (operator probe path)."
+      description: "Returns UP status, git SHA, DB round-trip latency, and timestamp. Exempt from X-Tenant-Id and Idempotency-Key header requirements (operator probe path); also exempt from bearer auth (permit-list)."
       operationId: getHealth
       tags: [platform]
+      security: []
       parameters: []
       responses:
         "200":
@@ -26,7 +30,166 @@ paths:
               schema:
                 $ref: "#/components/schemas/HealthResponse"
 
+  /v1/runs:
+    post:
+      summary: Create a run
+      description: "Creates a new run for the authenticated tenant. The created run is returned with status PENDING. The Idempotency-Key header is mandatory; replays with the same key + body return the original response; same key + different body returns 409 idempotency_body_drift (ADR-0057)."
+      operationId: createRun
+      tags: [runs]
+      parameters:
+        - $ref: "#/components/parameters/TenantIdHeader"
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRunRequest"
+      responses:
+        "201":
+          description: Run created (PENDING)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunResponse"
+        "400":
+          description: Invalid request (missing tenant context, malformed body)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Missing or invalid Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403":
+          description: "tenant_mismatch (JWT tenant_id claim != X-Tenant-Id header) or jwt_missing_tenant_claim"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: "idempotency_conflict or idempotency_body_drift (Idempotency-Key seen before)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422":
+          description: invalid_run_spec (Bean Validation failure)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /v1/runs/{runId}:
+    get:
+      summary: Get a run by id
+      description: "Returns the current state of a run within the authenticated tenant's scope. Cross-tenant reads return 404 not_found (architect guidance §9.4 'tenant-scope-as-not-found')."
+      operationId: getRun
+      tags: [runs]
+      parameters:
+        - $ref: "#/components/parameters/TenantIdHeader"
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Run state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunResponse"
+        "400":
+          description: invalid_request (runId not a UUID)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Missing or invalid Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: "not_found (unknown runId OR cross-tenant access)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /v1/runs/{runId}/cancel:
+    post:
+      summary: Cancel a run
+      description: "Transitions a non-terminal run to CANCELLED. Idempotent: cancelling an already-CANCELLED run returns 200 with the current state. Cancelling a SUCCEEDED/FAILED/EXPIRED run returns 409 illegal_state_transition (per RunStateMachine DFA, Rule 20)."
+      operationId: cancelRun
+      tags: [runs]
+      parameters:
+        - $ref: "#/components/parameters/TenantIdHeader"
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Run cancelled (or already CANCELLED — idempotent)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunResponse"
+        "401":
+          description: Missing or invalid Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: "not_found (unknown runId OR cross-tenant access)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: illegal_state_transition (target run is SUCCEEDED, FAILED, or EXPIRED)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "JWT validated against the configured JWKS endpoint (app.auth.issuer/jwks-uri). MUST carry a tenant_id claim that matches the X-Tenant-Id header (ADR-0056)."
+
+  parameters:
+    TenantIdHeader:
+      name: X-Tenant-Id
+      in: header
+      required: true
+      description: "Caller-asserted tenant UUID. Cross-checked against the JWT tenant_id claim (ADR-0056 §3)."
+      schema:
+        type: string
+        format: uuid
+    IdempotencyKeyHeader:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: "UUID-shaped idempotency key. Required on mutating verbs (POST/PUT/PATCH). Reused keys with same body return the original response; same key + different body returns 409 idempotency_body_drift (ADR-0057)."
+      schema:
+        type: string
+        format: uuid
+
   schemas:
     HealthResponse:
       type: object
@@ -49,6 +212,55 @@ components:
           format: date-time
           description: Server timestamp of the response (ISO-8601).
 
+    CreateRunRequest:
+      type: object
+      required: [capabilityName]
+      properties:
+        capabilityName:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: "Identifier of the capability/agent to invoke. L1 surface; future waves add tool config, budget envelopes, parent run id, etc."
+
+    RunResponse:
+      type: object
+      required: [runId, status, capabilityName, createdAt, updatedAt]
+      properties:
+        runId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [PENDING, RUNNING, SUSPENDED, SUCCEEDED, FAILED, CANCELLED, EXPIRED]
+          description: "Run lifecycle state per RunStateMachine DFA (Rule 20)."
+        capabilityName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: "Stable, machine-readable error code (e.g. tenant_mismatch, idempotency_body_drift, illegal_state_transition, not_found, invalid_run_spec)."
+            message:
+              type: string
+              description: Human-readable detail for log/UI consumption.
+            details:
+              type: object
+              additionalProperties: true
+              description: Optional structured payload (field errors, retry hints, etc.).
+
 x-stability-tier: stable
 x-contract-owner: agent-platform
-x-w1-note: "W1 will add /v1/runs (POST, GET), /v1/runs/{runId} (GET, DELETE) with mandatory X-Tenant-Id and Idempotency-Key headers."
+x-w-note: "W1 surface — adds the run lifecycle endpoints (POST /v1/runs, GET /v1/runs/{runId}, POST /v1/runs/{runId}/cancel). Cancel is a state transition; DELETE is intentionally NOT used for run resources. W2+ additions (streaming Flux<RunEvent>, three-track RunDispatcher) are out of scope at this version."

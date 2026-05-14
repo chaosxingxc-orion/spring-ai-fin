@@ -84,7 +84,7 @@ capabilities:
       - gate/test_architecture_sync_gate.sh
     latest_semantic_pass_sha: 404d13a
     latest_delivery_file: docs/delivery/2026-05-12-e0ccb6e.md
-    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here. Architecture baseline: 52 §4 constraints (#1–#52); 54 ADRs (0001–0054); 29 active gate rules; 11 active engineering rules (1–6, 9–10, 20–21, 25); 14 deferred rules (7, 8, 11, 13–19, 22–24, 26–27); 35 gate self-tests; L0 release published at docs/releases/2026-05-13-L0-architecture-release-v2.en.md (current canonical); v1 superseded and archived at docs/archive/2026-05-13-l0-release-note-v1-superseded/ (frozen at SHA 82a1397); v2 re-cut to match canonical baseline (originally 50/52/29/35; bumped to 52/54/29/35 by 14th cycle) and re-audited by six parallel reviewer agents; fourteenth-cycle Cohesive Agent Swarm Execution + Long-Connection Containment via ADR-0053/0054 + §4 #51-#52; class-based self-audit (per the 6th+7th cycle methodology) surfaced 11-dimension SpawnEnvelope propagation gap (Class 3 hidden defects) and 3 uncovered resource-explosion vectors (socket-per-tenant cap, file-descriptor bound, in-flight Runs pool cap — Class 7 hidden defects); B/B'/B''/P capability-label notation REJECTED with mapping to existing C-Side/S-Side (ADR-0051) and S-Cloud/S-Edge/C-Device (ADR-0033) vocabularies documented in docs/reviews/2026-05-13-l0-capability-labels-platformization-response.en.md; thirteenth-cycle Whitepaper-Alignment Remediation via ADR-0049/0050/0051/0052 + §4 #47-#50 — C/S Dynamic Hydration Protocol named at L0 contract level; Workflow Intermediary + Mailbox Backpressure + Rhythm track restored as independent third cross-service bus track; Memory and Knowledge Ownership Boundary codified (C-side business ontology vs S-side trajectory; Placeholder Preservation first-class); Skill Topology Scheduler + Capability Bidding named (two-axis tenant×global arbitration); ADR-0048 narrowed; Gate Rules 28-29 added (release-note baseline truth; whitepaper alignment matrix presence); +5 self-tests (30→35); twelfth-cycle Service-Layer Microservice-Architecture Commitment via ADR-0048 + §4 #46."
+    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here. Architecture baseline: 52 §4 constraints (#1–#52); 60 ADRs (0001–0060); 29 active gate rules; 12 active engineering rules (1–6, 9–10, 20–21, 25, 28); 14 deferred rules (7, 8, 11, 13–19, 22–24, 26–27); 37 gate self-tests; L1 release published at docs/releases/2026-05-14-L1-modular-russell-release.en.md (current canonical, Phase L remediation landed per ADR-0060 closing reviewer P0-1/P0-2/P0-3/P1-2/P1-4/P2-1); L0 v2 superseded and marked historical (L0 baseline frozen at 52/54/29/35); L0 v1 archived at docs/archive/2026-05-13-l0-release-note-v1-superseded/ (frozen at SHA 82a1397); L1 adds Rule 28 (Code-as-Contract) + ADRs 0055–0060 + 10 Rule-28 sub-enforcers (28a–28j executed under base Rule 28) + 37-row enforcers.yaml index (E1–E37; Phase L adds E35 anchor validation, E36 OpenAPI no-undocumented-live, E37 JwtTestFixture); v2 re-cut to match canonical baseline (originally 50/52/29/35; bumped to 52/54/29/35 by 14th cycle) and re-audited by six parallel reviewer agents; fourteenth-cycle Cohesive Agent Swarm Execution + Long-Connection Containment via ADR-0053/0054 + §4 #51-#52; class-based self-audit (per the 6th+7th cycle methodology) surfaced 11-dimension SpawnEnvelope propagation gap (Class 3 hidden defects) and 3 uncovered resource-explosion vectors (socket-per-tenant cap, file-descriptor bound, in-flight Runs pool cap — Class 7 hidden defects); B/B'/B''/P capability-label notation REJECTED with mapping to existing C-Side/S-Side (ADR-0051) and S-Cloud/S-Edge/C-Device (ADR-0033) vocabularies documented in docs/reviews/2026-05-13-l0-capability-labels-platformization-response.en.md; thirteenth-cycle Whitepaper-Alignment Remediation via ADR-0049/0050/0051/0052 + §4 #47-#50 — C/S Dynamic Hydration Protocol named at L0 contract level; Workflow Intermediary + Mailbox Backpressure + Rhythm track restored as independent third cross-service bus track; Memory and Knowledge Ownership Boundary codified (C-side business ontology vs S-side trajectory; Placeholder Preservation first-class); Skill Topology Scheduler + Capability Bidding named (two-axis tenant×global arbitration); ADR-0048 narrowed; Gate Rules 28-29 added (release-note baseline truth; whitepaper alignment matrix presence); +5 self-tests (30→35); twelfth-cycle Service-Layer Microservice-Architecture Commitment via ADR-0048 + §4 #46."
 
   spring_ai_ascend_dependencies_bom:
     status: implemented_unverified
@@ -897,12 +897,25 @@ capabilities:
   # --- Post-seventh follow-up response additions (2026-05-13) ---
 
   w1_http_contract_reconciliation:
-    status: design_accepted
-    shipped: false
+    status: test_verified
+    shipped: true
     l0_decision: docs/adr/0040-w1-http-contract-reconciliation.md
-    implementation: null
-    tests: []
-    allowed_claim: "Design only — W1 HTTP contract reconciliation: (a) X-Tenant-Id stays required; W1 adds JWT tenant_id claim cross-check (ADR-0040); (b) initial Run status = PENDING (RunStatus enum has no CREATED); (c) cancel = POST /v1/runs/{id}/cancel (not DELETE). Gate Rule 16 enforces. §4 #37."
+    implementation:
+      - agent-platform/src/main/java/ascend/springai/platform/web/runs/RunController.java
+      - agent-platform/src/main/java/ascend/springai/platform/web/runs/RunHttpExceptionMapper.java
+      - agent-platform/src/main/java/ascend/springai/platform/web/runs/CreateRunRequest.java
+      - agent-platform/src/main/java/ascend/springai/platform/web/runs/RunResponse.java
+      - agent-platform/src/main/java/ascend/springai/platform/auth/AuthProperties.java
+      - agent-platform/src/main/java/ascend/springai/platform/auth/JwtDecoderConfig.java
+      - agent-platform/src/main/java/ascend/springai/platform/tenant/JwtTenantClaimCrossCheck.java
+      - docs/contracts/openapi-v1.yaml
+    tests:
+      - agent-platform/src/test/java/ascend/springai/platform/web/runs/RunHttpContractIT.java
+      - agent-platform/src/test/java/ascend/springai/platform/architecture/RunStatusEnumTest.java
+      - agent-platform/src/test/java/ascend/springai/platform/tenant/JwtTenantClaimCrossCheckTest.java
+      - agent-platform/src/test/java/ascend/springai/platform/auth/JwtValidationIT.java
+      - agent-platform/src/test/java/ascend/springai/platform/contracts/OpenApiContractIT.java
+    allowed_claim: "Shipped at L1 (Phase G/J/L) — W1 HTTP contract reconciliation: (a) X-Tenant-Id required; JWT tenant_id claim cross-check via JwtTenantClaimCrossCheck (ADR-0040, ADR-0056); (b) initial Run status = PENDING (RunStatus enum has no CREATED — RunStatusEnumTest pins this); (c) cancel = POST /v1/runs/{runId}/cancel (RunHttpContractIT.cancel_route_is_post_not_delete); (d) authenticated matrix asserted by RunHttpContractIT.createReturnsPending / tenantMismatchReturns403 / cancelTerminalReturns409 / duplicateIdempotencyKeyReturns409 (Phase L, closes reviewer P0-2 + P1-1); (e) OpenAPI snapshot pinned at openapi-v1.yaml with /v1/runs lifecycle endpoints + bearerAuth + ErrorEnvelope schema (Phase L, closes reviewer P0-3). Gate Rule 16 + OpenApiContractIT.noUndocumentedV1OperationsExposedByLive enforce. §4 #37."
 
   active_corpus_truth_sweep:
     status: design_accepted

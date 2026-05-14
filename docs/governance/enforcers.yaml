@@ -17,7 +17,7 @@
 - id: E1
   constraint_ref: "ARCHITECTURE.md §4 #10 (module_dep_direction); ADR-0055 supersedes ADR-0026"
   kind: gate-script
-  artifact: gate/check_architecture_sync.sh#rule_10
+  artifact: gate/check_architecture_sync.sh#module_dep_direction
   asserts: "agent-runtime pom does not depend on agent-platform"
 
 - id: E2
@@ -47,7 +47,7 @@
 - id: E6
   constraint_ref: "L1 plan §6.5; architecture-status.yaml line 892"
   kind: integration
-  artifact: agent-platform/src/test/java/ascend/springai/platform/web/runs/RunHttpContractIT.java#cancelIsPostNotDelete
+  artifact: agent-platform/src/test/java/ascend/springai/platform/web/runs/RunHttpContractIT.java#cancel_route_is_post_not_delete
   asserts: "DELETE /v1/runs/{id} returns 405/404; cancellation is POST /v1/runs/{id}/cancel"
 
 - id: E7
@@ -95,13 +95,13 @@
 - id: E14
   constraint_ref: "L1 plan §8.2; ADR-0057"
   kind: integration
-  artifact: agent-platform/src/test/java/ascend/springai/platform/idempotency/IdempotencyStorePostgresIT.java#bodyDriftReturns409
+  artifact: agent-platform/src/test/java/ascend/springai/platform/idempotency/IdempotencyStorePostgresIT.java#body_drift_returns_existing_with_original_hash
   asserts: "same key + different request_hash returns 409 idempotency_body_drift"
 
 - id: E15
   constraint_ref: "L1 plan §11 row E15; Rule 28a"
   kind: gate-script
-  artifact: gate/check_architecture_sync.sh#rule_28a_tenant_column_present
+  artifact: gate/check_architecture_sync.sh#tenant_column_present
   asserts: "every CREATE TABLE under src/main/resources/db/migration/ has a tenant_id column"
 
 - id: E16
@@ -125,13 +125,13 @@
 - id: E19
   constraint_ref: "L1 plan §10; Rule 28b"
   kind: gate-script
-  artifact: gate/check_architecture_sync.sh#rule_28b_high_cardinality_tag_guard
+  artifact: gate/check_architecture_sync.sh#high_cardinality_tag_guard
   asserts: "no source registers Tag.of(\"run_id\"|\"idempotency_key\"|\"jwt_sub\"|\"body\", …) on a springai_ascend_* metric"
 
 - id: E20
   constraint_ref: "architect guidance §9.3; Rule 28c"
   kind: gate-script
-  artifact: gate/check_architecture_sync.sh#rule_28c_no_secret_patterns
+  artifact: gate/check_architecture_sync.sh#no_secret_patterns
   asserts: "no AKIA/sk-/-----BEGIN PRIVATE KEY-----/etc. patterns in tracked files (allow-list inline-annotated)"
 
 - id: E21
@@ -167,49 +167,49 @@
 - id: E26
   constraint_ref: "L1 plan §13 out-of-scope; Rule 28d"
   kind: gate-script
-  artifact: gate/check_architecture_sync.sh#rule_28d_out_of_scope_name_guard
+  artifact: gate/check_architecture_sync.sh#out_of_scope_name_guard
   asserts: "names LLMGateway/PostgresCheckpointer/SkillRegistry/HookChain/SpawnEnvelope/LogicalCallHandle/ConnectionLease/AdmissionDecision/BackpressureSignal/ChronosHydration/SandboxExecutor do not appear in agent-*/src/main/java"
 
 - id: E27
   constraint_ref: "L1 plan decision D3; Rule 28e"
   kind: gate-script
-  artifact: gate/check_architecture_sync.sh#rule_28e_module_count_invariant
+  artifact: gate/check_architecture_sync.sh#module_count_invariant
   asserts: "root pom.xml declares exactly 4 <module> entries at L1"
 
 - id: E28
   constraint_ref: "CLAUDE.md Rule 28 (meta); ADR-0059"
   kind: gate-script
-  artifact: gate/check_architecture_sync.sh#rule_28_constraint_enforcer_coverage
+  artifact: gate/check_architecture_sync.sh#constraint_enforcer_coverage
   asserts: "every must/must not/forbidden/required sentence in the architecture corpus maps to at least one row in this file"
 
 - id: E29
   constraint_ref: "ADR-0059 §1; Rule 28f"
   kind: gate-script
-  artifact: gate/check_architecture_sync.sh#rule_28f_enforcers_yaml_wellformed
+  artifact: gate/check_architecture_sync.sh#enforcers_yaml_wellformed
   asserts: "every row in this file has id+constraint_ref+kind+artifact+asserts; kind is one of the five legal values"
 
 - id: E30
   constraint_ref: "ADR-0059 §3; Rule 28g"
   kind: gate-script
-  artifact: gate/check_architecture_sync.sh#rule_28g_no_prose_only_constraint_marker
+  artifact: gate/check_architecture_sync.sh#no_prose_only_constraint_marker
   asserts: "no TODO:enforce / FIXME:enforcer / XXX:test / deferred:gate markers in CLAUDE.md, ARCHITECTURE.md, or any */ARCHITECTURE.md"
 
 - id: E31
   constraint_ref: "architect guidance §16; Rule 28h"
   kind: gate-script
-  artifact: gate/check_architecture_sync.sh#rule_28h_l1_review_checklist_present
+  artifact: gate/check_architecture_sync.sh#l1_review_checklist_present
   asserts: "every ADR 0055-0059 contains the §16 review checklist as a sub-section"
 
 - id: E32
   constraint_ref: "L1 plan §11; Rule 28i"
   kind: gate-script
-  artifact: gate/check_architecture_sync.sh#rule_28i_plan_enforcer_table_in_sync
+  artifact: gate/check_architecture_sync.sh#plan_enforcer_table_in_sync
   asserts: "L1 plan §11 table row IDs equal the set of id: fields in this file"
 
 - id: E33
   constraint_ref: "L1 plan §18.3 step 1; Phase K audit fix F6; ADR-0059"
   kind: gate-script
-  artifact: gate/check_architecture_sync.sh#rule_28j_enforcer_artifact_paths_exist
+  artifact: gate/check_architecture_sync.sh#enforcer_artifact_paths_exist
   asserts: "every artifact: path in this file resolves to a real file on disk (strips #anchor suffix). Closes the gate-gap that let E12 ship pointing at a non-existent test."
 
 - id: E34
@@ -217,3 +217,21 @@
   kind: archunit
   artifact: agent-platform/src/test/java/ascend/springai/platform/architecture/PlatformImportsOnlyRuntimePublicApiTest.java
   asserts: "agent-platform main sources may only import runtime.runs.*, runtime.orchestration.spi.*, runtime.posture.* — never runtime.orchestration.inmemory.*, runtime.resilience.*, runtime.memory.spi.*, or other internal packages."
+
+- id: E35
+  constraint_ref: "ADR-0060 §1; Phase L reviewer P0-2 root cause"
+  kind: gate-script
+  artifact: gate/check_architecture_sync.sh#enforcer_artifact_paths_exist
+  asserts: "every artifact: path#anchor in enforcers.yaml resolves to a real method (.java/.sh) or heading (.md) inside the target file; closes the gate gap where E5/E6/E24 shipped pointing at non-existent test methods."
+
+- id: E36
+  constraint_ref: "ADR-0060 §3; Phase L reviewer P0-3"
+  kind: integration
+  artifact: agent-platform/src/test/java/ascend/springai/platform/contracts/OpenApiContractIT.java#noUndocumentedV1OperationsExposedByLive
+  asserts: "live spec at /v3/api-docs MUST NOT expose any /v1/** operation that is absent from the pinned snapshot, unless tagged x-experimental: true; closes the gap where /v1/runs shipped while openapi-v1.yaml still said W0."
+
+- id: E37
+  constraint_ref: "ADR-0060 §2; Phase L"
+  kind: integration
+  artifact: agent-platform/src/test/java/ascend/springai/platform/web/runs/JwtTestFixture.java
+  asserts: "test fixture providing stable RSA keypair + mint() helper, re-used by RunHttpContractIT to drive authenticated POST /v1/runs (closes the P1-1 underlying gap)."

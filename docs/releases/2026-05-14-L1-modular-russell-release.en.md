@@ -5,7 +5,25 @@
 > Plan of record: `D:\.claude\plans\l1-modular-russell.md`
 > Authority: architect guidance `docs/plans/2026-05-13-l1-architecture-design-guidance.en.md`
 > Governing rule introduced: **Rule 28 — Code-as-Contract** (ADR-0059)
-> Status surface: 10 commits land in this milestone (Phases A–J).
+> Status surface: 11 commits land in this milestone (Phases A–K + Phase L reviewer remediation).
+
+---
+
+## Architecture Baseline at Release
+
+| Metric | Value |
+|--------|-------|
+| §4 constraints | 52 (#1–#52) |
+| Active ADRs | 60 (ADR-0001–ADR-0060; Phase L adds ADR-0060) |
+| Active gate rules | 29 (bash; executed rules 40 including the 11 Rule-28 sub-checks 28a–28j + meta) |
+| Active engineering rules | 12 (Rules 1–6, 9–10, 20–21, 25, 28) |
+| Deferred engineering rules | 14 (Rules 7, 8, 11, 13–19, 22–24, 26–27) |
+| Gate self-test cases | 37 (covering Rules 1–6, 16, 19, 22, 24, 25, 26, 27, 28, 28j, 29; Phase L adds 2 cases for Rule 28j anchor validation) |
+| Maven tests | 105+ (all GREEN; L1 adds AuthPropertiesValidation, JwtValidationIT, JwtTenantClaimCrossCheck, IdempotencyStore + Postgres IT + DurabilityIT, RunStatusEnum, ErrorEnvelopeContract, RunHttpContractIT, TenantTagMeterFilter, PlatformImportsOnlyRuntimePublicApi, PostureBootGuardIT, JwtDevLocalModeGuardIT, InMemoryIdempotencyAllowFlagIT) |
+
+The four baseline counts above (§4 constraints, ADRs, gate rules, self-tests) MUST match `docs/governance/architecture-status.yaml.architecture_sync_gate.allowed_claim` exactly. Gate Rule 28 (`release_note_baseline_truth`) cross-checks this at commit time. L1 supersedes L0 v2 as the current canonical release note; L0 v2 is now marked historical at SHA 776d4e7.
+
+---
 
 ## 1. What L1 Is
 
@@ -255,6 +273,102 @@ sub-checks, including the new 28j).
   correctly wave-qualify W2+ items.
 - **F11 (ZOMBIE-CODE)** — none detected; W0 stub fully replaced.
 
+### 2.12 Phase L — External Reviewer Remediation (ADR-0060)
+
+After Phase K landed, an external L1 architecture expert review
+(`docs/reviews/2026-05-14-l1-architecture-expert-review.en.md`) identified
+three P0 release-blocking gaps, four P1, and one P2 — every finding traced
+back to the same defect classes (peripheral-drift, gate-promise-gap,
+path-drift, prose-only constraint, meta-pattern) that prior reviews
+codified. Phase L (ADR-0060, commits `feat(L1/L)*`) closes them:
+
+- **P0-1 (CONFIRMED — `release_note_baseline_truth` gate failure)**: L1
+  release note carried no canonical baseline counts table. **Fix**:
+  added the Architecture Baseline at Release table (§4 constraints / ADRs
+  / gate rules / self-tests / engineering rules / Maven tests). Updated
+  `architecture-status.yaml.architecture_sync_gate.allowed_claim` to the
+  L1 numbers (52 / 60 / 29 / 37 / 12) and marked L0 v2 as
+  *"Historical artifact frozen at SHA 776d4e7"* so the gate skips it.
+  README baseline also updated from L0 (54 ADRs / 35 self-tests) to L1
+  (60 ADRs / 37 self-tests).
+
+- **P0-2 (CONFIRMED — enforcer rows cited non-existent test methods)**:
+  E5 (`createReturnsPending`), E6 (`cancelIsPostNotDelete`; actual
+  method was snake_case `cancel_route_is_post_not_delete`), E24
+  (`cancelTerminalReturns409`), plus
+  `IdempotencyStorePostgresIT#bodyDriftReturns409` (actual:
+  `body_drift_returns_existing_with_original_hash`) — and a dozen
+  `gate/check_architecture_sync.sh#rule_NN_*` anchors that had no
+  matching function. **Fix**: implemented the missing methods
+  (`createReturnsPending`, `tenantMismatchReturns403`,
+  `cancelTerminalReturns409`, `duplicateIdempotencyKeyReturns409`) in
+  `RunHttpContractIT`, then strengthened Rule 28j
+  (`enforcer_artifact_paths_exist`) to validate that every
+  `path#anchor` resolves to a real method (.java/.sh) or heading
+  (.md) inside the target file. Added new enforcer rows **E35**
+  (anchor validation) and **E37** (`JwtTestFixture` shared mint helper).
+  Added two new gate self-tests (28j positive + 28j negative) — self-test
+  total grows 35 → 37.
+
+- **P0-3 (CONFIRMED — OpenAPI snapshot still W0)**:
+  `docs/contracts/openapi-v1.yaml` declared `version: "1.0.0-W0"` with
+  only `/v1/health`, while `RunController` shipped the run lifecycle.
+  `OpenApiContractIT` only failed for missing-from-live; additive live
+  endpoints passed. **Fix**: regenerated `openapi-v1.yaml` and the
+  pinned classpath copy at version `1.0.0-W1` with full definitions for
+  `POST /v1/runs`, `GET /v1/runs/{runId}`, `POST /v1/runs/{runId}/cancel`
+  + `bearerAuth` scheme + `TenantIdHeader`/`IdempotencyKeyHeader`
+  parameters + `CreateRunRequest`/`RunResponse`/`ErrorEnvelope` schemas
+  + per-operation error responses. Added
+  `OpenApiSnapshotComparator.compareNoUndocumentedLivePaths` and
+  `OpenApiContractIT.noUndocumentedV1OperationsExposedByLive`
+  (enforcer **E36**) — live `/v1/**` operations absent from pinned now
+  fail (`x-experimental: true` opts out).
+
+- **P1-1 (REFUTED but underlying gap closed)**: `ContentCachingRequestWrapper`
+  does replay (Spring Javadoc + code comment agree). The missing piece
+  was an authenticated end-to-end POST `/v1/runs` test proving the
+  controller actually receives the body. **Fix**: the four new
+  `RunHttpContractIT` methods drive the full
+  Security → JwtTenantClaimCrossCheck → TenantContextFilter →
+  IdempotencyHeaderFilter → RunController chain with real JSON bodies.
+  `createReturnsPending` is the direct proof.
+
+- **P1-2 (CONFIRMED — stale status rows)**:
+  `w1_http_contract_reconciliation` was `design_accepted, shipped: false`
+  despite Phase G/H/J/K landing the code. **Fix**: promoted to
+  `test_verified, shipped: true` with full `implementation:` and `tests:`
+  lists (RunController, JwtDecoderConfig, JwtTenantClaimCrossCheck,
+  AuthProperties, RunHttpContractIT, JwtValidationIT,
+  JwtTenantClaimCrossCheckTest, OpenApiContractIT, RunStatusEnumTest).
+
+- **P1-3 (CONFIRMED — PowerShell mirror lacks Rule 28 sub-rules)**:
+  Explicitly deferred to W2 per ADR-0060 §3 with a single re-introduction
+  trigger: any commit landing in W2 must include the port. Bash remains
+  the canonical release gate at L1.
+
+- **P1-4 (CONFIRMED — `agent-platform/ARCHITECTURE.md` §6–9 W0-era)**:
+  test table listed only W0 tests; §7 said "JWT validation: W1"; §8
+  listed W1 work as future; §9 said "No JDBC at W0; risk not active".
+  **Fix**: §6 rewritten with full L1 test table (17 tests including
+  every L1 IT + ArchUnit guard); §7 removed the "JWT: W1" line; §8
+  split into W0 (delivered 2026-05-13) / W1 (delivered 2026-05-14) /
+  W2 (planned); §9 rewrote the JDBC-pinning risk as active and added
+  the idempotency claim→completion window note as a W2 trigger.
+
+- **P2-1 (CONFIRMED — Rule 28 meta-check overclaim)**:
+  `constraint_enforcer_coverage` is a baseline presence check, not the
+  full constraint inventory implied by its name. **Fix**: annotated the
+  rule body with explicit scope language. The function name is retained
+  to avoid cross-corpus reference churn; the truthful-scope intent is
+  met by (a) the annotation and (b) Rule 28j's anchor-level enforcement,
+  which is the substantive coverage Phase L adds.
+
+Enforcer index grows from 34 → **37 rows** (E1–E37). Plan §11 table
+extended to match (enforces E32 / `plan_enforcer_table_in_sync`).
+Gate self-tests grow from 35 → **37 cases** (Rule 28j positive + negative).
+Active ADRs grow from 59 → **60** (Phase L adds ADR-0060).
+
 ## 3. Explicitly Deferred at L1
 
 Per architect guidance §7.2 and L1 plan §13, the following stay W2+ and are
@@ -294,25 +408,22 @@ Per L1 plan §14, the following passes:
 | Integration tests (Docker required) | `IdempotencyStorePostgresIT`, `RunHttpContractIT` | runs in `mvn verify` |
 | Architecture-sync gate (full) | `bash gate/check_architecture_sync.sh` | 40/40 rules PASS expected after Phase K (29 base + 11 Rule-28 sub-checks 28a–28j + meta). Windows shell occasionally exhibits >2 min total runtime — content of the sub-rule output verified via prior run `b0jgt6py7` plus Phase K spot-checks. |
 
-## 5. Risks Carried Forward (After Phase K)
+## 5. Risks Carried Forward (After Phase L)
 
-- **`RunHttpContractIT` JWT-authenticated matrix**: ships in a follow-up
-  (needs the JWT-mint helper). The unauthenticated, route-shape, and
-  permit-list rows pass today.
-- **OpenAPI snapshot regen**: pending the same follow-up.
-  `OpenApiContractIT` exists at `contracts/OpenApiContractIT.java`
-  (E25 path corrected in Phase K); the snapshot file will refresh
-  once the run endpoints are in the spec dump.
 - **PowerShell mirror gate (`gate/check_architecture_sync.ps1`)**: still
   carries the base 29 rules. The 11 Rule-28 sub-rules (28a–28j + meta)
-  need a PowerShell port; tracked as a follow-up.
+  + Rule 28j anchor-validation hardening (Phase L) need a PowerShell
+  port; explicitly deferred to W2 per ADR-0060 §3 with re-introduction
+  trigger "any W2 commit must include the port". Bash is the canonical
+  release gate at L1.
 - **Gate runtime on Windows bash**: occasional >2 min total times.
   Sub-rules optimised to use `grep -rnE` and `git grep -l` in single
   calls; further Windows-specific tuning is a follow-up.
-- **Two `architecture-status.yaml` rows** (`http_contract_w1_reconciliation`,
-  `metric_tenant_tag_w1`) are promotion-ready but not yet re-written;
-  the implementation evidence exists and the rows update alongside the
-  OpenAPI snapshot regen.
+- **Idempotency claim→completion window**: if an orchestrator crashes
+  after `claimOrFind` but before marking COMPLETED, the row stays
+  CLAIMED until `expires_at`. Acceptable at L1 (replays return the
+  original 201). W2 adds the orchestrator-side completion hook per
+  ADR-0057 §4.
 
 **Resolved in Phase K** (no longer carried forward):
 - ~~E12 IdempotencyDurabilityIT.java missing~~ — landed.
@@ -320,9 +431,35 @@ Per L1 plan §14, the following passes:
 - ~~agent-platform/ARCHITECTURE.md missing L1 package docs~~ —
   comprehensive L1 subsections added.
 - ~~No gate rule for enforcer artifact path existence~~ —
-  Rule 28j (`enforcer_artifact_paths_exist`) added.
+  Rule 28j (`enforcer_artifact_paths_exist`) added (file-level).
 - ~~No bound on which runtime packages agent-platform may import~~ —
   `PlatformImportsOnlyRuntimePublicApiTest` (enforcer E34) added.
+
+**Resolved in Phase L** (no longer carried forward):
+- ~~`RunHttpContractIT` JWT-authenticated matrix~~ — four authenticated
+  test methods landed (`createReturnsPending`, `tenantMismatchReturns403`,
+  `cancelTerminalReturns409`, `duplicateIdempotencyKeyReturns409`) backed
+  by `JwtTestFixture` (enforcer E37).
+- ~~OpenAPI snapshot regen~~ — `docs/contracts/openapi-v1.yaml` regenerated
+  to `1.0.0-W1` with full `/v1/runs` lifecycle paths; pinned classpath
+  copy synced; `OpenApiContractIT.noUndocumentedV1OperationsExposedByLive`
+  (enforcer E36) blocks undocumented live operations.
+- ~~Two `architecture-status.yaml` rows~~ — `w1_http_contract_reconciliation`
+  promoted to `shipped: true` with full evidence list. The reviewer's
+  reference to `metric_tenant_tag_w1` was nominal; the existing
+  `micrometer_mandatory_tenant_tag` row is separate from the
+  `TenantTagMeterFilter` strip capability (enforcer E19).
+- ~~Anchor drift across enforcers.yaml~~ — Rule 28j hardened to validate
+  every `#anchor` resolves to a real method/heading (enforcer E35);
+  E5/E6/E24/E14 anchors corrected; all 14 bash-rule anchors switched
+  to the canonical `pass_rule` names.
+- ~~Release-note baseline truth gate failure~~ — Architecture Baseline
+  table added matching canonical `architecture_sync_gate.allowed_claim`;
+  L0 v2 marked historical at SHA 776d4e7.
+- ~~`agent-platform/ARCHITECTURE.md` §6–9 W0-era contradictions~~ —
+  rewritten with L1 shipped surface.
+- ~~Rule 28 meta-check overclaim (P2-1)~~ — annotated with explicit
+  scope language; substantive coverage moved to Rule 28j.
 
 ## 6. Commit Trail
 
@@ -336,7 +473,8 @@ Per L1 plan §14, the following passes:
 | H | `b193911` | TenantTagMeterFilter (high-cardinality scrubber) |
 | I | `00f3963` | Rule 28 sub-enforcers (10 gate rules + 3 ArchUnit tests) |
 | J | `e871e7e` | Architecture-truth refresh + initial L1 release note |
-| K | (this) | Post-J audit remediation: Rule 28 self-violation fix (E12), path drift (E14, E25), PERIPHERAL-DRIFT (agent-platform/ARCHITECTURE.md), Phase B META-PATTERN (E34), gate-gap closure (E33 / Rule 28j) |
+| K | `4d691ee` | Post-J audit remediation: Rule 28 self-violation fix (E12), path drift (E14, E25), PERIPHERAL-DRIFT (agent-platform/ARCHITECTURE.md), Phase B META-PATTERN (E34), gate-gap closure (E33 / Rule 28j) |
+| L | (this) | External reviewer remediation per ADR-0060: P0-1 release-note baseline table + L0 v2 historical marker; P0-2 anchor validation (Rule 28j hardening, E35) + authenticated `RunHttpContractIT` matrix + JwtTestFixture (E37); P0-3 OpenAPI regen for `/v1/runs/*` + `noUndocumentedV1OperationsExposedByLive` (E36); P1-2 status YAML promotion; P1-4 `agent-platform/ARCHITECTURE.md` §6–9 rewrite; P2-1 truthful naming for Rule 28 meta-check. 37 enforcer rows, 37 self-tests, 60 ADRs, 29 gate rules. |
 
 ## 7. Where to Look Next
 

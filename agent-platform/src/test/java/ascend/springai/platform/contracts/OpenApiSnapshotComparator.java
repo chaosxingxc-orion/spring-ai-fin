@@ -7,7 +7,11 @@ import java.util.Map;
 /**
  * Compares a pinned OpenAPI spec (baseline) against a live spec fetched from the running app.
  * Fails if the live spec REMOVES or RENAMES operations or required fields from the baseline.
- * Additive changes (new paths, new optional fields) are allowed.
+ * Additive changes (new paths, new optional fields) are allowed for the {@link #compare}
+ * direction. Phase L (reviewer P0-3) adds the reverse direction
+ * {@link #compareNoUndocumentedLivePaths(Map, Map)} which fails when the live spec
+ * exposes a {@code /v1/**} operation that is NOT documented in the pinned snapshot
+ * (unless explicitly tagged {@code x-experimental: true} on the operation).
  */
 class OpenApiSnapshotComparator {
 
@@ -31,6 +35,46 @@ class OpenApiSnapshotComparator {
                 if (method.startsWith("x-")) continue;
                 if (!liveOps.containsKey(method)) {
                     violations.add("Operation removed: " + method.toUpperCase() + " " + path);
+                }
+            }
+        }
+
+        return new ComparisonResult(violations.isEmpty(), violations);
+    }
+
+    /**
+     * Phase L (reviewer P0-3): rejects live operations under {@code /v1/**} that are
+     * NOT documented in the pinned snapshot, unless the operation carries
+     * {@code x-experimental: true}. Non-{@code /v1/**} paths (e.g. {@code /actuator/**},
+     * {@code /v3/api-docs}, error endpoints emitted by springdoc) are tolerated so the
+     * comparator does not fight the framework's auto-emitted routes.
+     */
+    @SuppressWarnings("unchecked")
+    static ComparisonResult compareNoUndocumentedLivePaths(Map<String, Object> pinned, Map<String, Object> live) {
+        List<String> violations = new ArrayList<>();
+
+        Map<String, Object> pinnedPaths = (Map<String, Object>) pinned.getOrDefault("paths", Map.of());
+        Map<String, Object> livePaths = (Map<String, Object>) live.getOrDefault("paths", Map.of());
+
+        for (Map.Entry<String, Object> liveEntry : livePaths.entrySet()) {
+            String path = liveEntry.getKey();
+            if (!path.startsWith("/v1/")) {
+                continue;
+            }
+            Map<String, Object> liveOps = (Map<String, Object>) liveEntry.getValue();
+            Map<String, Object> pinnedOps = (Map<String, Object>) pinnedPaths.get(path);
+            for (Map.Entry<String, Object> opEntry : liveOps.entrySet()) {
+                String method = opEntry.getKey();
+                if (method.startsWith("x-") || "parameters".equals(method)) {
+                    continue;
+                }
+                Object op = opEntry.getValue();
+                if (op instanceof Map && Boolean.TRUE.equals(((Map<?, ?>) op).get("x-experimental"))) {
+                    continue;
+                }
+                if (pinnedOps == null || !pinnedOps.containsKey(method)) {
+                    violations.add("Undocumented live operation under /v1/**: " + method.toUpperCase() + " " + path
+                            + ". Either pin it in docs/contracts/openapi-v1.yaml or mark the operation x-experimental: true.");
                 }
             }
         }

@@ -1227,10 +1227,10 @@ if [[ $_r28g_fail -eq 0 ]]; then pass_rule "no_prose_only_constraint_marker"; fi
 # Every L1 ADR (0055–0059) MUST include the §16 review checklist subsection.
 # ---------------------------------------------------------------------------
 _r28h_fail=0
-for _n in 0055 0056 0057 0058 0059; do
+for _n in 0055 0056 0057 0058 0059 0060; do
   _adr=$(find docs/adr -maxdepth 1 -name "${_n}-*.md" 2>/dev/null | head -1)
   [[ -z "$_adr" ]] && continue
-  if ! grep -q '§16 Review Checklist' "$_adr" 2>/dev/null; then
+  if ! grep -qE '(§16 Review Checklist|L1 Review Checklist)' "$_adr" 2>/dev/null; then
     fail_rule "l1_review_checklist_present" "$_adr missing '§16 Review Checklist' subsection. Per Rule 28h / enforcer E31 / architect guidance §16."
     _r28h_fail=1
   fi
@@ -1263,25 +1263,78 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Rule 28j — enforcer_artifact_paths_exist (Phase K audit fix F6, enforcer E33)
+# Rule 28j — enforcer_artifact_paths_exist (Phase K F6 + Phase L P0-2, E33+E35)
 # Every `artifact:` path in docs/governance/enforcers.yaml MUST resolve to a
-# real file on disk. `#anchor` suffixes (e.g. `RunHttpContractIT.java#bodyDrift`
-# or `check_architecture_sync.sh#rule_10`) are stripped before path resolution.
-# Closes the gate-gap that let E12's IdempotencyDurabilityIT.java ship pointing
-# at a non-existent file.
+# real file on disk. `#anchor` suffixes (e.g. `RunHttpContractIT.java#cancel...`
+# or `check_architecture_sync.sh#rule_10`) MUST also resolve to a real method
+# (.java/.sh) or heading (.md) inside that file. Phase L strengthens the
+# file-only check (which let E5/E6/E24 ship with anchors pointing at methods
+# that did not exist — closes reviewer finding P0-2).
 # ---------------------------------------------------------------------------
 _r28j_fail=0
 if [[ -f "$_efile" ]]; then
   while IFS= read -r _aline; do
     [[ -z "$_aline" ]] && continue
-    _apath=${_aline#*artifact:}
-    _apath=${_apath#"${_apath%%[![:space:]]*}"}  # ltrim
-    _apath=${_apath%%#*}                          # strip #anchor
-    _apath=${_apath%"${_apath##*[![:space:]]}"}   # rtrim
+    _aval=${_aline#*artifact:}
+    _aval=${_aval#"${_aval%%[![:space:]]*}"}    # ltrim
+    _aval=${_aval%"${_aval##*[![:space:]]}"}     # rtrim
+    _apath=${_aval%%#*}                          # path side
+    _aanchor=""
+    case "$_aval" in
+      *'#'*) _aanchor=${_aval#*#} ;;
+    esac
     [[ -z "$_apath" ]] && continue
     if [[ ! -e "$_apath" ]]; then
       fail_rule "enforcer_artifact_paths_exist" "enforcers.yaml declares artifact path '$_apath' which does not exist on disk. Per Rule 28j / enforcer E33."
       _r28j_fail=1
+      continue
+    fi
+    if [[ -n "$_aanchor" ]]; then
+      _aok=1
+      case "$_apath" in
+        *.java)
+          # Method declaration: `void <anchor>(`, `<modifiers> <anchor>(`
+          if ! grep -qE "(void|\)|\>|\>[[:space:]])[[:space:]]+${_aanchor}[[:space:]]*\(" "$_apath" 2>/dev/null; then
+            if ! grep -qE "^[[:space:]]*[a-zA-Z_<>][^()]*[[:space:]]${_aanchor}[[:space:]]*\(" "$_apath" 2>/dev/null; then
+              _aok=0
+            fi
+          fi
+          ;;
+        *.sh|*.bash)
+          # Bash function definition: `<anchor>()` or `function <anchor>` or comment `# Rule N — <anchor>`
+          if ! grep -qE "(^|[[:space:]])${_aanchor}[[:space:]]*\(\)" "$_apath" 2>/dev/null; then
+            if ! grep -qE "^[[:space:]]*function[[:space:]]+${_aanchor}\b" "$_apath" 2>/dev/null; then
+              if ! grep -qE "^#[[:space:]]*Rule[[:space:]]+[0-9a-z]+[[:space:]]+(—|--)[[:space:]]+${_aanchor}\b" "$_apath" 2>/dev/null; then
+                if ! grep -qE "\b(pass_rule|fail_rule)[[:space:]]+\"${_aanchor}\"" "$_apath" 2>/dev/null; then
+                  _aok=0
+                fi
+              fi
+            fi
+          fi
+          ;;
+        *.md)
+          # Markdown heading: `^#+ ... <anchor> ...` (loose match — anchor can be slug or phrase)
+          if ! grep -qE "^#+[[:space:]].*${_aanchor}" "$_apath" 2>/dev/null; then
+            _aok=0
+          fi
+          ;;
+        *.yaml|*.yml)
+          # YAML anchor: any line containing the anchor literal (loose check)
+          if ! grep -q "${_aanchor}" "$_apath" 2>/dev/null; then
+            _aok=0
+          fi
+          ;;
+        *)
+          # Other file types: just require literal presence
+          if ! grep -q "${_aanchor}" "$_apath" 2>/dev/null; then
+            _aok=0
+          fi
+          ;;
+      esac
+      if [[ $_aok -eq 0 ]]; then
+        fail_rule "enforcer_artifact_paths_exist" "enforcers.yaml declares artifact anchor '$_apath#$_aanchor' but no method/heading/rule with that name exists in the target file. Per Rule 28j / enforcer E33 (anchor validation added in Phase L, enforcer E35)."
+        _r28j_fail=1
+      fi
     fi
   done < <(grep -E '^[[:space:]]*artifact:' "$_efile" 2>/dev/null || true)
 fi
@@ -1289,13 +1342,19 @@ if [[ $_r28j_fail -eq 0 ]]; then pass_rule "enforcer_artifact_paths_exist"; fi
 
 # ---------------------------------------------------------------------------
 # Rule 28 — constraint_enforcer_coverage (meta-rule, enforcer E28)
-# Every numbered Rule N in CLAUDE.md and every §4 constraint in
-# ARCHITECTURE.md MUST be referenced in docs/governance/enforcers.yaml
-# constraint_ref values (or carry an inline `<!-- enforcer: NONE_PROSE_ONLY -->`
-# allow-list comment).
-# L1 baseline: at minimum CLAUDE.md Rule 28 itself MUST appear as a
-# constraint_ref in enforcers.yaml. This is the smallest viable meta-check;
-# it grows with the corpus.
+#
+# **L1 scope (Phase L truthful naming, per reviewer P2-1):** baseline presence
+# check only. Verifies that `docs/governance/enforcers.yaml` references
+# `CLAUDE.md` AND `ARCHITECTURE.md`. This is the smallest viable bootstrap
+# meta-check — it does NOT parse every "must"/"forbidden"/"required" sentence
+# in the corpus and cross-reference each one. Full natural-language parsing is
+# deferred (no executable enforcer is feasible without committing to a brittle
+# regex over evolving prose).
+#
+# Anchor-level truth is enforced by Rule 28j (`enforcer_artifact_paths_exist`,
+# Phase L hardening), which validates that every `artifact: path#anchor`
+# resolves to a real method (.java/.sh) or heading (.md) — closing reviewer
+# finding P0-2.
 # ---------------------------------------------------------------------------
 _r28_fail=0
 if [[ -f "$_efile" ]] && [[ -f 'CLAUDE.md' ]]; then

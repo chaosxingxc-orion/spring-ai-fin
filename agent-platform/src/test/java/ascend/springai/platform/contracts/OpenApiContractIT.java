@@ -107,4 +107,28 @@ class OpenApiContractIT {
         Map<String, Object> info = (Map<String, Object>) spec.get("info");
         assertThat(info).containsKey("title");
     }
+
+    /**
+     * Phase L (reviewer P0-3): fail when the live spec exposes a {@code /v1/**}
+     * operation that is NOT documented in the pinned snapshot, unless explicitly
+     * tagged {@code x-experimental: true}. Pins the run lifecycle endpoints
+     * shipped at L1 (POST /v1/runs, GET /v1/runs/{runId}, POST /v1/runs/{runId}/cancel).
+     *
+     * <p>Enforcer row: docs/governance/enforcers.yaml#E36.
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    void noUndocumentedV1OperationsExposedByLive() throws Exception {
+        InputStream pinned = getClass().getResourceAsStream("/contracts/openapi-v1-pinned.yaml");
+        assertThat(pinned).as("pinned spec on classpath").isNotNull();
+        Map<String, Object> pinnedSpec = YAML_MAPPER.readValue(pinned, Map.class);
+
+        Map<String, Object> liveSpec = fetchLiveSpec();
+
+        OpenApiSnapshotComparator.ComparisonResult result =
+                OpenApiSnapshotComparator.compareNoUndocumentedLivePaths(pinnedSpec, liveSpec);
+        assertThat(result.violations())
+                .as("Live spec exposes /v1/** operations not pinned in docs/contracts/openapi-v1.yaml")
+                .isEmpty();
+    }
 }

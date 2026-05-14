@@ -8,11 +8,11 @@
 
 ## Status
 
-**L0 architecturally ready.** W0 runtime kernel + contract-guard layer shipped; W1–W4 capabilities are staged as design contracts (ADRs + per-capability ledger).
+**L1 module-level architecture shipped.** W0 runtime kernel + L1 platform composition (JWT validation, tenant claim cross-check, durable idempotency, posture boot guard, W1 run HTTP API, high-cardinality metric scrub, Rule 28 Code-as-Contract governance) shipped; W2–W4 capabilities remain design contracts.
 
-- Formal release: [docs/releases/2026-05-13-L0-architecture-release-v2.en.md](docs/releases/2026-05-13-L0-architecture-release-v2.en.md) (v1 superseded — archived under `docs/archive/2026-05-13-l0-release-note-v1-superseded/`)
+- Formal release: [docs/releases/2026-05-14-L1-modular-russell-release.en.md](docs/releases/2026-05-14-L1-modular-russell-release.en.md) (L0 v2 superseded — marked historical)
 - Per-capability shipped/deferred ledger: [docs/governance/architecture-status.yaml](docs/governance/architecture-status.yaml)
-- Architecture baseline: 52 §4 constraints · 54 ADRs · 29 gate rules · 35 self-tests · 11 active engineering rules · 101 Maven tests GREEN.
+- Architecture baseline: 52 §4 constraints · 60 ADRs · 29 gate rules · 37 self-tests · 12 active engineering rules · 105+ Maven tests GREEN (L1 release, Phase L per ADR-0060).
 
 ## Quick start
 
@@ -61,12 +61,12 @@ Full matrix: [docs/cross-cutting/posture-model.md](docs/cross-cutting/posture-mo
 2. **[docs/STATE.md](docs/STATE.md)** — per-capability shipped/deferred table.
 3. **[ARCHITECTURE.md](ARCHITECTURE.md)** — system boundary, §4 constraints, SPI contracts, decision chains.
 4. **[docs/contracts/](docs/contracts/)** — HTTP API contracts, SPI semantic contracts, pinned OpenAPI snapshot.
-5. **[docs/adr/README.md](docs/adr/README.md)** — Architecture Decision Records (ADR-0001 … ADR-0052).
-6. **[CLAUDE.md](CLAUDE.md)** — engineering rules (11 active, 14 deferred with re-introduction triggers).
+5. **[docs/adr/README.md](docs/adr/README.md)** — Architecture Decision Records (ADR-0001 … ADR-0060).
+6. **[CLAUDE.md](CLAUDE.md)** — engineering rules (12 active, 14 deferred with re-introduction triggers).
 
 ## See also
 
 - [docs/releases/](docs/releases/) — formal release notes.
 - [docs/governance/architecture-status.yaml](docs/governance/architecture-status.yaml) — capability ledger.
-- [gate/README.md](gate/README.md) — architecture-sync gate (29 rules + 35 self-tests).
+- [gate/README.md](gate/README.md) — architecture-sync gate (29 rules + 37 self-tests).
 - [docs/cross-cutting/oss-bill-of-materials.md](docs/cross-cutting/oss-bill-of-materials.md) — OSS dependency policy.

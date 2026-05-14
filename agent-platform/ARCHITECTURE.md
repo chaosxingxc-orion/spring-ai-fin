@@ -225,7 +225,7 @@ values.
 
 ## 6. Tests
 
-W0 shipped tests (all green; `HealthEndpointIT` and `OpenApiContractIT` use Testcontainers via `@Testcontainers(disabledWithoutDocker = true)`; remaining tests are pure JUnit):
+### L1 shipped tests (all green; Testcontainers ITs guarded by `@Testcontainers(disabledWithoutDocker = true)`; remaining tests are pure JUnit)
 
 | Test | Layer | Asserts |
 |---|---|---|
@@ -233,8 +233,25 @@ W0 shipped tests (all green; `HealthEndpointIT` and `OpenApiContractIT` use Test
 | `TenantContextFilterIT` | Integration | UUID binding, dev-default, 400 on missing in research |
 | `IdempotencyHeaderFilterIT` | Integration | UUID validation, 400 on missing, header passthrough |
 | `PostureBindingIT` | Integration | `APP_POSTURE` env-var bridge wired |
-| `OpenApiContractIT` | Integration | `/v3/api-docs` snapshot matches pinned `openapi-v1.yaml` |
-| `ApiCompatibilityTest` | ArchUnit | SPI purity + dependency direction |
+| `OpenApiContractIT` | Integration | live `/v3/api-docs` agrees with pinned `openapi-v1.yaml` for every `/v1/**` path (Phase L stiffening — no undocumented live operations) |
+| `AuthPropertiesValidationTest` | Unit | `app.auth.*` binding + cross-field consistency check (Phase C) |
+| `JwtValidationIT` | Integration | real Nimbus decoder + RSA keypair, every failure row of ADR-0056 §4 (Phase C, enforcer E9) |
+| `JwtDevLocalModeGuardIT` | Integration | `dev-local-mode=true` is fatal outside `app.posture=dev` (Phase F, enforcer E11) |
+| `JwtTenantClaimCrossCheckTest` | Unit | claim==header / claim!=header / missing-claim / no-auth branches (Phase D, enforcer E10) |
+| `IdempotencyStoreTest` | Unit | In-memory dev-posture store contract (Phase E) |
+| `IdempotencyStorePostgresIT` | Integration | JDBC `INSERT … ON CONFLICT` + body-drift returns existing hash (Phase E, enforcer E14) |
+| `IdempotencyDurabilityIT` | Integration | row persists across simulated downstream failure (Phase K, enforcer E12) |
+| `InMemoryIdempotencyAllowFlagIT` | Integration | in-memory store posture-gated (Phase E, enforcer E22) |
+| `PostureBootGuardIT` | Integration | research/prod fail-closed on missing config (Phase F, enforcer E21) |
+| `RunHttpContractIT` | Integration | unauthenticated 401/403 + Phase L authenticated matrix (`createReturnsPending`, `tenantMismatchReturns403`, `cancelTerminalReturns409`, `duplicateIdempotencyKeyReturns409`, `cancel_route_is_post_not_delete`); enforcers E5/E6/E7/E10/E24 |
+| `RunStatusEnumTest` | Unit | enum pinned at 7 values; no `CREATED` (Phase G, enforcer E5) |
+| `ErrorEnvelopeContractTest` | Unit | every 4xx/5xx response has `{error:{code,message,details}}` shape (Phase D, enforcer E8) |
+| `TenantTagMeterFilterTest` | Unit | forbidden high-cardinality tags stripped from `springai_ascend_*` (Phase H, enforcer E19) |
+| `PlatformImportsOnlyRuntimePublicApiTest` | ArchUnit | platform main sources may only import the runtime public-API packages (Phase K, enforcer E34) |
+| `RuntimeMustNotDependOnPlatformTest` | ArchUnit | runtime main sources MUST NOT import any platform package (Phase B, enforcer E2) |
+| `HttpEdgeMustNotImportMemorySpiTest` | ArchUnit | HTTP edge cannot reach the memory SPI (Phase B, enforcer E4) |
+| `ApiCompatibilityTest` | ArchUnit | module-dep direction + SPI purity (W0 baseline) |
+| `JwtTestFixture` | Test fixture | shared RSA keypair + JWT mint helper for L1 authenticated tests (Phase L, enforcer E37) |
 
 W2-deferred tests (currently `@Disabled` — scaffold only):
 
@@ -242,30 +259,25 @@ W2-deferred tests (currently `@Disabled` — scaffold only):
 - `GucEmptyAtTxStartIT` — enables when JDBC + GUC wired (W2).
 - `RlsPolicyCoverageIT` — enables when RLS policies active (W2).
 
-## 7. Out of scope
+## 7. Out of scope at L1
 
-- LLM calls, tool calling, run lifecycle: `agent-runtime/`.
-- JWT validation, Spring Security auth filters: W1.
+- LLM calls, tool calling, run lifecycle execution: `agent-runtime/` (Run state-machine sources, executors).
 - `SET LOCAL` GUC, Postgres RLS policies: W2.
 - Spring Cloud Gateway, per-tenant config overrides: W2–W3.
+- Three-track `RunDispatcher`, streaming `Flux<RunEvent>` handoff: W2.
 
 ## 8. Wave landing
 
-- W0: `web/` (HealthController), `bootstrap/` (PlatformApplication + AppPosture), actuator,
+- W0 (delivered 2026-05-13): `web/` (HealthController), `bootstrap/` (PlatformApplication + AppPosture), actuator,
   `tenant/` (TenantContextFilter — header binding + MDC), `idempotency/` (IdempotencyHeaderFilter
   — UUID validation on POST/PUT/PATCH), `probe/` (OssApiProbe).
-- W1: `auth/` (JWTAuthFilter + JWKS), tenant JWT claim extraction, idempotency dedup store
-  (Postgres-backed), posture-aware JWT validation.
-- W2: `config/`, tenant GUC + RLS, Spring Cloud Gateway routing, OTel auto-instrumentation.
-- W3+: per-tenant config overrides via Spring Cloud Config.
+- W1 / L1 (delivered 2026-05-14): `auth/` (AuthProperties + JwtDecoderConfig — JWKS-backed + dev-local-mode RSA fixture), `tenant/JwtTenantClaimCrossCheck` (cross-check against `X-Tenant-Id` header per ADR-0056 §3), `idempotency/` claim/replay store (`JdbcIdempotencyStore` + `InMemoryIdempotencyStore` + `IdempotencyHeaderFilter` body-hash claim/replay per ADR-0057), `posture/PostureBootGuard` (fail-closed startup in research/prod per ADR-0058), `web/runs/` (RunController + CreateRunRequest + RunResponse + RunHttpExceptionMapper for `POST /v1/runs`, `GET /v1/runs/{runId}`, `POST /v1/runs/{runId}/cancel`), `observability/TenantTagMeterFilter` (strips forbidden high-cardinality tags from `springai_ascend_*` metrics).
+- W2: `config/`, tenant GUC + RLS, Spring Cloud Gateway routing, OTel auto-instrumentation, durable `RunRepository` (Postgres-backed beyond the L1 in-memory dev-posture wiring), streaming run event handoff.
+- W3+: per-tenant config overrides via Spring Cloud Config; PowerShell mirror of Rule 28a–28j sub-checks (deferred at L1 per ADR-0060 §3); LLM gateway resilience routing (W2 trigger).
 
 ## 9. Risks
 
-- **Virtual-thread + JDBC pinning** (W1 trigger): HikariCP 5.x mitigates pinning
-  once JDBC is wired at W1. No JDBC calls at W0; risk not active.
-- **Spring Security 6 filter ordering**: covered by integration tests;
-  one shared `SecurityFilterChain` per profile.
-- **JWT replay attacks** (W1 trigger): idempotency-key dedup + JWKS-cache TTL
-  tuning deferred alongside JWT auth.
-- **Tenant-id confusion in multi-step requests**: every async handoff sources
-  tenant from `RunContext.tenantId()` (Rule 21), not `TenantContextHolder`.
+- **Virtual-thread + JDBC pinning** (active at L1): HikariCP wired at L1 alongside the durable `JdbcIdempotencyStore`. Watch for unexpected `parkNanos`/`Unsafe.park` pinning under load; monitor `springai_ascend_*` pool metrics (`hikaricp.connections.pending`, `hikaricp.connections.usage`).
+- **Spring Security 6/Boot 4 filter ordering**: filters are registered with explicit `FilterRegistrationBean` order — `JwtTenantClaimCrossCheck` at 15, `TenantContextFilter` at 20, `IdempotencyHeaderFilter` after that. `RunHttpContractIT` proves the full chain end-to-end.
+- **Idempotency claim→completion window** (W2 trigger): if an orchestrator crashes after `claimOrFind` but before marking COMPLETED, the row stays CLAIMED until expires_at. Acceptable at L1 (replays return the original 201); W2 will add an orchestrator-side completion hook per ADR-0057 §4.
+- **Tenant-id confusion in multi-step requests**: every async handoff sources tenant from `RunContext.tenantId()` (Rule 21, enforced by `TenantPropagationPurityTest` ArchUnit + `RuntimeMustNotDependOnPlatformTest`), not from `TenantContextHolder`.

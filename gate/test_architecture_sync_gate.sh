@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# spring-ai-ascend architecture-sync gate self-test (L0 v2 release multi-agent self-audit).
-# PARTIAL COVERAGE: covers Rules 1-6 + Rules 16, 19, 22, 24, 25, 26, 27, 28, 29 (35 tests).
+# spring-ai-ascend architecture-sync gate self-test (L0 v2 + L1 Phase L).
+# PARTIAL COVERAGE: covers Rules 1-6 + Rules 16, 19, 22, 24, 25, 26, 27, 28, 28j, 29.
 # Full gate verification requires running: pwsh gate/check_architecture_sync.ps1
-# The full gate has 29 active rules; this self-test covers Rules 1-6 and 16/19/22/24/25/26/27/28/29.
-# Prints: Tests passed: N/35
-# Exits 0 if all 35 pass, 1 otherwise.
+# The full gate has 29 active rules; this self-test covers Rules 1-6 + 16/19/22/24/25/26/27/28/28j/29.
+# Phase L (L1 reviewer remediation) adds 2 cases for Rule 28j anchor validation:
+# 35 → 37 self-tests.
+# Prints: Tests passed: N/37
+# Exits 0 if all 37 pass, 1 otherwise.
 
 set -uo pipefail
 export LC_ALL=C
@@ -14,7 +16,7 @@ cd "$repo_root"
 
 passed=0
 failed=0
-TOTAL=35
+TOTAL=37
 
 ok() {
   echo "PASS [$1]: $2"
@@ -826,6 +828,90 @@ if [[ $_r29_neg_missing -eq 1 ]]; then
   ok "rule29_matrix_neg" "matrix missing required concept correctly detected"
 else
   fail "rule29_matrix_neg" "expected missing concept to be detected"
+fi
+
+# ---------------------------------------------------------------------------
+# RULE 28j -- enforcer_artifact_paths_exist (Phase L anchor validation, E35)
+# Phase K (E33) checked file existence only. Phase L extends 28j to validate
+# that #anchor references in enforcers.yaml resolve to a real method (Java/Bash)
+# or heading (Markdown) inside the target file.
+# ---------------------------------------------------------------------------
+
+## Positive: artifact anchor that resolves to a real Java @Test method passes.
+_r28j_pos="$scratch/r28j_pos"
+mkdir -p "$_r28j_pos/src" "$_r28j_pos/docs"
+cat > "$_r28j_pos/src/FooIT.java" <<'EOF'
+package x;
+class FooIT {
+    @org.junit.jupiter.api.Test
+    void real_method() {}
+    void another_method() {}
+}
+EOF
+cat > "$_r28j_pos/docs/enforcers.yaml" <<'EOF'
+- id: EX1
+  artifact: src/FooIT.java#real_method
+EOF
+_r28j_pos_fail=0
+while IFS= read -r _aline; do
+  [[ -z "$_aline" ]] && continue
+  _aval=${_aline#*artifact:}
+  _aval=${_aval#"${_aval%%[![:space:]]*}"}
+  _apath=${_aval%%#*}
+  _aanchor=""
+  case "$_aval" in *'#'*) _aanchor=${_aval#*#};; esac
+  _aanchor=${_aanchor%"${_aanchor##*[![:space:]]}"}
+  _fullpath="$_r28j_pos/$_apath"
+  if [[ ! -e "$_fullpath" ]]; then _r28j_pos_fail=1; fi
+  if [[ -n "$_aanchor" ]] && [[ "$_apath" == *.java ]]; then
+    if ! grep -qE "(void|\)|\>|\>[[:space:]])[[:space:]]+${_aanchor}[[:space:]]*\(" "$_fullpath"; then
+      if ! grep -qE "^[[:space:]]*[a-zA-Z_<>][^()]*[[:space:]]${_aanchor}[[:space:]]*\(" "$_fullpath"; then
+        _r28j_pos_fail=1
+      fi
+    fi
+  fi
+done < <(grep -E '^[[:space:]]*-?[[:space:]]*artifact:' "$_r28j_pos/docs/enforcers.yaml")
+if [[ $_r28j_pos_fail -eq 0 ]]; then
+  ok "rule28j_anchor_resolves_pos" "real Java method anchor correctly passes"
+else
+  fail "rule28j_anchor_resolves_pos" "expected real method anchor to pass"
+fi
+
+## Negative: artifact anchor that names a non-existent method fails.
+_r28j_neg="$scratch/r28j_neg"
+mkdir -p "$_r28j_neg/src" "$_r28j_neg/docs"
+cat > "$_r28j_neg/src/FooIT.java" <<'EOF'
+package x;
+class FooIT {
+    @org.junit.jupiter.api.Test
+    void only_real_method() {}
+}
+EOF
+cat > "$_r28j_neg/docs/enforcers.yaml" <<'EOF'
+- id: EX2
+  artifact: src/FooIT.java#bogusMethod
+EOF
+_r28j_neg_detected=0
+while IFS= read -r _aline; do
+  [[ -z "$_aline" ]] && continue
+  _aval=${_aline#*artifact:}
+  _aval=${_aval#"${_aval%%[![:space:]]*}"}
+  _apath=${_aval%%#*}
+  _aanchor=""
+  case "$_aval" in *'#'*) _aanchor=${_aval#*#};; esac
+  _aanchor=${_aanchor%"${_aanchor##*[![:space:]]}"}
+  _fullpath="$_r28j_neg/$_apath"
+  if [[ -n "$_aanchor" ]] && [[ "$_apath" == *.java ]]; then
+    _hit1=0
+    grep -qE "(void|\)|\>|\>[[:space:]])[[:space:]]+${_aanchor}[[:space:]]*\(" "$_fullpath" && _hit1=1
+    grep -qE "^[[:space:]]*[a-zA-Z_<>][^()]*[[:space:]]${_aanchor}[[:space:]]*\(" "$_fullpath" && _hit1=1
+    if [[ $_hit1 -eq 0 ]]; then _r28j_neg_detected=1; fi
+  fi
+done < <(grep -E '^[[:space:]]*-?[[:space:]]*artifact:' "$_r28j_neg/docs/enforcers.yaml")
+if [[ $_r28j_neg_detected -eq 1 ]]; then
+  ok "rule28j_anchor_resolves_neg" "bogus method anchor correctly detected"
+else
+  fail "rule28j_anchor_resolves_neg" "expected bogus anchor to be detected"
 fi
 
 # ---------------------------------------------------------------------------

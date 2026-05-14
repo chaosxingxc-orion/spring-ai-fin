@@ -1,5 +1,7 @@
 # spring-ai-ascend L0 Architecture Release — 2026-05-13 (v2)
 
+> **Historical artifact frozen at SHA 776d4e7 (L0 release v2).** Superseded by the L1 release at `docs/releases/2026-05-14-L1-modular-russell-release.en.md` (2026-05-14). Baseline counts in this document (52 §4 constraints / 54 ADRs / 29 gate rules / 35 self-tests / 11 active engineering rules) reflect the state at L0 v2 release time and are NOT retroactively updated. The L1 canonical baseline (52 / 59 / 29 / 35 / 12) is tracked in `docs/governance/architecture-status.yaml.architecture_sync_gate.allowed_claim` and the L1 release note's Architecture Baseline table.
+
 > **This note supersedes** `docs/archive/2026-05-13-l0-release-note-v1-superseded/2026-05-13-L0-architecture-release.en.md`. The v1 was published earlier on 2026-05-13 at SHA `82a1397` with a baseline of 45 §4 constraints / 47 ADRs / 27 gate rules / 30 self-tests. Subsequent same-day work (Service-Layer Microservice Commitment — ADR-0048, §4 #46; Whitepaper-Alignment Remediation — ADRs 0049/0050/0051/0052, §4 #47-#50, Gate Rules 28-29, +5 self-tests) materially shifted the architecture surface, so the L0 release note has been re-cut with the full current baseline and re-audited by six parallel reviewer agents. The v1 file is retained under `docs/archive/` for historical traceability per ADR-0043.
 
 > Status: **L0 architecturally ready** (after multi-agent self-audit cycle — see Verification section for per-reviewer verdicts)
