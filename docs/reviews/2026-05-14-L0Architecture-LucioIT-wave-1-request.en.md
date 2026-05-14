@@ -70,12 +70,26 @@ The process view focuses on the concurrency model, cross-module communication pa
 *   **Three-Track Isolation of Physical Channels**: Cross-service internal communication is mandatorily sliced into three independent physical channels. The strong control flow (like PAUSE, KILL instructions) possesses the highest priority independent out-of-band channel; the data compute flow (like text-to-video file flow) takes the in-band heavy-load channel; the heartbeat/rhythm flow is responsible for maintaining survival status pulses. The three tracks are absolutely isolated to prevent global paralysis caused by any single type of network congestion.
 
 ## 7. L0 Physical View
-*   **Skill-Dimensional Resource Pooling**:
-    Establish a global skill topology scheduler. When a high-frequency skill concurrency pool is full, it precisely suspends and queues only the specific Agent instances depending on that skill, without blocking lightweight reasoning Agents. Resource arbitration presents a dual-axis determination of "Tenant Quota × Global Skill Capacity".
-*   **Bidding and Collaborative Permission Issuance**:
-    *   **Pre-Authorized Access**: Capability registration is bound to domain permission identifiers issued by the S-Side.
-    *   **Delegate Bidding System**: When an intent is thrown, only certified delegate nodes participate in bidding.
-    *   **Skill Subsumption**: The S-Side strictly controls permission issuance. The winning delegate decomposes and distributes permissions downward to sub-agents, ensuring logical authorization aligns with underlying physical sandbox constraints.
+The physical view focuses on the physical topology, isolation levels, and resource allocation boundaries of system components in a production environment, acting as the last line of defense to ensure high availability, high security, and avalanche prevention:
+
+### 7.1 Distributed Five-Plane Deployment Topology
+Physical deployment is strictly divided into five mutually isolated planes to ensure that workloads with different characteristics do not interfere with each other:
+*   **Edge Access Plane**: The physical location of the `Agent Client` SDK. It can be embedded within business servers in an enterprise intranet or run directly on terminal devices. As the physical entry point for the entire foundation, its deployment characteristics are extremely lightweight, zero-state, and directly face security protections at the network edge.
+*   **Compute & Control Plane**: The area where the `Agent Runtime` and `Agent Execution Engine` reside. Compute nodes in this plane must be stateless containerized clusters (like K8s Pods), responsible for processing highly concurrent instruction parsing and state machine transitions, supporting second-level horizontal elastic scaling.
+*   **Bus & State Hub Plane**: The heavy data plane composed of the `Agent Bus` (acting as an independent physical Broker cluster, like Kafka/Redpanda) and `Agent Middleware` (like PostgreSQL, Vector DBs). This plane is the only physical anchor for system state and must be deployed on independent storage-compute nodes with extremely high I/O throughput and persistence guarantees.
+*   **Sandbox Execution Plane**: The system's bottom-line physical security isolation zone. All dynamically generated code by large models (like Code Interpreter outputs) or unverified third-party tools are **absolutely forbidden** from executing in the Compute & Control Plane. They must be scheduled to run in disposable physical sandboxes, such as independent Serverless container groups or Firecracker microVMs.
+*   **Evolution Plane**: An independent offline or near-real-time compute cluster where the `Agent Evolution Layer` (Python ecosystem) resides. To prevent model fine-tuning or massive data cleansing from dragging down CPU and memory required for online transactions, this plane must be deployed in an independent physical node group (like a dedicated GPU Node Pool), operating by subscribing to bypass traffic across planes via the bus.
+
+### 7.2 Multi-Tenancy and Data Asset Physical Storage Red Line
+As an enterprise-grade foundation, isolation logic at the application code layer is deemed "insecure." Multi-tenant data isolation must descend to the physical or mechanism bedrock of the storage engine. For instance, all Agent memories and trajectories persisted to the database are mandated to enable Row-Level Security (RLS) policies or adopt independent Schema/Database isolation at the underlying engine. This ensures that even if runtime code vulnerabilities allow unauthorized access, cross-tenant assets cannot be stolen at the physical storage engine level.
+
+### 7.3 Skill-Dimensional Physical Resource Arbitration
+To prevent a single high-frequency skill (e.g., a slow external API) from exhausting the entire cluster's connection pool and CPU resources, the system establishes a global skill topology scheduler at the physical level. When a skill concurrency pool is full, the scheduler precisely suspends and queues only specific Agent compute processes that depend on that skill, yielding underlying OS-level thread resources to other Agent instances executing lightweight reasoning, forming a two-dimensional physical defense net (Tenant Quota × Global Skill Capacity).
+
+### 7.4 Bidding and Physical Sandbox Permission Alignment
+Collaboration across physical nodes must be based on a "Zero Trust" assumption.
+*   **Pre-Authorized Access**: Nodes initiating capability registration across networks must be bound to domain permission credentials issued by the platform.
+*   **Sandbox Permission Subsumption**: After successful bus intent bidding, when the platform issues execution permissions downwards, it must map the logical authorization scope 1:1 to the system-level restrictions of the physical sandbox where the node resides (e.g., outbound network IP whitelists, CPU usage caps). This ensures that the logical issuance of execution rights does not breach the physical sandbox's isolation limits.
 
 ## 8. Layered Architecture & Code Contribution Guidelines and Processes
 
