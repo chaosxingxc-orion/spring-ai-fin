@@ -33,10 +33,21 @@ The system logic is strictly decoupled into six core modules, distinctly delinea
 6.  **Agent Middleware**: Oriented towards platform developers (recommended for direct deployment, supports secondary development). It provides standardized core infrastructure services, including the agent memory system, agent skill center, and agent sandbox services.
 
 ## 5. L0 Development View
-*   **Lazy Mounting with State and Control Decoupling**:
-    Only lightweight control instructions and data pointers (URI/Hash) are allowed to be passed during the flow lifecycle. Heavyload data (e.g., research report parsing results) falls into a bypass physical sandbox, and On-demand lazy mounting is executed via Hooks only when actual reading occurs.
-*   **Rollback Isolation**:
-    When an anomaly rolls back, only the control flow pointer cursor is rolled back. The heavyload data in the bypass pool does not undergo repeated serialization and deserialization along with the logical flow, reducing I/O overhead and code coupling.
+The code engineering structure and anti-corruption boundaries of this system follow strict module division and repository matrix specifications to ensure the high cohesion and low coupling of the enterprise-grade foundation:
+
+### 5.1 Repository Matrix and Technology Stack Planning
+To maintain the vitality of the open-source community and leverage the advantages of heterogeneous ecosystems, core logical modules are recommended to be hosted as independent repositories in open-source communities (such as `openJiuwen`):
+*   **Agent Execution Engine (`agent-core-java`)**: The pure engine of the system (built with Pure Java). Responsible for underlying scheduling such as DFA state machines and graph execution. It is strictly forbidden to contain any hard-bound annotations from the Spring framework layer, exposing only core SPIs.
+*   **Agent Runtime (`agent-runtime-java`)**: The northbound service gateway of the system. Built with the Spring technology stack, it is responsible for encapsulating the pure Java logic of the Core layer into enterprise-grade REST/gRPC services, handling tenant interception and security control.
+*   **Agent Client SDK (`agent-client-sdk-java`)**: Provides a non-intrusive integration toolkit oriented towards business development, supporting Zero-Dependency introduction into various business IT systems.
+*   **Agent Bus (`agent-bus-java`)**: An independent hub carrying communication routing and heartbeat rhythms. Supports multi-level implementations (from memory-level buses in the development state to interfacing with distributed components like Kafka/Redpanda in the production state).
+*   **Agent Evolution Layer (`agent-evolution-python`)**: A **heterogeneous ecosystem repository** dedicated to algorithms and self-learning. It leverages Python's ecological monopoly in machine learning, reinforcement learning, and Fine-tuning to handle heavy computing, trajectory analysis, and automatic prompt optimization. Physically, it naturally achieves isolation between offline analysis and online business.
+*   **Agent Middleware Modules**: Temporary no independent repositories will be built. This is achieved by introducing mature open-source components at the Runtime layer (e.g., `Spring AI` interfacing with model gateways, `PostgreSQL` + `pgvector` acting as persistent runtime libraries and memory foundations).
+
+### 5.2 Development-State Anti-Corruption Red Lines and Dependency Principles
+1.  **Unidirectional Gravity and Kernel Purity Principle**: `Agent Client` and `Agent Runtime` can unidirectionally depend on `Agent Core`, but `Agent Core` must absolutely reside at the very bottom of the dependency tree. It is strictly forbidden to reversely introduce any code from upper layers (like the access layer or specific business scenarios).
+2.  **Middleware SPI Inversion Principle**: Core logic must not be directly coupled with specific storage or middleware implementations. `agent-core-java` is only responsible for defining storage contracts (like the `Checkpointer SPI`); specific persistent adaptations (like the Postgres implementation) must be injected at Runtime.
+3.  **Polyglot Collaboration Boundary**: Memory-level sharing or private library dependencies are absolutely forbidden between the Execution Engine (Java) and the Evolution Layer (Python). The two must and can only synchronize states and trigger reverse sampling through the Agent Bus and language-agnostic data serialization contracts (such as Protobuf or standard JSON Schema).
 
 ## 6. L0 Process View
 *   **Workflow Intermediary Hub**:
