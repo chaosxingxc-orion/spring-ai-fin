@@ -1,0 +1,39 @@
+# Competitive Baselines — Layer-0 Principle P-B (Four Competitive Pillars).
+#
+# Required by CLAUDE.md Rule 30. Every release MUST publish baselines for all
+# four pillars. A regression in any `current_value` MUST carry a
+# `regression_adr:` field pointing to the justification ADR.
+#
+# Authority: ADR-0065. Enforced by gate rules:
+#   - competitive_baselines_present_and_wellformed
+#   - release_note_references_four_pillars
+
+version: 1
+generated_at: 2026-05-14
+release: L1.x
+
+dimensions:
+
+  performance:
+    baseline_metric: "p95_latency_ms for GET /v1/health (cold JVM, dev posture)"
+    current_value: "N/A"
+    measurement_status: "not-yet-instrumented; W2 LLM gateway perf-benchmark deferred per CLAUDE-deferred.md 30.d.performance"
+    last_measured: null
+
+  cost:
+    baseline_metric: "average_cost_usd_per_run (LLM tokens + infra) — capability emitting cost metric"
+    current_value: "N/A"
+    measurement_status: "not-yet-instrumented; activates with Rule 13 (P1 cost-of-use) at W3"
+    last_measured: null
+
+  developer_onboarding:
+    baseline_metric: "minutes_to_first_agent for the docs/quickstart.md path on a clean machine"
+    current_value: "N/A"
+    measurement_status: "manual-only at L1; CI-timed onboarding deferred per CLAUDE-deferred.md 29.c"
+    last_measured: null
+
+  governance:
+    baseline_metric: "tenant_isolation_test_count + audit_envelope_coverage_percent across shipped capabilities"
+    current_value: "tenant_isolation_test_count=12, audit_envelope_coverage_percent=0 (audit envelopes land W2 per Rule 17/Rule 24 triggers)"
+    measurement_status: "tenant_isolation_test_count is the count of shipped tests asserting tenant scope; manually tallied from architecture-status.yaml"
+    last_measured: 2026-05-14

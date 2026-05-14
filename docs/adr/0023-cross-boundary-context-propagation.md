@@ -3,6 +3,12 @@
 **Status:** accepted
 **Deciders:** architecture
 **Date:** 2026-05-12
+
+> **L1 update (2026-05-14).** Rule 21 was generalised from `TenantContextHolder` to the whole
+> `ascend.springai.platform..` package by ADR-0055. The original narrow rule below remains correct
+> as the most-likely-violation case but is no longer the full contract. The generalised contract is
+> asserted by `RuntimeMustNotDependOnPlatformTest`; the narrow case is preserved as defence-in-depth
+> by `TenantPropagationPurityTest`. See `docs/adr/0055-permit-platform-to-runtime-direction.md`.
 **Technical story:** Third architecture reviewer raised Issue 7: tenant propagation across suspend/resume boundaries is architecturally undefined. `TenantContextHolder` (ThreadLocal) is invalid across HTTP request boundaries, async threads, and timer-driven resumes. Self-audit surfaced five additional gaps: (HD-E.1) `RunContext.tenantId() : String` vs `TenantContext.tenantId() : UUID` type mismatch; (HD-E.2) Logback MDC not populated with `tenant_id`; (HD-E.3) no Micrometer tag policy mandating `tenant_id`; (HD-E.4) HTTP 403 mapping for resume mismatch is normative but unimplementable (no `RunController` yet — deferred); (HD-E.5) OTel `trace_id` propagation across suspend is unspecified. This ADR establishes a unified context propagation model.
 
 ## Context

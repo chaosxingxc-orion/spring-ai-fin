@@ -214,3 +214,73 @@ Composes with: ARCHITECTURE.md §4 #27 (`skill_spi_lifecycle_resource_matrix`); 
 3. **VETTED bypass**: `SkillTrustTier.VETTED` skills may route through `NoOpSandboxExecutor` in all postures. Trust-tier assignment is declared in `Skill.metadata()` and is immutable at runtime.
 
 Composes with: ARCHITECTURE.md §4 #27 (`skill_spi_lifecycle_resource_matrix`); ADR-0030; ADR-0018 (`SandboxExecutor` SPI); Rule 10 (posture-aware defaults).
+
+---
+
+## Rule 29.c — Quickstart Smoke Run in CI [Deferred to W1]
+
+**Re-introduction trigger**: first container-based CI workflow that can run a Spring Boot reactor end-to-end (target: W1).
+
+**Rule (draft)**: A CI job MUST execute the `docs/quickstart.md` instructions on a clean container and assert that `GET /v1/health` returns 200 within 60 s of `spring-boot:run` start. Failure of this job is a ship-blocking finding under Rule 9 (HTTP / API contract category).
+
+Composes with: ARCHITECTURE.md §4 #60; ADR-0064; Rule 29 (Business/Platform Decoupling).
+
+---
+
+## Rule 30.b — Baseline Regression → ADR Pairing [Deferred to W1]
+
+**Re-introduction trigger**: first revision of `docs/governance/competitive-baselines.yaml` that lowers a `current_value` vs the prior git revision (target: W1, when at least one dimension is measurable).
+
+**Rule (draft)**: A git-diff gate rule MUST compare the previous and current revision of `docs/governance/competitive-baselines.yaml`. Any dimension whose `current_value` regresses MUST carry a `regression_adr: ADR-NNNN` reference in the same row pointing to a justification ADR. Missing regression-ADR → gate failure.
+
+Composes with: ARCHITECTURE.md §4 #61; ADR-0065; Rule 30 (Competitive Baselines).
+
+---
+
+## Rule 30.d — Automated Pillar Measurement [Deferred to W2 / W3]
+
+**Re-introduction trigger**: (i) first perf benchmark harness in CI for `30.d.performance`; (ii) first cost-accounting hook landing per Rule 13 trigger for `30.d.cost`; (iii) CI-timed onboarding script for `30.d.developer_onboarding`; (iv) governance dashboard for `30.d.governance`.
+
+**Rule (draft)**: Each pillar dimension MUST be measured automatically (no manual `N/A` placeholders) once its trigger fires. The measurement MUST update `current_value` on every release; the gate MUST reject `current_value: N/A` for a dimension whose trigger has fired.
+
+Composes with: ARCHITECTURE.md §4 #61; ADR-0065; Rule 13 (P1 cost-of-use, deferred W3); Rule 18 (Eval harness, deferred W4).
+
+---
+
+## Rule 31.b — Runtime Semver Compatibility Enforcement [Deferred to W2]
+
+**Re-introduction trigger**: first BoM release that drops a previously-published artifact, OR first starter that introduces a breaking config change without a major-version bump (target: W2).
+
+**Rule (draft)**: A gate rule MUST cross-check `<module>/module-metadata.yaml`'s `semver_compatibility` against the artifact's actual API delta. A starter that introduces a breaking config change without a major-version bump → gate failure. A BoM revision that removes a coordinate without a deprecation window declared in `module-metadata.yaml` → gate failure.
+
+Composes with: ARCHITECTURE.md §4 #62; ADR-0066; Rule 31 (Independent Module Evolution).
+
+---
+
+## Rule 32.b — TCK Reactor Module Scaffolding [Deferred to W2]
+
+**Re-introduction trigger**: first alternative implementation of any `agent-runtime` SPI is proposed — Postgres `Checkpointer`, Temporal `RunRepository`, or Redis `IdempotencyStore` (target: W2).
+
+**Rule (draft)**: A sibling `agent-runtime-tck` reactor module MUST exist with a single `@TckSurfaceMarker` test asserting the SPI interface signatures it covers. Adding the module bumps `module_count_invariant` (Gate Rule 28e) from 4 to 5.
+
+Composes with: ARCHITECTURE.md §4 #63; ADR-0067; Rule 32 (SPI + DFX + TCK Co-Design).
+
+---
+
+## Rule 32.c — TCK Conformance Suite [Deferred to W2]
+
+**Re-introduction trigger**: first alternative implementation is proposed AND its author requests "conformant" status (target: W2).
+
+**Rule (draft)**: For every SPI under `<module>/spi_packages` declared in `module-metadata.yaml`, there MUST be a `<module>-tck` test class that an alternative implementation runs against to be accepted as conformant. The TCK MUST cover (a) happy-path semantics, (b) error contract (which exceptions on which inputs), (c) thread-safety claim, (d) tenant-scope honouring.
+
+Composes with: ARCHITECTURE.md §4 #63; ADR-0067; Rule 32.
+
+---
+
+## Rule 32.d — Vulnerability Scanner Integration [Deferred to W2]
+
+**Re-introduction trigger**: first CVE-bearing transitive dependency flagged manually OR first regulated-customer deployment requiring SCA reports (target: W2).
+
+**Rule (draft)**: A CI workflow MUST run a CVE/SCA scanner (Dependency-Check, Snyk, Trivy, or equivalent) on every PR. Findings at severity ≥ HIGH block merge unless an allow-list entry with a `risk_acceptance_adr:` reference is present.
+
+Composes with: ARCHITECTURE.md §4 #63; ADR-0067; Rule 32; per-module `docs/dfx/<module>.yaml` `vulnerability:` block.

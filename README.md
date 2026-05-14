@@ -12,7 +12,7 @@
 
 - Formal release: [docs/releases/2026-05-14-L1-modular-russell-release.en.md](docs/releases/2026-05-14-L1-modular-russell-release.en.md) (L0 v2 superseded — marked historical)
 - Per-capability shipped/deferred ledger: [docs/governance/architecture-status.yaml](docs/governance/architecture-status.yaml)
-- Architecture baseline: 59 §4 constraints · 63 ADRs · 30 gate rules · 37 self-tests · 12 active engineering rules · 105+ Maven tests GREEN (L1 release, Phase L per ADR-0060; Telemetry Vertical L1.x increment per ADR-0061 / ADR-0062 / ADR-0063).
+- Architecture baseline: 65 §4 constraints · 68 ADRs · 44 gate rules · 50 self-tests · 18 active engineering rules · 4 Layer-0 governing principles · 63 enforcer rows · 105+ Maven tests GREEN (L1 release, Phase L per ADR-0060; Telemetry Vertical L1.x per ADR-0061/0062/0063; Layer-0 governing principles per ADR-0064/0065/0066/0067; W1 Layered 4+1 + Architecture Graph + Phase M remediation per ADR-0068, Rules 33–34, gate Rules 37–44, enforcers E55–E63).
 
 ## Quick start
 
@@ -43,7 +43,7 @@ Posture is selected by the `APP_POSTURE` environment variable (`dev` / `research
 
 `Run.mode` discriminates `GRAPH` (deterministic state machine) from `AGENT_LOOP` (ReAct-style LLM reasoning). Both modes share one interrupt primitive — `SuspendSignal` — which the `Orchestrator` catches to checkpoint the parent, dispatch a child Run, and resume the parent with the child's result. Three-level bidirectional nesting (graph → agent-loop → graph) is proved by `NestedDualModeIT`.
 
-The full architectural constraint set (§4 #1–#50) and the deferred-capability roadmap (W1–W4) live in [ARCHITECTURE.md](ARCHITECTURE.md) and [docs/governance/architecture-status.yaml](docs/governance/architecture-status.yaml). They are not duplicated here.
+The full architectural constraint set (§4 #1–#63) and the deferred-capability roadmap (W1–W4) live in [ARCHITECTURE.md](ARCHITECTURE.md) and [docs/governance/architecture-status.yaml](docs/governance/architecture-status.yaml). They are not duplicated here.
 
 ## Posture model
 
@@ -61,12 +61,12 @@ Full matrix: [docs/cross-cutting/posture-model.md](docs/cross-cutting/posture-mo
 2. **[docs/STATE.md](docs/STATE.md)** — per-capability shipped/deferred table.
 3. **[ARCHITECTURE.md](ARCHITECTURE.md)** — system boundary, §4 constraints, SPI contracts, decision chains.
 4. **[docs/contracts/](docs/contracts/)** — HTTP API contracts, SPI semantic contracts, pinned OpenAPI snapshot.
-5. **[docs/adr/README.md](docs/adr/README.md)** — Architecture Decision Records (ADR-0001 … ADR-0063).
-6. **[CLAUDE.md](CLAUDE.md)** — engineering rules (12 active, 14 deferred with re-introduction triggers).
+5. **[docs/adr/README.md](docs/adr/README.md)** — Architecture Decision Records (ADR-0001 … ADR-0067).
+6. **[CLAUDE.md](CLAUDE.md)** — Layer-0 governing principles + Layer-1 engineering rules (16 active, 14 deferred + 7 new sub-clauses with re-introduction triggers). See also [docs/quickstart.md](docs/quickstart.md).
 
 ## See also
 
 - [docs/releases/](docs/releases/) — formal release notes.
 - [docs/governance/architecture-status.yaml](docs/governance/architecture-status.yaml) — capability ledger.
-- [gate/README.md](gate/README.md) — architecture-sync gate (30 rules + 37 self-tests).
+- [gate/README.md](gate/README.md) — architecture-sync gate (36 rules + 37 self-tests).
 - [docs/cross-cutting/oss-bill-of-materials.md](docs/cross-cutting/oss-bill-of-materials.md) — OSS dependency policy.

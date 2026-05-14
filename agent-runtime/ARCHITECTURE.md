@@ -1,7 +1,31 @@
+---
+level: L1
+view: scenarios
+module: agent-runtime
+status: active
+freeze_id: null
+covers_views: [logical, development, process, physical]
+spans_levels: [L1]
+authority: "ADR-0068 (Layered 4+1 + Architecture Graph) + ADR-0059 (Code-as-Contract)"
+---
+
 # agent-runtime -- L1 architecture (2026-05-13 L0 final entrypoint truth review refresh)
 
 > Owner: runtime | Wave: W0..W4 | Maturity: W0
 > Last updated: 2026-05-13 (L0 final entrypoint truth review — §1 boundary prose split into target vs W0 shipped; previously refreshed at post-seventh third-pass)
+
+## 0.4 Layered 4+1 view map (W1 — ADR-0068)
+
+This document is the **L1 root** for the `agent-runtime` module. Until full 4+1 view reorganisation lands, the table below classifies each existing major section:
+
+| Section | View | Notes |
+|---|---|---|
+| §1 System boundary | scenarios | runtime mission + target-vs-W0 split |
+| §2 OSS dependencies | development | dependency direction + BoM authority |
+| §3 SPI surface | logical | `Orchestrator` / `GraphExecutor` / `AgentLoopExecutor` / `SuspendSignal` / `Checkpointer` |
+| §4 Wave-staged packages | scenarios | placeholders + wave qualifiers |
+| Run state machine | process | DFA validator + `RunStateMachine` |
+| Telemetry vertical hooks | process | `TraceContext` SPI + carrier semantics |
 
 ## 1. System boundary
 

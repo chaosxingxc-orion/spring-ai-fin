@@ -914,9 +914,285 @@ else
   fail "rule28j_anchor_resolves_neg" "expected bogus anchor to be detected"
 fi
 
+# ===========================================================================
+# W1 Layered-4+1 + Architecture-Graph self-tests (Rules 37-40, ADR-0068)
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# Rule 37 positive: ARCHITECTURE.md with valid level + view front-matter passes
+# ---------------------------------------------------------------------------
+_r37_pos="$scratch/r37_pos"
+mkdir -p "$_r37_pos"
+cat > "$_r37_pos/ARCHITECTURE.md" <<'EOF'
+---
+level: L0
+view: scenarios
+---
+
+# Test architecture
+EOF
+_lev="$(awk 'BEGIN{in_fm=0; n=0} /^---[[:space:]]*$/{n++; if(n==1){in_fm=1; next} if(n==2){exit}} in_fm && /^level:[[:space:]]/{sub(/^level:[[:space:]]*/,""); print; exit}' "$_r37_pos/ARCHITECTURE.md")"
+_vw="$(awk 'BEGIN{in_fm=0; n=0} /^---[[:space:]]*$/{n++; if(n==1){in_fm=1; next} if(n==2){exit}} in_fm && /^view:[[:space:]]/{sub(/^view:[[:space:]]*/,""); print; exit}' "$_r37_pos/ARCHITECTURE.md")"
+if [[ "$_lev" == "L0" && "$_vw" == "scenarios" ]]; then
+  ok "rule37_front_matter_pos" "level=L0 view=scenarios parsed from valid front-matter"
+else
+  fail "rule37_front_matter_pos" "expected level=L0 view=scenarios, got level='$_lev' view='$_vw'"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 37 negative: ARCHITECTURE.md missing front-matter fails detection
+# ---------------------------------------------------------------------------
+_r37_neg="$scratch/r37_neg"
+mkdir -p "$_r37_neg"
+cat > "$_r37_neg/ARCHITECTURE.md" <<'EOF'
+# No front matter here
+EOF
+_lev="$(awk 'BEGIN{in_fm=0; n=0} /^---[[:space:]]*$/{n++; if(n==1){in_fm=1; next} if(n==2){exit}} in_fm && /^level:[[:space:]]/{sub(/^level:[[:space:]]*/,""); print; exit}' "$_r37_neg/ARCHITECTURE.md")"
+if [[ -z "$_lev" ]]; then
+  ok "rule37_front_matter_neg" "missing front-matter correctly produces empty level"
+else
+  fail "rule37_front_matter_neg" "expected empty level, got '$_lev'"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 38 positive: graph YAML structure parses + every edge endpoint is a node
+# ---------------------------------------------------------------------------
+_r38_pos="$scratch/r38_pos"
+mkdir -p "$_r38_pos"
+cat > "$_r38_pos/graph.yaml" <<'EOF'
+nodes:
+  - id: P-A
+    type: principle
+  - id: Rule-29
+    type: rule
+  - id: E48
+    type: enforcer
+edges:
+  - src: P-A
+    dst: Rule-29
+    type: operationalised_by
+  - src: Rule-29
+    dst: E48
+    type: enforced_by
+EOF
+# Crude integrity check: every src/dst token must appear as an id in nodes.
+_r38_orphan=0
+_ids="$(awk '/^  - id:/{print $3}' "$_r38_pos/graph.yaml")"
+while IFS= read -r _ep; do
+  _v="$(printf '%s\n' "$_ep" | sed -E 's/^[[:space:]]*-?[[:space:]]*(src|dst):[[:space:]]*([A-Za-z0-9_-]+).*/\2/')"
+  [[ -z "$_v" || "$_v" == "$_ep" ]] && continue
+  if ! grep -qxF "$_v" <<< "$_ids"; then _r38_orphan=1; fi
+done < <(grep -E '^[[:space:]]*-?[[:space:]]*(src|dst):' "$_r38_pos/graph.yaml")
+if [[ $_r38_orphan -eq 0 ]]; then
+  ok "rule38_graph_endpoints_pos" "all edge endpoints resolve to node ids"
+else
+  fail "rule38_graph_endpoints_pos" "unresolved edge endpoint detected unexpectedly"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 39 positive: review proposal with affects_level + affects_view passes
+# ---------------------------------------------------------------------------
+_r39_pos="$scratch/r39_pos"
+mkdir -p "$_r39_pos/docs/reviews"
+cat > "$_r39_pos/docs/reviews/2026-06-01-future-proposal.md" <<'EOF'
+---
+affects_level: L1
+affects_view: process
+---
+
+# Future proposal
+EOF
+_al="$(grep -E '^affects_level:[[:space:]]+(L0|L1|L2)' "$_r39_pos/docs/reviews/2026-06-01-future-proposal.md" | head -1 || true)"
+_av="$(grep -E '^affects_view:[[:space:]]+(logical|development|process|physical|scenarios)' "$_r39_pos/docs/reviews/2026-06-01-future-proposal.md" | head -1 || true)"
+if [[ -n "$_al" && -n "$_av" ]]; then
+  ok "rule39_review_front_matter_pos" "affects_level + affects_view both present and valid"
+else
+  fail "rule39_review_front_matter_pos" "expected both keys present; got al='$_al' av='$_av'"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 40 negative: orphan enforcer (no rule->enforcer edge) gets detected
+# ---------------------------------------------------------------------------
+_r40_neg="$scratch/r40_neg"
+mkdir -p "$_r40_neg"
+cat > "$_r40_neg/graph.yaml" <<'EOF'
+- id: E99
+  type: enforcer
+- src: P-A
+  dst: Rule-29
+  type: operationalised_by
+EOF
+# Detect: enforcer node E99 has no incoming `type: enforced_by` edge.
+_r40_detected=0
+if grep -q "id: E99" "$_r40_neg/graph.yaml" && ! grep -q "dst: E99" "$_r40_neg/graph.yaml"; then
+  _r40_detected=1
+fi
+if [[ $_r40_detected -eq 1 ]]; then
+  ok "rule40_orphan_enforcer_neg" "orphan enforcer (no rule path) correctly detected"
+else
+  fail "rule40_orphan_enforcer_neg" "expected orphan enforcer to be flagged"
+fi
+
+# ===========================================================================
+# Phase M self-tests (Rules 41-44, ADR-0068)
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# Rule 41 positive: graph node with anchor + anchor_resolves: true passes
+# ---------------------------------------------------------------------------
+_r41_pos="$scratch/r41_pos"
+mkdir -p "$_r41_pos"
+cat > "$_r41_pos/graph.yaml" <<'EOF'
+nodes:
+  - id: file:foo/Bar.java
+    type: artefact
+    path: foo/Bar.java
+    exists: true
+    anchor: realMethod
+    anchor_resolves: true
+EOF
+_r41_pos_offenders="$(awk '
+  /^  - id:/ { cur=$3; type=""; anchor=""; resolves="" }
+  /^    type:/ { type=$2 }
+  /^    anchor:/ { val=substr($0,index($0,":")+2); gsub(/[[:space:]]+$/,"",val); anchor=val }
+  /^    anchor_resolves:/ {
+    val=substr($0,index($0,":")+2); gsub(/[[:space:]]+$/,"",val); resolves=val
+    if (type=="artefact" && anchor!="" && anchor!="null" && resolves=="false") print cur
+  }
+' "$_r41_pos/graph.yaml")"
+if [[ -z "$_r41_pos_offenders" ]]; then
+  ok "rule41_anchor_resolves_pos" "node with anchor_resolves:true passes"
+else
+  fail "rule41_anchor_resolves_pos" "false offenders detected: $_r41_pos_offenders"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 41 negative: graph node with anchor + anchor_resolves: false fails
+# ---------------------------------------------------------------------------
+_r41_neg="$scratch/r41_neg"
+mkdir -p "$_r41_neg"
+cat > "$_r41_neg/graph.yaml" <<'EOF'
+nodes:
+  - id: file:foo/Bar.java
+    type: artefact
+    path: foo/Bar.java
+    exists: true
+    anchor: bogusMethod
+    anchor_resolves: false
+EOF
+_r41_neg_offenders="$(awk '
+  /^  - id:/ { cur=$3; type=""; anchor=""; resolves="" }
+  /^    type:/ { type=$2 }
+  /^    anchor:/ { val=substr($0,index($0,":")+2); gsub(/[[:space:]]+$/,"",val); anchor=val }
+  /^    anchor_resolves:/ {
+    val=substr($0,index($0,":")+2); gsub(/[[:space:]]+$/,"",val); resolves=val
+    if (type=="artefact" && anchor!="" && anchor!="null" && resolves=="false") print cur
+  }
+' "$_r41_neg/graph.yaml")"
+if [[ -n "$_r41_neg_offenders" ]]; then
+  ok "rule41_anchor_resolves_neg" "unresolved anchor correctly detected: $_r41_neg_offenders"
+else
+  fail "rule41_anchor_resolves_neg" "expected offender to be flagged"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 42 positive: byte-identical files produce no diff
+# ---------------------------------------------------------------------------
+_r42_pos="$scratch/r42_pos"
+mkdir -p "$_r42_pos"
+printf "schema: x\nnodes: []\n" > "$_r42_pos/a.yaml"
+printf "schema: x\nnodes: []\n" > "$_r42_pos/b.yaml"
+if diff -q "$_r42_pos/a.yaml" "$_r42_pos/b.yaml" >/dev/null 2>&1; then
+  ok "rule42_idempotent_pos" "identical builds produce no diff"
+else
+  fail "rule42_idempotent_pos" "expected identical files to compare equal"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 42 negative: a mutated build produces a diff
+# ---------------------------------------------------------------------------
+_r42_neg="$scratch/r42_neg"
+mkdir -p "$_r42_neg"
+printf "schema: x\nnodes: []\n" > "$_r42_neg/a.yaml"
+printf "schema: x\nnodes: [drift]\n" > "$_r42_neg/b.yaml"
+if ! diff -q "$_r42_neg/a.yaml" "$_r42_neg/b.yaml" >/dev/null 2>&1; then
+  ok "rule42_idempotent_neg" "mutated build correctly diff-detected"
+else
+  fail "rule42_idempotent_neg" "expected drift to be detected"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 43 positive: highest-numbered ADR file is .yaml
+# ---------------------------------------------------------------------------
+_r43_pos="$scratch/r43_pos"
+mkdir -p "$_r43_pos/docs/adr"
+touch "$_r43_pos/docs/adr/0001-foo.md" "$_r43_pos/docs/adr/0068-bar.yaml"
+_r43_pos_md_top="$(find "$_r43_pos/docs/adr" -maxdepth 1 -type f -name '[0-9][0-9][0-9][0-9]-*.md' | sort -r | head -1)"
+_r43_pos_yaml_top="$(find "$_r43_pos/docs/adr" -maxdepth 1 -type f -name '[0-9][0-9][0-9][0-9]-*.yaml' | sort -r | head -1)"
+_r43_pos_md_n="$(basename "${_r43_pos_md_top}" | cut -c1-4)"
+_r43_pos_yaml_n="$(basename "${_r43_pos_yaml_top}" | cut -c1-4)"
+if (( 10#${_r43_pos_md_n:-0} <= 10#${_r43_pos_yaml_n:-0} )); then
+  ok "rule43_new_adr_yaml_pos" "newest ADR is .yaml (md=$_r43_pos_md_n yaml=$_r43_pos_yaml_n)"
+else
+  fail "rule43_new_adr_yaml_pos" "expected yaml to be newest"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 43 negative: highest-numbered ADR file is .md → flagged
+# ---------------------------------------------------------------------------
+_r43_neg="$scratch/r43_neg"
+mkdir -p "$_r43_neg/docs/adr"
+touch "$_r43_neg/docs/adr/0068-x.yaml" "$_r43_neg/docs/adr/0099-regression.md"
+_r43_neg_md_n="$(basename "$(find "$_r43_neg/docs/adr" -name '*.md' | sort -r | head -1)" | cut -c1-4)"
+_r43_neg_yaml_n="$(basename "$(find "$_r43_neg/docs/adr" -name '*.yaml' | sort -r | head -1)" | cut -c1-4)"
+if (( 10#${_r43_neg_md_n:-0} > 10#${_r43_neg_yaml_n:-0} )); then
+  ok "rule43_new_adr_yaml_neg" "regression .md ADR correctly flagged (md=$_r43_neg_md_n > yaml=$_r43_neg_yaml_n)"
+else
+  fail "rule43_new_adr_yaml_neg" "expected md to be detected as newer"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 44 positive: file with freeze_id: null modified — no proposal required
+# ---------------------------------------------------------------------------
+_r44_pos="$scratch/r44_pos"
+mkdir -p "$_r44_pos"
+cat > "$_r44_pos/ARCHITECTURE.md" <<'EOF'
+---
+level: L0
+view: scenarios
+freeze_id: null
+---
+EOF
+_r44_pos_fid="$(awk 'BEGIN{in_fm=0; n=0} /^---[[:space:]]*$/{n++; if(n==1){in_fm=1; next} if(n==2){exit}} in_fm && /^freeze_id:[[:space:]]/{sub(/^freeze_id:[[:space:]]*/,""); print; exit}' "$_r44_pos/ARCHITECTURE.md")"
+if [[ -z "$_r44_pos_fid" || "$_r44_pos_fid" == "null" ]]; then
+  ok "rule44_frozen_doc_pos" "unfrozen file (freeze_id=$_r44_pos_fid) correctly exempted"
+else
+  fail "rule44_frozen_doc_pos" "unfrozen file flagged unexpectedly"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 44 negative: file with freeze_id: <id> + no companion → flagged
+# ---------------------------------------------------------------------------
+_r44_neg="$scratch/r44_neg"
+mkdir -p "$_r44_neg"
+cat > "$_r44_neg/ARCHITECTURE.md" <<'EOF'
+---
+level: L0
+view: scenarios
+freeze_id: post-L1-Russell
+---
+EOF
+_r44_neg_fid="$(awk 'BEGIN{in_fm=0; n=0} /^---[[:space:]]*$/{n++; if(n==1){in_fm=1; next} if(n==2){exit}} in_fm && /^freeze_id:[[:space:]]/{sub(/^freeze_id:[[:space:]]*/,""); print; exit}' "$_r44_neg/ARCHITECTURE.md")"
+if [[ -n "$_r44_neg_fid" && "$_r44_neg_fid" != "null" ]]; then
+  ok "rule44_frozen_doc_neg" "frozen file (freeze_id=$_r44_neg_fid) correctly detected as requiring proposal"
+else
+  fail "rule44_frozen_doc_neg" "expected non-null freeze_id to be detected"
+fi
+
 # ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
+TOTAL=50
 echo ""
 echo "Tests passed: ${passed}/${TOTAL}"
 

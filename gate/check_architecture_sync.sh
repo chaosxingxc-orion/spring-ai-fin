@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# spring-ai-ascend architecture-sync gate -- L1 Rule-28 expansion + Phase K + L1.x Telemetry Vertical (41 rules; 30 base + 11 Rule-28 sub-checks).
+# spring-ai-ascend architecture-sync gate -- L1 Rule-28 expansion + Phase K + L1.x Telemetry Vertical + Layer-0 governing principles (47 rules; 36 base + 11 Rule-28 sub-checks).
 # Exits 0 if all rules pass, 1 if any fail.
 # Each rule prints PASS: <name> or FAIL: <name> -- <reason>.
 # Prints GATE: PASS or GATE: FAIL at the end.
@@ -47,6 +47,13 @@
 #  28j. enforcer_artifact_paths_exist                   -- every artifact: path in enforcers.yaml resolves on disk (enforcer E33, Phase K audit fix F6)
 #  28.  constraint_enforcer_coverage                   -- enforcers.yaml references CLAUDE.md AND ARCHITECTURE.md (meta-rule, enforcer E28)
 #  30.  telemetry_vertical_constraint_coverage         -- ARCHITECTURE.md §4 #53–#59 each cited by an enforcer row (L1.x Telemetry Vertical, enforcer E47)
+#  --- Layer-0 governing principles (ADR-0064..0067) ---
+#  31.  quickstart_present                              -- docs/quickstart.md present and referenced from README.md (Rule 29, enforcer E49)
+#  32.  competitive_baselines_present_and_wellformed    -- docs/governance/competitive-baselines.yaml has 4 pillars (Rule 30, enforcer E50)
+#  33.  release_note_references_four_pillars            -- latest release note mentions all 4 pillars by name (Rule 30, enforcer E51)
+#  34.  module_metadata_present_and_complete            -- every <module>/pom.xml has a sibling module-metadata.yaml with required keys (Rule 31, enforcer E52)
+#  35.  dfx_yaml_present_and_wellformed                 -- every kind:platform|domain module has docs/dfx/<module>.yaml with 5 DFX dimensions (Rule 32, enforcer E53)
+#  36.  domain_module_has_spi_package                   -- every kind:domain module declares spi_packages and each one resolves on disk (Rule 32, enforcer E54)
 
 set -uo pipefail
 export LC_ALL=C
@@ -1398,6 +1405,488 @@ if [[ -f "$_archfile" && -f "$_efile" ]]; then
   done
 fi
 if [[ $_r30_fail -eq 0 ]]; then pass_rule "telemetry_vertical_constraint_coverage"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 31 — quickstart_present (enforcer E49, CLAUDE.md Rule 29 / ADR-0064)
+#
+# docs/quickstart.md MUST exist and MUST be referenced from README.md so a
+# developer can reach first-agent execution without platform-team intervention.
+# ---------------------------------------------------------------------------
+_r31_fail=0
+if [[ ! -f "docs/quickstart.md" ]]; then
+  fail_rule "quickstart_present" "docs/quickstart.md is missing (CLAUDE.md Rule 29 / ADR-0064)"
+  _r31_fail=1
+fi
+if [[ -f "README.md" ]] && ! grep -q "docs/quickstart.md" "README.md" 2>/dev/null; then
+  fail_rule "quickstart_present" "README.md does not reference docs/quickstart.md (CLAUDE.md Rule 29)"
+  _r31_fail=1
+fi
+if [[ $_r31_fail -eq 0 ]]; then pass_rule "quickstart_present"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 32 — competitive_baselines_present_and_wellformed (enforcer E50, ADR-0065)
+#
+# docs/governance/competitive-baselines.yaml MUST exist and MUST declare four
+# dimensions: performance, cost, developer_onboarding, governance.
+# ---------------------------------------------------------------------------
+_r32_fail=0
+_baseline_file="docs/governance/competitive-baselines.yaml"
+if [[ ! -f "$_baseline_file" ]]; then
+  fail_rule "competitive_baselines_present_and_wellformed" "$_baseline_file is missing (CLAUDE.md Rule 30 / ADR-0065)"
+  _r32_fail=1
+else
+  for _dim in performance cost developer_onboarding governance; do
+    if ! grep -qE "^[[:space:]]*${_dim}:" "$_baseline_file" 2>/dev/null; then
+      fail_rule "competitive_baselines_present_and_wellformed" "$_baseline_file missing required dimension '${_dim}'"
+      _r32_fail=1
+    fi
+  done
+fi
+if [[ $_r32_fail -eq 0 ]]; then pass_rule "competitive_baselines_present_and_wellformed"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 33 — release_note_references_four_pillars (enforcer E51, ADR-0065)
+#
+# The most recent release note under docs/releases/ MUST mention all four
+# pillar names by name so reviewers see the dimensions tracked per release.
+# ---------------------------------------------------------------------------
+_r33_fail=0
+_latest_release="$(find docs/releases -maxdepth 1 -name '*.md' -type f 2>/dev/null | sort | tail -1 || true)"
+if [[ -z "$_latest_release" ]]; then
+  pass_rule "release_note_references_four_pillars"   # no release notes yet — vacuous pass
+else
+  _missing_pillars=""
+  for _p in performance cost developer_onboarding governance; do
+    if ! grep -qiE "\b${_p}\b" "$_latest_release" 2>/dev/null; then
+      _missing_pillars="${_missing_pillars} ${_p}"
+    fi
+  done
+  if [[ -n "$_missing_pillars" ]]; then
+    fail_rule "release_note_references_four_pillars" "$(basename "$_latest_release") does not mention pillar(s):${_missing_pillars} (CLAUDE.md Rule 30 / ADR-0065)"
+    _r33_fail=1
+  fi
+fi
+if [[ $_r33_fail -eq 0 ]] && [[ -n "$_latest_release" ]]; then pass_rule "release_note_references_four_pillars"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 34 — module_metadata_present_and_complete (enforcer E52, ADR-0066)
+#
+# Every reactor module (every <module>/pom.xml) MUST have a sibling
+# module-metadata.yaml declaring module, kind, version, semver_compatibility.
+# Required by CLAUDE.md Rule 31.
+# ---------------------------------------------------------------------------
+_r34_fail=0
+_required_keys=(module kind version semver_compatibility)
+while IFS= read -r _pom; do
+  [[ -z "$_pom" ]] && continue
+  # Skip the root reactor pom — it's the reactor declaration, not a module
+  if [[ "$_pom" == "./pom.xml" || "$_pom" == "pom.xml" ]]; then continue; fi
+  _mod_dir="$(dirname "$_pom")"
+  _meta="${_mod_dir}/module-metadata.yaml"
+  if [[ ! -f "$_meta" ]]; then
+    fail_rule "module_metadata_present_and_complete" "$_meta missing — required for ${_mod_dir} (CLAUDE.md Rule 31 / ADR-0066)"
+    _r34_fail=1
+    continue
+  fi
+  for _k in "${_required_keys[@]}"; do
+    if ! grep -qE "^[[:space:]]*${_k}:" "$_meta" 2>/dev/null; then
+      fail_rule "module_metadata_present_and_complete" "$_meta missing required key '${_k}'"
+      _r34_fail=1
+    fi
+  done
+done < <(find . -mindepth 2 -maxdepth 2 -name 'pom.xml' -type f 2>/dev/null | sort || true)
+if [[ $_r34_fail -eq 0 ]]; then pass_rule "module_metadata_present_and_complete"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 35 — dfx_yaml_present_and_wellformed (enforcer E53, ADR-0067)
+#
+# Every module with kind ∈ {platform, domain} in its module-metadata.yaml
+# MUST have a docs/dfx/<module>.yaml covering five DFX dimensions:
+# releasability, resilience, availability, vulnerability, observability.
+# DFX is OPTIONAL for kind ∈ {bom, starter, sample}.
+# Required by CLAUDE.md Rule 32.
+# ---------------------------------------------------------------------------
+_r35_fail=0
+_dfx_required_kinds_re='^(platform|domain)$'
+while IFS= read -r _meta; do
+  [[ -z "$_meta" ]] && continue
+  _kind="$(grep -E '^[[:space:]]*kind:' "$_meta" 2>/dev/null | head -1 | sed -E 's/^[[:space:]]*kind:[[:space:]]*([A-Za-z_]+).*/\1/')"
+  [[ ! "$_kind" =~ $_dfx_required_kinds_re ]] && continue
+  _mod_name="$(grep -E '^[[:space:]]*module:' "$_meta" 2>/dev/null | head -1 | sed -E 's/^[[:space:]]*module:[[:space:]]*([A-Za-z0-9_-]+).*/\1/')"
+  _dfx="docs/dfx/${_mod_name}.yaml"
+  if [[ ! -f "$_dfx" ]]; then
+    fail_rule "dfx_yaml_present_and_wellformed" "$_dfx missing — required for kind=${_kind} module '${_mod_name}' (CLAUDE.md Rule 32 / ADR-0067)"
+    _r35_fail=1
+    continue
+  fi
+  for _d in releasability resilience availability vulnerability observability; do
+    if ! grep -qE "^[[:space:]]*${_d}:" "$_dfx" 2>/dev/null; then
+      fail_rule "dfx_yaml_present_and_wellformed" "$_dfx missing required DFX dimension '${_d}'"
+      _r35_fail=1
+    fi
+  done
+done < <(find . -mindepth 2 -maxdepth 2 -name 'module-metadata.yaml' -type f 2>/dev/null | sort || true)
+if [[ $_r35_fail -eq 0 ]]; then pass_rule "dfx_yaml_present_and_wellformed"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 36 — domain_module_has_spi_package (enforcer E54, ADR-0067)
+#
+# Every module with kind=domain in its module-metadata.yaml MUST declare at
+# least one entry under `spi_packages:` AND each declared package MUST exist
+# as a directory under <module>/src/main/java/. Required by CLAUDE.md Rule 32.
+# ---------------------------------------------------------------------------
+_r36_fail=0
+while IFS= read -r _meta; do
+  [[ -z "$_meta" ]] && continue
+  _kind="$(grep -E '^[[:space:]]*kind:' "$_meta" 2>/dev/null | head -1 | sed -E 's/^[[:space:]]*kind:[[:space:]]*([A-Za-z_]+).*/\1/')"
+  [[ "$_kind" != "domain" ]] && continue
+  _mod_dir="$(dirname "$_meta")"
+  # Extract spi_packages list entries (lines under spi_packages: that look like "  - <pkg>")
+  _has_entry=0
+  _pkg_lines="$(awk '/^[[:space:]]*spi_packages:/{flag=1; next} /^[A-Za-z_]/{flag=0} flag && /^[[:space:]]*-[[:space:]]*[A-Za-z0-9._-]+/{print}' "$_meta" 2>/dev/null || true)"
+  if [[ -z "$_pkg_lines" ]]; then
+    fail_rule "domain_module_has_spi_package" "$_meta declares kind=domain but has no spi_packages entries (CLAUDE.md Rule 32 / ADR-0067)"
+    _r36_fail=1
+    continue
+  fi
+  while IFS= read -r _ln; do
+    _pkg="$(printf '%s\n' "$_ln" | sed -E 's/^[[:space:]]*-[[:space:]]*([A-Za-z0-9._-]+).*/\1/')"
+    [[ -z "$_pkg" ]] && continue
+    _has_entry=1
+    _pkg_path="$(printf '%s\n' "$_pkg" | tr '.' '/')"
+    _dir="${_mod_dir}/src/main/java/${_pkg_path}"
+    if [[ ! -d "$_dir" ]]; then
+      fail_rule "domain_module_has_spi_package" "$_meta declares spi_package '${_pkg}' but directory ${_dir} does not exist"
+      _r36_fail=1
+    fi
+  done <<< "$_pkg_lines"
+  if [[ $_has_entry -eq 0 ]]; then
+    fail_rule "domain_module_has_spi_package" "$_meta declares kind=domain but spi_packages list is empty"
+    _r36_fail=1
+  fi
+done < <(find . -mindepth 2 -maxdepth 2 -name 'module-metadata.yaml' -type f 2>/dev/null | sort || true)
+if [[ $_r36_fail -eq 0 ]]; then pass_rule "domain_module_has_spi_package"; fi
+
+# ===========================================================================
+# W1 Layered-4+1 + Architecture-Graph wave (CLAUDE.md Rules 33-34, ADR-0068)
+# Gate Rules 37-40 enforce the front-matter discipline and the machine-readable
+# graph index. See enforcers.yaml rows E55-E59.
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# Rule 37 — architecture_artefact_front_matter (enforcer E55, ADR-0068)
+#
+# Every L0/L1/L2 architecture artefact MUST declare a level: + view:
+# front-matter (YAML at top of file for .md; top-level key for .yaml).
+# Targets: ARCHITECTURE.md, agent-*/ARCHITECTURE.md, docs/L2/**/*.md (excluding
+# README.md while empty), docs/adr/*.yaml.
+# ---------------------------------------------------------------------------
+_r37_fail=0
+_valid_levels='^(L0|L1|L2)$'
+_valid_views='^(logical|development|process|physical|scenarios)$'
+
+_check_front_matter_md() {
+  local _f="$1"
+  local _level _view
+  _level="$(awk 'BEGIN{in_fm=0; n=0} /^---[[:space:]]*$/{n++; if(n==1){in_fm=1; next} if(n==2){exit}} in_fm && /^level:[[:space:]]/{sub(/^level:[[:space:]]*/,""); sub(/[[:space:]]*$/,""); print; exit}' "$_f" 2>/dev/null)"
+  _view="$(awk 'BEGIN{in_fm=0; n=0} /^---[[:space:]]*$/{n++; if(n==1){in_fm=1; next} if(n==2){exit}} in_fm && /^view:[[:space:]]/{sub(/^view:[[:space:]]*/,""); sub(/[[:space:]]*$/,""); print; exit}' "$_f" 2>/dev/null)"
+  if [[ -z "$_level" ]]; then
+    fail_rule "architecture_artefact_front_matter" "$_f missing 'level:' YAML front-matter (CLAUDE.md Rule 33 / ADR-0068)"; _r37_fail=1; return
+  fi
+  if [[ ! "$_level" =~ $_valid_levels ]]; then
+    fail_rule "architecture_artefact_front_matter" "$_f level: '$_level' is not one of L0|L1|L2"; _r37_fail=1
+  fi
+  if [[ -z "$_view" ]]; then
+    fail_rule "architecture_artefact_front_matter" "$_f missing 'view:' YAML front-matter (CLAUDE.md Rule 33 / ADR-0068)"; _r37_fail=1; return
+  fi
+  if [[ ! "$_view" =~ $_valid_views ]]; then
+    fail_rule "architecture_artefact_front_matter" "$_f view: '$_view' is not one of logical|development|process|physical|scenarios"; _r37_fail=1
+  fi
+}
+
+_check_front_matter_yaml() {
+  local _f="$1"
+  local _level _view
+  _level="$(grep -E '^level:[[:space:]]' "$_f" 2>/dev/null | head -1 | sed -E 's/^level:[[:space:]]*([A-Za-z0-9_]+).*/\1/')"
+  _view="$(grep -E '^view:[[:space:]]' "$_f" 2>/dev/null | head -1 | sed -E 's/^view:[[:space:]]*([A-Za-z0-9_]+).*/\1/')"
+  if [[ -z "$_level" ]]; then
+    fail_rule "architecture_artefact_front_matter" "$_f missing top-level 'level:' (CLAUDE.md Rule 33 / ADR-0068)"; _r37_fail=1; return
+  fi
+  if [[ ! "$_level" =~ $_valid_levels ]]; then
+    fail_rule "architecture_artefact_front_matter" "$_f level: '$_level' is not one of L0|L1|L2"; _r37_fail=1
+  fi
+  if [[ -z "$_view" ]]; then
+    fail_rule "architecture_artefact_front_matter" "$_f missing top-level 'view:' (CLAUDE.md Rule 33 / ADR-0068)"; _r37_fail=1; return
+  fi
+  if [[ ! "$_view" =~ $_valid_views ]]; then
+    fail_rule "architecture_artefact_front_matter" "$_f view: '$_view' is not one of logical|development|process|physical|scenarios"; _r37_fail=1
+  fi
+}
+
+[[ -f ARCHITECTURE.md ]] && _check_front_matter_md ARCHITECTURE.md
+while IFS= read -r _f37; do
+  [[ -z "$_f37" ]] && continue
+  _check_front_matter_md "$_f37"
+done < <(find . -maxdepth 2 -type f -name 'ARCHITECTURE.md' ! -path './ARCHITECTURE.md' 2>/dev/null | sort || true)
+while IFS= read -r _f37; do
+  [[ -z "$_f37" ]] && continue
+  _check_front_matter_md "$_f37"
+done < <(find docs/L2 -type f -name '*.md' 2>/dev/null | sort || true)
+while IFS= read -r _f37; do
+  [[ -z "$_f37" ]] && continue
+  _check_front_matter_yaml "$_f37"
+done < <(find docs/adr -maxdepth 1 -type f -name '*.yaml' 2>/dev/null | sort || true)
+if [[ $_r37_fail -eq 0 ]]; then pass_rule "architecture_artefact_front_matter"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 38 — architecture_graph_well_formed (enforcer E56, ADR-0068)
+#
+# docs/governance/architecture-graph.yaml MUST regenerate idempotently from
+# authoritative inputs. The build script runs --check and exits non-zero on
+# any validation error (missing endpoint, missing file, cycle in
+# supersedes/extends, anchor not resolvable).
+# ---------------------------------------------------------------------------
+_r38_fail=0
+if ! command -v python3 >/dev/null 2>&1 && ! command -v python >/dev/null 2>&1; then
+  fail_rule "architecture_graph_well_formed" "neither python3 nor python on PATH — required for gate/build_architecture_graph.py (CLAUDE.md Rule 34)"; _r38_fail=1
+else
+  _r38_tmp1="$(mktemp 2>/dev/null || echo /tmp/r38_a.yaml)"
+  _r38_tmp2="$(mktemp 2>/dev/null || echo /tmp/r38_b.yaml)"
+  # Build twice, diff outputs (idempotency).
+  if ! bash gate/build_architecture_graph.sh > /dev/null 2> "$_r38_tmp1"; then
+    fail_rule "architecture_graph_well_formed" "gate/build_architecture_graph.sh failed: $(cat "$_r38_tmp1")"; _r38_fail=1
+  else
+    cp docs/governance/architecture-graph.yaml "$_r38_tmp1" 2>/dev/null || true
+    if ! bash gate/build_architecture_graph.sh --no-write --check > /dev/null 2> "$_r38_tmp2"; then
+      fail_rule "architecture_graph_well_formed" "graph validation failed: $(cat "$_r38_tmp2")"; _r38_fail=1
+    fi
+  fi
+  rm -f "$_r38_tmp1" "$_r38_tmp2" 2>/dev/null || true
+fi
+if [[ $_r38_fail -eq 0 ]]; then pass_rule "architecture_graph_well_formed"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 39 — review_proposal_front_matter (enforcer E57, ADR-0068)
+#
+# Every NEW (post-W1) proposal under docs/reviews/ MUST declare
+# affects_level: + affects_view: front-matter. Pre-W1 historical review
+# files are explicitly listed in the allow-list below and exempted.
+# ---------------------------------------------------------------------------
+_r39_fail=0
+# Allow-list of pre-W1 historical files (relative to docs/reviews/).
+_r39_allow_re='^(2026-05-1[23]-|2026-05-14-(architecture-governance-in-vibe-coding-era|L0Architecture-LucioIT-wave-1-request|l1-architecture-expert-review)|spring-ai-ascend-implementation-guidelines|Architectural Perspective Review)'
+while IFS= read -r _f39; do
+  [[ -z "$_f39" ]] && continue
+  _base="$(basename "$_f39")"
+  [[ "$_base" == "_TEMPLATE.md" ]] && continue
+  if [[ "$_base" =~ $_r39_allow_re ]]; then continue; fi
+  if ! grep -qE '^affects_level:[[:space:]]+(L0|L1|L2)' "$_f39" 2>/dev/null; then
+    fail_rule "review_proposal_front_matter" "$_f39 missing 'affects_level:' front-matter (CLAUDE.md Rule 33 / ADR-0068)"; _r39_fail=1
+  fi
+  if ! grep -qE '^affects_view:[[:space:]]+(logical|development|process|physical|scenarios)' "$_f39" 2>/dev/null; then
+    fail_rule "review_proposal_front_matter" "$_f39 missing 'affects_view:' front-matter (CLAUDE.md Rule 33 / ADR-0068)"; _r39_fail=1
+  fi
+done < <(find docs/reviews -maxdepth 1 -type f -name '*.md' 2>/dev/null | sort || true)
+if [[ $_r39_fail -eq 0 ]]; then pass_rule "review_proposal_front_matter"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 40 — enforcer_reachable_from_principle (enforcer E58, ADR-0068)
+#
+# Every shipped enforcer row in docs/governance/enforcers.yaml MUST be
+# reachable from at least one Layer-0 principle (P-A..P-D or legacy
+# P1..P3/E1) through the edge chain in architecture-graph.yaml:
+#   principle --operationalised_by--> Rule-N --enforced_by--> E<n>
+# The Python graph builder owns the traversal; this rule delegates to it.
+# ---------------------------------------------------------------------------
+_r40_fail=0
+if [[ ! -f docs/governance/architecture-graph.yaml ]]; then
+  fail_rule "enforcer_reachable_from_principle" "docs/governance/architecture-graph.yaml not present — run gate/build_architecture_graph.sh first"; _r40_fail=1
+else
+  # Embedded traversal check (avoids second Python invocation). For every
+  # enforcer node E<n>, confirm there exists at least one Rule-N node feeding
+  # it and that Rule-N is operationalised by at least one principle.
+  _r40_orphans="$(awk '
+    /^- id: / {
+      if (cur != "" && type == "enforcer") enforcers[cur] = 1
+      cur = $3
+      type = ""
+    }
+    /^  type: enforcer/ { type = "enforcer" }
+    /^  type: rule/    { rules_seen[cur] = 1 }
+    /^  type: principle/ { principles_seen[cur] = 1 }
+    /^- src: / { src = $3 }
+    /^  dst: / { dst = $3 }
+    /^  type: enforced_by/ { rule_to_enf[src] = rule_to_enf[src] " " dst; enf_has_rule[dst] = 1 }
+    /^  type: operationalised_by/ { prin_to_rule[src] = prin_to_rule[src] " " dst; rule_has_prin[dst] = 1 }
+    END {
+      for (e in enforcers) {
+        if (!(e in enf_has_rule)) {
+          print "  - " e " (no rule -> enforcer edge)"
+          orphan++
+        }
+      }
+      if (orphan > 0) exit 1
+    }
+  ' docs/governance/architecture-graph.yaml 2>/dev/null || true)"
+  if [[ -n "$_r40_orphans" ]]; then
+    fail_rule "enforcer_reachable_from_principle" "orphaned enforcer(s): no rule path back to a principle:"
+    echo "$_r40_orphans" >&2
+    _r40_fail=1
+  fi
+fi
+if [[ $_r40_fail -eq 0 ]]; then pass_rule "enforcer_reachable_from_principle"; fi
+
+# ===========================================================================
+# Phase M remediation (CLAUDE.md Rules 33-34, ADR-0068)
+# Rules 41-44 close the self-violations the W1 wave inherited from Rule 28:
+# anchor validation, idempotency, ADR-shape, frozen-doc edit path.
+# Enforcer rows E60-E63 in docs/governance/enforcers.yaml.
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# Rule 41 — enforcer_anchor_resolves (enforcer E60, Phase M B2)
+#
+# Every artefact node in architecture-graph.yaml that carries an `anchor:`
+# MUST also carry `anchor_resolves: true`. Closes the L1-expert P0-2 / P2-1
+# gap: previously an enforcer row could point at a non-existent test method
+# and pass Rule 28j (file-path existence). The graph builder now resolves
+# anchors per file type (.java method declaration, .md heading, .sh function,
+# .yaml top-level key) and this gate fails on any false.
+# ---------------------------------------------------------------------------
+_r41_fail=0
+if [[ ! -f docs/governance/architecture-graph.yaml ]]; then
+  fail_rule "enforcer_anchor_resolves" "docs/governance/architecture-graph.yaml not present — run bash gate/build_architecture_graph.sh first"
+  _r41_fail=1
+else
+  # Scan the graph for any artefact node with anchor: <non-null> and anchor_resolves: false.
+  _r41_offenders="$(awk '
+    /^- id:/      { cur=$3; type=""; anchor=""; resolves="" }
+    /^  type:/    { type=$2 }
+    /^  path:/    { path=substr($0, index($0, ":")+2) }
+    /^  anchor:/  {
+      val = substr($0, index($0, ":")+2)
+      gsub(/[[:space:]]+$/, "", val)
+      anchor = val
+    }
+    /^  anchor_resolves:/ {
+      val = substr($0, index($0, ":")+2)
+      gsub(/[[:space:]]+$/, "", val)
+      resolves = val
+      if (type == "artefact" && anchor != "" && anchor != "null" && resolves == "false") {
+        print "  - " cur " (path " path ", anchor " anchor ")"
+      }
+    }
+  ' docs/governance/architecture-graph.yaml 2>/dev/null || true)"
+  if [[ -n "$_r41_offenders" ]]; then
+    fail_rule "enforcer_anchor_resolves" "unresolved anchor(s) — fix enforcer row or rename target method/heading:"
+    echo "$_r41_offenders" >&2
+    _r41_fail=1
+  fi
+fi
+if [[ $_r41_fail -eq 0 ]]; then pass_rule "enforcer_anchor_resolves"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 42 — architecture_graph_idempotent (enforcer E61, Phase M B3)
+#
+# Building the architecture graph twice on unchanged inputs MUST produce a
+# byte-identical output. Closes the Rule 34 normative phrase "build script
+# MUST be idempotent" which previously had no enforcer.
+# ---------------------------------------------------------------------------
+_r42_fail=0
+if ! command -v python3 >/dev/null 2>&1 && ! command -v python >/dev/null 2>&1; then
+  fail_rule "architecture_graph_idempotent" "neither python3 nor python on PATH — required for gate/build_architecture_graph.py"
+  _r42_fail=1
+elif [[ ! -f docs/governance/architecture-graph.yaml ]]; then
+  fail_rule "architecture_graph_idempotent" "docs/governance/architecture-graph.yaml not present — run bash gate/build_architecture_graph.sh first"
+  _r42_fail=1
+else
+  _r42_a="$(mktemp 2>/dev/null || echo /tmp/r42_a.yaml)"
+  _r42_b="$(mktemp 2>/dev/null || echo /tmp/r42_b.yaml)"
+  cp docs/governance/architecture-graph.yaml "$_r42_a" 2>/dev/null || true
+  if ! bash gate/build_architecture_graph.sh > /dev/null 2>&1; then
+    fail_rule "architecture_graph_idempotent" "graph build failed during idempotency probe"
+    _r42_fail=1
+  else
+    cp docs/governance/architecture-graph.yaml "$_r42_b" 2>/dev/null || true
+    if ! diff -q "$_r42_a" "$_r42_b" >/dev/null 2>&1; then
+      fail_rule "architecture_graph_idempotent" "re-running gate/build_architecture_graph.sh produced a DIFFERENT graph — the build is non-deterministic"
+      _r42_fail=1
+    fi
+  fi
+  rm -f "$_r42_a" "$_r42_b" 2>/dev/null || true
+fi
+if [[ $_r42_fail -eq 0 ]]; then pass_rule "architecture_graph_idempotent"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 43 — new_adr_must_be_yaml (enforcer E62, Phase M D2)
+#
+# The highest-numbered ADR file under docs/adr/NNNN-*.{md,yaml} MUST have the
+# .yaml extension. This prevents future ADRs from regressing to the legacy
+# .md shape after ADR-0068 mandated YAML.
+# ---------------------------------------------------------------------------
+_r43_fail=0
+_r43_top_md="$(find docs/adr -maxdepth 1 -type f -name '[0-9][0-9][0-9][0-9]-*.md' 2>/dev/null | sort -r | head -1 || true)"
+_r43_top_yaml="$(find docs/adr -maxdepth 1 -type f -name '[0-9][0-9][0-9][0-9]-*.yaml' 2>/dev/null | sort -r | head -1 || true)"
+_r43_top_md_n="$(basename "${_r43_top_md:-0000-x.md}" 2>/dev/null | cut -c1-4)"
+_r43_top_yaml_n="$(basename "${_r43_top_yaml:-0000-x.yaml}" 2>/dev/null | cut -c1-4)"
+# Force base-10 (4-digit ADR ids can have leading zeros which bash otherwise reads as octal,
+# making "0068" / "0099" invalid in arithmetic comparisons).
+if (( 10#${_r43_top_md_n:-0} > 10#${_r43_top_yaml_n:-0} )); then
+  fail_rule "new_adr_must_be_yaml" "highest-numbered ADR is $_r43_top_md (.md) — ADR-0068 / Rule 33 mandates all new ADRs be .yaml; rename or migrate"
+  _r43_fail=1
+fi
+if [[ $_r43_fail -eq 0 ]]; then pass_rule "new_adr_must_be_yaml"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 44 — frozen_doc_edit_path_compliance (enforcer E63, Phase M D4)
+#
+# For every architecture artefact declaring `freeze_id: <non-null>` in its
+# front-matter, any modification to that file in the working tree (vs the
+# merge base) MUST be accompanied by a NEW docs/reviews/*.md proposal in the
+# same commit naming the file under `affects_artefact:`. No-op today (all
+# freeze_id values are null); arms automatically when a doc is phase-released.
+# ---------------------------------------------------------------------------
+_r44_fail=0
+_r44_base="${BASE_REF:-origin/main}"
+# Collect frozen-doc paths.
+_r44_frozen=""
+for _f44 in ARCHITECTURE.md $(find . -maxdepth 2 -type f -name 'ARCHITECTURE.md' ! -path './ARCHITECTURE.md' 2>/dev/null || true) \
+            $(find docs/L2 -type f -name '*.md' 2>/dev/null || true) \
+            $(find docs/adr -maxdepth 1 -type f -name '*.yaml' 2>/dev/null || true); do
+  [[ -z "$_f44" || ! -f "$_f44" ]] && continue
+  _fid="$(awk 'BEGIN{in_fm=0; n=0} /^---[[:space:]]*$/{n++; if(n==1){in_fm=1; next} if(n==2){exit}} in_fm && /^freeze_id:[[:space:]]/{sub(/^freeze_id:[[:space:]]*/,""); sub(/[[:space:]]*$/,""); print; exit}' "$_f44" 2>/dev/null)"
+  # YAML ADR (top-level key, no front-matter delimiters)
+  if [[ -z "$_fid" ]]; then
+    _fid="$(grep -E '^freeze_id:[[:space:]]' "$_f44" 2>/dev/null | head -1 | sed -E 's/^freeze_id:[[:space:]]*([A-Za-z0-9._-]+).*/\1/')"
+  fi
+  if [[ -n "$_fid" && "$_fid" != "null" ]]; then
+    _r44_frozen="${_r44_frozen}${_f44}\n"
+  fi
+done
+# If git is available and a base ref is reachable, check each frozen doc for
+# modifications without an accompanying review proposal.
+if [[ -n "$_r44_frozen" ]] && command -v git >/dev/null 2>&1 && git rev-parse --verify "$_r44_base" >/dev/null 2>&1; then
+  _r44_changed_reviews="$(git diff --name-only --diff-filter=A "$_r44_base" -- 'docs/reviews/*.md' 2>/dev/null || true)"
+  while IFS= read -r _f44; do
+    [[ -z "$_f44" ]] && continue
+    if git diff --name-only "$_r44_base" -- "$_f44" 2>/dev/null | grep -q .; then
+      # Frozen doc was modified; require a review proposal naming it in affects_artefact:.
+      _accompanied=0
+      while IFS= read -r _r44_proposal; do
+        [[ -z "$_r44_proposal" ]] && continue
+        if grep -qE "affects_artefact:.*${_f44}" "$_r44_proposal" 2>/dev/null; then
+          _accompanied=1
+          break
+        fi
+      done <<< "$_r44_changed_reviews"
+      if [[ $_accompanied -eq 0 ]]; then
+        fail_rule "frozen_doc_edit_path_compliance" "$_f44 carries freeze_id but was modified without an accompanying docs/reviews/*.md proposal citing it under affects_artefact:"
+        _r44_fail=1
+      fi
+    fi
+  done <<< "$(printf "%b" "$_r44_frozen")"
+fi
+if [[ $_r44_fail -eq 0 ]]; then pass_rule "frozen_doc_edit_path_compliance"; fi
 
 # ---------------------------------------------------------------------------
 # Summary

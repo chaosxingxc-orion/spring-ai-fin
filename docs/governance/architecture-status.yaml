@@ -84,7 +84,7 @@ capabilities:
       - gate/test_architecture_sync_gate.sh
     latest_semantic_pass_sha: 404d13a
     latest_delivery_file: docs/delivery/2026-05-12-e0ccb6e.md
-    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here. Architecture baseline: 59 §4 constraints (#1–#59 with Telemetry Vertical #53–#59 added per ADR-0061); 63 ADRs (0001–0063 with ADR-0061/0062/0063 added per Telemetry Vertical L1.x); 30 active gate rules (Rule 30 telemetry_vertical_constraint_coverage added per ADR-0061 §8); 12 active engineering rules (1–6, 9–10, 20–21, 25, 28); 14 deferred rules (7, 8, 11, 13–19, 22–24, 26–27); 37 gate self-tests; L1 release published at docs/releases/2026-05-14-L1-modular-russell-release.en.md (current canonical, Phase L remediation landed per ADR-0060 closing reviewer P0-1/P0-2/P0-3/P1-2/P1-4/P2-1); L0 v2 superseded and marked historical (L0 baseline frozen at 52/54/29/35); L0 v1 archived at docs/archive/2026-05-13-l0-release-note-v1-superseded/ (frozen at SHA 82a1397); L1 adds Rule 28 (Code-as-Contract) + ADRs 0055–0060 + 10 Rule-28 sub-enforcers (28a–28j executed under base Rule 28) + 37-row enforcers.yaml index (E1–E37; Phase L adds E35 anchor validation, E36 OpenAPI no-undocumented-live, E37 JwtTestFixture); v2 re-cut to match canonical baseline (originally 50/52/29/35; bumped to 52/54/29/35 by 14th cycle) and re-audited by six parallel reviewer agents; fourteenth-cycle Cohesive Agent Swarm Execution + Long-Connection Containment via ADR-0053/0054 + §4 #51-#52; class-based self-audit (per the 6th+7th cycle methodology) surfaced 11-dimension SpawnEnvelope propagation gap (Class 3 hidden defects) and 3 uncovered resource-explosion vectors (socket-per-tenant cap, file-descriptor bound, in-flight Runs pool cap — Class 7 hidden defects); B/B'/B''/P capability-label notation REJECTED with mapping to existing C-Side/S-Side (ADR-0051) and S-Cloud/S-Edge/C-Device (ADR-0033) vocabularies documented in docs/reviews/2026-05-13-l0-capability-labels-platformization-response.en.md; thirteenth-cycle Whitepaper-Alignment Remediation via ADR-0049/0050/0051/0052 + §4 #47-#50 — C/S Dynamic Hydration Protocol named at L0 contract level; Workflow Intermediary + Mailbox Backpressure + Rhythm track restored as independent third cross-service bus track; Memory and Knowledge Ownership Boundary codified (C-side business ontology vs S-side trajectory; Placeholder Preservation first-class); Skill Topology Scheduler + Capability Bidding named (two-axis tenant×global arbitration); ADR-0048 narrowed; Gate Rules 28-29 added (release-note baseline truth; whitepaper alignment matrix presence); +5 self-tests (30→35); twelfth-cycle Service-Layer Microservice-Architecture Commitment via ADR-0048 + §4 #46."
+    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here. Architecture baseline: 63 §4 constraints (#1–#63 with Layer-0 governing principles #60–#63 added per ADR-0064/0065/0066/0067); 67 ADRs (0001–0067 with ADR-0064/0065/0066/0067 added for the four governing principles); 36 active gate rules (Rules 31–36 quickstart_present / competitive_baselines_present_and_wellformed / release_note_references_four_pillars / module_metadata_present_and_complete / dfx_yaml_present_and_wellformed / domain_module_has_spi_package added per ADR-0064..0067); 16 active engineering rules (1–6, 9–10, 20–21, 25, 28, 29–32); 14 deferred rules (7, 8, 11, 13–19, 22–24, 26–27) plus 5 new sub-clauses (29.c, 30.b, 30.d, 31.b, 32.b/c/d); 37 gate self-tests; L1 release published at docs/releases/2026-05-14-L1-modular-russell-release.en.md (current canonical, Phase L remediation landed per ADR-0060 closing reviewer P0-1/P0-2/P0-3/P1-2/P1-4/P2-1); L0 v2 superseded and marked historical (L0 baseline frozen at 52/54/29/35); L0 v1 archived at docs/archive/2026-05-13-l0-release-note-v1-superseded/ (frozen at SHA 82a1397); L1 adds Rule 28 (Code-as-Contract) + ADRs 0055–0060 + 10 Rule-28 sub-enforcers (28a–28j executed under base Rule 28) + 37-row enforcers.yaml index (E1–E37; Phase L adds E35 anchor validation, E36 OpenAPI no-undocumented-live, E37 JwtTestFixture); v2 re-cut to match canonical baseline (originally 50/52/29/35; bumped to 52/54/29/35 by 14th cycle) and re-audited by six parallel reviewer agents; fourteenth-cycle Cohesive Agent Swarm Execution + Long-Connection Containment via ADR-0053/0054 + §4 #51-#52; class-based self-audit (per the 6th+7th cycle methodology) surfaced 11-dimension SpawnEnvelope propagation gap (Class 3 hidden defects) and 3 uncovered resource-explosion vectors (socket-per-tenant cap, file-descriptor bound, in-flight Runs pool cap — Class 7 hidden defects); B/B'/B''/P capability-label notation REJECTED with mapping to existing C-Side/S-Side (ADR-0051) and S-Cloud/S-Edge/C-Device (ADR-0033) vocabularies documented in docs/reviews/2026-05-13-l0-capability-labels-platformization-response.en.md; thirteenth-cycle Whitepaper-Alignment Remediation via ADR-0049/0050/0051/0052 + §4 #47-#50 — C/S Dynamic Hydration Protocol named at L0 contract level; Workflow Intermediary + Mailbox Backpressure + Rhythm track restored as independent third cross-service bus track; Memory and Knowledge Ownership Boundary codified (C-side business ontology vs S-side trajectory; Placeholder Preservation first-class); Skill Topology Scheduler + Capability Bidding named (two-axis tenant×global arbitration); ADR-0048 narrowed; Gate Rules 28-29 added (release-note baseline truth; whitepaper alignment matrix presence); +5 self-tests (30→35); twelfth-cycle Service-Layer Microservice-Architecture Commitment via ADR-0048 + §4 #46."
 
   spring_ai_ascend_dependencies_bom:
     status: implemented_unverified
@@ -1298,3 +1298,69 @@ capabilities:
     implementation: null
     tests: []
     allowed_claim: "W3 deferred — springai-ascend-client (Java/Kotlin first; JS/Python deferred to W3+). Captures business spans locally, propagates W3C traceparent outbound, reads traceresponse for correlation, batches OTLP/HTTP, redacts PII in posture=prod. Server-side L1.x prerequisites (traceparent + MDC + traceresponse) ship at L1.x so vanilla OTel clients can integrate today; platform-owned SDK lands at W3. See ADR-0063."
+
+  # --- Layer-0 Governing Principles (ADR-0064..0067; CLAUDE.md Rules 29-32; §4 #60-#63) ---
+
+  business_platform_decoupling:
+    status: test_verified
+    shipped: true
+    l0_decision: docs/adr/0064-layer-0-governing-principles.md
+    l2_documents:
+      - docs/adr/0064-layer-0-governing-principles.md
+      - docs/quickstart.md
+      - docs/governance/rule-history.md
+      - docs/governance/principle-coverage.md
+      - docs/governance/posture-coverage.md
+    implementation:
+      - docs/quickstart.md
+      - CLAUDE.md
+    tests:
+      - agent-runtime/src/test/java/ascend/springai/runtime/architecture/SpiPurityGeneralizedArchTest.java
+      - gate/check_architecture_sync.sh
+    allowed_claim: "Section 4 #60 / Rule 29 shipped at L1.x — platform/business decoupling enforced by E48 SpiPurityGeneralizedArchTest (no Spring/platform/inmemory/Micrometer/OTel in any *.spi.* package) and Gate Rule 31 quickstart_present. docs/quickstart.md ships referenced from README.md so developers reach first-agent execution without source patches. CLAUDE.md restructured to Layer-0 / Layer-1; review-cycle scaffolding sunk to docs/governance/rule-history.md."
+
+  competitive_baselines:
+    status: test_verified
+    shipped: true
+    l0_decision: docs/adr/0065-competitive-baselines.md
+    l2_documents:
+      - docs/adr/0065-competitive-baselines.md
+      - docs/governance/competitive-baselines.yaml
+    implementation:
+      - docs/governance/competitive-baselines.yaml
+    tests:
+      - gate/check_architecture_sync.sh
+    allowed_claim: "Section 4 #61 / Rule 30 shipped at L1.x — docs/governance/competitive-baselines.yaml declares four pillar dimensions (performance, cost, developer_onboarding, governance) each with baseline_metric + current_value (current_value=N/A for performance and cost until W2/W3 measurement automation lands per CLAUDE-deferred.md 30.d). Enforced by Gate Rule 32 competitive_baselines_present_and_wellformed and Gate Rule 33 release_note_references_four_pillars."
+
+  independent_module_evolution:
+    status: test_verified
+    shipped: true
+    l0_decision: docs/adr/0066-independent-module-evolution.md
+    l2_documents:
+      - docs/adr/0066-independent-module-evolution.md
+    implementation:
+      - agent-platform/module-metadata.yaml
+      - agent-runtime/module-metadata.yaml
+      - spring-ai-ascend-dependencies/module-metadata.yaml
+      - spring-ai-ascend-graphmemory-starter/module-metadata.yaml
+    tests:
+      - gate/check_architecture_sync.sh
+    allowed_claim: "Section 4 #62 / Rule 31 shipped at L1.x — each of the 4 reactor modules has a sibling module-metadata.yaml declaring module, kind (platform | domain | starter | bom), version, semver_compatibility, architecture_doc, dfx_doc, spi_packages, allowed/forbidden_dependencies. Enforced by Gate Rule 34 module_metadata_present_and_complete + existing Gate Rule 10 module_dep_direction. Runtime semver compatibility enforcement deferred per CLAUDE-deferred.md 31.b."
+
+  spi_dfx_tck_codesign:
+    status: test_verified
+    shipped: true
+    l0_decision: docs/adr/0067-spi-dfx-tck-codesign.md
+    l2_documents:
+      - docs/adr/0067-spi-dfx-tck-codesign.md
+      - docs/dfx/agent-platform.yaml
+      - docs/dfx/agent-runtime.yaml
+      - docs/dfx/spring-ai-ascend-graphmemory-starter.yaml
+    implementation:
+      - docs/dfx/agent-platform.yaml
+      - docs/dfx/agent-runtime.yaml
+      - agent-runtime/module-metadata.yaml
+    tests:
+      - agent-runtime/src/test/java/ascend/springai/runtime/architecture/SpiPurityGeneralizedArchTest.java
+      - gate/check_architecture_sync.sh
+    allowed_claim: "Section 4 #63 / Rule 32 shipped at L1.x — agent-runtime (kind:domain) declares 2 SPI packages (orchestration.spi, memory.spi). agent-platform + agent-runtime publish docs/dfx/<module>.yaml covering 5 DFX dimensions (releasability, resilience, availability, vulnerability, observability). Enforced by Gate Rule 35 dfx_yaml_present_and_wellformed, Gate Rule 36 domain_module_has_spi_package, and ArchUnit E48 SpiPurityGeneralizedArchTest. TCK module scaffolding + conformance content deferred per CLAUDE-deferred.md 32.b/32.c (W2 trigger)."

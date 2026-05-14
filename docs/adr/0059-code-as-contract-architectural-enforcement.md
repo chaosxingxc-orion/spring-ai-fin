@@ -76,7 +76,9 @@ Plus the meta-rule:
 
 | Rule | Name | Asserts |
 |---|---|---|
-| 28 | `constraint_enforcer_coverage` | Every "must"/"must not"/"forbidden"/"required" sentence in the architecture corpus maps to at least one `enforcers.yaml` row. |
+| 28 | `constraint_enforcer_coverage` | `enforcers.yaml` references `CLAUDE.md` AND `ARCHITECTURE.md` (smallest viable bootstrap — guarantees the index is non-empty and the two top-level corpus sources are mapped). |
+
+**Per-sentence coverage is not automated.** The meta-rule above is a bootstrap check, not a sentence scanner. Coverage of every individual "must / must not / forbidden / required" sentence across `ARCHITECTURE.md` (root + per-module), ADR decision rules, and `docs/plans/*.md` is enforced via PR review under Rule 9 (Self-Audit Ship Gate) plus the targeted sub-rules 28a–28i above. A future sentence-extractor enforcer would tighten this further but is out of scope at L1.
 
 ### 4. Bootstrapping
 

@@ -485,3 +485,18 @@ Per L1 plan §14, the following passes:
   `agent-platform/.../posture/PostureBootGuard.java`
 - For the run HTTP contract: `agent-platform/.../web/runs/RunController.java`
   and `RunHttpContractIT.java`
+
+---
+
+## Layer-0 Governing Principles addendum (2026-05-14)
+
+After the initial L1 cut, this release also lands the **Layer-0 governing principles** restructure per ADR-0064 / ADR-0065 / ADR-0066 / ADR-0067:
+
+- **P-A — Business/Platform Decoupling + Developer Self-Service** — `CLAUDE.md` Rule 29, `ARCHITECTURE.md` §4 #60. Enforcers: `SpiPurityGeneralizedArchTest` (E48), Gate Rule 31 `quickstart_present` (E49). `docs/quickstart.md` ships referenced from `README.md`.
+- **P-B — Four Competitive Pillars: performance, cost, developer_onboarding, governance** — `CLAUDE.md` Rule 30, `ARCHITECTURE.md` §4 #61. `docs/governance/competitive-baselines.yaml` carries baselines for **performance**, **cost**, **developer_onboarding**, and **governance**; Gate Rule 32 / Rule 33 enforce presence + release-note pillar mentions (E50/E51).
+- **P-C — Code-as-Everything, Rapid Evolution, Independent Modules** — `CLAUDE.md` Rule 31, `ARCHITECTURE.md` §4 #62. Each reactor module ships a `module-metadata.yaml`; Gate Rule 34 enforces (E52).
+- **P-D — SPI-Aligned, DFX-Explicit, Spec-Driven, TCK-Tested** — `CLAUDE.md` Rule 32, `ARCHITECTURE.md` §4 #63. `docs/dfx/agent-platform.yaml` + `docs/dfx/agent-runtime.yaml` declare 5 DFX dimensions per module; Gate Rule 35 / Rule 36 enforce (E53/E54). TCK module + conformance suite deferred per `CLAUDE-deferred.md` 32.b / 32.c (W2 trigger).
+
+`CLAUDE.md` is restructured into Layer-0 Principles + Layer-1 Rules; review-cycle scaffolding moved to `docs/governance/rule-history.md`. The "Constraint Coverage by First Principle" section moved to `docs/governance/principle-coverage.md`. The Rule-10 W0 posture table moved to `docs/governance/posture-coverage.md`. No normative substance was dropped.
+
+Baseline counts after this addendum: **63 §4 constraints**, **67 ADRs**, **36 gate rules**, **37 self-tests**, **16 active engineering rules**, **14 deferred rules + 7 new sub-clauses** (29.c, 30.b, 30.d, 31.b, 32.b, 32.c, 32.d). See `docs/governance/architecture-status.yaml.architecture_sync_gate.allowed_claim` for the canonical figures.

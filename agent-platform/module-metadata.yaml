@@ -1,0 +1,15 @@
+# Module metadata for agent-platform.
+# Required by CLAUDE.md Rule 31 (Independent Module Evolution).
+# Authority: ADR-0066. Enforced by gate rule module_metadata_present_and_complete.
+
+module: agent-platform
+kind: platform           # platform | domain | starter | bom | sample
+version: 0.1.0-SNAPSHOT
+semver_compatibility: 0.x
+description: "Northbound HTTP facade — filter chain, health endpoint, idempotency header, tenant binding, JWT validation."
+architecture_doc: agent-platform/ARCHITECTURE.md
+dfx_doc: docs/dfx/agent-platform.yaml
+spi_packages: []         # platform has no SPI packages; consumes runtime SPIs only
+allowed_dependencies:
+  - agent-runtime         # via SPI imports only (E34 PlatformImportsOnlyRuntimePublicApiTest)
+forbidden_dependencies: []

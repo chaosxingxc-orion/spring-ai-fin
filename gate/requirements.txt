@@ -1,0 +1,13 @@
+# Python dependencies for gate/ scripts.
+#
+# Installed via:   pip install -r gate/requirements.txt
+#
+# Required by:
+#   - gate/build_architecture_graph.py   (CLAUDE.md Rule 34, ADR-0068)
+#   - gate/migrate_adrs_to_yaml.py        (ADR-0068, one-shot ADR .md→.yaml conversion)
+#
+# Gate Rule 38 (architecture_graph_well_formed) fails fast if PyYAML is missing.
+# Gate Rule 42 (architecture_graph_idempotent) and Rule 41 (enforcer_anchor_resolves)
+# both depend on the graph builder.
+
+PyYAML>=6.0

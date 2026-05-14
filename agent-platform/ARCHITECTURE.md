@@ -1,9 +1,35 @@
+---
+level: L1
+view: scenarios
+module: agent-platform
+status: active
+freeze_id: null
+covers_views: [logical, development, process, physical]
+spans_levels: [L1]
+authority: "ADR-0068 (Layered 4+1 + Architecture Graph) + ADR-0059 (Code-as-Contract)"
+---
+
 # agent-platform -- L1 architecture (2026-05-14 L1-modular-russell refresh)
 
 > Owner: platform | Wave: W0..W3 | Shipped through: L1 (W1)
 > Last refreshed: 2026-05-14 (L1 Phase J + K)
 > Governing rule: Rule 28 — Code-as-Contract (ADR-0059). Every constraint
 > below maps to at least one row in `docs/governance/enforcers.yaml`.
+
+## 0.4 Layered 4+1 view map (W1 — ADR-0068)
+
+This document is the **L1 root** for the `agent-platform` module. Until the full 4+1 view reorganisation lands, the table below classifies each existing major section against the 4+1 view taxonomy consumed by `gate/build_architecture_graph.sh`:
+
+| Section | View | Notes |
+|---|---|---|
+| §1 Purpose | scenarios | module mission statement |
+| §2 Shipped components / web | logical | HTTP contract surface |
+| §2 Shipped components / tenant | process | per-request binding flow |
+| §2 Shipped components / idempotency | process | filter chain + durability |
+| §3 Public contract | logical | OpenAPI snapshot |
+| §4–§9 Wave plan / risks | scenarios | rollout + audit hooks |
+
+P1-4 follow-up (L1-expert-review 2026-05-14): §§4–9 still carry W0/W1 boundary contradictions; rewrite is staged with W1 graph wave under Rule 33.
 
 ## 1. Purpose
 

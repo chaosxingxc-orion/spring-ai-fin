@@ -38,6 +38,16 @@ state-dir/
 .env
 .env.local
 .env.*.local
+
+# Generated architecture artefacts (ADR-0068 / CLAUDE.md Rule 34).
+# docs/governance/architecture-graph.yaml and its Mermaid sibling are emitted by
+# gate/build_architecture_graph.py from authoritative YAML inputs. They MUST NOT
+# be hand-edited. Tracking them would let merge conflicts and accidental edits
+# silently violate Rule 34's "must be generated, never hand-edited" clause.
+# Consumers (LLMs, contributors, CI) regenerate on demand; Rule 42 enforces
+# byte-identical idempotency.
+docs/governance/architecture-graph.yaml
+docs/governance/architecture-graph.mmd
 *.pem
 *.key
 *.crt

@@ -1,6 +1,10 @@
 # gate/ — Architecture-Sync Gate
 
-> Document-corpus consistency checks for spring-ai-ascend. **27 active rules** with PowerShell + bash parity, backed by **30 self-tests**.
+> Document-corpus consistency checks for spring-ai-ascend. **44 active rules** (bash; PowerShell parity tracked separately for Rules 28a–28j and 37–44), backed by **50 self-tests**. W1 *Layered 4+1 + Architecture Graph* wave (ADR-0068) adds Rules 37–40 over the post-L1 36-rule baseline; Phase M remediation adds Rules 41–44 (anchor resolution, graph idempotency, ADR-must-be-yaml, frozen-doc edit-path).
+>
+> **Python ≥ 3.10 required** for `gate/build_architecture_graph.py` and `gate/migrate_adrs_to_yaml.py`. Install once: `pip install -r gate/requirements.txt`. Rule 38 (`architecture_graph_well_formed`) fails fast with a clear message if PyYAML is missing.
+>
+> **Generated artefact:** `docs/governance/architecture-graph.yaml` (and its `.mmd` sibling) are produced by `gate/build_architecture_graph.py` and listed in `.gitignore`. Regenerate on demand; never hand-edit (Rule 34).
 
 ## What is this?
 

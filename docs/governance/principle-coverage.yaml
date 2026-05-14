@@ -1,0 +1,95 @@
+# Principle → Rule coverage (machine form).
+#
+# Authority: ADR-0064 (Layer-0 governing principles) + ADR-0068 (Layered 4+1 + Graph).
+# Companion human-readable form: docs/governance/principle-coverage.md.
+# Consumed by gate/build_architecture_graph.sh to emit principle→rule edges.
+
+version: 1
+generated_at: 2026-05-14
+
+principles:
+  - id: P-A
+    name: "Business/Platform Decoupling + Developer Self-Service"
+    motivation: |
+      Business code and platform code are decoupled. Customization-by-source-patch
+      into platform internals is forbidden. All architecture and solution design
+      must be developer-friendly: configuration-driven extension, debug-friendly
+      telemetry, and self-service closure (a developer can build, run, and test
+      an agent end-to-end against the platform without platform-team intervention).
+    operationalised_by_rules:
+      - Rule-6
+      - Rule-29
+    operationalised_by_legacy_principles:
+      - P2
+
+  - id: P-B
+    name: "Four Competitive Pillars (Performance / Cost / Onboarding / Governance)"
+    motivation: |
+      Platform competitiveness rests on four continuously-improvable dimensions —
+      Performance (latency, throughput), Cost (per-call + infra), Developer
+      Onboarding (time-to-first-agent + surface complexity), Governance (tenant
+      isolation, audit, eval, safety). Each dimension must have a published
+      baseline that future releases can be measured against.
+    operationalised_by_rules:
+      - Rule-9
+      - Rule-21
+      - Rule-30
+    deferred_operationalisers:
+      - Rule-18   # eval — deferred W4
+
+  - id: P-C
+    name: "Code-as-Everything, Rapid Evolution, Independent Modules"
+    motivation: |
+      Every architectural constraint is code. Modules evolve independently — each
+      builds, tests, and upgrades on its own, with high cohesion and low
+      coupling. Production-environment upgrades are lightweight
+      (BoM + starter pattern + semver compatibility).
+    operationalised_by_rules:
+      - Rule-10
+      - Rule-25
+      - Rule-28
+      - Rule-31
+      - Rule-33   # NEW (ADR-0068)
+      - Rule-34   # NEW (ADR-0068)
+
+  - id: P-D
+    name: "SPI-Aligned, DFX-Explicit, Spec-Driven, TCK-Tested"
+    motivation: |
+      Every domain module ships an SPI; every platform/domain module declares
+      its Design-for-X posture (releasability, resilience, availability,
+      vulnerability, observability); contracts precede implementation;
+      alternative implementations must pass a TCK to be conformant.
+    operationalised_by_rules:
+      - Rule-4
+      - Rule-32
+    deferred_operationalisers:
+      - Rule-22   # PayloadCodec — deferred
+
+# Legacy first-principle labels preserved for graph backward-compatibility.
+legacy_principles:
+  - id: P1
+    name: "Lower cost-of-use"
+    composes_with: P-B
+    operationalised_by_rules: []
+    deferred_operationalisers: [Rule-13, Rule-14]
+  - id: P2
+    name: "Lower onboarding barrier"
+    composes_with: P-A
+    operationalised_by_rules:
+      - Rule-6
+      - Rule-20
+      - Rule-21
+      - Rule-29
+    operationalised_by_arch_sections:
+      - "ARCHITECTURE.md §4.7"
+      - "ARCHITECTURE.md §4.2"
+      - "ARCHITECTURE.md §4.6"
+  - id: P3
+    name: "Self-evolving intelligence"
+    composes_with: P-B
+    deferred_operationalisers: [Rule-14]
+  - id: E1
+    name: "OSS-first reuse"
+    composes_with: P-C
+    operationalised_by_arch_sections:
+      - "ARCHITECTURE.md §4.6"

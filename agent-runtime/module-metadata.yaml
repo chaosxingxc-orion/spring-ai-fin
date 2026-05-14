@@ -1,0 +1,17 @@
+# Module metadata for agent-runtime.
+# Required by CLAUDE.md Rule 31 (Independent Module Evolution).
+# Authority: ADR-0066. Enforced by gate rule module_metadata_present_and_complete.
+
+module: agent-runtime
+kind: domain             # platform | domain | starter | bom | sample
+version: 0.1.0-SNAPSHOT
+semver_compatibility: 0.x
+description: "Cognitive runtime kernel — Orchestration SPI, Run entity + DFA, in-memory reference executors, resilience contract, posture gate."
+architecture_doc: agent-runtime/ARCHITECTURE.md
+dfx_doc: docs/dfx/agent-runtime.yaml
+spi_packages:
+  - ascend.springai.runtime.orchestration.spi
+  - ascend.springai.runtime.memory.spi
+allowed_dependencies: []
+forbidden_dependencies:
+  - agent-platform        # Rule 10 module_dep_direction; runtime is independent of platform

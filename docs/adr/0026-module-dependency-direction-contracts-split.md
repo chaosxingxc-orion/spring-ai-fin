@@ -70,7 +70,7 @@ creation was required at W0.
 **W0 (resolved):** `agent-runtime/pom.xml` dependency on `agent-platform` removed. Neither
 module depends on the other at the Maven module level.
 
-**W1 target (future):** Create `agent-platform-contracts` Maven module containing:
+**W1 target (VOIDED by ADR-0055 — preserved for historical context):** Create `agent-platform-contracts` Maven module containing:
 
 | Type | Current location | New location |
 |------|-----------------|--------------|
@@ -89,7 +89,7 @@ Concrete implementations remain in their current modules:
 - `SyncOrchestrator`, `SequentialGraphExecutor`, `IterativeAgentLoopExecutor`,
   `InMemoryCheckpointer`, `InMemoryRunRegistry` — stay in `agent-runtime`
 
-**Exit criterion:** `agent-runtime/pom.xml` dependency on `agent-platform` is removed and
+**[VOIDED by ADR-0055.]** **Exit criterion:** `agent-runtime/pom.xml` dependency on `agent-platform` is removed and
 replaced with a dependency on `agent-platform-contracts`. `RuntimeNoPlatformDependencyTest`
 passes. `ApiCompatibilityTest` updated to assert the clean three-module graph.
 
@@ -114,7 +114,7 @@ Medium: once done, reverting requires moving 9 types back and updating all impor
 - Fourth-reviewer document: `docs/reviews/2026-05-12-architecture-code-consistency-feedback.en.md` (F2)
 - Response document: `docs/reviews/2026-05-12-fourth-reviewer-response.en.md`
 - §4 #1 (revised dependency direction description)
-- ADR-0021 (layered SPI taxonomy — W1 contracts module is Layer 1 of the taxonomy)
+- ADR-0021 (layered SPI taxonomy)
 - `architecture-status.yaml` row: `module_dependency_direction_w0`
 - `agent-runtime/pom.xml:18-25` (W0 exception)
 - `ApiCompatibilityTest.java:37-44` (platform→runtime direction only at W0)
