@@ -23,15 +23,14 @@
 *(This section is temporarily left blank, reserved for domain architects to jointly discuss and supplement system-level core ironclad rules in subsequent reviews.)*
 
 ## 4. L0 Logical View
-*   **Physical Boundaries of State Dimensionality Reduction**:
-    *   **Dynamic Mode**: Continuous cognition based on Full Trace.
-    *   **Graph Mode**: Discrete flow based on Node Snapshot.
-    The `Run` record system must logically support the storage and addressing of both data planes simultaneously.
-*   **Dynamic Hydration & Three-State Cursor Handoff**:
-    When the S-Side returns control to the C-Side, it includes three logical forms:
-    1.  **Sync State**: Cursor advances, returns computing results.
-    2.  **Sub-Stream**: SSE pass-through of the reasoning process.
-    3.  **Yield & Handoff**: Actively suspends upon encountering high-risk or missing-credential operations, waiting for the business side to supplement credentials before re-awakening.
+The system logic is strictly decoupled into six core modules, distinctly delineating the boundaries between business applications, execution environments, and platform infrastructure:
+
+1.  **Agent Client**: Oriented towards business developers. It can be integrated into business IT systems or enterprise user terminals (PC/Mobile). Responsibilities include managing static business configurations (authorized tools, skills, etc.), dynamic task requirements, completion validation, and progress tracking; maintaining business-related knowledge systems and semantic constraints; and handling environment observation and manipulation on the business application side.
+2.  **Agent Runtime**: Oriented towards business developers (recommended for direct deployment, supports secondary development). Responsibilities include reactive APP service encapsulation; supporting A2A (Agent-to-Agent) service exposure and acting as a client to invoke other agent services; managing agent sessions and tasks; integrating middleware; and providing compatibility and adaptation for agents developed via heterogeneous frameworks.
+3.  **Agent Execution Engine**: Oriented towards business developers. It supports dual-mode execution: rigidly constrained "Workflow" mode (supporting low-code orchestration) and dynamic "AgentLoop" mode (supporting configuration and hook attachment). It is recommended to use open-source frameworks like `openJiuwen` or other mainstream agent frameworks for development.
+4.  **Agent Evolution Layer**: Oriented towards business developers. It builds a data flywheel by collecting comprehensive operational data, providing a dual-track agent self-learning and continuous evolution mechanism.
+5.  **Agent Bus**: Oriented towards platform developers (recommended for direct deployment, supports secondary development). It acts as the communication hub, handling client-to-server access, Server-to-Server A2A invocations, and agent self-triggered heartbeat rhythms.
+6.  **Agent Middleware**: Oriented towards platform developers (recommended for direct deployment, supports secondary development). It provides standardized core infrastructure services, including the agent memory system, agent skill center, and agent sandbox services.
 
 ## 5. L0 Development View
 *   **Lazy Mounting with State and Control Decoupling**:
