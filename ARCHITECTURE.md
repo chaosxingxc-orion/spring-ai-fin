@@ -14,6 +14,35 @@
 
 ---
 
+## 0.5 Cross-cutting verticals
+
+Three named verticals span every horizontal layer (HTTP edge → orchestration → executor → adapter → MCP). A vertical is a cross-cutting concern that every other capability MUST emit into via a single carrier — not a re-invented sibling per layer.
+
+### 0.5.1 Tenant Vertical
+
+Carrier: `TenantContext` (HTTP edge ThreadLocal, valid for one request) + `RunContext.tenantId()` (canonical inside orchestration, ADR-0023). Rule 21 enforces that no runtime production class reads `TenantContextHolder`. Every persisted row carries `tenant_id NOT NULL`. References: §4 #3, §4 #22, §4 #37, Rule 21.
+
+### 0.5.2 Posture Vertical
+
+Carrier: `APP_POSTURE={dev|research|prod}` read once at boot. `AppPostureGate` and `PostureBootGuard` enforce posture-aware fail-closed defaults at construction and startup. References: §4 #2, §4 #32, ADR-0058.
+
+### 0.5.3 Telemetry Vertical (NEW — L1.x contract surface)
+
+Carrier: `TraceContext` SPI (companion to `RunContext`) + W3C `traceparent` propagation at the HTTP edge + Logback MDC (`tenant_id`, `trace_id`, `span_id`, `run_id`). The vertical owns three entities — `Trace`, `Span`, and `LlmCall` — defined in ADR-0061. Every LLM call, tool invocation, state transition, and middleware adapter emission goes through this vertical via the `Hook SPI` (§4 #16) or `TraceContext` (§4 #53–#59); no layer emits telemetry directly.
+
+Wire format: OTLP/HTTP (Langfuse-compatible attribute namespace `gen_ai.*` + `langfuse.*`). Hybrid sink: OTLP exporter + `trace_store` Postgres dual-write per ADR-0017. Sampling is posture-aware (dev=100 %, research=10 %, prod=1 % head + tail-on-error at W4). MCP-only replay surface per §4 #59 preserves the §1 "no admin UI" exclusion.
+
+Staged rollout:
+
+- **L1.x**: ARCHITECTURE.md §4 #53–#59; ADR-0061/0062/0063; `TraceContext` SPI (Noop impl); `TraceExtractFilter` (HTTP edge, no OTel SDK dep); MDC expansion; `Run.traceId` + `Run.sessionId` columns (nullable); ArchUnit + integration enforcers that do not require the OTel SDK.
+- **W2**: OTel SDK + `opentelemetry-spring-boot-starter`; OTLP exporter; Hook SPI un-frozen (§4 #16) with reference hooks (`TokenCounterHook`, `PiiRedactionHook`, `CostAttributionHook`, `LlmSpanEmitterHook`); `trace_store` Postgres + dual-write; `Run.traceId` NOT NULL.
+- **W3**: `springai-ascend-client` (Java/Kotlin) per ADR-0063; `Score` entity; cost dashboards.
+- **W4**: MCP replay tools (`get_run_trace`, `list_runs`, `get_llm_call`, `list_sessions`) per ADR-0017.
+
+References: §4 #53–#59, ADR-0061/0062/0063, `docs/telemetry/policy.md`.
+
+---
+
 ## 2. Module layout
 
 ```
@@ -162,6 +191,8 @@ only `java.*` (enforced by `OrchestrationSpiArchTest`, `MemorySpiArchTest`).
 
 5. **Metric naming**: all custom Micrometer metrics use the prefix
    `springai_ascend_`. No bare or provider-prefixed names on platform meters.
+   Span attribute naming follows `gen_ai.*` (OTel semconv) and `langfuse.*`
+   (platform-specific) per §4 #56 and `docs/telemetry/policy.md §4`.
 
 6. **OSS-first**: every core concern is delegated to an existing OSS project.
    New glue must answer "why is this not a configuration of an existing OSS dep?"
@@ -242,7 +273,10 @@ only `java.*` (enforced by `OrchestrationSpiArchTest`, `MemorySpiArchTest`).
     logs at `WARNING+` and does not abort the invocation). Reference hooks shipped in W2: PII
     filter, token counter, summariser, tool-call-limit. Direct LLM/tool calls that bypass
     `HookChain` are a gate-blocking defect (Rule 19 — deferred W2; `HookChain` SPI and
-    `HookChainConformanceTest` do not exist at W0).
+    `HookChainConformanceTest` do not exist at W0). Hooks are the sole emission path
+    for `LlmCall` and middleware spans per §4 #56 and ADR-0061 §7; the Telemetry
+    Vertical's `LlmSpanEmitterHook` and `ToolSpanEmitterHook` reference hooks ship in
+    the same W2 commit that un-freezes this constraint.
 
 17. **Graph DSL conformance.** `ExecutorDefinition.GraphDefinition` MUST support beyond W2:
     (a) per-key `StateReducer` registry (`OverwriteReducer` — last-write-wins; `AppendReducer` —
@@ -299,7 +333,9 @@ only `java.*` (enforced by `OrchestrationSpiArchTest`, `MemorySpiArchTest`).
     from `Run.tenantId`. `TenantContextFilter` populates Logback MDC `tenant_id` alongside
     `TenantContextHolder` for log correlation (shipped at W0). `RunContext.tenantId() : String` migrates
     to `UUID` at W1 alongside Keycloak integration. Micrometer `tenant_id` tag enforcement and OTel
-    `traceparent` propagation across suspend are deferred to W1/W2. See ADR-0023.
+    `traceparent` propagation across suspend are deferred to W1/W2. `RunContext.traceId()` /
+    `spanId()` / `sessionId()` / `traceContext()` are mandatory L1.x accessors per §4 #54
+    and ADR-0062 (Trace ↔ Run ↔ Session N:M). See ADR-0023, ADR-0061.
 
 23. **Suspension write atomicity.** At the suspension boundary, `RunRepository.save(suspended)` and
     `checkpointer.save(runId, nodeKey, payload)` MUST be observable atomically. Tiered contract:
@@ -660,6 +696,20 @@ only `java.*` (enforced by `OrchestrationSpiArchTest`, `MemorySpiArchTest`).
     `docs/governance/architecture-status.yaml`. Concrete transport mechanics (Netty, epoll,
     channel pools, event-loop schedulers) are W2+ implementation guidance and MUST NOT
     appear as L0 contract. See ADR-0054.
+
+53. **Telemetry Vertical first-class.** The Telemetry Vertical (Trace + Span + LlmCall) is a named cross-cutting concept declared in `ARCHITECTURE.md §0.5.3`. Every horizontal layer (HTTP edge, orchestration, executor, adapter, MCP) MUST emit into it via the `TraceContext` SPI or the Hook SPI — never directly. Direct telemetry emission from adapter code (LlmGateway, ToolInvoker, DB/Redis bridges) is forbidden. Enforced by ArchUnit `TelemetryVerticalArchTest` (no class outside `agent-runtime/observability` or `agent-platform/observability` may write to a `TraceWriter`-shaped sink). See ADR-0061.
+
+54. **Trace ↔ Run ↔ Session identity (N:M).** Every persisted `Run` row MUST carry a non-null `trace_id` (32-char lowercase W3C hex; the column is nullable at L1.x and NOT NULL from W2 via `V2__run_trace_id_notnull.sql`). `Run.sessionId` MAY be null at L1.x; in posture=research/prod from W2 it MUST be non-null. Multiple Runs MAY share a Trace or a Session. `RunContext` MUST expose `traceId()`, `spanId()`, `sessionId()`, and `traceContext()` alongside `tenantId()`. Child Runs spawned via `SuspendForChild` inherit `sessionId` from the parent and start a new Trace whose root span attribute `parent_trace_id` points to the parent's `traceId` (ADR-0062 default policy). Enforced by ArchUnit `RunContextIdentityAccessorsTest` + integration `RunTraceSessionConsistencyIT` + (W2) Flyway schema constraint. See ADR-0062.
+
+55. **W3C traceparent propagation at HTTP edge.** `agent-platform` MUST extract or originate a W3C version-00 `traceparent` on every inbound request (filter order 10, before JWT/Tenant/Idempotency), populate Logback MDC with `trace_id` + `span_id` alongside `tenant_id` + `run_id`, and emit `traceresponse: 00-<trace_id>-<server_span_id>-01` on every outbound response (200/4xx/5xx) so client SDKs can correlate. Invalid `traceparent` headers MUST fall back to originating a fresh trace (never propagate an unparseable id) and increment `springai_ascend_traceparent_invalid_total`. Enforced by `TraceExtractFilterIT` + extended `LogFieldShapeIT`. See ADR-0061 §4.
+
+56. **GENERATION span schema.** Every LLM invocation in posture=research/prod MUST emit a Span carrying attributes `gen_ai.system`, `gen_ai.request.model`, `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, `langfuse.cost_usd`, and `langfuse.latency_ms`. Raw prompt/completion content MUST be stored in `PayloadStore` and referenced via `payload_ref://<id>` — never inline as a span attribute (negative invariant; see §4 #58). Direct LLM calls bypassing `HookChain` are a ship-blocking defect under Rule 9 (observability category). Enforced by ArchUnit `LlmGatewayHookChainOnlyTest` (active at L1.x — no `agent-runtime/llm/*` class may import `org.springframework.ai.chat.ChatModel` outside the `HookChain` package) + integration `GenerationSpanSchemaIT` (W2 trigger; class FQN locked here per Rule 28 contract-then-enforcer pair). See ADR-0061 §1 + ADR-0061 §7.
+
+57. **Tenant attribute on every span.** Every Span emitted by the platform MUST carry `tenant.id` matching `RunContext.tenantId()`. MCP trace replay (`get_run_trace`, `list_runs`, `list_sessions`, `get_llm_call`) MUST fail closed on tenant mismatch — the caller's tenant (resolved from JWT) MUST match `trace.tenant_id`, returning 403 otherwise. Reconciliation with `TenantTagMeterFilter` (L1): the filter strips `tenant_id` from raw meter tags (high-cardinality protection); the span attribute is unaffected because span storage is sampled (1-10 %) and span attributes are not aggregation dimensions. Enforced by ArchUnit `SpanTenantAttributeRequiredTest` + (W2) `McpTraceLookupTenantIsolationIT`. See ADR-0061 §5–§6.
+
+58. **No PII in span attributes.** Raw prompt, completion, tool-input, and tool-output content MUST NOT appear in Span attributes in posture=research/prod. Payloads MUST be stored in `PayloadStore` and referenced via `payload_ref://<id>`. `PiiRedactionHook` MUST be registered at boot in posture=research/prod (verified by `AppPostureGate`); startup MUST fail closed if the hook is absent. Enforced by integration `PostureBootPiiHookPresenceContractIT` (L1.x — asserts the boot-gate contract; the negative emission test `PiiSpanAttributeIT` lands at W2 alongside Hook SPI implementation; class FQN locked here per Rule 28). See ADR-0061 §5.
+
+59. **MCP-only telemetry replay surface.** Trace replay and run/session listing MUST be exposed exclusively via MCP tools (`get_run_trace`, `list_runs`, `get_llm_call`, `list_sessions`). No HTTP endpoint, no UI, no direct DB read endpoint, no Tempo/Jaeger redirect proxy. Preserves §1 exclusion (no Admin UI). Enforced by ArchUnit `McpReplaySurfaceArchTest` (negative: no `@RestController` resides in `agent-platform/web/replay/`, `agent-platform/web/trace/`, or `agent-platform/web/session/`) + ADR-0017 freeze.
 
 ---
 

@@ -1,8 +1,10 @@
 package ascend.springai.runtime.orchestration.inmemory;
 
+import ascend.springai.runtime.orchestration.NoopTraceContext;
 import ascend.springai.runtime.orchestration.spi.ExecutorDefinition;
 import ascend.springai.runtime.orchestration.spi.RunContext;
 import ascend.springai.runtime.orchestration.spi.SuspendSignal;
+import ascend.springai.runtime.orchestration.spi.TraceContext;
 import ascend.springai.runtime.runs.RunMode;
 import org.junit.jupiter.api.Test;
 
@@ -29,10 +31,15 @@ class IterativeAgentLoopExecutorResumeCursorTest {
 
     /** Fake RunContext backed by the shared InMemoryCheckpointer. */
     private RunContext ctx(UUID runId) {
+        final TraceContext trace = NoopTraceContext.newRoot();
         return new RunContext() {
             @Override public UUID runId() { return runId; }
             @Override public String tenantId() { return "test-tenant"; }
             @Override public ascend.springai.runtime.orchestration.spi.Checkpointer checkpointer() { return checkpointer; }
+            @Override public String traceId() { return trace.traceId(); }
+            @Override public String spanId() { return trace.spanId(); }
+            @Override public String sessionId() { return trace.sessionId(); }
+            @Override public TraceContext traceContext() { return trace; }
             @Override public Object suspendForChild(String parentNodeKey, RunMode childMode,
                                                      ExecutorDefinition childDef, Object resumePayload)
                     throws SuspendSignal {

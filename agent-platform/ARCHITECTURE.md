@@ -160,14 +160,43 @@ exists. Research/prod require a durable repository (W2); until then
 
 Enforcer rows: E5, E6, E7, E8, E24.
 
-### observability -- Tenant tagging & forbidden-tag scrub (L1, plan §10)
+### observability -- Tenant tagging, forbidden-tag scrub, Telemetry Vertical filter (L1 + L1.x)
 
-`TenantTagMeterFilter` registers a `MeterFilter` that strips
+`TenantTagMeterFilter` (L1) registers a `MeterFilter` that strips
 high-cardinality tag keys (`run_id`, `idempotency_key`, `jwt_sub`,
 `body`) from every `springai_ascend_*` metric at registration time.
 Non-namespace metrics (jvm.*, etc.) are left untouched.
 
-Enforcer rows: E18 (metric prefix), E19 (forbidden tag scrubber).
+`TraceExtractFilter` (L1.x — Telemetry Vertical, ADR-0061 / §4 #55)
+runs at order 10 (before `JwtTenantClaimCrossCheck` at 15 and
+`TenantContextFilter` at 20). It parses the W3C version-00
+`traceparent` header on every inbound request; if absent or malformed
+it originates a fresh `trace_id` (32-char hex) + `span_id` (16-char
+hex). MDC is populated with `trace_id`, `span_id`, `parent_span_id`
+during the request scope (cleared in `finally`). On every outbound
+response the filter emits `traceresponse: 00-<trace_id>-<span_id>-01`
+so the W3 client SDK (ADR-0063) can correlate. Counters:
+`springai_ascend_trace_originated_total{posture, source=client|server}`,
+`springai_ascend_traceparent_invalid_total{posture}`. No OpenTelemetry
+SDK dependency at L1.x — pure-Java parsing and id minting.
+
+Filter chain order (L1.x):
+
+1. `TraceExtractFilter` (order 10) — Telemetry Vertical (NEW).
+2. `JwtTenantClaimCrossCheck` (order 15) — JWT vs `X-Tenant-Id` cross-check.
+3. `TenantContextFilter` (order 20) — UUID binding + MDC tenant_id.
+4. `IdempotencyHeaderFilter` (default Spring Security ordering after 20)
+   — `Idempotency-Key` validation + claim/replay.
+
+`run_id` is populated in MDC by `RunController` at the spot where a
+Run is materialised (not in a filter — the run is created inside the
+controller, after the filter chain). This is a deliberate L1.x design
+choice; W2 may move it to a request-scoped bean if a second
+Run-materialising controller appears.
+
+Enforcer rows: E18 (metric prefix), E19 (forbidden tag scrubber),
+E38 (Telemetry Vertical first-class), E40 (traceparent at edge),
+E41 (MDC field-shape).
 
 ### architecture -- Layering enforcers (L1, ADR-0055)
 

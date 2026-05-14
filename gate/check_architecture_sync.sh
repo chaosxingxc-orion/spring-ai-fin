@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# spring-ai-ascend architecture-sync gate -- L1 Rule-28 expansion + Phase K (40 rules; 29 base + 11 Rule-28 sub-checks).
+# spring-ai-ascend architecture-sync gate -- L1 Rule-28 expansion + Phase K + L1.x Telemetry Vertical (41 rules; 30 base + 11 Rule-28 sub-checks).
 # Exits 0 if all rules pass, 1 if any fail.
 # Each rule prints PASS: <name> or FAIL: <name> -- <reason>.
 # Prints GATE: PASS or GATE: FAIL at the end.
@@ -46,6 +46,7 @@
 #  28i. plan_enforcer_table_in_sync                    -- plan §11 IDs == enforcers.yaml IDs (enforcer E32)
 #  28j. enforcer_artifact_paths_exist                   -- every artifact: path in enforcers.yaml resolves on disk (enforcer E33, Phase K audit fix F6)
 #  28.  constraint_enforcer_coverage                   -- enforcers.yaml references CLAUDE.md AND ARCHITECTURE.md (meta-rule, enforcer E28)
+#  30.  telemetry_vertical_constraint_coverage         -- ARCHITECTURE.md §4 #53–#59 each cited by an enforcer row (L1.x Telemetry Vertical, enforcer E47)
 
 set -uo pipefail
 export LC_ALL=C
@@ -1368,6 +1369,35 @@ if [[ -f "$_efile" ]] && [[ -f 'CLAUDE.md' ]]; then
   fi
 fi
 if [[ $_r28_fail -eq 0 ]]; then pass_rule "constraint_enforcer_coverage"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 30 — telemetry_vertical_constraint_coverage (enforcer E47)
+#
+# Telemetry Vertical L1.x (ADR-0061 / §4 #53–#59): every Telemetry-Vertical
+# constraint number in ARCHITECTURE.md §4 MUST resolve to at least one
+# enforcer row in docs/governance/enforcers.yaml. Stricter than the existing
+# meta-rule 28 (presence check only) — Rule 30 validates each §4 #N reference
+# individually for N in {53..59}.
+# ---------------------------------------------------------------------------
+_r30_fail=0
+_efile='docs/governance/enforcers.yaml'
+_archfile='ARCHITECTURE.md'
+if [[ -f "$_archfile" && -f "$_efile" ]]; then
+  for _n in 53 54 55 56 57 58 59; do
+    # Constraint number must exist in ARCHITECTURE.md §4 as a top-level numbered item.
+    if ! grep -qE "^${_n}\. \*\*" "$_archfile"; then
+      fail_rule "telemetry_vertical_constraint_coverage" "ARCHITECTURE.md §4 #${_n} (Telemetry Vertical) is missing — expected '${_n}. **' at line start. Per ADR-0061 §8."
+      _r30_fail=1
+      continue
+    fi
+    # And the constraint number must be cited in at least one enforcer row.
+    if ! grep -qE "§4 #${_n}" "$_efile"; then
+      fail_rule "telemetry_vertical_constraint_coverage" "enforcers.yaml has no row citing '§4 #${_n}' (Telemetry Vertical). Add an E-row per ADR-0061 §8 + Rule 28."
+      _r30_fail=1
+    fi
+  done
+fi
+if [[ $_r30_fail -eq 0 ]]; then pass_rule "telemetry_vertical_constraint_coverage"; fi
 
 # ---------------------------------------------------------------------------
 # Summary

@@ -25,5 +25,5 @@ Rule 8 operator-shape gate run records evidence in docs/delivery/.
 ## Active constraints (all waves)
 
 - LLM latency: budget = `5 x median(provider_p95)`; excluded from hard SLO.
-- Cardinality: <= 50 distinct series per metric label at research/prod (see docs/observability/policy.md).
+- Cardinality: <= 50 distinct series per metric label at research/prod (see docs/telemetry/policy.md).
 - Error budget: alert when > 5% of monthly budget consumed in 1 hour (W2 alerting gate).

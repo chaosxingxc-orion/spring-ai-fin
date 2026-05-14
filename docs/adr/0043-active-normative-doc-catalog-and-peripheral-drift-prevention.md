@@ -55,7 +55,7 @@ Files whose claims are actively binding on implementers and reviewers:
 - `agent-runtime/ARCHITECTURE.md`
 - `docs/contracts/**/*.{md,yaml}`
 - `docs/cross-cutting/**/*.md`
-- `docs/observability/**/*.md`
+- `docs/telemetry/**/*.md` (renamed from `docs/observability/` per ADR-0061 §2)
 - `docs/governance/**/*.{md,yaml}`
 - `third_party/MANIFEST.md`
 - All module `pom.xml` descriptions and module-level `README.md` files

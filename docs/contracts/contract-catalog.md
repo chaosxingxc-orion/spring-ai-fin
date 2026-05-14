@@ -107,4 +107,4 @@ The following starters were deleted in the 2026-05-12 Occam pass and are no long
 
 ---
 
-*See also*: `docs/observability/policy.md` · `docs/cross-cutting/posture-model.md`
+*See also*: `docs/telemetry/policy.md` · `docs/cross-cutting/posture-model.md`

@@ -84,7 +84,7 @@ capabilities:
       - gate/test_architecture_sync_gate.sh
     latest_semantic_pass_sha: 404d13a
     latest_delivery_file: docs/delivery/2026-05-12-e0ccb6e.md
-    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here. Architecture baseline: 52 §4 constraints (#1–#52); 60 ADRs (0001–0060); 29 active gate rules; 12 active engineering rules (1–6, 9–10, 20–21, 25, 28); 14 deferred rules (7, 8, 11, 13–19, 22–24, 26–27); 37 gate self-tests; L1 release published at docs/releases/2026-05-14-L1-modular-russell-release.en.md (current canonical, Phase L remediation landed per ADR-0060 closing reviewer P0-1/P0-2/P0-3/P1-2/P1-4/P2-1); L0 v2 superseded and marked historical (L0 baseline frozen at 52/54/29/35); L0 v1 archived at docs/archive/2026-05-13-l0-release-note-v1-superseded/ (frozen at SHA 82a1397); L1 adds Rule 28 (Code-as-Contract) + ADRs 0055–0060 + 10 Rule-28 sub-enforcers (28a–28j executed under base Rule 28) + 37-row enforcers.yaml index (E1–E37; Phase L adds E35 anchor validation, E36 OpenAPI no-undocumented-live, E37 JwtTestFixture); v2 re-cut to match canonical baseline (originally 50/52/29/35; bumped to 52/54/29/35 by 14th cycle) and re-audited by six parallel reviewer agents; fourteenth-cycle Cohesive Agent Swarm Execution + Long-Connection Containment via ADR-0053/0054 + §4 #51-#52; class-based self-audit (per the 6th+7th cycle methodology) surfaced 11-dimension SpawnEnvelope propagation gap (Class 3 hidden defects) and 3 uncovered resource-explosion vectors (socket-per-tenant cap, file-descriptor bound, in-flight Runs pool cap — Class 7 hidden defects); B/B'/B''/P capability-label notation REJECTED with mapping to existing C-Side/S-Side (ADR-0051) and S-Cloud/S-Edge/C-Device (ADR-0033) vocabularies documented in docs/reviews/2026-05-13-l0-capability-labels-platformization-response.en.md; thirteenth-cycle Whitepaper-Alignment Remediation via ADR-0049/0050/0051/0052 + §4 #47-#50 — C/S Dynamic Hydration Protocol named at L0 contract level; Workflow Intermediary + Mailbox Backpressure + Rhythm track restored as independent third cross-service bus track; Memory and Knowledge Ownership Boundary codified (C-side business ontology vs S-side trajectory; Placeholder Preservation first-class); Skill Topology Scheduler + Capability Bidding named (two-axis tenant×global arbitration); ADR-0048 narrowed; Gate Rules 28-29 added (release-note baseline truth; whitepaper alignment matrix presence); +5 self-tests (30→35); twelfth-cycle Service-Layer Microservice-Architecture Commitment via ADR-0048 + §4 #46."
+    allowed_claim: "Architecture-sync scripts implemented; last delivery-valid SHA tracked here. Architecture baseline: 59 §4 constraints (#1–#59 with Telemetry Vertical #53–#59 added per ADR-0061); 63 ADRs (0001–0063 with ADR-0061/0062/0063 added per Telemetry Vertical L1.x); 30 active gate rules (Rule 30 telemetry_vertical_constraint_coverage added per ADR-0061 §8); 12 active engineering rules (1–6, 9–10, 20–21, 25, 28); 14 deferred rules (7, 8, 11, 13–19, 22–24, 26–27); 37 gate self-tests; L1 release published at docs/releases/2026-05-14-L1-modular-russell-release.en.md (current canonical, Phase L remediation landed per ADR-0060 closing reviewer P0-1/P0-2/P0-3/P1-2/P1-4/P2-1); L0 v2 superseded and marked historical (L0 baseline frozen at 52/54/29/35); L0 v1 archived at docs/archive/2026-05-13-l0-release-note-v1-superseded/ (frozen at SHA 82a1397); L1 adds Rule 28 (Code-as-Contract) + ADRs 0055–0060 + 10 Rule-28 sub-enforcers (28a–28j executed under base Rule 28) + 37-row enforcers.yaml index (E1–E37; Phase L adds E35 anchor validation, E36 OpenAPI no-undocumented-live, E37 JwtTestFixture); v2 re-cut to match canonical baseline (originally 50/52/29/35; bumped to 52/54/29/35 by 14th cycle) and re-audited by six parallel reviewer agents; fourteenth-cycle Cohesive Agent Swarm Execution + Long-Connection Containment via ADR-0053/0054 + §4 #51-#52; class-based self-audit (per the 6th+7th cycle methodology) surfaced 11-dimension SpawnEnvelope propagation gap (Class 3 hidden defects) and 3 uncovered resource-explosion vectors (socket-per-tenant cap, file-descriptor bound, in-flight Runs pool cap — Class 7 hidden defects); B/B'/B''/P capability-label notation REJECTED with mapping to existing C-Side/S-Side (ADR-0051) and S-Cloud/S-Edge/C-Device (ADR-0033) vocabularies documented in docs/reviews/2026-05-13-l0-capability-labels-platformization-response.en.md; thirteenth-cycle Whitepaper-Alignment Remediation via ADR-0049/0050/0051/0052 + §4 #47-#50 — C/S Dynamic Hydration Protocol named at L0 contract level; Workflow Intermediary + Mailbox Backpressure + Rhythm track restored as independent third cross-service bus track; Memory and Knowledge Ownership Boundary codified (C-side business ontology vs S-side trajectory; Placeholder Preservation first-class); Skill Topology Scheduler + Capability Bidding named (two-axis tenant×global arbitration); ADR-0048 narrowed; Gate Rules 28-29 added (release-note baseline truth; whitepaper alignment matrix presence); +5 self-tests (30→35); twelfth-cycle Service-Layer Microservice-Architecture Commitment via ADR-0048 + §4 #46."
 
   spring_ai_ascend_dependencies_bom:
     status: implemented_unverified
@@ -1213,3 +1213,88 @@ capabilities:
     implementation: null
     tests: []
     allowed_claim: "W1+ deferred resource-explosion vector. Per-Agent-Service-instance cap on the number of in-flight Runs. Prevents an instance from accepting Runs until JVM heap saturates. Named here per ADR-0054. Re-introduction trigger: first W1 deployment that supports concurrent Run admission via ADR-0050 Workflow Intermediary mailbox."
+
+  # --- Fifteenth review cycle: Telemetry Vertical L1.x introduction (2026-05-14) ---
+
+  telemetry_vertical:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0061-telemetry-vertical-layer.md
+    l2_documents:
+      - ARCHITECTURE.md
+      - docs/adr/0061-telemetry-vertical-layer.md
+      - docs/adr/0062-trace-run-session-identity.md
+      - docs/adr/0063-client-sdk-observability-contract.md
+      - docs/telemetry/policy.md
+    implementation: null
+    tests: []
+    allowed_claim: "Section 4 #53 invariant — Telemetry Vertical (Trace + Span + LlmCall) is a first-class cross-cutting concept in ARCHITECTURE.md §0.5.3. Every layer emits via TraceContext SPI or Hook SPI; direct emission forbidden. Full engine (OTel SDK + OTLP exporter + trace_store dual-write + Hook SPI un-deferred + LlmGateway GENERATION spans) lands at W2. See ADR-0061."
+
+  trace_context_spi:
+    status: test_verified
+    shipped: true
+    l0_decision: docs/adr/0061-telemetry-vertical-layer.md
+    l2_documents:
+      - docs/adr/0061-telemetry-vertical-layer.md
+      - agent-runtime/ARCHITECTURE.md
+    implementation:
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/TraceContext.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/NoopTraceContext.java
+      - agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/RunContext.java
+    tests:
+      - agent-runtime/src/test/java/ascend/springai/runtime/architecture/TelemetryVerticalArchTest.java
+      - agent-runtime/src/test/java/ascend/springai/runtime/architecture/RunContextIdentityAccessorsTest.java
+    allowed_claim: "Section 4 #53 + §4 #54 contract surface shipped at L1.x — TraceContext SPI is pure Java (no Spring, no OTel); NoopTraceContext is the L1.x default impl that propagates ids without emitting; RunContext exposes traceId/spanId/sessionId/traceContext alongside tenantId. Verified by TelemetryVerticalArchTest (no direct TraceWriter access outside hook/observability) and RunContextIdentityAccessorsTest (accessor signatures present)."
+
+  mdc_correlation_carriers:
+    status: test_verified
+    shipped: true
+    l0_decision: docs/adr/0061-telemetry-vertical-layer.md
+    l2_documents:
+      - docs/adr/0061-telemetry-vertical-layer.md
+      - docs/telemetry/policy.md
+      - agent-platform/ARCHITECTURE.md
+    implementation:
+      - agent-platform/src/main/java/ascend/springai/platform/observability/TraceExtractFilter.java
+      - agent-platform/src/main/java/ascend/springai/platform/observability/TraceFilterAutoConfiguration.java
+      - agent-platform/src/main/java/ascend/springai/platform/web/runs/RunController.java
+    tests:
+      - agent-platform/src/test/java/ascend/springai/platform/observability/TraceExtractFilterIT.java
+      - agent-platform/src/test/java/ascend/springai/platform/observability/LogFieldShapeIT.java
+    allowed_claim: "Section 4 #55 shipped at L1.x — Logback MDC carries tenant_id (TenantContextFilter, W0) + trace_id + span_id + parent_span_id (TraceExtractFilter at order 10, L1.x) + run_id (RunController inline, after Run materialised at L1.x). Verified by TraceExtractFilterIT (filter behaviour) and LogFieldShapeIT (MDC presence during request scope)."
+
+  traceparent_propagation:
+    status: test_verified
+    shipped: true
+    l0_decision: docs/adr/0061-telemetry-vertical-layer.md
+    l2_documents:
+      - docs/adr/0061-telemetry-vertical-layer.md
+      - docs/telemetry/policy.md
+    implementation:
+      - agent-platform/src/main/java/ascend/springai/platform/observability/TraceExtractFilter.java
+    tests:
+      - agent-platform/src/test/java/ascend/springai/platform/observability/TraceExtractFilterIT.java
+    allowed_claim: "Section 4 #55 shipped at L1.x — W3C version-00 traceparent parsing + origination at HTTP edge; traceresponse emitted on every outbound response (200/4xx/5xx) for W3 client SDK correlation per ADR-0063 §1. Counters: springai_ascend_trace_originated_total{posture,source=client|server} and springai_ascend_traceparent_invalid_total{posture}. Verified by TraceExtractFilterIT."
+
+  run_trace_session_columns:
+    status: test_verified
+    shipped: true
+    l0_decision: docs/adr/0062-trace-run-session-identity.md
+    l2_documents:
+      - docs/adr/0062-trace-run-session-identity.md
+      - ARCHITECTURE.md
+    implementation:
+      - agent-runtime/src/main/java/ascend/springai/runtime/runs/Run.java
+    tests:
+      - agent-runtime/src/test/java/ascend/springai/runtime/runs/RunTraceSessionConsistencyIT.java
+    allowed_claim: "Section 4 #54 shipped at L1.x — Run record carries traceId (32-char hex; nullable at L1.x, NOT NULL at W2) and sessionId (UUID; nullable at L1.x, NOT NULL in posture=research/prod from W2) alongside the existing 12 fields. Backward-compatible 12-arg constructor preserved so existing callers compile. RunController populates traceId from MDC at Run-creation time. Verified by RunTraceSessionConsistencyIT."
+
+  client_sdk_observability_contract:
+    status: design_accepted
+    shipped: false
+    l0_decision: docs/adr/0063-client-sdk-observability-contract.md
+    l2_documents:
+      - docs/adr/0063-client-sdk-observability-contract.md
+    implementation: null
+    tests: []
+    allowed_claim: "W3 deferred — springai-ascend-client (Java/Kotlin first; JS/Python deferred to W3+). Captures business spans locally, propagates W3C traceparent outbound, reads traceresponse for correlation, batches OTLP/HTTP, redacts PII in posture=prod. Server-side L1.x prerequisites (traceparent + MDC + traceresponse) ship at L1.x so vanilla OTel clients can integrate today; platform-owned SDK lands at W3. See ADR-0063."

@@ -61,8 +61,9 @@ Green OssApiProbeTest is a required gate for every wave.
 
 | Package | Purpose | Wave |
 |---|---|---|
-| `orchestration/spi/` | Orchestrator, RunContext, GraphExecutor, AgentLoopExecutor, SuspendSignal, Checkpointer SPIs | W0 |
+| `orchestration/spi/` | Orchestrator, RunContext, GraphExecutor, AgentLoopExecutor, SuspendSignal, Checkpointer, TraceContext SPIs | W0 (TraceContext L1.x — ADR-0061) |
 | `orchestration/inmemory/` | SyncOrchestrator, SequentialGraphExecutor, IterativeAgentLoopExecutor, InMemoryCheckpointer, InMemoryRunRegistry — dev-posture reference impls | W0 |
+| `orchestration/` | NoopTraceContext — L1.x default TraceContext impl (Telemetry Vertical, ADR-0061) | L1.x |
 | `runs/` | Run entity, RunStatus DFA, RunMode, RunStateMachine, RunRepository SPI | W0 |
 | `resilience/` | ResilienceContract SPI, ResiliencePolicy, YamlResilienceContract | W0 |
 | `memory/spi/` | GraphMemoryRepository SPI (interface only) | W0 shell |
@@ -100,6 +101,13 @@ W0 shipped tests:
 |---|---|---|
 | `OssApiProbeTest` | Unit | OSS classpath shape (3 tests; no Spring context) |
 | `RunStateMachineTest` | Unit | Legal + illegal DFA transitions; EXPIRED terminal |
+| `TelemetryVerticalArchTest` | ArchUnit | §4 #53 — adapter classes must not write `TraceContext` outside hook/observability packages |
+| `RunContextIdentityAccessorsTest` | ArchUnit | §4 #54 — `RunContext` exposes `traceId()` / `spanId()` / `sessionId()` / `traceContext()` returning declared types |
+| `RunTraceSessionConsistencyIT` | Integration | §4 #54 — `Run.traceId` non-null hex when populated; nullable column tolerated at L1.x; child Run inherits sessionId via Checkpointer |
+| `LlmGatewayHookChainOnlyTest` | ArchUnit | §4 #56 — no `agent-runtime/llm/*` class imports `ChatModel` outside `HookChain` package (vacuous at L1.x; arms for W2) |
+| `SpanTenantAttributeRequiredTest` | ArchUnit | §4 #57 — emission sites declare `tenant.id` attribute (vacuous at L1.x; arms for W2) |
+| `McpReplaySurfaceArchTest` | ArchUnit | §4 #59 — no `@RestController` resides in `web/replay/`, `web/trace/`, or `web/session/` |
+| `PostureBootPiiHookPresenceContractIT` | Integration | §4 #58 — boot-gate contract for `PiiRedactionHook` in research/prod (full negative test W2) |
 | `RunTest` | Unit | Run record construction, withStatus(), withSuspension() |
 | `InMemoryCheckpointerTest` | Unit | save/load/clear round-trip |
 | `OrchestrationSpiArchTest` | ArchUnit | SPI packages import only java.* |

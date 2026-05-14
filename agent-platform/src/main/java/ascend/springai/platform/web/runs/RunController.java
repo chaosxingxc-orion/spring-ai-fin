@@ -10,6 +10,7 @@ import ascend.springai.runtime.runs.RunStatus;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -63,6 +64,10 @@ public class RunController {
                     "Tenant context not resolved.");
         }
         Instant now = Instant.now();
+        // Telemetry Vertical (ADR-0061 / §4 #54): persist the inbound trace_id with the
+        // Run so cross-suspend trace federation can read it from the Run row. MDC was
+        // populated by TraceExtractFilter (order 10) before this controller ran.
+        String traceId = MDC.get("trace_id");
         Run run = new Run(
                 UUID.randomUUID(),
                 tenant.tenantId().toString(),
@@ -75,10 +80,17 @@ public class RunController {
                 null,
                 null,
                 null,
+                null,
+                traceId,
                 null);
         Run saved = repository.save(run);
-        LOG.info("Run created: runId={} tenant={} capability={}",
-                saved.runId(), saved.tenantId(), saved.capabilityName());
+        MDC.put("run_id", saved.runId().toString());
+        try {
+            LOG.info("Run created: runId={} tenant={} capability={} traceId={}",
+                    saved.runId(), saved.tenantId(), saved.capabilityName(), traceId);
+        } finally {
+            MDC.remove("run_id");
+        }
         return ResponseEntity.status(HttpStatus.CREATED).body(RunResponse.from(saved));
     }
 
