@@ -1,0 +1,127 @@
+id: ADR-0070
+title: "Cursor Flow + Skill Capacity Runtime — activation of Rules 36.b and 41.b"
+status: accepted
+date: 2026-05-15
+level: L1
+view: process
+freeze_id: null
+
+supersedes: []
+extends:
+  - ADR-0069
+relates_to:
+  - ADR-0019
+  - ADR-0067
+
+decision_one_liner: |
+  Activate the two W1.x deferred sub-clauses whose preconditions Phase 6
+  satisfied: Rule 36.b (Cursor Flow integration test) and Rule 41.b
+  (ResilienceContract.resolve runtime enforcement). Both are L1 process-view
+  concerns and ship via narrowly-scoped enforcers — a Cursor Flow integration
+  test (E72 / gate Rule 53) and a SkillCapacityRegistry-backed ResilienceContract
+  (E73 / gate Rule 54). Run-row schema changes and full orchestrator wiring stay
+  W2 scope.
+
+triggering_inputs:
+  internal_signal:
+    - "Phase 6 (commit 73f6a2a) landed JwtTestFixture + IdempotencyHeaderFilter body-replay — the preconditions for both 36.b and 41.b — without shipping the rule deliverables."
+    - "Phase O (commit 284cea8) honestly retargeted the deferred-rule triggers to Phase 8 + Phase 9 in docs/CLAUDE-deferred.md, explicitly queuing the substantive work."
+  external_reviews:
+    - "LucioIT W1 §6.1 (Cursor Flow & Asynchronous Client Boundary) and §7.3 (Skill-Dimensional Resource Arbitration) — already promoted to P-F and P-K in ADR-0069; this ADR closes the gap between principle and runtime."
+
+context: |
+  ADR-0069 promoted LucioIT W1 §6.1 and §7.3 from prose to first-class Layer-0
+  principles (P-F and P-K) and bound them to Layer-1 rules (Rules 36 and 41) with
+  schema-level enforcers (gate Rules 46 and 51). The remaining gap — runtime
+  behaviour matching the schema — was tracked as deferred sub-clauses 36.b and
+  41.b in CLAUDE-deferred.md.
+
+  At W1.x scope, "runtime activation" does NOT mean shipping a full async
+  orchestrator (W2) or backing the skill-capacity registry with Postgres (W2).
+  It means:
+
+    36.b — the POST /v1/runs HTTP contract MUST shift from "201 + RunResponse"
+           to "202 + TaskCursor envelope" and the controller MUST dispatch any
+           registered AsyncRunDispatcher via CompletableFuture.runAsync, so the
+           HTTP response is never gated on dispatcher runtime. An integration
+           test with a synthetic 30-second-blocking dispatcher proves the
+           contract end-to-end.
+
+    41.b — the ResilienceContract two-arg surface resolve(tenant, skill) MUST
+           consult docs/governance/skill-capacity.yaml at runtime via a
+           SkillCapacityRegistry. Over-cap callers receive a SkillResolution
+           with admitted=false carrying SuspendReason.RateLimited(
+           SKILL_CAPACITY_EXCEEDED). The caller maps the rejection to a
+           RunStatus.SUSPENDED transition (W2 orchestrator wiring); at W1.x the
+           contract surface plus an in-memory registry is sufficient to prove
+           the behaviour.
+
+decision: |
+  - Phase 8 (Rule 36.b):
+      Introduce AsyncRunDispatcher SPI under agent-platform.web.runs.
+      Ship NoOpAsyncRunDispatcher as the default (registered via
+      @ConditionalOnMissingBean). RunController.create() invokes the dispatcher
+      via CompletableFuture.runAsync so the POST handler never blocks. Response
+      type changes to RunCursorResponse (runId + status + cursor_url) at 202.
+      OpenAPI snapshot updated. The Phase 6 createReturnsPending IT is renamed
+      to createReturns202WithCursor and its assertion shape updated. A new
+      RunCursorFlowIT registers a @TestConfiguration BlockingAsyncRunDispatcher
+      that sleeps 30 seconds inside dispatch(); the test asserts the HTTP
+      response arrives within 200 ms.
+
+  - Phase 9 (Rule 41.b):
+      Introduce SuspendReason sealed interface (variant: RateLimited(skill,
+      code)) under agent-runtime.resilience. Add SkillResolution record. Add
+      SkillCapacityRegistry interface with YamlSkillCapacityRegistry default —
+      loads skill-capacity.yaml via SnakeYAML (already on the classpath via
+      spring-boot-starter), tracks in-flight counts per-tenant and global via
+      ConcurrentHashMap<String, AtomicInteger>, uses CAS to atomically test
+      both caps. Add DefaultSkillResilienceContract that implements
+      resolve(tenant, skill) consulting the registry. Register both via
+      ResilienceAutoConfiguration in agent-platform.
+      SkillCapacityResolutionIT asserts: a 1-capacity test fixture; first
+      caller admitted; second caller rejected with SuspendReason.RateLimited.
+
+  - Both phases ship together as ONE commit. Enforcers E72 + E73 added to
+    enforcers.yaml. Gate Rules 53 + 54 added to check_architecture_sync.sh
+    with 2 + 2 self-tests in test_architecture_sync_gate.sh (TOTAL 66 → 70).
+    CLAUDE.md deferred-rule list trimmed (drops 36.b and 41.b); CLAUDE-deferred.md
+    sections deleted. architecture-status.yaml + README.md refresh baselines.
+
+consequences:
+  positive:
+    - "P-F (Cursor Flow) is no longer a prose claim — RunCursorFlowIT proves the contract under synthetic load."
+    - "P-K (Skill-Dimensional Resource Arbitration) has a runtime resolver — capacity exhaustion maps to SUSPENDED, not FAILED, per the principle."
+    - "Two more deferred sub-clauses removed from CLAUDE-deferred.md (was 13, now 11)."
+    - "The SuspendReason sealed interface lands the ADR-0019 taxonomy; future variants are additive."
+  negative:
+    - "AsyncRunDispatcher's NoOpAsyncRunDispatcher does nothing useful at L1.x; the real W2 orchestrator-backed implementation is unwritten."
+    - "SkillCapacityRegistry is in-memory only; restart loses in-flight counts. W2 needs durable backing per ADR-0019 / ADR-0067."
+    - "The single-arg ResilienceContract.resolve(operationId) remains as a default no-op returning DEFAULT_POLICY; consumers wanting policy-by-operationId must register YamlResilienceContract explicitly."
+    - "Run-row carries no suspendReason field — the reason lives on SkillResolution. W2 orchestrator wiring will add Run.suspendReason when it actually transitions runs to SUSPENDED."
+
+alternatives_considered:
+  - alternative: "Full async orchestrator wiring at W1.x — RunController dispatches actual work via a virtual-thread executor; AsyncRunDispatcher resolves to a real Orchestrator implementation."
+    why_rejected: "Out of scope for W1.x. The W2 orchestrator design is still in flux; shipping it now would require committing to ADR-0021 specifics that are not yet validated. Phase 8's minimum is sufficient to prove the contract."
+  - alternative: "Plain enum for SuspendReason (single constant SKILL_CAPACITY_EXCEEDED) instead of sealed interface."
+    why_rejected: "ADR-0019 commits to a sealed interface with four future variants (AwaitChild / AwaitTimer / AwaitExternal / AwaitApproval). Shipping an enum and migrating to a sealed interface later would churn every consumer's switch statement. The sealed declaration is no more code today and prevents the churn."
+  - alternative: "Postgres-backed SkillCapacityRegistry."
+    why_rejected: "W2 scope — durability across restart is not required at L1.x. The in-memory ConcurrentHashMap + AtomicInteger CAS matches the existing W1 InMemoryRunRegistry pattern (Rule 6 — single construction path per resource class)."
+
+verification:
+  cli:
+    - "./mvnw -pl agent-platform -am test → green; RunCursorFlowIT.createReturns202WithCursorWithin200ms passes."
+    - "./mvnw -pl agent-runtime -am test → green; SkillCapacityResolutionIT all three methods pass."
+  gate:
+    - "bash gate/check_architecture_sync.sh → GATE: PASS with 54 rules."
+    - "bash gate/test_architecture_sync_gate.sh → Tests passed: 70/70."
+  manual:
+    - "grep 'Rule 36.b\\|Rule 41.b' docs/CLAUDE-deferred.md returns no matches."
+    - "docs/contracts/openapi-v1.yaml POST /v1/runs declares 202 + TaskCursor."
+
+enforcer_rows:
+  - E72   # RunCursorFlowIT (kind: integration, level: L1, view: process)
+  - E73   # SkillCapacityResolutionIT (kind: integration, level: L1, view: process)
+gate_rules:
+  - rule_53_cursor_flow_integration_test_present
+  - rule_54_skill_capacity_runtime_resolver_present

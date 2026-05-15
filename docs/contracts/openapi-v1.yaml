@@ -33,7 +33,7 @@ paths:
   /v1/runs:
     post:
       summary: Create a run
-      description: "Creates a new run for the authenticated tenant. The created run is returned with status PENDING. The Idempotency-Key header is mandatory; replays with the same key + body return the original response; same key + different body returns 409 idempotency_body_drift (ADR-0057)."
+      description: "Creates a new run for the authenticated tenant. Per Rule 36 / Layer-0 principle P-F (Cursor Flow & Asynchronous Client Boundary) the server returns 202 + TaskCursor envelope immediately; clients poll cursor_url for state. The Idempotency-Key header is mandatory; replays with the same key + body return the original response; same key + different body returns 409 idempotency_body_drift (ADR-0057)."
       operationId: createRun
       tags: [runs]
       parameters:
@@ -46,12 +46,12 @@ paths:
             schema:
               $ref: "#/components/schemas/CreateRunRequest"
       responses:
-        "201":
-          description: Run created (PENDING)
+        "202":
+          description: "Run accepted (PENDING). Cursor Flow per ADR-0070; client polls cursor_url for state."
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RunResponse"
+                $ref: "#/components/schemas/TaskCursor"
         "400":
           description: Invalid request (missing tenant context, malformed body)
           content:
@@ -291,4 +291,4 @@ x-cursor-flow:
   declared_in_w: W1.x
   pattern: "long-horizon POST returns 202 + TaskCursor; client polls cursor_url for state OR subscribes via SSE; webhook callback for blocking checkpoints"
   applies_to: ["/v1/runs"]
-  note: "POST /v1/runs currently returns 201 + RunResponse (W1 baseline); the 202+TaskCursor migration is W1.x Phase 6 (paired with idempotency body-lifetime fix). The TaskCursor schema is declared in components.schemas NOW as the contract surface, so Rule 36 / Gate Rule 46 are operative today (per Code-as-Contract Rule 28 — no deferred enforcers). See CLAUDE-deferred.md 36.b for the integration-test re-introduction trigger."
+  note: "POST /v1/runs activated as cursor flow in W1.x Phase 8 (ADR-0070). Returns 202 + TaskCursor; the controller fires the dispatcher via CompletableFuture.runAsync so the HTTP response is never gated on dispatcher runtime. Integration test: agent-platform RunCursorFlowIT.createReturns202WithCursorWithin200ms (Rule 36.b). SSE subscription + webhook callback are W2 scope."

@@ -34,14 +34,14 @@ class ApiCompatibilityTest {
         rule.check(FIN_SPRINGAI_CLASSES);
     }
 
-    @Test
-    void platform_api_package_has_no_runtime_internals_dependency() {
-        ArchRule rule = noClasses()
-                .that().resideInAPackage("ascend.springai.platform..")
-                .should().dependOnClassesThat()
-                .resideInAPackage("ascend.springai.runtime..");
-        rule.check(FIN_SPRINGAI_CLASSES);
-    }
+    // platform → runtime dependency-direction check was previously declared here
+    // as `noClasses().resideInAPackage("ascend.springai.platform..").should()
+    // .dependOnClassesThat().resideInAPackage("ascend.springai.runtime..")` — that
+    // rule contradicted ADR-0055 (which permits platform → runtime via runtime's
+    // PUBLIC SPI surface) and was a latent failure on main. The authoritative
+    // check now lives in PlatformImportsOnlyRuntimePublicApiTest (enforcer E34),
+    // which forbids only INTERNAL runtime packages (idempotency.., probe..) per
+    // ADR-0070 / W1.x Phase 9.
 
     // spi_packages_* rules relocated to agent-runtime/MemorySpiArchTest after
     // all legacy ascend.springai.runtime.spi.** starters were deleted in C2-C8.

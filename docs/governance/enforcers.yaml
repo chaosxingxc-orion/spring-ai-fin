@@ -65,12 +65,12 @@
   asserts: "agent-platform does not import ascend.springai.runtime.memory.spi.."
 
 - id: E5
-  constraint_ref: "CLAUDE.md Rule 20; L1 plan §6.5; architecture-status.yaml line 892"
+  constraint_ref: "CLAUDE.md Rule 20; L1 plan §6.5; architecture-status.yaml line 892; W1.x Phase 8 — ADR-0070 (cursor flow)"
   kind: integration
   level: L1
   view: logical
-  artifact: agent-platform/src/test/java/ascend/springai/platform/web/runs/RunHttpContractIT.java#createReturnsPending
-  asserts: "POST /v1/runs returns Run with status PENDING; RunStatus enum contains no CREATED"
+  artifact: agent-platform/src/test/java/ascend/springai/platform/web/runs/RunHttpContractIT.java#createReturns202WithCursor
+  asserts: "POST /v1/runs returns 202 with TaskCursor envelope (status=PENDING, cursor_url present); RunStatus enum contains no CREATED — Phase 8 migrated this contract from 201+RunResponse to 202+TaskCursor."
 
 - id: E6
   constraint_ref: "CLAUDE.md Rule 21; L1 plan §6.5; architecture-status.yaml line 892"
@@ -612,3 +612,27 @@
   view: physical
   artifact: gate/check_architecture_sync.sh#sandbox_policies_yaml_present_and_wellformed
   asserts: "docs/governance/sandbox-policies.yaml exists with default_policy: declaring all 6 required keys (outbound_network, filesystem_read, filesystem_write, cpu_cap_millicores, memory_cap_megabytes, wall_clock_cap_seconds)."
+
+# ---------------------------------------------------------------------------
+# W1.x Phase 8 — Cursor Flow runtime activation (Rule 36.b / ADR-0070)
+# ---------------------------------------------------------------------------
+
+- id: E72
+  constraint_ref: "CLAUDE.md Rule 36 (Cursor Flow Mandate) and Rule 36.b; ADR-0070; LucioIT W1 §6.1"
+  kind: integration
+  level: L1
+  view: process
+  artifact: agent-platform/src/test/java/ascend/springai/platform/web/runs/RunCursorFlowIT.java#createReturns202WithCursorWithin200ms
+  asserts: "POST /v1/runs returns HTTP 202 within 200 ms with a TaskCursor payload (runId + status=PENDING + cursor_url matching the run URL), even when the registered AsyncRunDispatcher synchronously blocks for 30 seconds — proves the controller fires the dispatcher via CompletableFuture.runAsync and the HTTP response is never gated on dispatcher runtime."
+
+# ---------------------------------------------------------------------------
+# W1.x Phase 9 — ResilienceContract runtime activation (Rule 41.b / ADR-0070)
+# ---------------------------------------------------------------------------
+
+- id: E73
+  constraint_ref: "CLAUDE.md Rule 41 (Skill Capacity Matrix) and Rule 41.b; ADR-0070; LucioIT W1 §7.3"
+  kind: integration
+  level: L1
+  view: process
+  artifact: agent-runtime/src/test/java/ascend/springai/runtime/resilience/SkillCapacityResolutionIT.java#suspendsSecondCallerWhenCapacityIsOne
+  asserts: "ResilienceContract.resolve(tenant, skill) consults docs/governance/skill-capacity.yaml at runtime; the second concurrent caller for a 1-capacity skill is rejected with SkillResolution.admitted=false carrying SuspendReason.RateLimited(SKILL_CAPACITY_EXCEEDED) — proves the contract maps capacity exhaustion to would-suspend (Rule 41 / P-K), NOT to would-fail."

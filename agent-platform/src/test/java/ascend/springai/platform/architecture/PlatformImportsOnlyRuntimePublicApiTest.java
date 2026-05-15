@@ -43,17 +43,21 @@ class PlatformImportsOnlyRuntimePublicApiTest {
 
     @Test
     void platform_does_not_depend_on_internal_runtime_packages() {
+        // W1.x Phase 9 / ADR-0070 promoted ascend.springai.runtime.resilience..
+        // to a PUBLIC SPI surface (ResilienceContract two-arg resolve consumed by
+        // agent-platform.resilience.ResilienceAutoConfiguration). Internal-only
+        // packages stay: idempotency.. and probe..
         ArchRule rule = noClasses()
                 .that().resideInAPackage("ascend.springai.platform..")
                 .should().dependOnClassesThat()
                 .resideInAnyPackage(
-                        "ascend.springai.runtime.resilience..",
                         "ascend.springai.runtime.idempotency..",
                         "ascend.springai.runtime.probe..")
-                .because("ADR-0055 / plan §18 F9: platform may import runtime's "
-                        + "PUBLIC api (runs.*, orchestration.spi.*, posture.*, and the "
-                        + "InMemoryRunRegistry adapter) only. Other runtime packages "
-                        + "are internal. Enforcer row E34.");
+                .because("ADR-0055 / plan §18 F9 (extended by ADR-0070): platform may "
+                        + "import runtime's PUBLIC api (runs.*, orchestration.spi.*, "
+                        + "posture.*, resilience.*, and the InMemoryRunRegistry adapter). "
+                        + "Internal packages (idempotency.., probe..) remain hidden from "
+                        + "the HTTP edge. Enforcer row E34.");
         rule.check(PLATFORM_MAIN_CLASSES);
     }
 

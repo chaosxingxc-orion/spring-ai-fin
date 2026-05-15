@@ -297,16 +297,6 @@ Composes with: ARCHITECTURE.md §6.4; ADR-0069; Rule 35; LucioIT W1 §6.4.
 
 ---
 
-## Rule 36.b — Cursor Flow Integration Test [Deferred to W1.x Phase 8]
-
-**Re-introduction trigger**: Trigger preconditions met in W1.x Phase 6 (commit 73f6a2a — `JwtTestFixture` + `IdempotencyHeaderFilter` body-replay landed). Rule activation scoped to W1.x Phase 8 — requires a separate ADR for the synchronous-to-async API shift (RunController returning 202 with cursor payload instead of 201), `AsyncRunExecutor` SPI, and migration of existing `RunHttpContractIT` assertions; the cursor-flow refactor is too large to ride a single Phase 6 commit.
-
-**Rule (draft)**: An integration test MUST assert that `POST /v1/runs` returns HTTP 202 within 200 ms with a Task Cursor payload (`{"runId": "...", "status": "PENDING", "cursor_url": "..."}`), regardless of how long the underlying work takes. The test MUST inject a synthetic 30-second-blocking executor and verify the response still returns within 200 ms.
-
-Composes with: ARCHITECTURE.md §6.1; ADR-0069; Rule 36; LucioIT W1 §6.1.
-
----
-
 ## Rule 37.c — agent-platform JdbcTemplate → R2DBC Migration [Deferred to W2]
 
 **Re-introduction trigger**: first move of any HTTP edge endpoint from blocking Servlet to reactive WebFlux (target: W2 telemetry vertical).
@@ -324,16 +314,6 @@ Composes with: ARCHITECTURE.md §6.3; ADR-0069; Rule 37; LucioIT W1 §6.3.
 **Rule (draft)**: A new Flyway migration (V3 or later) MUST `ALTER TABLE idempotency_dedup ENABLE ROW LEVEL SECURITY` and add per-tenant `CREATE POLICY` rules. After landing, the table is removed from `gate/rls-baseline-grandfathered.txt` and Rule 40 enforces RLS on it directly.
 
 Composes with: ARCHITECTURE.md §7.2; ADR-0069; Rule 40; LucioIT W1 §7.2.
-
----
-
-## Rule 41.b — ResilienceContract.resolve Runtime Enforcement [Deferred to W1.x Phase 9]
-
-**Re-introduction trigger**: Trigger preconditions met in W1.x Phase 6 (commit 73f6a2a — idempotency body-lifetime fix + JWT fixture in place; ResilienceContract sits on the same execution path). Rule activation scoped to W1.x Phase 9 — requires a separate ADR for the `ResilienceContract.resolve(tenant, skill)` two-arg signature, `SkillCapacityRegistry` SnakeYAML loader, `SuspendReason` enum (with `SKILL_CAPACITY_EXCEEDED`), and `Run.suspendReason` field. The runtime contract rewrite is too large to ride a single Phase 6 commit.
-
-**Rule (draft)**: `ResilienceContract.resolve(tenant, skill)` MUST consult `docs/governance/skill-capacity.yaml` at runtime; over-cap callers transition to `RunStatus.SUSPENDED` with `suspendReason = SKILL_CAPACITY_EXCEEDED`, NOT to `FAILED`. An integration test MUST inject a 1-capacity skill and assert the second concurrent caller suspends rather than fails.
-
-Composes with: ARCHITECTURE.md §7.3; ADR-0069; Rule 41; LucioIT W1 §7.3.
 
 ---
 

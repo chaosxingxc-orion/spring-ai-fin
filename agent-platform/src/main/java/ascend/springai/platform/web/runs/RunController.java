@@ -7,6 +7,7 @@ import ascend.springai.runtime.runs.Run;
 import ascend.springai.runtime.runs.RunMode;
 import ascend.springai.runtime.runs.RunRepository;
 import ascend.springai.runtime.runs.RunStatus;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * W1 HTTP run API (plan §6).
@@ -51,13 +53,16 @@ public class RunController {
     private static final Logger LOG = LoggerFactory.getLogger(RunController.class);
 
     private final RunRepository repository;
+    private final AsyncRunDispatcher dispatcher;
 
-    public RunController(RunRepository repository) {
+    public RunController(RunRepository repository, AsyncRunDispatcher dispatcher) {
         this.repository = repository;
+        this.dispatcher = dispatcher;
     }
 
     @PostMapping(produces = "application/json", consumes = "application/json")
-    public ResponseEntity<?> create(@Valid @RequestBody CreateRunRequest request) {
+    public ResponseEntity<?> create(@Valid @RequestBody CreateRunRequest request,
+                                    HttpServletRequest httpRequest) {
         TenantContext tenant = TenantContextHolder.get();
         if (tenant == null) {
             return error(HttpStatus.BAD_REQUEST, "tenant_context_missing",
@@ -91,7 +96,25 @@ public class RunController {
         } finally {
             MDC.remove("run_id");
         }
-        return ResponseEntity.status(HttpStatus.CREATED).body(RunResponse.from(saved));
+        // Rule 36 / Phase 8 — Cursor Flow Mandate (ADR-0070).
+        // Fire-and-forget the dispatcher so POST returns 202 + cursor immediately,
+        // regardless of how long the underlying work takes.
+        AsyncRunDispatcher fixedDispatcher = dispatcher;
+        Run dispatched = saved;
+        CompletableFuture.runAsync(() -> fixedDispatcher.dispatch(dispatched));
+        return ResponseEntity.status(HttpStatus.ACCEPTED)
+                .body(RunCursorResponse.from(saved, baseUrl(httpRequest)));
+    }
+
+    private static String baseUrl(HttpServletRequest request) {
+        StringBuilder builder = new StringBuilder()
+                .append(request.getScheme()).append("://")
+                .append(request.getServerName());
+        int port = request.getServerPort();
+        if (!(port == 80 || port == 443)) {
+            builder.append(':').append(port);
+        }
+        return builder.toString();
     }
 
     @GetMapping(value = "/{runId}", produces = "application/json")

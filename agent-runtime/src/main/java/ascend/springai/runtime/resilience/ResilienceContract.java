@@ -15,4 +15,23 @@ public interface ResilienceContract {
      * Research/prod posture: throws IllegalArgumentException for unknown operations.
      */
     ResiliencePolicy resolve(String operationId);
+
+    /**
+     * Two-arg resolve for the {@code (tenant, skill)} surface introduced in W1.x Phase 9
+     * (ADR-0070, Rule 41.b). Consults {@code docs/governance/skill-capacity.yaml} via the
+     * injected {@link SkillCapacityRegistry}; over-cap callers receive a
+     * {@link SkillResolution} with {@code admitted = false} carrying a
+     * {@link SuspendReason.RateLimited} so the scheduler maps the rejection to
+     * {@code RunStatus.SUSPENDED}, NOT to {@code FAILED}.
+     *
+     * <p>The default implementation throws {@link UnsupportedOperationException} so
+     * legacy single-arg implementations stay source-compatible without silently
+     * admitting every caller. Production code MUST inject the
+     * {@code DefaultSkillResilienceContract}.
+     */
+    default SkillResolution resolve(String tenant, String skill) {
+        throw new UnsupportedOperationException(
+                "Two-arg resolve(tenant, skill) requires DefaultSkillResilienceContract "
+                        + "(Rule 41.b activation per ADR-0070).");
+    }
 }

@@ -350,4 +350,4 @@ Enforced by Gate Rule 52 (`sandbox_policies_yaml_present_and_wellformed`) — sc
 
 ## Deferred Rules
 
-See [`docs/CLAUDE-deferred.md`](docs/CLAUDE-deferred.md). Currently deferred: Rules 7, 8, 11, 13, 14, 15, 16, 17, 18, 19, 22, 23, 24, 26, 27 — plus sub-clauses 29.c, 30.b, 30.d, 31.b, 32.b, 32.c, 32.d, 35.b, 36.b, 37.c, 40.b, 41.b, 42.b. Each has an explicit re-introduction trigger.
+See [`docs/CLAUDE-deferred.md`](docs/CLAUDE-deferred.md). Currently deferred: Rules 7, 8, 11, 13, 14, 15, 16, 17, 18, 19, 22, 23, 24, 26, 27 — plus sub-clauses 29.c, 30.b, 30.d, 31.b, 32.b, 32.c, 32.d, 35.b, 37.c, 40.b, 42.b. Each has an explicit re-introduction trigger. Rule 36.b activated in W1.x Phase 8 (`RunCursorFlowIT.createReturns202WithCursorWithin200ms`, enforcer E72, gate Rule 53 per ADR-0070); Rule 41.b activated in W1.x Phase 9 (`SkillCapacityResolutionIT.suspendsSecondCallerWhenCapacityIsOne`, enforcer E73, gate Rule 54 per ADR-0070).

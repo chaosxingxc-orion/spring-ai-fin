@@ -1513,9 +1513,126 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Rule 53 positive: RunCursorFlowIT carries the canonical method + <200ms assertion
+# ---------------------------------------------------------------------------
+_r53_pos="$scratch/r53_pos"
+mkdir -p "$_r53_pos/agent-platform/src/test/java/ascend/springai/platform/web/runs"
+cat > "$_r53_pos/agent-platform/src/test/java/ascend/springai/platform/web/runs/RunCursorFlowIT.java" <<'EOF'
+package ascend.springai.platform.web.runs;
+class RunCursorFlowIT {
+  void createReturns202WithCursorWithin200ms() {
+    long elapsed = 0L;
+    assertThat(elapsed).isLessThan(200L);
+  }
+}
+EOF
+_r53_pos_ok=0
+if grep -qE 'void[[:space:]]+createReturns202WithCursorWithin200ms[[:space:]]*\(' "$_r53_pos/agent-platform/src/test/java/ascend/springai/platform/web/runs/RunCursorFlowIT.java" \
+   && grep -qE 'isLessThan\([[:space:]]*200L?[[:space:]]*\)' "$_r53_pos/agent-platform/src/test/java/ascend/springai/platform/web/runs/RunCursorFlowIT.java"; then
+  _r53_pos_ok=1
+fi
+if [[ "$_r53_pos_ok" -eq 1 ]]; then
+  ok "rule53_cursor_flow_it_pos" "canonical method + <200ms assertion present"
+else
+  fail "rule53_cursor_flow_it_pos" "expected method + isLessThan(200) hit"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 53 negative: RunCursorFlowIT missing the elapsed-ms assertion
+# ---------------------------------------------------------------------------
+_r53_neg="$scratch/r53_neg"
+mkdir -p "$_r53_neg/agent-platform/src/test/java/ascend/springai/platform/web/runs"
+cat > "$_r53_neg/agent-platform/src/test/java/ascend/springai/platform/web/runs/RunCursorFlowIT.java" <<'EOF'
+package ascend.springai.platform.web.runs;
+class RunCursorFlowIT {
+  void createReturns202WithCursorWithin200ms() {
+    // intentionally missing the elapsed-ms assertion (Rule 53 negative fixture)
+    boolean ok = true;
+  }
+}
+EOF
+_r53_neg_missing=1
+if grep -qE 'isLessThan\([[:space:]]*200L?[[:space:]]*\)' "$_r53_neg/agent-platform/src/test/java/ascend/springai/platform/web/runs/RunCursorFlowIT.java"; then
+  _r53_neg_missing=0
+fi
+if [[ "$_r53_neg_missing" -eq 1 ]]; then
+  ok "rule53_cursor_flow_it_neg" "missing <200ms assertion correctly flagged"
+else
+  fail "rule53_cursor_flow_it_neg" "expected missing-assertion detection"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 54 positive: DefaultSkillResilienceContract has two-arg resolve + tryAcquire
+# ---------------------------------------------------------------------------
+_r54_pos="$scratch/r54_pos"
+mkdir -p "$_r54_pos/agent-runtime/src/main/java/ascend/springai/runtime/resilience"
+cat > "$_r54_pos/agent-runtime/src/main/java/ascend/springai/runtime/resilience/SkillCapacityRegistry.java" <<'EOF'
+package ascend.springai.runtime.resilience;
+public interface SkillCapacityRegistry { boolean tryAcquire(String t, String s); }
+EOF
+cat > "$_r54_pos/agent-runtime/src/main/java/ascend/springai/runtime/resilience/SkillResolution.java" <<'EOF'
+package ascend.springai.runtime.resilience;
+public record SkillResolution(boolean admitted, Object reasonIfRejected) {}
+EOF
+cat > "$_r54_pos/agent-runtime/src/main/java/ascend/springai/runtime/resilience/SuspendReason.java" <<'EOF'
+package ascend.springai.runtime.resilience;
+public sealed interface SuspendReason permits SuspendReason.RateLimited {
+  record RateLimited(String s, String c) implements SuspendReason {}
+}
+EOF
+cat > "$_r54_pos/agent-runtime/src/main/java/ascend/springai/runtime/resilience/DefaultSkillResilienceContract.java" <<'EOF'
+package ascend.springai.runtime.resilience;
+public class DefaultSkillResilienceContract {
+  private final SkillCapacityRegistry registry;
+  public DefaultSkillResilienceContract(SkillCapacityRegistry r) { this.registry = r; }
+  public SkillResolution resolve(String tenant, String skill) {
+    if (registry.tryAcquire(tenant, skill)) return new SkillResolution(true, null);
+    return new SkillResolution(false, new SuspendReason.RateLimited(skill, "SKILL_CAPACITY_EXCEEDED"));
+  }
+}
+EOF
+_r54_pos_ok=1
+for _r54_f in SkillCapacityRegistry SkillResolution SuspendReason DefaultSkillResilienceContract; do
+  if [[ ! -f "$_r54_pos/agent-runtime/src/main/java/ascend/springai/runtime/resilience/${_r54_f}.java" ]]; then
+    _r54_pos_ok=0
+  fi
+done
+if [[ "$_r54_pos_ok" -eq 1 ]] \
+   && grep -qE 'SkillResolution[[:space:]]+resolve\([[:space:]]*String[[:space:]]+\w+,[[:space:]]*String[[:space:]]+\w+[[:space:]]*\)' "$_r54_pos/agent-runtime/src/main/java/ascend/springai/runtime/resilience/DefaultSkillResilienceContract.java" \
+   && grep -qE 'tryAcquire\(' "$_r54_pos/agent-runtime/src/main/java/ascend/springai/runtime/resilience/DefaultSkillResilienceContract.java"; then
+  ok "rule54_skill_capacity_runtime_pos" "DefaultSkillResilienceContract has two-arg resolve + tryAcquire"
+else
+  fail "rule54_skill_capacity_runtime_pos" "expected canonical class shape"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 54 negative: DefaultSkillResilienceContract that silently admits everyone
+# ---------------------------------------------------------------------------
+_r54_neg="$scratch/r54_neg"
+mkdir -p "$_r54_neg/agent-runtime/src/main/java/ascend/springai/runtime/resilience"
+cat > "$_r54_neg/agent-runtime/src/main/java/ascend/springai/runtime/resilience/DefaultSkillResilienceContract.java" <<'EOF'
+package ascend.springai.runtime.resilience;
+public class DefaultSkillResilienceContract {
+  public SkillResolution resolve(String tenant, String skill) {
+    // intentionally missing the registry consultation (Rule 54 negative fixture)
+    return new SkillResolution(true, null);
+  }
+}
+EOF
+_r54_neg_missing=1
+if grep -qE 'tryAcquire\(' "$_r54_neg/agent-runtime/src/main/java/ascend/springai/runtime/resilience/DefaultSkillResilienceContract.java"; then
+  _r54_neg_missing=0
+fi
+if [[ "$_r54_neg_missing" -eq 1 ]]; then
+  ok "rule54_skill_capacity_runtime_neg" "missing tryAcquire call correctly flagged"
+else
+  fail "rule54_skill_capacity_runtime_neg" "expected missing-tryAcquire detection"
+fi
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
-TOTAL=66
+TOTAL=70
 echo ""
 echo "Tests passed: ${passed}/${TOTAL}"
 

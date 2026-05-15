@@ -72,6 +72,10 @@
 #  50.  rls_for_new_tenant_tables                      -- Flyway migrations with tenant_id enable RLS or are grandfathered (Rule 40 / P-J, enforcer E69)
 #  51.  skill_capacity_yaml_present_and_wellformed     -- skill-capacity.yaml schema check (Rule 41 / P-K, enforcer E70)
 #  52.  sandbox_policies_yaml_present_and_wellformed   -- sandbox-policies.yaml default_policy 6 keys (Rule 42 / P-L, enforcer E71)
+#  --- W1.x Phase 8 — Cursor Flow runtime activation (ADR-0070) ---
+#  53.  cursor_flow_integration_test_present           -- RunCursorFlowIT asserts POST /v1/runs returns 202 within 200ms even with a 30s-blocking dispatcher (Rule 36.b / P-F, enforcer E72)
+#  --- W1.x Phase 9 — ResilienceContract runtime activation (ADR-0070) ---
+#  54.  skill_capacity_runtime_resolver_present        -- DefaultSkillResilienceContract implements resolve(tenant, skill) consulting SkillCapacityRegistry; rejection carries SuspendReason.RateLimited (Rule 41.b / P-K, enforcer E73)
 
 set -uo pipefail
 export LC_ALL=C
@@ -2128,6 +2132,76 @@ else
   fi
 fi
 if [[ $_r52_fail -eq 0 ]]; then pass_rule "sandbox_policies_yaml_present_and_wellformed"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 53 — cursor_flow_integration_test_present (enforcer E72, Rule 36.b / P-F, ADR-0070)
+#
+# A Phase 8 / Rule 36.b integration test MUST exist that drives the cursor-flow
+# contract end-to-end: POST /v1/runs returns 202 within 200 ms even when the
+# registered AsyncRunDispatcher synchronously blocks. The gate greps for the
+# canonical method name + the elapsed-millis assertion shape so any future
+# refactor that drops this coverage fails the gate.
+# ---------------------------------------------------------------------------
+_r53_fail=0
+_r53_path="agent-platform/src/test/java/ascend/springai/platform/web/runs/RunCursorFlowIT.java"
+if [[ ! -f "$_r53_path" ]]; then
+  fail_rule "cursor_flow_integration_test_present" "$_r53_path missing — Rule 36.b / P-F integration test not landed"
+  _r53_fail=1
+else
+  if ! grep -qE 'void[[:space:]]+createReturns202WithCursorWithin200ms[[:space:]]*\(' "$_r53_path"; then
+    fail_rule "cursor_flow_integration_test_present" "$_r53_path missing canonical method createReturns202WithCursorWithin200ms() — Rule 36.b cursor flow IT contract"
+    _r53_fail=1
+  fi
+  if ! grep -qE 'isLessThan\([[:space:]]*200L?[[:space:]]*\)' "$_r53_path"; then
+    fail_rule "cursor_flow_integration_test_present" "$_r53_path missing elapsed-ms < 200 assertion — Rule 36.b requires response within 200 ms"
+    _r53_fail=1
+  fi
+fi
+if [[ $_r53_fail -eq 0 ]]; then pass_rule "cursor_flow_integration_test_present"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 54 — skill_capacity_runtime_resolver_present (enforcer E73, Rule 41.b / P-K, ADR-0070)
+#
+# A production ResilienceContract implementation MUST exist under
+# agent-runtime/src/main that (a) implements the two-arg resolve signature
+# returning SkillResolution and (b) consults a SkillCapacityRegistry's
+# tryAcquire(...) method. The gate greps for the canonical class shape so a
+# regression that silently admits every caller (returning admit() unconditionally)
+# fails. The matching integration test (E73) verifies behaviour separately.
+# ---------------------------------------------------------------------------
+_r54_fail=0
+_r54_main="agent-runtime/src/main/java/ascend/springai/runtime/resilience"
+if [[ ! -d "$_r54_main" ]]; then
+  fail_rule "skill_capacity_runtime_resolver_present" "$_r54_main directory missing — Rule 41.b runtime classes not landed"
+  _r54_fail=1
+else
+  if [[ ! -f "$_r54_main/SkillCapacityRegistry.java" ]]; then
+    fail_rule "skill_capacity_runtime_resolver_present" "SkillCapacityRegistry.java missing — Rule 41.b capacity tracking SPI absent"
+    _r54_fail=1
+  fi
+  if [[ ! -f "$_r54_main/SkillResolution.java" ]]; then
+    fail_rule "skill_capacity_runtime_resolver_present" "SkillResolution.java missing — Rule 41.b admit/reject envelope absent"
+    _r54_fail=1
+  fi
+  if [[ ! -f "$_r54_main/SuspendReason.java" ]]; then
+    fail_rule "skill_capacity_runtime_resolver_present" "SuspendReason.java missing — Rule 41.b sealed reason taxonomy absent"
+    _r54_fail=1
+  fi
+  if [[ ! -f "$_r54_main/DefaultSkillResilienceContract.java" ]]; then
+    fail_rule "skill_capacity_runtime_resolver_present" "DefaultSkillResilienceContract.java missing — Rule 41.b production impl absent"
+    _r54_fail=1
+  else
+    if ! grep -qE 'SkillResolution[[:space:]]+resolve\([[:space:]]*String[[:space:]]+\w+,[[:space:]]*String[[:space:]]+\w+[[:space:]]*\)' "$_r54_main/DefaultSkillResilienceContract.java"; then
+      fail_rule "skill_capacity_runtime_resolver_present" "DefaultSkillResilienceContract.java missing two-arg resolve(String, String) returning SkillResolution"
+      _r54_fail=1
+    fi
+    if ! grep -qE 'tryAcquire\(' "$_r54_main/DefaultSkillResilienceContract.java"; then
+      fail_rule "skill_capacity_runtime_resolver_present" "DefaultSkillResilienceContract.java does not call SkillCapacityRegistry.tryAcquire — Rule 41.b runtime consultation missing"
+      _r54_fail=1
+    fi
+  fi
+fi
+if [[ $_r54_fail -eq 0 ]]; then pass_rule "skill_capacity_runtime_resolver_present"; fi
 
 # ---------------------------------------------------------------------------
 # Summary

@@ -143,7 +143,10 @@ class RunHttpContractIT {
     // --- Authenticated rows (Phase L — closes P0-2 + P1-1) ---------------
 
     @Test
-    void createReturnsPending() throws Exception {
+    void createReturns202WithCursor() throws Exception {
+        // Phase 8 / Rule 36 — Cursor Flow Mandate (ADR-0070).
+        // POST /v1/runs returns 202 + TaskCursor envelope (runId, status, cursor_url),
+        // not 201 + full RunResponse.
         UUID tenant = UUID.randomUUID();
         String bearer = JwtTestFixture.mintForTenant(tenant);
         HttpResponse<String> response = HTTP.send(
@@ -155,11 +158,12 @@ class RunHttpContractIT {
                         .POST(HttpRequest.BodyPublishers.ofString("{\"capabilityName\":\"echo\"}"))
                         .build(),
                 HttpResponse.BodyHandlers.ofString());
-        assertThat(response.statusCode()).isEqualTo(201);
+        assertThat(response.statusCode()).isEqualTo(202);
         JsonNode body = JSON.readTree(response.body());
         assertThat(body.path("status").asText()).isEqualTo("PENDING");
-        assertThat(body.path("capabilityName").asText()).isEqualTo("echo");
         assertThat(body.path("runId").asText()).isNotBlank();
+        assertThat(body.path("cursor_url").asText())
+                .matches("https?://[^/]+/v1/runs/" + body.path("runId").asText());
     }
 
     @Test
@@ -228,7 +232,8 @@ class RunHttpContractIT {
                         .POST(HttpRequest.BodyPublishers.ofString("{\"capabilityName\":\"a\"}"))
                         .build(),
                 HttpResponse.BodyHandlers.ofString());
-        assertThat(first.statusCode()).isEqualTo(201);
+        // Phase 8 / Rule 36 — first call returns 202 + cursor envelope (was 201).
+        assertThat(first.statusCode()).isEqualTo(202);
 
         // Same idempotency key, DIFFERENT body — must trip the body-drift
         // branch (409 idempotency_body_drift) per ADR-0057 / IdempotencyHeaderFilter.
