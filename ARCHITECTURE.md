@@ -2,10 +2,10 @@
 level: L0
 view: scenarios
 status: active
-freeze_id: null
+freeze_id: W1-russell-2026-05-14
 covers_views: [logical, development, process, physical, scenarios]
 spans_levels: [L0]
-authority: "ADR-0068 (Layered 4+1 + Architecture Graph)"
+authority: "ADR-0068 (Layered 4+1 + Architecture Graph) + W1.x Phase 7 freeze activation (docs/reviews/2026-05-15-w1x-phase7-freeze-activation.en.md)"
 ---
 
 # spring-ai-ascend Platform — Architecture

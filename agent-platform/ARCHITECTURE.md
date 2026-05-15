@@ -3,10 +3,10 @@ level: L1
 view: scenarios
 module: agent-platform
 status: active
-freeze_id: null
+freeze_id: W1-russell-2026-05-14
 covers_views: [logical, development, process, physical]
 spans_levels: [L1]
-authority: "ADR-0068 (Layered 4+1 + Architecture Graph) + ADR-0059 (Code-as-Contract)"
+authority: "ADR-0068 (Layered 4+1 + Architecture Graph) + ADR-0059 (Code-as-Contract) + W1.x Phase 7 freeze activation (docs/reviews/2026-05-15-w1x-phase7-freeze-activation.en.md)"
 ---
 
 # agent-platform -- L1 architecture (2026-05-14 L1-modular-russell refresh)

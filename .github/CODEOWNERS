@@ -1,0 +1,62 @@
+# CODEOWNERS — chief-architect approval gate for L0 / L1 governance artefacts.
+#
+# Authority: ADR-0068 (Layered 4+1 + Architecture Graph as Twin Sources of Truth)
+#            CLAUDE.md Rule 33 (phase-released L0/L1 artefacts are read-only;
+#            edits flow through docs/reviews/ proposals)
+#            Phase 7 of the W1.x wave (2026-05-15)
+#
+# Pattern: required reviewers MUST approve before merge for files matching
+# the pattern. The chief-architect placeholder team is referenced as
+# `@chaosxingxc-orion/chief-architect`. When the actual GitHub team is
+# created, the placeholder need not change — just add the team's members.
+#
+# Gate Rule 44 (frozen_doc_edit_path_compliance) provides the in-CI mirror
+# of this convention: any modification to a freeze_id-tagged file requires
+# an accompanying docs/reviews/*.md proposal in the same commit naming the
+# file under affects_artefact:.
+
+# Layer-0 governance corpus (root)
+/CLAUDE.md                                             @chaosxingxc-orion/chief-architect
+/ARCHITECTURE.md                                       @chaosxingxc-orion/chief-architect
+/README.md                                             @chaosxingxc-orion/chief-architect
+
+# Layer-0 / Layer-1 ARCHITECTURE.md per module
+/agent-platform/ARCHITECTURE.md                        @chaosxingxc-orion/chief-architect
+/agent-runtime/ARCHITECTURE.md                         @chaosxingxc-orion/chief-architect
+
+# Architecture Decision Records (.yaml is the W1.x canonical form)
+/docs/adr/*.yaml                                       @chaosxingxc-orion/chief-architect
+/docs/adr/ADR-CLASSIFICATION.md                        @chaosxingxc-orion/chief-architect
+
+# Layer-2 deep technical designs
+/docs/L2/                                              @chaosxingxc-orion/chief-architect
+
+# Authoritative governance YAMLs (consumed by gate enforcers)
+/docs/governance/principle-coverage.yaml               @chaosxingxc-orion/chief-architect
+/docs/governance/enforcers.yaml                        @chaosxingxc-orion/chief-architect
+/docs/governance/architecture-status.yaml              @chaosxingxc-orion/chief-architect
+/docs/governance/competitive-baselines.yaml            @chaosxingxc-orion/chief-architect
+/docs/governance/bus-channels.yaml                     @chaosxingxc-orion/chief-architect
+/docs/governance/skill-capacity.yaml                   @chaosxingxc-orion/chief-architect
+/docs/governance/sandbox-policies.yaml                 @chaosxingxc-orion/chief-architect
+/docs/governance/SESSION-START-CONTEXT.md              @chaosxingxc-orion/chief-architect
+/docs/governance/rule-history.md                       @chaosxingxc-orion/chief-architect
+
+# Gate scripts (the executable substrate of Code-as-Contract)
+/gate/check_architecture_sync.sh                       @chaosxingxc-orion/chief-architect
+/gate/check_architecture_sync.ps1                      @chaosxingxc-orion/chief-architect
+/gate/test_architecture_sync_gate.sh                   @chaosxingxc-orion/chief-architect
+/gate/build_architecture_graph.py                      @chaosxingxc-orion/chief-architect
+/gate/build_architecture_graph.sh                      @chaosxingxc-orion/chief-architect
+
+# Module metadata (Rule 31 / Independent Module Evolution)
+**/module-metadata.yaml                                @chaosxingxc-orion/chief-architect
+
+# DFX docs (Rule 32)
+/docs/dfx/                                             @chaosxingxc-orion/chief-architect
+
+# Deferred-rule registry (every change adds or retires a CLAUDE-deferred entry)
+/docs/CLAUDE-deferred.md                               @chaosxingxc-orion/chief-architect
+
+# CODEOWNERS itself — meta-protected
+/.github/CODEOWNERS                                    @chaosxingxc-orion/chief-architect
