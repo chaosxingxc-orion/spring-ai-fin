@@ -12,7 +12,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.util.ContentCachingRequestWrapper;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -36,10 +35,12 @@ import java.util.UUID;
  *   <li>If no {@link IdempotencyStore} bean was wired (dev posture, no Postgres,
  *       no allow-in-memory) and posture is {@code dev}: pass through with a
  *       warning. Otherwise demand the store.</li>
- *   <li>Wrap the request in {@link ContentCachingRequestWrapper}, hash
+ *   <li>Read the request body once into a {@link CachedBodyHttpServletRequest}
+ *       (capped at {@value #MAX_CACHED_BODY_BYTES} bytes), hash
  *       {@code method:path:body} (SHA-256 → base64url), call
  *       {@link IdempotencyStore#claimOrFind(UUID, UUID, String)}.</li>
- *   <li>Empty result → claim taken; pass the wrapped request downstream.</li>
+ *   <li>Empty result → claim taken; pass the cached-body wrapper downstream so
+ *       the {@code @RequestBody} deserialiser can re-read the body.</li>
  *   <li>Existing row with same hash → 409 {@code idempotency_conflict}.</li>
  *   <li>Existing row with different hash → 409 {@code idempotency_body_drift}.</li>
  * </ol>
@@ -49,6 +50,13 @@ import java.util.UUID;
 public class IdempotencyHeaderFilter extends OncePerRequestFilter {
 
     private static final Logger LOG = LoggerFactory.getLogger(IdempotencyHeaderFilter.class);
+
+    /**
+     * Upper bound on cached request body size in bytes. 2 MiB comfortably covers
+     * the W1 max-http-form-post-size (1 MiB) without letting a malicious caller
+     * pin large buffers in heap before Spring's own size limits engage.
+     */
+    static final int MAX_CACHED_BODY_BYTES = 2 * 1024 * 1024;
 
     private final IdempotencyStore store;
     private final String posture;
@@ -123,14 +131,16 @@ public class IdempotencyHeaderFilter extends OncePerRequestFilter {
             return;
         }
 
-        // 2 MiB cache limit comfortably covers the W1 max-http-form-post-size (1 MiB).
-        ContentCachingRequestWrapper wrapped = new ContentCachingRequestWrapper(request, 2 * 1024 * 1024);
-        // ContentCachingRequestWrapper.getContentAsByteArray() returns whatever has
-        // been read so far. We force a full read by draining getInputStream() once
-        // (downstream layers can still read again — the wrapper replays from its
-        // internal buffer).
-        wrapped.getInputStream().readAllBytes();
-        byte[] body = wrapped.getContentAsByteArray();
+        // Cap the cached body so a malicious caller cannot pin large buffers
+        // before Spring's own size limits engage. We read at most
+        // MAX_CACHED_BODY_BYTES + 1 to detect overrun without allocating more.
+        byte[] body = readBodyCapped(request, MAX_CACHED_BODY_BYTES);
+        if (body == null) {
+            ErrorEnvelopeWriter.write(response, 413, "request_body_too_large",
+                    "Request body exceeds " + MAX_CACHED_BODY_BYTES + " bytes.");
+            return;
+        }
+        CachedBodyHttpServletRequest wrapped = new CachedBodyHttpServletRequest(request, body);
         String requestHash = sha256Base64Url(request.getMethod(), request.getRequestURI(), body);
 
         Optional<IdempotencyStore.IdempotencyRecord> existing =
@@ -150,6 +160,29 @@ public class IdempotencyHeaderFilter extends OncePerRequestFilter {
         }
 
         chain.doFilter(wrapped, response);
+    }
+
+    /**
+     * Reads up to {@code limit} bytes from the request body. Returns the byte
+     * array on success, or {@code null} if the body exceeds the limit. Empty
+     * bodies (e.g. {@code POST /v1/runs/{id}/cancel}) return a zero-length
+     * array, never {@code null}.
+     */
+    private static byte[] readBodyCapped(HttpServletRequest request, int limit) throws IOException {
+        java.io.ByteArrayOutputStream buf = new java.io.ByteArrayOutputStream();
+        byte[] chunk = new byte[8192];
+        int total = 0;
+        try (java.io.InputStream in = request.getInputStream()) {
+            int n;
+            while ((n = in.read(chunk)) != -1) {
+                total += n;
+                if (total > limit) {
+                    return null;
+                }
+                buf.write(chunk, 0, n);
+            }
+        }
+        return buf.toByteArray();
     }
 
     private static String sha256Base64Url(String method, String path, byte[] body) {
