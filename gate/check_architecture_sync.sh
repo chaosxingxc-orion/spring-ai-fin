@@ -1733,7 +1733,7 @@ else
     /^  type: rule/    { rules_seen[cur] = 1 }
     /^  type: principle/ { principles_seen[cur] = 1 }
     /^- src: / { src = $3 }
-    /^  dst: / { dst = $3 }
+    /^  dst: / { dst = $2 }
     /^  type: enforced_by/ { rule_to_enf[src] = rule_to_enf[src] " " dst; enf_has_rule[dst] = 1 }
     /^  type: operationalised_by/ { prin_to_rule[src] = prin_to_rule[src] " " dst; rule_has_prin[dst] = 1 }
     END {

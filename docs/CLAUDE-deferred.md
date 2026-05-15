@@ -219,7 +219,7 @@ Composes with: ARCHITECTURE.md §4 #27 (`skill_spi_lifecycle_resource_matrix`); 
 
 ## Rule 29.c — Quickstart Smoke Run in CI [Deferred to W1]
 
-**Re-introduction trigger**: first container-based CI workflow that can run a Spring Boot reactor end-to-end (target: W1).
+**Re-introduction trigger**: first `.github/workflows/*.yml` (or sibling container-based CI workflow) that boots a Spring Boot reactor end-to-end. Not yet fired as of 2026-05-15 — the repo runs `./mvnw clean test` locally without a tracked CI workflow file.
 
 **Rule (draft)**: A CI job MUST execute the `docs/quickstart.md` instructions on a clean container and assert that `GET /v1/health` returns 200 within 60 s of `spring-boot:run` start. Failure of this job is a ship-blocking finding under Rule 9 (HTTP / API contract category).
 
@@ -297,9 +297,9 @@ Composes with: ARCHITECTURE.md §6.4; ADR-0069; Rule 35; LucioIT W1 §6.4.
 
 ---
 
-## Rule 36.b — Cursor Flow Integration Test [Deferred to W1.x Phase 6]
+## Rule 36.b — Cursor Flow Integration Test [Deferred to W1.x Phase 8]
 
-**Re-introduction trigger**: JWT test fixture for `RunHttpContractIT` lands (W1.x Phase 6).
+**Re-introduction trigger**: Trigger preconditions met in W1.x Phase 6 (commit 73f6a2a — `JwtTestFixture` + `IdempotencyHeaderFilter` body-replay landed). Rule activation scoped to W1.x Phase 8 — requires a separate ADR for the synchronous-to-async API shift (RunController returning 202 with cursor payload instead of 201), `AsyncRunExecutor` SPI, and migration of existing `RunHttpContractIT` assertions; the cursor-flow refactor is too large to ride a single Phase 6 commit.
 
 **Rule (draft)**: An integration test MUST assert that `POST /v1/runs` returns HTTP 202 within 200 ms with a Task Cursor payload (`{"runId": "...", "status": "PENDING", "cursor_url": "..."}`), regardless of how long the underlying work takes. The test MUST inject a synthetic 30-second-blocking executor and verify the response still returns within 200 ms.
 
@@ -327,9 +327,9 @@ Composes with: ARCHITECTURE.md §7.2; ADR-0069; Rule 40; LucioIT W1 §7.2.
 
 ---
 
-## Rule 41.b — ResilienceContract.resolve Runtime Enforcement [Deferred to W1.x Phase 6]
+## Rule 41.b — ResilienceContract.resolve Runtime Enforcement [Deferred to W1.x Phase 9]
 
-**Re-introduction trigger**: idempotency body-lifetime fix (W1.x Phase 6) lands and JWT fixture is in place — ResilienceContract sits on the same execution path.
+**Re-introduction trigger**: Trigger preconditions met in W1.x Phase 6 (commit 73f6a2a — idempotency body-lifetime fix + JWT fixture in place; ResilienceContract sits on the same execution path). Rule activation scoped to W1.x Phase 9 — requires a separate ADR for the `ResilienceContract.resolve(tenant, skill)` two-arg signature, `SkillCapacityRegistry` SnakeYAML loader, `SuspendReason` enum (with `SKILL_CAPACITY_EXCEEDED`), and `Run.suspendReason` field. The runtime contract rewrite is too large to ride a single Phase 6 commit.
 
 **Rule (draft)**: `ResilienceContract.resolve(tenant, skill)` MUST consult `docs/governance/skill-capacity.yaml` at runtime; over-cap callers transition to `RunStatus.SUSPENDED` with `suspendReason = SKILL_CAPACITY_EXCEEDED`, NOT to `FAILED`. An integration test MUST inject a 1-capacity skill and assert the second concurrent caller suspends rather than fails.
 

@@ -12,7 +12,7 @@
 
 - Formal release: [docs/releases/2026-05-14-L1-modular-russell-release.en.md](docs/releases/2026-05-14-L1-modular-russell-release.en.md) (L0 v2 superseded — marked historical)
 - Per-capability shipped/deferred ledger: [docs/governance/architecture-status.yaml](docs/governance/architecture-status.yaml)
-- Architecture baseline: 65 §4 constraints · 68 ADRs · 44 gate rules · 50 self-tests · 18 active engineering rules · 4 Layer-0 governing principles · 63 enforcer rows · 105+ Maven tests GREEN (L1 release, Phase L per ADR-0060; Telemetry Vertical L1.x per ADR-0061/0062/0063; Layer-0 governing principles per ADR-0064/0065/0066/0067; W1 Layered 4+1 + Architecture Graph + Phase M remediation per ADR-0068, Rules 33–34, gate Rules 37–44, enforcers E55–E63).
+- Architecture baseline: 65 §4 constraints · 69 ADRs · 52 active gate rules · 66 self-tests · 26 active engineering rules · 12 Layer-0 governing principles · 71 enforcer rows · 105+ Maven tests GREEN (L1 release, Phase L per ADR-0060; Telemetry Vertical L1.x per ADR-0061/0062/0063; Layer-0 governing principles P-A..P-D per ADR-0064/0065/0066/0067; W1 Layered 4+1 + Architecture Graph + Phase M remediation per ADR-0068, Rules 33–34, gate Rules 37–44; W1.x Phase 1 L0 ironclad rules P-E..P-L per ADR-0069, Rules 35–42, gate Rules 45–52, enforcers E55–E71).
 
 ## Quick start
 
@@ -61,12 +61,12 @@ Full matrix: [docs/cross-cutting/posture-model.md](docs/cross-cutting/posture-mo
 2. **[docs/STATE.md](docs/STATE.md)** — per-capability shipped/deferred table.
 3. **[ARCHITECTURE.md](ARCHITECTURE.md)** — system boundary, §4 constraints, SPI contracts, decision chains.
 4. **[docs/contracts/](docs/contracts/)** — HTTP API contracts, SPI semantic contracts, pinned OpenAPI snapshot.
-5. **[docs/adr/README.md](docs/adr/README.md)** — Architecture Decision Records (ADR-0001 … ADR-0067).
-6. **[CLAUDE.md](CLAUDE.md)** — Layer-0 governing principles + Layer-1 engineering rules (16 active, 14 deferred + 7 new sub-clauses with re-introduction triggers). See also [docs/quickstart.md](docs/quickstart.md).
+5. **[docs/adr/README.md](docs/adr/README.md)** — Architecture Decision Records (ADR-0001 … ADR-0069).
+6. **[CLAUDE.md](CLAUDE.md)** — Layer-0 governing principles + Layer-1 engineering rules (26 active, 15 deferred + 13 new sub-clauses with re-introduction triggers). See also [docs/quickstart.md](docs/quickstart.md).
 
 ## See also
 
 - [docs/releases/](docs/releases/) — formal release notes.
 - [docs/governance/architecture-status.yaml](docs/governance/architecture-status.yaml) — capability ledger.
-- [gate/README.md](gate/README.md) — architecture-sync gate (36 rules + 37 self-tests).
+- [gate/README.md](gate/README.md) — architecture-sync gate (52 rules + 66 self-tests).
 - [docs/cross-cutting/oss-bill-of-materials.md](docs/cross-cutting/oss-bill-of-materials.md) — OSS dependency policy.
