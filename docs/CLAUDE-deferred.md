@@ -347,13 +347,27 @@ Composes with: Rule 20 (Run State Transition Validity); Rule 44 (Strict Engine M
 
 ---
 
+## Rule 45.b — HookOutcome Run-State Consumption [Deferred to W2 Telemetry Vertical]
+
+**Re-introduction trigger**: first consumer hook (TokenCounterHook / PiiRedactionHook / CostAttributionHook / LlmSpanEmitterHook) lands in W2 Telemetry Vertical. At that point a real middleware will return `HookOutcome.Fail` / `ShortCircuit` and the orchestrator must consume the outcome.
+
+**Rule (draft)**: When a middleware returns `HookOutcome.Fail(reason)`, the orchestrator MUST transition the Run to `RunStatus.FAILED` with `finishedAt` set, fire `HookPoint.ON_ERROR` carrying the failure reason, and re-throw a typed exception so the caller observes failure. When a middleware returns `HookOutcome.ShortCircuit(value)`, the orchestrator MUST skip the wrapped engine call and treat `value` as the engine's return. The fail-fast property within the dispatcher chain (already enforced by `HookDispatcher` at W2.x) is preserved.
+
+Authority: post-release architecture review §P0-3 (plan D); ADR-0073 §Consequences ("Outcomes are LOGGED, NOT acted upon at Phase 2 (W2 wires Fail → Run.FAILED, ShortCircuit → return result)"); CLAUDE.md Rule 45 W2.x scope clarification paragraph.
+
+Composes with: Rule 45 (Runtime-Owned Middleware via Engine Hooks); Rule 20 (Run State Transition Validity); ADR-0073.
+
+---
+
 ## Rule 46.b — ResilienceContract s2c.client.callback Wiring [Deferred to W2]
 
 **Re-introduction trigger**: first production S2C deployment with > 1 concurrent client (target: W2; conditioned on the first non-in-memory `S2cCallbackTransport` implementation shipping).
 
 **Rule (draft)**: `ResilienceContract.resolve(tenant, "s2c.client.callback")` MUST consult the `s2c.client.callback` row in `docs/governance/skill-capacity.yaml` at runtime. When per-tenant or global capacity is exhausted, the second concurrent caller MUST be SUSPENDED (Chronos Hydration per Rule 38) carrying `SuspendReason.RateLimited(S2C_CALLBACK_CAPACITY_EXCEEDED)`, NOT failed. The in-memory transport at W2.x consults the matrix but does not yet enforce it because there is only one client; production transports (webhook, SSE, WebSocket) must enforce on every dispatch.
 
-Composes with: Rule 46 (S2C Callback Envelope + Lifecycle Bound); Rule 41 (Skill Capacity Matrix); ADR-0074; ADR-0069 / LucioIT W1 §7.3.
+**Post-review strengthening (plan G):** Over-capacity skill use MUST suspend **only the dependent step**, NOT the whole run nor unrelated LLM inference threads in the same Run. The W2 orchestrator-admission path is the contract surface: a step blocked on skill capacity is suspended via `SuspendSignal` carrying the step key + skill key; the parent Run stays `RUNNING` so unrelated branches continue. This is the 2D defence net (Tenant Quota × Global Skill Capacity per Rule 41) applied at sub-Run granularity.
+
+Composes with: Rule 46 (S2C Callback Envelope + Lifecycle Bound); Rule 41 (Skill Capacity Matrix); ADR-0074; ADR-0069 / LucioIT W1 §7.3; post-release review §4 skill-capacity orchestration binding.
 
 ---
 

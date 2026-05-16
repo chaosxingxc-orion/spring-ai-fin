@@ -1,0 +1,65 @@
+# Plan Projection schema, version 1.
+#
+# Status (plan G / §4 + §5 overdesign labels): DESIGN ONLY at v2.0.0-rc1.
+# No Java type, no runtime self-validation, no enforcer ships in this hotfix.
+# This contract closes the named bridge gap between ADR-0032 (PlanState,
+# RunPlanRef) and ADR-0052 (SkillResourceMatrix / bidding) flagged by the
+# post-release review §4 "Dynamic planning is still under-connected".
+#
+# Wave trajectory:
+#   - v2.0.0-rc1 (now)  : design_only — schema declared, no runtime.
+#   - W2 scheduler wave : promote to schema_shipped — Java record +
+#     PlanProjector SPI lands alongside the first non-in-memory scheduler.
+#   - W2.x.1            : runtime_enforced — orchestrator consults the
+#     projection before submitting steps to the SkillResourceMatrix.
+#
+# Authority: post-release architecture review §4 + ADR-0032 (PlanState) +
+# ADR-0052 (SkillResourceMatrix). No new ADR is cut for v2.0.0-rc1; W2
+# scheduler wave will write the promotion ADR.
+#
+# Bridge intent: a planned step projects its required + optional skills,
+# budget envelope, permission scope, memory access scope, and expected
+# duration into a structured shape the scheduler can rank, ration, and
+# admit against the SkillResourceMatrix and tenant quota. Without this
+# projection, planner output and capacity arbitration are unjoinable.
+
+schema: plan-projection/v1
+status: design_only
+runtime_enforced: false
+authority: "post-release review §4; ADR-0032 (PlanState); ADR-0052 (SkillResourceMatrix)"
+
+# A single projection emitted by the planner for each step before scheduling.
+projection:
+  required_fields:
+    - plan_id            # UUID; foreign key to PlanState
+    - step_key           # stable id of the step within the plan (planner DAG node id)
+    - required_skills    # list of skill ids that MUST be available; capacity reservation key
+    - budget_envelope    # { token_budget_remaining, wall_clock_remaining_ms, cost_remaining_usd }
+    - memory_access_scope  # { read_tenants: [], write_tenants: [], placeholder_policy }
+    - estimated_duration_ms  # int; planner's wall-clock estimate
+
+  optional_fields:
+    - optional_skills    # list of skill ids the planner can route to but does NOT require
+    - permission_refs    # list of permission tokens needed for this step
+    - fallback_class     # discriminator: { NONE | DEGRADE_MEANS | DEGRADE_ENDS }
+    - parent_step_keys   # list; planner DAG parents — used for join policy
+
+scheduler_contract:
+  # The scheduler MUST be able to answer these questions from the projection
+  # alone (no peek into PlanState or LLM context). This is what makes the
+  # projection a true contract surface rather than an internal struct.
+  questions:
+    - admit_or_yield_now      # does capacity allow this step right now?
+    - over_capacity_action    # if not admitted, what action? (queue / suspend dependent step / reject)
+    - quota_consumption       # what counters does admission decrement?
+    - tenant_isolation_check  # does the access_scope cross tenant lines?
+
+# Companion deferred clauses
+deferred_runtime_binding:
+  - target_wave: W2
+    trigger: "first non-in-memory scheduler ships"
+    obligations:
+      - "Java record PlanProjection mirroring required_fields + optional_fields"
+      - "PlanProjector SPI emitting projections from PlanState"
+      - "SkillResourceMatrix.admit(PlanProjection) → AdmissionDecision"
+      - "Integration test asserting over-capacity admit → SUSPEND of the dependent step only"

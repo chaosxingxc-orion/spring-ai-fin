@@ -45,6 +45,7 @@
 #  28h. l1_review_checklist_present                    -- ADRs 0055–0059 contain '§16 Review Checklist' (enforcer E31)
 #  28i. plan_enforcer_table_in_sync                    -- plan §11 IDs == enforcers.yaml IDs (enforcer E32)
 #  28j. enforcer_artifact_paths_exist                   -- every artifact: path in enforcers.yaml resolves on disk (enforcer E33, Phase K audit fix F6)
+#  28k. javadoc_enforcer_citation_semantic_check        -- *Test.java/*IT.java Javadoc `enforcers.yaml#E<n>` citations match the E-row's artifact: field (post-review fix plan F / P1-2)
 #  28.  constraint_enforcer_coverage                   -- enforcers.yaml references CLAUDE.md AND ARCHITECTURE.md (meta-rule, enforcer E28)
 #  30.  telemetry_vertical_constraint_coverage         -- ARCHITECTURE.md §4 #53–#59 each cited by an enforcer row (L1.x Telemetry Vertical, enforcer E47)
 #  --- Layer-0 governing principles (ADR-0064..0067) ---
@@ -1380,6 +1381,60 @@ if [[ -f "$_efile" ]]; then
   done < <(grep -E '^[[:space:]]*artifact:' "$_efile" 2>/dev/null || true)
 fi
 if [[ $_r28j_fail -eq 0 ]]; then pass_rule "enforcer_artifact_paths_exist"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 28k — javadoc_enforcer_citation_semantic_check (post-review fix
+# plan F / P1-2, enforcer E33+ semantic widening).
+#
+# Phase 7 post-release review surfaced two test-class Javadocs citing the
+# WRONG enforcer ID (S2cCallbackRoundTripIT cited #E83 but is actually E82;
+# EngineRegistryBootValidationIT cited #E81 but is actually E84). Rule 28j
+# checks `artifact: path#anchor` resolves; it does NOT cross-check that a
+# test file citing `enforcers.yaml#E<n>` in its Javadoc actually corresponds
+# to E<n>'s declared `artifact:` field.
+#
+# This rule scans *Test.java and *IT.java under agent-runtime/src/test/java
+# and agent-platform/src/test/java for Javadoc citations of the form
+# `enforcers.yaml#E<n>` and asserts each cited E-row's `artifact:` field's
+# file path (anchor stripped, path normalised) matches the source file
+# path. Mis-citation is a Rule 25 truth violation.
+# ---------------------------------------------------------------------------
+_r28k_fail=0
+if [[ -f "$_efile" ]]; then
+  while IFS= read -r _r28k_src; do
+    [[ -z "$_r28k_src" ]] && continue
+    # Extract all enforcers.yaml#E<n> citations from this source file
+    while IFS= read -r _r28k_eid; do
+      [[ -z "$_r28k_eid" ]] && continue
+      # Look up the artifact: path for this E<n> in enforcers.yaml.
+      _r28k_art=$(awk -v id="$_r28k_eid" '
+        $0 ~ "^- id: " id "$" { found=1; next }
+        found && /^[[:space:]]+artifact:/ {
+          line=$0
+          sub(/^[[:space:]]+artifact:[[:space:]]*/, "", line)
+          sub(/#.*$/, "", line)
+          gsub(/[[:space:]]+$/, "", line)
+          print line
+          exit
+        }
+        found && /^- id:/ { exit }
+      ' "$_efile")
+      if [[ -z "$_r28k_art" ]]; then
+        fail_rule "javadoc_enforcer_citation_semantic_check" "$_r28k_src cites enforcers.yaml#$_r28k_eid but no such row in $_efile (Rule 28k / post-review plan F)"
+        _r28k_fail=1
+        continue
+      fi
+      # Normalize paths: strip ./ prefix from both.
+      _r28k_src_norm=$(printf '%s' "$_r28k_src" | sed -E 's|^\./||')
+      _r28k_art_norm=$(printf '%s' "$_r28k_art" | sed -E 's|^\./||')
+      if [[ "$_r28k_src_norm" != "$_r28k_art_norm" ]]; then
+        fail_rule "javadoc_enforcer_citation_semantic_check" "$_r28k_src cites enforcers.yaml#$_r28k_eid but $_r28k_eid's artifact: is '$_r28k_art_norm' (not this file). Per Rule 28k / post-review plan F."
+        _r28k_fail=1
+      fi
+    done < <(grep -oE 'enforcers\.yaml#E[0-9]+' "$_r28k_src" 2>/dev/null | sed -E 's|^enforcers\.yaml#||' | sort -u)
+  done < <(find agent-runtime/src/test/java agent-platform/src/test/java -type f \( -name '*Test.java' -o -name '*IT.java' \) 2>/dev/null | sort)
+fi
+if [[ $_r28k_fail -eq 0 ]]; then pass_rule "javadoc_enforcer_citation_semantic_check"; fi
 
 # ---------------------------------------------------------------------------
 # Rule 28 — constraint_enforcer_coverage (meta-rule, enforcer E28)

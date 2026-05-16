@@ -378,6 +378,8 @@ Authority: ADR-0072 / P-M. Enforced by Gate Rule 56 (`engine_registry_covers_all
 
 Authority: ADR-0073 / P-M. Enforced by Gate Rule 57 (`engine_hooks_yaml_present_and_wellformed` — bidirectional yaml↔HookPoint-enum consistency, enforcer E78), ArchUnit E79 (`EveryEngineDeclaresHookSurfaceTest`), integration test E80 (`RuntimeMiddlewareInterceptsHooksIT`). W2.x Phase 2 ships SPI surface only; consumer hooks (TokenCounterHook, PiiRedactionHook, etc.) land in W2 Telemetry Vertical.
 
+**W2.x scope clarification (post-release review fix plan D / P0-3):** At W2.x the dispatcher fires hooks and middlewares may return `HookOutcome.Fail` / `HookOutcome.ShortCircuit`, but **the orchestrator does NOT consume outcomes** — outcomes are logged. The fail-fast property applies inside the dispatcher chain (a non-`Proceed` outcome stops subsequent middlewares from firing for the same `HookPoint`), NOT to the Run lifecycle. Run-state consumption of outcomes (Fail → `Run.FAILED`, ShortCircuit → engine bypass) is deferred to W2 Telemetry Vertical per `CLAUDE-deferred.md` 45.b — ADR-0073 §Consequences line "Outcomes are LOGGED, NOT acted upon at Phase 2" is the controlling design. `on_error` remains best-effort across the chain.
+
 ---
 
 #### Rule 46 — S2C Callback Envelope + Lifecycle Bound
@@ -410,4 +412,4 @@ Authority: ADR-0077 / P-M cross-cutting invariant. Enforced by Gate Rule 60 (`sc
 
 ## Deferred Rules
 
-See [`docs/CLAUDE-deferred.md`](docs/CLAUDE-deferred.md). Currently deferred: Rules 7, 8, 11, 13, 14, 15, 16, 17, 18, 19, 22, 23, 24, 26, 27 — plus sub-clauses 29.c, 30.b, 30.d, 31.b, 32.b, 32.c, 32.d, 35.b, 37.c, 40.b, 42.b, 44.b, 44.c, 46.b, 48.b, 48.c. Each has an explicit re-introduction trigger. Rule 36.b activated in W1.x Phase 8 (`RunCursorFlowIT.createReturns202WithCursorWithin200ms`, enforcer E72, gate Rule 53 per ADR-0070); Rule 41.b activated in W1.x Phase 9 (`SkillCapacityResolutionIT.suspendsSecondCallerWhenCapacityIsOne`, enforcer E73, gate Rule 54 per ADR-0070).
+See [`docs/CLAUDE-deferred.md`](docs/CLAUDE-deferred.md). Currently deferred: Rules 7, 8, 11, 13, 14, 15, 16, 17, 18, 19, 22, 23, 24, 26, 27 — plus sub-clauses 29.c, 30.b, 30.d, 31.b, 32.b, 32.c, 32.d, 35.b, 37.c, 40.b, 42.b, 44.b, 44.c, 45.b, 46.b, 48.b, 48.c. Each has an explicit re-introduction trigger. Rule 36.b activated in W1.x Phase 8 (`RunCursorFlowIT.createReturns202WithCursorWithin200ms`, enforcer E72, gate Rule 53 per ADR-0070); Rule 41.b activated in W1.x Phase 9 (`SkillCapacityResolutionIT.suspendsSecondCallerWhenCapacityIsOne`, enforcer E73, gate Rule 54 per ADR-0070).

@@ -13,6 +13,12 @@
 # Self-enforced by gate Rule 58 (s2c_callback_yaml_present_and_wellformed).
 
 schema: s2c-callback/v1
+# Post-review status label (plan G / §5): S2C protocol is runtime_enforced --
+# SyncOrchestrator catches S2cCallbackSignal, validates response, transitions
+# Run to FAILED with typed reason on failure modes (enforcer E82 round-trip,
+# E90 FAILED transition). ResilienceContract integration for s2c.client.callback
+# skill capacity is deferred to W2 per CLAUDE-deferred.md 46.b.
+status: runtime_enforced
 authority: ADR-0074
 
 # REQUEST envelope -- server to client.

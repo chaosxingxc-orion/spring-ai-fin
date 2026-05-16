@@ -118,7 +118,33 @@ public final class SyncOrchestrator implements Orchestrator {
                         Map.of("parentNodeKey", s2cSignal.parentNodeKey(),
                                 "callbackId", s2cSignal.envelope().callbackId())));
                 run = runs.save(run.withSuspension(s2cSignal.parentNodeKey(), Instant.now()));
-                Object newPayload = handleClientCallback(run, s2cSignal.envelope());
+                Object newPayload;
+                try {
+                    newPayload = handleClientCallback(run, s2cSignal.envelope());
+                } catch (RuntimeException s2cFailure) {
+                    // Post-review fix (plan C / P0-2): the S2C failure path was
+                    // documented in s2c-callback.v1.yaml + Rule 46 to transition
+                    // the Run to FAILED, but the prior code let IllegalStateException
+                    // from handleClientCallback escape the try entirely (Java
+                    // semantics: sibling catch clauses cannot catch each other's
+                    // escapes), leaving the Run in SUSPENDED. Finalize the Run
+                    // here, fire ON_ERROR carrying the typed reason extracted from
+                    // the failure message prefix, then rethrow so the caller still
+                    // observes the exception.
+                    String reason = extractS2cFailureReason(s2cFailure);
+                    if (run.status() != RunStatus.FAILED) {
+                        run = runs.save(run.withStatus(RunStatus.FAILED).withFinishedAt(Instant.now()));
+                    }
+                    hookDispatcher.fire(new HookContext(
+                            HookPoint.ON_ERROR,
+                            run.runId(),
+                            run.tenantId(),
+                            Map.of("reason", reason,
+                                    "callbackId", s2cSignal.envelope().callbackId(),
+                                    "exception", s2cFailure.getClass().getName(),
+                                    "message", String.valueOf(s2cFailure.getMessage()))));
+                    throw s2cFailure;
+                }
                 hookDispatcher.fire(new HookContext(
                         HookPoint.BEFORE_RESUME,
                         run.runId(),
@@ -164,6 +190,29 @@ public final class SyncOrchestrator implements Orchestrator {
         // Rule 43: never pattern-match on ExecutorDefinition subtypes here —
         // EngineRegistry encapsulates the class-to-engineType mapping.
         return engineRegistry.resolveByPayload(def).execute(ctx, def, payload);
+    }
+
+    /**
+     * Extract a typed S2C failure reason token from an exception raised inside
+     * {@link #handleClientCallback}. Used by the executeLoop catch block to
+     * label the ON_ERROR hook context with one of the five canonical S2C
+     * failure reasons (post-review fix plan C / P0-2).
+     *
+     * <p>Matching is case-insensitive prefix to survive the
+     * {@code SuspendReason.AwaitClientCallback} constant rendering convention.
+     */
+    static String extractS2cFailureReason(RuntimeException e) {
+        String msg = e.getMessage();
+        if (msg == null) {
+            return "s2c_unknown_failure";
+        }
+        String lower = msg.toLowerCase(java.util.Locale.ROOT);
+        if (lower.startsWith("s2c_transport_unavailable")) return "s2c_transport_unavailable";
+        if (lower.startsWith("s2c_transport_failure")) return "s2c_transport_failure";
+        if (lower.startsWith("s2c_response_invalid")) return "s2c_response_invalid";
+        if (lower.startsWith("s2c_client_error")) return "s2c_client_error";
+        if (lower.startsWith("s2c_timeout")) return "s2c_timeout";
+        return "s2c_unknown_failure";
     }
 
     private Run createRun(UUID runId, String tenantId, ExecutorDefinition def) {

@@ -2049,9 +2049,80 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Rule 28k positive (post-review fix plan F / P1-2): a test file whose
+# Javadoc cites enforcers.yaml#E<n> matches the E-row's artifact: path.
+# ---------------------------------------------------------------------------
+_r28k_pos="$scratch/r28k_pos"
+mkdir -p "$_r28k_pos/docs/governance"
+mkdir -p "$_r28k_pos/agent-runtime/src/test/java/com/example"
+cat > "$_r28k_pos/docs/governance/enforcers.yaml" <<'EOF'
+- id: E100
+  kind: integration
+  artifact: agent-runtime/src/test/java/com/example/FooIT.java#some_test
+EOF
+cat > "$_r28k_pos/agent-runtime/src/test/java/com/example/FooIT.java" <<'EOF'
+// Enforcer row: docs/governance/enforcers.yaml#E100
+class FooIT {}
+EOF
+_r28k_pos_eid="E100"
+_r28k_pos_art=$(awk -v id="$_r28k_pos_eid" '
+  $0 ~ "^- id: " id "$" { found=1; next }
+  found && /^[[:space:]]+artifact:/ {
+    line=$0
+    sub(/^[[:space:]]+artifact:[[:space:]]*/, "", line)
+    sub(/#.*$/, "", line)
+    gsub(/[[:space:]]+$/, "", line)
+    print line
+    exit
+  }
+' "$_r28k_pos/docs/governance/enforcers.yaml")
+_r28k_pos_src="agent-runtime/src/test/java/com/example/FooIT.java"
+if [[ "$_r28k_pos_art" == "$_r28k_pos_src" ]]; then
+  ok "rule28k_javadoc_citation_pos" "matching Javadoc citation + artifact path"
+else
+  fail "rule28k_javadoc_citation_pos" "expected match but got art='$_r28k_pos_art' vs src='$_r28k_pos_src'"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 28k negative: a test file Javadoc cites E<n> whose artifact: points
+# elsewhere -- must be flagged.
+# ---------------------------------------------------------------------------
+_r28k_neg="$scratch/r28k_neg"
+mkdir -p "$_r28k_neg/docs/governance"
+mkdir -p "$_r28k_neg/agent-runtime/src/test/java/com/example"
+cat > "$_r28k_neg/docs/governance/enforcers.yaml" <<'EOF'
+- id: E101
+  kind: integration
+  artifact: agent-runtime/src/test/java/com/other/BarIT.java#some_test
+EOF
+cat > "$_r28k_neg/agent-runtime/src/test/java/com/example/FooIT.java" <<'EOF'
+// Mis-citation: this file cites E101 but E101's artifact is BarIT.java
+// docs/governance/enforcers.yaml#E101
+class FooIT {}
+EOF
+_r28k_neg_eid="E101"
+_r28k_neg_art=$(awk -v id="$_r28k_neg_eid" '
+  $0 ~ "^- id: " id "$" { found=1; next }
+  found && /^[[:space:]]+artifact:/ {
+    line=$0
+    sub(/^[[:space:]]+artifact:[[:space:]]*/, "", line)
+    sub(/#.*$/, "", line)
+    gsub(/[[:space:]]+$/, "", line)
+    print line
+    exit
+  }
+' "$_r28k_neg/docs/governance/enforcers.yaml")
+_r28k_neg_src="agent-runtime/src/test/java/com/example/FooIT.java"
+if [[ "$_r28k_neg_art" != "$_r28k_neg_src" ]]; then
+  ok "rule28k_javadoc_citation_neg" "mismatched Javadoc citation correctly flagged"
+else
+  fail "rule28k_javadoc_citation_neg" "expected mismatch but paths matched"
+fi
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
-TOTAL=84
+TOTAL=86
 echo ""
 echo "Tests passed: ${passed}/${TOTAL}"
 

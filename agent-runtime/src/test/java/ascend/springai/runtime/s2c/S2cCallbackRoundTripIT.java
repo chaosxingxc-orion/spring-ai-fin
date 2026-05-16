@@ -36,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * </ul>
  *
  * <p>Authority: ADR-0074; CLAUDE.md Rule 46.
- * Enforcer row: docs/governance/enforcers.yaml#E83 (RuntimeMiddlewareIntercepts S2C round-trip).
+ * Enforcer row: docs/governance/enforcers.yaml#E82 (S2C round-trip integration).
  */
 class S2cCallbackRoundTripIT {
 
@@ -59,7 +59,13 @@ class S2cCallbackRoundTripIT {
             AtomicReference<S2cCallbackEnvelope> capturedEnvelope) {
         return new ExecutorDefinition.AgentLoopDefinition(
                 (ctx, payload, iter) -> {
-                    if (iter == 0 && payload == null) {
+                    // Post-review fix (plan B / P0-1): IterativeAgentLoopExecutor
+                    // passes AgentLoopDefinition.initialContext (Map.of()) as the
+                    // initial payload, so the prior `payload == null` sentinel
+                    // never matched. Use capturedEnvelope as the "already fired"
+                    // marker so the signal fires exactly once on the first call
+                    // and the resume call returns done().
+                    if (capturedEnvelope.get() == null) {
                         S2cCallbackEnvelope env = envelopeFor(ctx.runId());
                         capturedEnvelope.set(env);
                         throw new S2cCallbackSignal("loop-iter-0", env);

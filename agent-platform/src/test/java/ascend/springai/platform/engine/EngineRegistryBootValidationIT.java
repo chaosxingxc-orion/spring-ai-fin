@@ -46,7 +46,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * is an integration test that exercises real Spring bean creation; there
  * are no mocks on the subsystem under test.
  *
- * <p>Enforcer row: docs/governance/enforcers.yaml#E81.
+ * <p>Enforcer row: docs/governance/enforcers.yaml#E84 (post-review fix
+ * plan F / P1-2: prior Javadoc cited #E81 which is the S2C-callback gate
+ * row, not this IT).
  */
 class EngineRegistryBootValidationIT {
 

@@ -1,24 +1,30 @@
-# W2.x Engine Contract Structural Wave — Release Note
+# W2.x Engine Contract Structural Wave — Release Note (v2.0.0-rc1)
 
-**Date:** 2026-05-16
+**Date:** 2026-05-16 (W2.x Phase 7 audit committed 18:36; v2.0.0-rc1 post-review hotfix committed evening)
 **Driver review:** 2026-05-15 LucioIT L0 proposal *"Runtime-Engine Contract for Heterogeneous Agent Execution"* (`docs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md`)
 **Response doctrine:** [docs/reviews/2026-05-16-engine-contract-structural-response.en.md](../reviews/2026-05-16-engine-contract-structural-response.en.md)
-**Wave plan:** `D:/.claude/plans/https-github-com-chaosxingxc-orion-spri-compressed-taco.md`
+**Post-release review:** [docs/reviews/2026-05-16-l0-w2x-post-release-architecture-review.en.md](../reviews/2026-05-16-l0-w2x-post-release-architecture-review.en.md)
+**Post-release response:** [docs/reviews/2026-05-17-l0-w2x-post-release-review-response.en.md](../reviews/2026-05-17-l0-w2x-post-release-review-response.en.md)
+**Wave plan (rc1):** `D:/.claude/plans/spi-atomic-willow.md`
+**Tag:** `v2.0.0-rc1` (the earlier `v2.0.0-w2x-final` tag was retracted after the post-release review per the response doc)
 
 ---
 
-## Baseline counts
+## Baseline counts (single canonical post-rc1)
+
+These counts replace any earlier "Updated counts" addendum table; per post-release review §P1-1 the baseline is single-source. See the post-release response §4 for the rationale.
 
 | metric | count |
 |---|---|
 | §4 constraints | 65 |
 | Active ADRs | 77 |
 | Active gate rules | 60 |
-| Gate self-test cases | 82 |
+| Gate self-test cases | 86 |
 | active engineering rules | 34 |
 | Layer-0 governing principles | 13 |
-| enforcer rows | 87 |
-| Maven tests GREEN | 200 |
+| enforcer rows | 91 |
+| Maven tests GREEN (under `mvn verify`) | 213 |
+| Architecture graph | 246 nodes / 323 edges |
 
 ## Summary
 
@@ -157,20 +163,9 @@ Default sunset schedule encoded in `gate/schema-first-grandfathered.txt`:
 - `2026-12-31` — 1 entry (RunScope) tied to W4 planner toolset
 - `2027-12-31` — 2 entries (RunStatus DFA, IdempotencyRecord) whose authoritative form is already a Java enum + schema-layer CHECK constraint; prose is documentation cross-reference
 
-## Updated counts
+## Updated counts (rolled into single canonical baseline, kept for historical context)
 
-| metric | pre-audit | post-audit |
-|---|---|---|
-| §4 constraints | 65 | 65 |
-| Active ADRs | 77 | 77 |
-| Active gate rules | 60 | 60 |
-| Gate self-test cases | 82 | **84** (+2 sunset_expired + sunset_malformed) |
-| Active engineering rules | 34 | 34 |
-| Deferred sub-clauses | 11 | **16** (+44.b, 44.c, 46.b, 48.b, 48.c) |
-| Layer-0 governing principles | 13 | 13 |
-| Enforcer rows | 87 | **89** (+E88 Rule 44 FAILED IT, +E89 Phase 3a Matrix freeze) |
-| Maven tests GREEN | 200 | **208** (+1 EngineMismatchTransitionsRunToFailedIT IT; agent-platform recount 65) |
-| Architecture-graph nodes / edges | 219 / 272 | **242 / 318** (cross_cutting_invariant edges + new E88/E89 enforcer artefacts) |
+The Phase 7 addendum originally published a separate "Updated counts" table to record the deltas from the Phase 7 audit. The v2.0.0-rc1 post-release response (§P1-1) consolidates all baselines into the top table of this release note. The pre-audit → post-audit → post-rc1 evolution lives in the post-release response document referenced above. This addendum block remains as historical narrative; the canonical numbers are above.
 
 ## L0 release readiness — checklist
 

@@ -158,6 +158,31 @@
   </dependencies>
 
   <build>
+    <resources>
+      <!-- Preserve default src/main/resources lookup. -->
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+      <!--
+        Post-review fix (plan E / P0-4): bring canonical contract YAMLs needed
+        for runtime self-validation (ADR-0076 R2 pilot) onto the agent-platform
+        jar classpath. EngineRegistry.readYaml() tries filesystem first, then
+        classpath fallback at "/docs/contracts/<name>.yaml". Without this
+        block, packaged-jar deployments outside the repo working tree boot-fail
+        because the repo-relative default schema path resolves to neither the
+        filesystem nor the classpath. We copy the YAMLs into
+        target/classes/docs/contracts/ so the classpath fallback resolves.
+      -->
+      <resource>
+        <directory>${project.basedir}/../docs/contracts</directory>
+        <targetPath>docs/contracts</targetPath>
+        <includes>
+          <include>engine-envelope.v1.yaml</include>
+          <include>engine-hooks.v1.yaml</include>
+          <include>s2c-callback.v1.yaml</include>
+        </includes>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>org.springframework.boot</groupId>

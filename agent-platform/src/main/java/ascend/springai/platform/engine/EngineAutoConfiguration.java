@@ -31,9 +31,22 @@ import java.util.List;
  * conditional on missing beans so an integrator can supply alternative
  * implementations without removing the default wiring.
  *
- * <p>The schema path is configurable via {@code app.engine.envelope-schema-path};
- * the default is correct for unit-test launches from the repo root and for
- * the packaged jar (the YAML is shipped under the same path).
+ * <p>The schema path is configurable via {@code app.engine.envelope-schema-path}.
+ * The default is correct for two launch modes:
+ * <ul>
+ *   <li>Unit-test / reactor launches from the repo root, where the YAML is
+ *       reachable via the literal filesystem path {@code docs/contracts/...}.</li>
+ *   <li>Packaged-jar deployments, where the agent-platform jar's classpath
+ *       resource at {@code /docs/contracts/engine-envelope.v1.yaml} resolves
+ *       because {@code agent-platform/pom.xml} declares a {@code <resources>}
+ *       rule copying canonical contract YAMLs from {@code ../docs/contracts}
+ *       into {@code target/classes/docs/contracts/} at package time (post-review
+ *       fix plan E / P0-4).</li>
+ * </ul>
+ * Boot validation runs synchronously inside the {@link #engineRegistry} bean
+ * factory; both filesystem and classpath fallbacks are exercised by
+ * {@code EngineRegistry.readYaml()}. An integrator overriding the property
+ * MUST ensure the override resolves under the same dual-mode contract.
  *
  * <p>Authority: ADR-0076; Layer-0 principle P-M.
  */

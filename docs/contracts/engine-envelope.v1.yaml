@@ -21,6 +21,11 @@
 # and gate Rule 56 (engine_registry_covers_all_known_engines).
 
 schema: engine-envelope/v1
+# Post-review status label (plan G / §5 overdesign labels): the envelope
+# contract is runtime_enforced -- EngineRegistry validates known_engines
+# at boot (ADR-0076 R2 pilot, enforcer E84) and every dispatch goes through
+# EngineRegistry.resolve(envelope) (Rule 43, enforcer E74).
+status: runtime_enforced
 authority: ADR-0072
 
 required_fields:

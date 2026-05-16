@@ -793,3 +793,24 @@
   view: scenarios
   artifact: docs/reviews/2026-05-16-engine-contract-structural-response.en.md
   asserts: "The Phase 3a section 5 Cross-Rule Co-Design Audit Matrix is referenced by ADR-0074 line 47 and CLAUDE.md Rule 46 prose as the canonical Rules 20/35/38/41/42 interlock specification. Freeze invariant: this file MUST exist on disk; a future rename or split MUST update both anchors AND this enforcer row in the same PR. Today the assertion is structural (file exists); the matrix content itself is reviewed under PR review per Rule 9 ship-gate posture."
+
+# ---------------------------------------------------------------------------
+# v2.0.0-rc1 post-release review response -- Rule 46 FAILED-transition + R2 classpath fallback
+# (plan D:/.claude/plans/spi-atomic-willow.md C + E)
+# ---------------------------------------------------------------------------
+
+- id: E90
+  constraint_ref: "CLAUDE.md Rule 46 (S2C Callback Envelope + Lifecycle Bound) -- FAILED-transition half; ADR-0074; P-M"
+  kind: integration
+  level: L1
+  view: process
+  artifact: agent-runtime/src/test/java/ascend/springai/runtime/s2c/S2cFailureTransitionsRunToFailedIT.java
+  asserts: "For each of the four S2C failure modes (s2c_response_invalid, s2c_client_error, s2c_transport_unavailable, s2c_transport_failure), SyncOrchestrator transitions the Run to RunStatus.FAILED with finishedAt set, fires HookPoint.ON_ERROR carrying reason + callbackId, and rethrows so the caller observes failure. Closes the post-review P0-2 gap: prior code let IllegalStateException from handleClientCallback escape the try, leaving the Run in SUSPENDED. Companion to E82 which covered only the happy path + raw exception type."
+
+- id: E91
+  constraint_ref: "CLAUDE.md Rule 28 / Rule 9 -- runtime self-validation of governance YAML via classpath fallback; ADR-0076"
+  kind: integration
+  level: L1
+  view: process
+  artifact: agent-platform/src/test/java/ascend/springai/platform/engine/EngineRegistryClasspathBootIT.java
+  asserts: "EngineAutoConfiguration boots successfully when app.engine.envelope-schema-path resolves only via classpath fallback (filesystem path absent), proving the agent-platform jar carries docs/contracts/engine-envelope.v1.yaml on its classpath. Closes the post-review P0-4 gap: prior code claimed jar deployment worked but the pom.xml had no <resources> rule copying the YAML; production boot from a packaged jar would have failed. Companion to E84 which covers the same R2 pilot in the reactor (filesystem) launch mode."

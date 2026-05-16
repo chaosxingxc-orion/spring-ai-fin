@@ -13,6 +13,12 @@
 # RunEvent variant declares its evolution_export() at the type level.
 #
 # Self-enforced by gate Rule 59 (evolution_scope_yaml_present_and_wellformed).
+#
+# Post-review status label (plan G / §5): the evolution-scope contract is
+# schema_shipped at W2.x -- the EvolutionExport Java enum and the schema both
+# ship, but RunEvent variants will declare evolutionExport() in W2 (enforcer
+# E87 is armed-empty until then). No runtime consumer yet.
+status: schema_shipped
 
 schema: evolution-scope/v1
 authority: ADR-0075
