@@ -1,8 +1,5 @@
 package ascend.springai.runtime.s2c.spi;
 
-import ascend.springai.runtime.s2c.S2cCallbackEnvelope;
-import ascend.springai.runtime.s2c.S2cCallbackResponse;
-
 import java.util.concurrent.CompletionStage;
 
 /**

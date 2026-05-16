@@ -159,9 +159,21 @@ and has been removed (ADR-0026). W1 will introduce `agent-platform-contracts` as
 SPI module when `agent-runtime` first needs a common type (e.g. `TenantContext` for
 `RunController`).
 
-`agent-platform` MUST NOT import `agent-runtime` Java types directly (enforced by
-`ApiCompatibilityTest`). SPI packages (`ascend.springai.runtime.*.spi.*`) import
-only `java.*` (enforced by `OrchestrationSpiArchTest`, `MemorySpiArchTest`).
+`agent-platform` MAY depend on `agent-runtime` public surfaces (`runs.*`,
+`orchestration.spi.*`, `posture.*`, `resilience.*`, plus authorized wiring
+exceptions) per ADR-0055 (which superseded the original prohibition from
+ADR-0026). The remaining negative invariant is one-directional: `agent-runtime`
+MUST NOT depend on `agent-platform`, enforced by
+`RuntimeMustNotDependOnPlatformTest` (broad, all platform classes) and
+`TenantPropagationPurityTest` (narrow, `TenantContextHolder` specifically) — see
+Rule 21. The HTTP edge MUST NOT import memory SPI or internal runtime impl
+packages (enforced by `PlatformImportsOnlyRuntimePublicApiTest`). SPI packages
+(`ascend.springai.runtime.*.spi.*`) import only `java.*` + same-spi-package
+siblings (enforced by `OrchestrationSpiArchTest`, `MemorySpiArchTest`, and
+`SpiPurityGeneralizedArchTest#s2c_spi_imports_only_java_and_same_package_siblings`
+for the s2c.spi surface specifically — `orchestration.spi` retains its
+long-standing dependency on the kernel `runs.*` domain types `Run`, `RunMode`,
+`RunRepository` which are intrinsic to the orchestrator SPI surface).
 
 ---
 

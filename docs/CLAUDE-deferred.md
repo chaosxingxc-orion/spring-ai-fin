@@ -371,6 +371,20 @@ Composes with: Rule 46 (S2C Callback Envelope + Lifecycle Bound); Rule 41 (Skill
 
 ---
 
+## Rule 46.c — S2C Non-Blocking Lifecycle Promotion [Deferred to W2]
+
+**Re-introduction trigger**: W2 async orchestrator lands (target: W2 scheduler wave). The synchronous `SyncOrchestrator.handleClientCallback` is replaced by a non-blocking equivalent that suspends the parent Run via the bus and resumes on the response wake-pulse without holding an OS thread.
+
+**Rule (draft)**: `SyncOrchestrator.handleClientCallback` (or its W2 successor) MUST NOT block the orchestrator thread on the S2C response future. The waiting Run is suspended via the existing `SuspendSignal.forClientCallback(...)` checked-suspension path (already in place as of v2.0.0-rc3 per cross-constraint audit α-2 / β-5), but the *thread* must be released back to the scheduler instead of awaiting `.toCompletableFuture().join()`. Resume happens when the bus delivers the response wake-pulse.
+
+**Background**: ADR-0074 §Consequences accepted a synchronous W2.x bridge for the SPI. The v2.0.0-rc1 cross-constraint audit (P0-1) noted this directly contradicts Rule 46's "MUST suspend, must not block a thread" and Principles P-F/P-G/P-H. The rc3 response: narrow Rule 46's prose to acknowledge the W2.x bridge as a deferred exception (this sub-clause); the structural fix lands when the async orchestrator ships.
+
+**Why deferral, not immediate fix**: A non-blocking S2C resume requires the bus-level wake-pulse machinery that lands in W2 alongside `SuspendSignal` Chronos Hydration (Rule 38 / Rule 41.b runtime integration). Retrofitting `SyncOrchestrator` alone would require either (a) reimplementing the wake-pulse in-memory (massive scope creep into W1) or (b) a half-measure that still blocks on a different primitive. Better to land the whole non-blocking story together when the W2 async orchestrator ships.
+
+Composes with: Rule 46 (S2C Callback Envelope + Lifecycle Bound); Rule 38 (No Thread.sleep in Business Code); Principle P-F (Cursor Flow); Principle P-G (Absolute Non-Blocking I/O); Principle P-H (Chronos Hydration); ADR-0074 §Consequences.
+
+---
+
 ## Rule 48.b — W3 Prose-Enum Schema-First Retrofit [Deferred to W3]
 
 **Re-introduction trigger**: W3 contract-design sprint kickoff (default target: 2026-09-30 — the working sunset date encoded in `gate/schema-first-grandfathered.txt`). Activates earlier if any grandfather entry's `sunset_date` is moved earlier via ADR.

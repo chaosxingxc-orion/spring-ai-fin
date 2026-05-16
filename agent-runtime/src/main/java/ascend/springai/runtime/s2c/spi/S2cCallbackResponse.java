@@ -1,4 +1,4 @@
-package ascend.springai.runtime.s2c;
+package ascend.springai.runtime.s2c.spi;
 
 import java.util.Map;
 import java.util.Objects;
@@ -14,12 +14,16 @@ import java.util.UUID;
  * transitions to FAILED with reason
  * {@link ascend.springai.runtime.resilience.SuspendReason.AwaitClientCallback#S2C_RESPONSE_INVALID}.
  *
+ * <p>Lives in {@code runtime.s2c.spi} (moved from {@code runtime.s2c} in
+ * v2.0.0-rc3 per cross-constraint audit α-4 / β-2) so the SPI literally imports
+ * only {@code java.*} + same-spi-package siblings.
+ *
  * <p>Authority: ADR-0074; CLAUDE.md Rule 46.
  */
 public record S2cCallbackResponse(
         UUID callbackId,                 // MUST match request.callbackId
         Outcome outcome,                 // ok | error | timeout
-        String clientTraceId,            // W3C 32-char; runtime correlates client execution
+        String clientTraceId,            // W3C 32-char lowercase hex; runtime correlates client execution
         Object responsePayload,          // opaque, capability-specific
         String errorCode,                // present only when outcome=error
         String errorMessage,             // present only when outcome=error
@@ -28,10 +32,7 @@ public record S2cCallbackResponse(
     public S2cCallbackResponse {
         Objects.requireNonNull(callbackId, "callbackId is required");
         Objects.requireNonNull(outcome, "outcome is required");
-        Objects.requireNonNull(clientTraceId, "clientTraceId is required");
-        if (clientTraceId.length() != 32) {
-            throw new IllegalArgumentException("clientTraceId must be exactly 32 lowercase hex chars (W3C)");
-        }
+        S2cCallbackEnvelope.requireLowerHex32(clientTraceId, "clientTraceId");
         if (outcome == Outcome.ERROR) {
             Objects.requireNonNull(errorCode, "errorCode is required when outcome=ERROR");
         }

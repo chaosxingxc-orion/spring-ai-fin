@@ -13,13 +13,24 @@ import java.util.Objects;
  *   {@code (parentNodeKey, resumePayload, childMode, childDef)}. The
  *   orchestrator persists checkpoint, marks parent SUSPENDED, and dispatches
  *   the child run.</li>
- *   <li><b>S2C client-callback suspension</b> (W2.x Phase 3, ADR-0074): build
- *   via {@link #forClientCallback(String, S2cCallbackEnvelope)}. The
- *   orchestrator persists checkpoint, marks parent SUSPENDED with
+ *   <li><b>S2C client-callback suspension</b> (W2.x Phase 3, ADR-0074;
+ *   refactored from parallel unchecked S2cCallbackSignal to this checked
+ *   variant in v2.0.0-rc3 per cross-constraint audit α-2 / β-5): build via
+ *   {@link #forClientCallback(String, Object)} where the {@code envelope}
+ *   argument MUST be an instance of
+ *   {@code ascend.springai.runtime.s2c.spi.S2cCallbackEnvelope} (typed as
+ *   Object here to preserve orchestration.spi purity per E3). Discriminate
+ *   at the catch site via {@link #isClientCallback()} and cast
+ *   {@link #clientCallback()} to the concrete envelope type. The orchestrator
+ *   persists checkpoint, marks parent SUSPENDED with
  *   {@code SuspendReason.AwaitClientCallback}, dispatches the request through
  *   the registered {@code S2cCallbackTransport}, and resumes when the client
  *   returns.</li>
  * </ul>
+ *
+ * <p>ADR-0019's checked-suspension doctrine is preserved across both flavours:
+ * every executor lambda already declares {@code throws SuspendSignal}, so the
+ * Java type system pins both suspension paths at compile time.
  *
  * <p>Executors must not catch this exception.
  */
@@ -48,9 +59,10 @@ public final class SuspendSignal extends Exception {
      * S2C client-callback factory (W2.x Phase 3, ADR-0074).
      *
      * <p>{@code envelope} must be an instance of
-     * {@code ascend.springai.runtime.s2c.S2cCallbackEnvelope}; typed as Object
-     * here to preserve orchestration.spi purity (E3 archunit). Orchestrators
-     * cast in non-spi packages.
+     * {@code ascend.springai.runtime.s2c.spi.S2cCallbackEnvelope} (relocated
+     * from {@code ascend.springai.runtime.s2c} in v2.0.0-rc3 per α-4 / β-2);
+     * typed as Object here to preserve orchestration.spi purity (E3 archunit).
+     * Orchestrators cast in non-spi packages.
      */
     public static SuspendSignal forClientCallback(String parentNodeKey, Object envelope) {
         return new SuspendSignal(parentNodeKey, envelope);

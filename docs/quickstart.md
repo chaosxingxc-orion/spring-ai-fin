@@ -58,11 +58,20 @@ public class MyFirstAgent {
   }
 
   @Bean
-  CommandLineRunner driver(Orchestrator orchestrator, RunRepository runs) {
+  CommandLineRunner driver(Orchestrator orchestrator) {
     return args -> {
-      var run = Run.create("tenant-demo", RunMode.GRAPH);
-      runs.save(run);
-      orchestrator.start(run.runId(), /* my ExecutorDefinition */);
+      // Orchestrator.run(runId, tenantId, executorDefinition, initialPayload)
+      // is the canonical entry point (see
+      // ascend.springai.runtime.orchestration.spi.Orchestrator#run).
+      // It synchronously creates the Run if absent, marks it RUNNING, and
+      // recursively drives the suspend/resume loop until SUCCEEDED / FAILED.
+      UUID runId = UUID.randomUUID();
+      var def = new ExecutorDefinition.GraphDefinition(
+              Map.of("start", (ctx, payload) -> "hello-" + payload),
+              Map.of(),
+              "start");
+      Object result = orchestrator.run(runId, "tenant-demo", def, "world");
+      System.out.println("Result: " + result);
     };
   }
 }

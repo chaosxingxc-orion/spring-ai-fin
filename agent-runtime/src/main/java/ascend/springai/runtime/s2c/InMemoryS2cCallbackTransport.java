@@ -1,5 +1,7 @@
 package ascend.springai.runtime.s2c;
 
+import ascend.springai.runtime.s2c.spi.S2cCallbackEnvelope;
+import ascend.springai.runtime.s2c.spi.S2cCallbackResponse;
 import ascend.springai.runtime.s2c.spi.S2cCallbackTransport;
 
 import java.util.Objects;

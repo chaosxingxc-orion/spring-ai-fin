@@ -41,8 +41,9 @@ The SPI contract lives at [`agent-runtime/src/main/java/ascend/springai/runtime/
 
 | Property | Default | Purpose |
 |----------|---------|---------|
-| `springai.ascend.graphmemory.enabled` | `false` | Master toggle. Auto-config contributes nothing when `false` or absent. |
-| `springai.ascend.graphmemory.base-url` | `${SPRINGAI_ASCEND_GRAPHITI_BASE_URL:http://localhost:8001}` | Reserved for the W1 Graphiti REST reference adapter; ignored at W0. |
+| `springai.ascend.graphmemory.enabled` | `false` | Master toggle. Auto-config contributes nothing when `false` or absent. At W0, even when `true`, no bean is contributed — the W1 adapter does the wiring. |
+| `springai.ascend.graphmemory.base-url` | `${SPRINGAI_ASCEND_GRAPHITI_BASE_URL:http://localhost:8001}` | **RESERVED for W1.** Not consumed at W0 (the Graphiti REST adapter lands at W1 per ADR-0034). Marked `@Deprecated(forRemoval=false)` to flag the orphan-config Rule 3 exemption explicitly; see v2.0.0-rc3 cross-constraint audit α-8 / P1-7. |
+| `springai.ascend.graphmemory.api-key` | `""` | **RESERVED for W1.** Same status as `base-url` above. |
 
 Auto-discovery uses the Spring Boot 2.7+ contract: `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.
 

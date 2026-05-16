@@ -7,9 +7,11 @@ import ascend.springai.runtime.orchestration.inmemory.IterativeAgentLoopExecutor
 import ascend.springai.runtime.orchestration.inmemory.SequentialGraphExecutor;
 import ascend.springai.runtime.orchestration.inmemory.SyncOrchestrator;
 import ascend.springai.runtime.orchestration.spi.ExecutorDefinition;
+import ascend.springai.runtime.orchestration.spi.SuspendSignal;
 import ascend.springai.runtime.resilience.SuspendReason;
 import ascend.springai.runtime.runs.RunStatus;
-import ascend.springai.runtime.s2c.spi.S2cCallbackSignal;
+import ascend.springai.runtime.s2c.spi.S2cCallbackEnvelope;
+import ascend.springai.runtime.s2c.spi.S2cCallbackResponse;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -22,7 +24,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * End-to-end Server-to-Client capability callback flow.
  *
- * <p>An agent-loop NodeFunction throws S2cCallbackSignal at iteration 0; the
+ * <p>An agent-loop NodeFunction throws {@code SuspendSignal.forClientCallback(...)}
+ * at iteration 0 (refactored in v2.0.0-rc3 per cross-constraint audit α-2 / β-5
+ * from the prior unchecked {@code S2cCallbackSignal} to the checked
+ * {@code SuspendSignal} with {@code isClientCallback()=true}). The
  * SyncOrchestrator catches it, dispatches via the registered
  * InMemoryS2cCallbackTransport, validates the response, and resumes the loop
  * with the validated payload.
@@ -68,7 +73,7 @@ class S2cCallbackRoundTripIT {
                     if (capturedEnvelope.get() == null) {
                         S2cCallbackEnvelope env = envelopeFor(ctx.runId());
                         capturedEnvelope.set(env);
-                        throw new S2cCallbackSignal("loop-iter-0", env);
+                        throw SuspendSignal.forClientCallback("loop-iter-0", env);
                     }
                     return ExecutorDefinition.ReasoningResult.done("loop-done:" + payload);
                 },

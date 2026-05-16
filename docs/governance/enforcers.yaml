@@ -814,3 +814,24 @@
   view: process
   artifact: agent-platform/src/test/java/ascend/springai/platform/engine/EngineRegistryClasspathBootIT.java
   asserts: "EngineAutoConfiguration boots successfully when app.engine.envelope-schema-path resolves only via classpath fallback (filesystem path absent), proving the agent-platform jar carries docs/contracts/engine-envelope.v1.yaml on its classpath. Closes the post-review P0-4 gap: prior code claimed jar deployment worked but the pom.xml had no <resources> rule copying the YAML; production boot from a packaged jar would have failed. Companion to E84 which covers the same R2 pilot in the reactor (filesystem) launch mode."
+
+# ---------------------------------------------------------------------------
+# v2.0.0-rc3 cross-constraint audit response -- S2C trace-ID validator (α-5)
+# + s2c.spi package-purity (α-4 / β-2 stronger ArchUnit)
+# ---------------------------------------------------------------------------
+
+- id: E92
+  constraint_ref: "docs/contracts/s2c-callback.v1.yaml (request.trace_id + response.client_trace_id MUST be W3C 32-char lowercase hex); CLAUDE.md Rule 46; cross-constraint audit P1-5 / α-5"
+  kind: integration
+  level: L1
+  view: process
+  artifact: agent-runtime/src/test/java/ascend/springai/runtime/s2c/S2cCallbackEnvelopeValidationTest.java
+  asserts: "Beyond length() != 32, S2cCallbackEnvelope.requireLowerHex32(...) and S2cCallbackResponse rejection paths assert the W3C trace-ID character class: only 0-9 + a-f are accepted; uppercase hex AND non-hex chars are rejected with IllegalArgumentException whose message names 'lowercase hex'. Closes the rc3 cross-constraint audit P1-5 gap where the contract text claimed lowercase-hex enforcement but the constructor only checked length."
+
+- id: E93
+  constraint_ref: "CLAUDE.md Rule 32 (SPI + DFX + TCK Co-Design); ARCHITECTURE.md SPI purity (java.* only + same-spi-package siblings); cross-constraint audit α-4 / β-2"
+  kind: archunit
+  level: L0
+  view: development
+  artifact: agent-runtime/src/test/java/ascend/springai/runtime/architecture/SpiPurityGeneralizedArchTest.java#s2c_spi_imports_only_java_and_same_package_siblings
+  asserts: "Every class under ascend.springai.runtime.s2c.spi MUST depend only on java.* + same-spi-package siblings. Strengthened in v2.0.0-rc3 once S2cCallbackEnvelope and S2cCallbackResponse were moved here from runtime.s2c per cross-constraint audit α-4 / β-2. orchestration.spi is intentionally excluded (its long-standing dependency on runs.* kernel domain types is a known exception)."

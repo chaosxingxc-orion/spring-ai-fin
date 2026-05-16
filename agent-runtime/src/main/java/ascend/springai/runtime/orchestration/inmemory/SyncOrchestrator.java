@@ -16,9 +16,8 @@ import ascend.springai.runtime.runs.Run;
 import ascend.springai.runtime.runs.RunMode;
 import ascend.springai.runtime.runs.RunRepository;
 import ascend.springai.runtime.runs.RunStatus;
-import ascend.springai.runtime.s2c.S2cCallbackEnvelope;
-import ascend.springai.runtime.s2c.S2cCallbackResponse;
-import ascend.springai.runtime.s2c.spi.S2cCallbackSignal;
+import ascend.springai.runtime.s2c.spi.S2cCallbackEnvelope;
+import ascend.springai.runtime.s2c.spi.S2cCallbackResponse;
 import ascend.springai.runtime.s2c.spi.S2cCallbackTransport;
 
 import java.time.Instant;
@@ -87,75 +86,81 @@ public final class SyncOrchestrator implements Orchestrator {
                 runs.save(run.withStatus(RunStatus.SUCCEEDED).withFinishedAt(Instant.now()));
                 return result;
             } catch (SuspendSignal signal) {
-                hookDispatcher.fire(new HookContext(
-                        HookPoint.BEFORE_SUSPENSION,
-                        run.runId(),
-                        run.tenantId(),
-                        Map.of("parentNodeKey", signal.parentNodeKey())));
-                run = runs.save(run.withSuspension(signal.parentNodeKey(), Instant.now()));
-
-                UUID childRunId = UUID.randomUUID();
-                // Pre-create child run with parentRunId so the nesting chain is queryable.
-                runs.save(new Run(childRunId, run.tenantId(), "orchestrated",
-                        RunStatus.PENDING, modeFor(signal.childDef()), Instant.now(),
-                        null, null, run.runId(), null, null, null));
-                Object childResult = run(childRunId, run.tenantId(),
-                        signal.childDef(), signal.resumePayload());
-
-                hookDispatcher.fire(new HookContext(
-                        HookPoint.BEFORE_RESUME,
-                        run.runId(),
-                        run.tenantId(),
-                        Map.of("childRunId", childRunId)));
-                run = runs.findById(run.runId()).orElseThrow();
-                run = runs.save(run.withStatus(RunStatus.RUNNING).withUpdatedAt(Instant.now()));
-                payload = childResult;
-            } catch (S2cCallbackSignal s2cSignal) {
-                // W2.x Phase 3 (ADR-0074): persist checkpoint, dispatch via transport,
-                // validate response, resume parent with response payload. Caught BEFORE
-                // the generic RuntimeException branch so S2C is never confused with on_error.
-                hookDispatcher.fire(new HookContext(
-                        HookPoint.BEFORE_SUSPENSION,
-                        run.runId(),
-                        run.tenantId(),
-                        Map.of("parentNodeKey", s2cSignal.parentNodeKey(),
-                                "callbackId", s2cSignal.envelope().callbackId())));
-                run = runs.save(run.withSuspension(s2cSignal.parentNodeKey(), Instant.now()));
-                Object newPayload;
-                try {
-                    newPayload = handleClientCallback(run, s2cSignal.envelope());
-                } catch (RuntimeException s2cFailure) {
-                    // Post-review fix (plan C / P0-2): the S2C failure path was
-                    // documented in s2c-callback.v1.yaml + Rule 46 to transition
-                    // the Run to FAILED, but the prior code let IllegalStateException
-                    // from handleClientCallback escape the try entirely (Java
-                    // semantics: sibling catch clauses cannot catch each other's
-                    // escapes), leaving the Run in SUSPENDED. Finalize the Run
-                    // here, fire ON_ERROR carrying the typed reason extracted from
-                    // the failure message prefix, then rethrow so the caller still
-                    // observes the exception.
-                    String reason = extractS2cFailureReason(s2cFailure);
-                    if (run.status() != RunStatus.FAILED) {
-                        run = runs.save(run.withStatus(RunStatus.FAILED).withFinishedAt(Instant.now()));
-                    }
+                // v2.0.0-rc3 refactor (cross-constraint audit α-2 / β-5): S2C
+                // client-callback suspension is now a checked SuspendSignal variant
+                // (isClientCallback()==true) instead of the parallel unchecked
+                // S2cCallbackSignal RuntimeException. ADR-0019's checked-suspension
+                // doctrine is preserved fully — every executor lambda already
+                // declares `throws SuspendSignal` so the type system pins both
+                // paths at compile time.
+                if (signal.isClientCallback()) {
+                    S2cCallbackEnvelope envelope = (S2cCallbackEnvelope) signal.clientCallback();
                     hookDispatcher.fire(new HookContext(
-                            HookPoint.ON_ERROR,
+                            HookPoint.BEFORE_SUSPENSION,
                             run.runId(),
                             run.tenantId(),
-                            Map.of("reason", reason,
-                                    "callbackId", s2cSignal.envelope().callbackId(),
-                                    "exception", s2cFailure.getClass().getName(),
-                                    "message", String.valueOf(s2cFailure.getMessage()))));
-                    throw s2cFailure;
+                            Map.of("parentNodeKey", signal.parentNodeKey(),
+                                    "callbackId", envelope.callbackId())));
+                    run = runs.save(run.withSuspension(signal.parentNodeKey(), Instant.now()));
+                    Object newPayload;
+                    try {
+                        newPayload = handleClientCallback(run, envelope);
+                    } catch (RuntimeException s2cFailure) {
+                        // Post-review fix (plan C / P0-2): the S2C failure path was
+                        // documented in s2c-callback.v1.yaml + Rule 46 to transition
+                        // the Run to FAILED, but the prior code let IllegalStateException
+                        // from handleClientCallback escape the try entirely, leaving
+                        // the Run in SUSPENDED. Finalize the Run here, fire ON_ERROR
+                        // carrying the typed reason extracted from the failure message
+                        // prefix, then rethrow so the caller still observes the exception.
+                        String reason = extractS2cFailureReason(s2cFailure);
+                        if (run.status() != RunStatus.FAILED) {
+                            run = runs.save(run.withStatus(RunStatus.FAILED).withFinishedAt(Instant.now()));
+                        }
+                        hookDispatcher.fire(new HookContext(
+                                HookPoint.ON_ERROR,
+                                run.runId(),
+                                run.tenantId(),
+                                Map.of("reason", reason,
+                                        "callbackId", envelope.callbackId(),
+                                        "exception", s2cFailure.getClass().getName(),
+                                        "message", String.valueOf(s2cFailure.getMessage()))));
+                        throw s2cFailure;
+                    }
+                    hookDispatcher.fire(new HookContext(
+                            HookPoint.BEFORE_RESUME,
+                            run.runId(),
+                            run.tenantId(),
+                            Map.of("callbackId", envelope.callbackId())));
+                    run = runs.findById(run.runId()).orElseThrow();
+                    run = runs.save(run.withStatus(RunStatus.RUNNING).withUpdatedAt(Instant.now()));
+                    payload = newPayload;
+                } else {
+                    // Ordinary child-run suspension path.
+                    hookDispatcher.fire(new HookContext(
+                            HookPoint.BEFORE_SUSPENSION,
+                            run.runId(),
+                            run.tenantId(),
+                            Map.of("parentNodeKey", signal.parentNodeKey())));
+                    run = runs.save(run.withSuspension(signal.parentNodeKey(), Instant.now()));
+
+                    UUID childRunId = UUID.randomUUID();
+                    // Pre-create child run with parentRunId so the nesting chain is queryable.
+                    runs.save(new Run(childRunId, run.tenantId(), "orchestrated",
+                            RunStatus.PENDING, modeFor(signal.childDef()), Instant.now(),
+                            null, null, run.runId(), null, null, null));
+                    Object childResult = run(childRunId, run.tenantId(),
+                            signal.childDef(), signal.resumePayload());
+
+                    hookDispatcher.fire(new HookContext(
+                            HookPoint.BEFORE_RESUME,
+                            run.runId(),
+                            run.tenantId(),
+                            Map.of("childRunId", childRunId)));
+                    run = runs.findById(run.runId()).orElseThrow();
+                    run = runs.save(run.withStatus(RunStatus.RUNNING).withUpdatedAt(Instant.now()));
+                    payload = childResult;
                 }
-                hookDispatcher.fire(new HookContext(
-                        HookPoint.BEFORE_RESUME,
-                        run.runId(),
-                        run.tenantId(),
-                        Map.of("callbackId", s2cSignal.envelope().callbackId())));
-                run = runs.findById(run.runId()).orElseThrow();
-                run = runs.save(run.withStatus(RunStatus.RUNNING).withUpdatedAt(Instant.now()));
-                payload = newPayload;
             } catch (EngineMatchingException eme) {
                 // Rule 44: engine_mismatch transitions the Run to FAILED with reason.
                 // Phase 7 audit fix (plan D:/.claude/plans/spi-atomic-willow.md L-1):

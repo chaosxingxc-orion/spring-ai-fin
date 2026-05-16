@@ -10,10 +10,12 @@ import ascend.springai.runtime.orchestration.spi.ExecutorDefinition;
 import ascend.springai.runtime.orchestration.spi.HookOutcome;
 import ascend.springai.runtime.orchestration.spi.HookPoint;
 import ascend.springai.runtime.orchestration.spi.RuntimeMiddleware;
+import ascend.springai.runtime.orchestration.spi.SuspendSignal;
 import ascend.springai.runtime.runs.Run;
 import ascend.springai.runtime.runs.RunRepository;
 import ascend.springai.runtime.runs.RunStatus;
-import ascend.springai.runtime.s2c.spi.S2cCallbackSignal;
+import ascend.springai.runtime.s2c.spi.S2cCallbackEnvelope;
+import ascend.springai.runtime.s2c.spi.S2cCallbackResponse;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -32,8 +34,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * an {@link HookPoint#ON_ERROR} hook fire with a typed {@code reason} attr.
  *
  * <p>Prior to plan C the S2C error path threw {@code IllegalStateException}
- * from inside the {@code catch (S2cCallbackSignal)} branch, leaving the Run
- * stuck in {@link RunStatus#SUSPENDED}. Companion to {@code S2cCallbackRoundTripIT}
+ * from inside the (now-removed) {@code catch (S2cCallbackSignal)} branch,
+ * leaving the Run stuck in {@link RunStatus#SUSPENDED}. Companion to
+ * {@code S2cCallbackRoundTripIT}
  * (E82, which asserts only the happy path + exception-raising half of Rule 46).
  *
  * <p>Enforcer row: {@code docs/governance/enforcers.yaml#E90}.
@@ -64,7 +67,7 @@ class S2cFailureTransitionsRunToFailedIT {
                     if (capturedEnvelope.get() == null) {
                         S2cCallbackEnvelope env = envelopeFor(ctx.runId());
                         capturedEnvelope.set(env);
-                        throw new S2cCallbackSignal("loop-iter-0", env);
+                        throw SuspendSignal.forClientCallback("loop-iter-0", env);
                     }
                     return ExecutorDefinition.ReasoningResult.done("loop-done:" + payload);
                 },

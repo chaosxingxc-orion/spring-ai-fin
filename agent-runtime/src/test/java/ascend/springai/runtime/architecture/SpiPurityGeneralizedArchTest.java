@@ -5,6 +5,7 @@ import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.lang.ArchRule;
 import org.junit.jupiter.api.Test;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /**
@@ -60,6 +61,24 @@ class SpiPurityGeneralizedArchTest {
                 .that().resideInAPackage("ascend.springai..spi..")
                 .should().dependOnClassesThat()
                 .resideInAnyPackage("io.micrometer..", "io.opentelemetry..");
+        rule.check(ALL_RUNTIME_CLASSES);
+    }
+
+    /**
+     * v2.0.0-rc3 strengthening (cross-constraint audit α-4 / β-2): the s2c.spi
+     * package was moved here from runtime.s2c so it now literally imports
+     * only java.* and same-spi-package siblings. Assert that strictly.
+     *
+     * <p>orchestration.spi is excluded because it depends on the kernel runs.*
+     * domain types (Run, RunMode, RunRepository) which are intrinsic to the
+     * orchestrator SPI surface — that exception predates rc3 and is intentional.
+     */
+    @Test
+    void s2c_spi_imports_only_java_and_same_package_siblings() {
+        ArchRule rule = classes()
+                .that().resideInAPackage("ascend.springai.runtime.s2c.spi..")
+                .should().onlyDependOnClassesThat()
+                .resideInAnyPackage("java..", "ascend.springai.runtime.s2c.spi..");
         rule.check(ALL_RUNTIME_CLASSES);
     }
 }

@@ -20,24 +20,23 @@ public sealed interface HookOutcome
     }
 
     /**
-     * The middleware satisfies the request without running the engine — used by
-     * cache layers, dry-run middlewares, or replay middlewares. The dispatcher
-     * returns {@code result} as the run output.
+     * <b>Status (v2.0.0-rc2+):</b> the dispatcher returns this outcome but the
+     * SyncOrchestrator does NOT consume it; engine-bypass is logged only.
      *
-     * <p><b>Status (v2.0.0-rc2):</b> the dispatcher returns this outcome but
-     * the SyncOrchestrator does NOT yet consume it. Engine-bypass behavior is
-     * deferred to W2 Telemetry Vertical per Rule 45.b.
+     * <p>TARGET behavior (Rule 45.b, W2 Telemetry Vertical): a middleware
+     * returns this to satisfy the request without running the engine — used by
+     * cache layers, dry-run middlewares, or replay middlewares. The dispatcher
+     * would return {@code result} as the run output.
      */
     record ShortCircuit(Object result) implements HookOutcome {}
 
     /**
-     * The middleware rejects dispatch. The TARGET behavior (Rule 45.b,
-     * W2 Telemetry Vertical) is for the Run to transition to FAILED with
-     * {@code reason} as the rejection cause.
+     * <b>Status (v2.0.0-rc2+):</b> the dispatcher returns this outcome but the
+     * SyncOrchestrator does NOT consume it; Run-state transition is NOT applied.
      *
-     * <p><b>Status (v2.0.0-rc2):</b> the dispatcher returns this outcome but
-     * the SyncOrchestrator does NOT yet consume it. The Run-state transition
-     * to FAILED is deferred to W2 Telemetry Vertical per Rule 45.b.
+     * <p>TARGET behavior (Rule 45.b, W2 Telemetry Vertical): the middleware
+     * rejects dispatch and the Run transitions to FAILED with {@code reason}
+     * as the rejection cause.
      */
     record Fail(String reason) implements HookOutcome {}
 

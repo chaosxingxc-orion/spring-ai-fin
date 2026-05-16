@@ -1,5 +1,7 @@
 package ascend.springai.runtime.s2c;
 
+import ascend.springai.runtime.s2c.spi.S2cCallbackEnvelope;
+import ascend.springai.runtime.s2c.spi.S2cCallbackResponse;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -55,6 +57,32 @@ class S2cCallbackEnvelopeValidationTest {
                 UUID.randomUUID(), UUID.randomUUID(), "cap", "p", "too-short", UUID.randomUUID(), null, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("traceId");
+    }
+
+    @Test
+    void uppercase_hex_traceId_rejected() {
+        String upperHex = "ABCDEF1234567890ABCDEF1234567890";
+        assertThatThrownBy(() -> new S2cCallbackEnvelope(
+                UUID.randomUUID(), UUID.randomUUID(), "cap", "p", upperHex, UUID.randomUUID(), null, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("lowercase hex");
+    }
+
+    @Test
+    void non_hex_traceId_rejected() {
+        String nonHex = "zzzzzz1234567890abcdef1234567890";
+        assertThatThrownBy(() -> new S2cCallbackEnvelope(
+                UUID.randomUUID(), UUID.randomUUID(), "cap", "p", nonHex, UUID.randomUUID(), null, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("lowercase hex");
+    }
+
+    @Test
+    void uppercase_hex_clientTraceId_rejected_on_response() {
+        String upperHex = "ABCDEF1234567890ABCDEF1234567890";
+        assertThatThrownBy(() -> S2cCallbackResponse.ok(UUID.randomUUID(), upperHex, "payload"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("lowercase hex");
     }
 
     @Test
