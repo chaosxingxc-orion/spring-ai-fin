@@ -1,0 +1,59 @@
+@startuml l0-scenario
+!include ../common/theme.puml
+!include ../common/links.puml
+!include ../common/l0-elements.puml
+
+title L0 Scenario View - Long-Running Enterprise Agent Task
+
+Person(operator, $BUSINESS_OPERATOR_NAME, "Defines goals, reviews progress, keeps business authority.", $tags="C-Side")
+System_Ext(business_app, $BUSINESS_APP_NAME, "Enterprise application, workflow tool, or terminal that embeds the platform.", $tags="C-Side")
+
+System_Boundary(ascend, $SPRING_AI_ASCEND) {
+  Container(agent_client, $AGENT_CLIENT_NAME, "SDK / API facade", $AGENT_CLIENT_DESC, $tags="C-Side", $link=$L1_AGENT_CLIENT)
+  Container(agent_service, $AGENT_SERVICE_NAME, "Enterprise service boundary", $AGENT_SERVICE_DESC, $tags="S-Side", $link=$L1_AGENT_SERVICE)
+  Container(exec_engine, $EXECUTION_ENGINE_NAME, "Execution capability", $EXECUTION_ENGINE_DESC, $tags="S-Side", $link=$L1_EXECUTION_ENGINE)
+  Container(agent_bus, $AGENT_BUS_NAME, "Coordination hub", $AGENT_BUS_DESC, $tags="S-Side", $link=$L1_AGENT_BUS)
+  Container(agent_middleware, $AGENT_MIDDLEWARE_NAME, "Shared capability layer", $AGENT_MIDDLEWARE_DESC, $tags="S-Side", $link=$L1_AGENT_MIDDLEWARE)
+  Container(evolution, $EVOLUTION_NAME, "Improvement loop", $EVOLUTION_DESC, $tags="S-Side", $link=$L1_EVOLUTION)
+}
+
+System_Ext(model_gateway, $MODEL_GATEWAY_NAME, "Managed model and tool gateway.", $tags="External")
+System_Ext(iam, $IAM_NAME, "Identity, policy, secrets, and credential authority.", $tags="External")
+System_Ext(data_systems, $DATA_SYSTEMS_NAME, "Enterprise knowledge, records, and retrieval systems.", $tags="External")
+System_Ext(sandbox_infra, $SANDBOX_INFRA_NAME, "Isolated execution substrate for untrusted tools and generated code.", $tags="External")
+System_Ext(observability, $OBSERVABILITY_NAME, "Telemetry, audit, governance, and operational dashboards.", $tags="External")
+
+Rel(operator, business_app, "sets goals / reviews outcomes")
+Rel(business_app, agent_client, "submits task / receives progress and completion")
+Rel(agent_client, agent_service, "submits task / receives progress / resumes")
+Rel(agent_service, exec_engine, "dispatches Workflow / AgentLoop execution")
+Rel(exec_engine, agent_middleware, "uses memory, skills, sandbox, knowledge, trace services")
+Rel(agent_service, agent_middleware, "uses governance, tenant, policy, and runtime services")
+Rel(exec_engine, agent_bus, "emits events / receives coordination signals")
+Rel(agent_service, agent_bus, "coordinates cross-service collaboration")
+Rel(agent_bus, evolution, "publishes shadow and operational traffic asynchronously", $tags="async")
+Rel(evolution, agent_service, "feeds candidate improvements without blocking online execution", $tags="async")
+Rel(agent_service, agent_client, "returns progress, completion, or resumable handoff")
+Rel(agent_client, business_app, "surfaces observable task state")
+
+Rel(agent_service, iam, "checks identity, policy, and credentials")
+Rel(agent_middleware, model_gateway, "invokes model capabilities through governed adapters")
+Rel(agent_middleware, data_systems, "reads governed business data and knowledge")
+Rel(agent_middleware, sandbox_infra, "delegates isolated tool execution")
+Rel(agent_service, observability, "emits service health, audit, and governance signals")
+Rel(evolution, observability, "consumes telemetry for improvement loops", $tags="async")
+
+note right of ascend
+L0 scenario only: asynchronous, interruptible, resumable long-running tasks are shown conceptually.
+Deployment custody may be platform-hosted or department-owned; this changes physical trust boundaries, not the six L0 capabilities.
+Lower-level protocol objects, scheduler mechanics, and service-provider interfaces are intentionally deferred to L1/L2 drill-down diagrams.
+end note
+
+legend right
+|= Tag |= Meaning |
+| C-Side | Business-owned goals, facts, rules, and authority. |
+| S-Side | Platform-owned service boundary, execution coordination, and governance. |
+| External | Enterprise or infrastructure dependency outside the system boundary. |
+| Dashed purple relation | Asynchronous feedback path. |
+endlegend
+@enduml

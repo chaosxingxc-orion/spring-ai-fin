@@ -1,0 +1,50 @@
+@startuml l0-logical
+!include ../common/theme.puml
+!include ../common/links.puml
+!include ../common/l0-elements.puml
+
+title L0 Logical View - Six Core Capability Blocks and C/S Boundary
+
+System_Boundary(c_side, "C-Side: business-owned authority") {
+  System_Ext(business_app, $BUSINESS_APP_NAME, "Owns business goals, rules, facts, ontology, and degradation authority.", $tags="C-Side")
+  Container(agent_client, $AGENT_CLIENT_NAME, "Client capability", $AGENT_CLIENT_DESC, $tags="C-Side", $link=$L1_AGENT_CLIENT)
+}
+
+System_Boundary(s_side, "S-Side: spring-ai-ascend platform capability boundary") {
+  Container(agent_service, $AGENT_SERVICE_NAME, "Service boundary", $AGENT_SERVICE_DESC, $tags="S-Side", $link=$L1_AGENT_SERVICE)
+  Container(exec_engine, $EXECUTION_ENGINE_NAME, "Execution capability", $EXECUTION_ENGINE_DESC, $tags="S-Side", $link=$L1_EXECUTION_ENGINE)
+  Container(agent_bus, $AGENT_BUS_NAME, "Coordination capability", $AGENT_BUS_DESC, $tags="S-Side", $link=$L1_AGENT_BUS)
+  Container(agent_middleware, $AGENT_MIDDLEWARE_NAME, "Shared infrastructure capability", $AGENT_MIDDLEWARE_DESC, $tags="S-Side", $link=$L1_AGENT_MIDDLEWARE)
+  Container(evolution, $EVOLUTION_NAME, "Improvement capability", $EVOLUTION_DESC, $tags="S-Side", $link=$L1_EVOLUTION)
+}
+
+Rel(business_app, agent_client, "uses for enterprise agent access")
+Rel(agent_client, agent_service, "sends business tasks and receives observable task state")
+Rel(agent_service, exec_engine, "coordinates and dispatches execution")
+Rel(exec_engine, agent_service, "reports progress, terminal state, and resumable handoff")
+Rel(agent_service, agent_bus, "coordinates cross-service work")
+Rel(exec_engine, agent_bus, "emits events and receives collaboration signals")
+Rel(agent_service, agent_middleware, "uses memory, skill, sandbox, knowledge, trace, and governance services")
+Rel(exec_engine, agent_middleware, "uses execution-time shared capabilities")
+Rel(agent_bus, evolution, "publishes operational and shadow traffic asynchronously", $tags="async")
+Rel(evolution, agent_service, "feeds capability improvement candidates", $tags="async")
+Rel(evolution, agent_middleware, "feeds policy, prompt, skill, and knowledge optimization candidates", $tags="async")
+
+note bottom of c_side
+Business ontology and facts remain C-Side owned by default.
+The S-Side may emit candidate updates, but does not own business truth by default.
+end note
+
+note bottom of s_side
+Runtime trajectory, execution state, and governance state are service-side concerns.
+The Agent Service may be operated by a central platform team or by an IT-capable business department; this is a physical custody choice, not a new L0 capability.
+L1/L2 protocol objects, concrete interfaces, state machines, and schedulers are not promoted to L0 components.
+end note
+
+legend right
+|= Element rule |= Meaning |
+| Six internal containers | The only L0 first-class capability blocks inside spring-ai-ascend. |
+| Notes | Carry C/S ownership and lower-level mechanism constraints without adding L0 components. |
+| SVG links | Each core block reserves a future L1 drill-down target. |
+endlegend
+@enduml
