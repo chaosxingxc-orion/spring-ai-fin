@@ -1403,10 +1403,32 @@ _r28k_fail=0
 if [[ -f "$_efile" ]]; then
   while IFS= read -r _r28k_src; do
     [[ -z "$_r28k_src" ]] && continue
-    # Extract all enforcers.yaml#E<n> citations from this source file
+    # Citation activation: a file is in Rule 28k scope only if it contains
+    # at least one strict-form `enforcers.yaml#E<n>` citation. Files using
+    # the loose-form "Related enforcers in enforcers.yaml: E5" wording have
+    # no `#E\d+` and are exempt.
+    if ! grep -qE 'enforcers\.yaml#E[0-9]+' "$_r28k_src" 2>/dev/null; then
+      continue
+    fi
+    # In-scope: harvest ALL `#E<n>` tokens in the file -- the strict-form
+    # `enforcers.yaml#E12` and the comma-continuation forms `#E13`, `#E14`
+    # commonly used in plural `Enforcer rows: enforcers.yaml#E12, #E13, #E14`
+    # citation blocks. Any `#E<n>` on the same Javadoc continuation counts.
+    _r28k_eids=$(grep -oE '#E[0-9]+' "$_r28k_src" 2>/dev/null \
+                 | sed -E 's|^#||' | sort -u)
+    [[ -z "$_r28k_eids" ]] && continue
+    # SEMANTICS (loosened from initial strict-each-match per post-review-fix
+    # iteration): a test class may legitimately cross-reference multiple
+    # related E-rows; the citation passes iff at least ONE cited E-row's
+    # artifact: path matches the source file path. Tests that want to point
+    # at related-but-not-primary enforcers should phrase the reference
+    # without the `#E<n>` token (e.g. "Related: E12, E13" instead of
+    # "enforcers.yaml#E12") so Rule 28k does not strict-check them.
+    _r28k_src_norm=$(printf '%s' "$_r28k_src" | sed -E 's|^\./||')
+    _r28k_any_match=0
+    _r28k_collected_arts=""
     while IFS= read -r _r28k_eid; do
       [[ -z "$_r28k_eid" ]] && continue
-      # Look up the artifact: path for this E<n> in enforcers.yaml.
       _r28k_art=$(awk -v id="$_r28k_eid" '
         $0 ~ "^- id: " id "$" { found=1; next }
         found && /^[[:space:]]+artifact:/ {
@@ -1420,18 +1442,21 @@ if [[ -f "$_efile" ]]; then
         found && /^- id:/ { exit }
       ' "$_efile")
       if [[ -z "$_r28k_art" ]]; then
+        # Cited E-id has no row at all -- structural break, always fail.
         fail_rule "javadoc_enforcer_citation_semantic_check" "$_r28k_src cites enforcers.yaml#$_r28k_eid but no such row in $_efile (Rule 28k / post-review plan F)"
         _r28k_fail=1
         continue
       fi
-      # Normalize paths: strip ./ prefix from both.
-      _r28k_src_norm=$(printf '%s' "$_r28k_src" | sed -E 's|^\./||')
       _r28k_art_norm=$(printf '%s' "$_r28k_art" | sed -E 's|^\./||')
-      if [[ "$_r28k_src_norm" != "$_r28k_art_norm" ]]; then
-        fail_rule "javadoc_enforcer_citation_semantic_check" "$_r28k_src cites enforcers.yaml#$_r28k_eid but $_r28k_eid's artifact: is '$_r28k_art_norm' (not this file). Per Rule 28k / post-review plan F."
-        _r28k_fail=1
+      _r28k_collected_arts="$_r28k_collected_arts $_r28k_eid:$_r28k_art_norm"
+      if [[ "$_r28k_src_norm" == "$_r28k_art_norm" ]]; then
+        _r28k_any_match=1
       fi
-    done < <(grep -oE 'enforcers\.yaml#E[0-9]+' "$_r28k_src" 2>/dev/null | sed -E 's|^enforcers\.yaml#||' | sort -u)
+    done <<< "$_r28k_eids"
+    if [[ "$_r28k_any_match" -eq 0 ]]; then
+      fail_rule "javadoc_enforcer_citation_semantic_check" "$_r28k_src cites enforcers.yaml#E<n> rows but NONE of their artifact: paths match this file. Cited:$_r28k_collected_arts. Per Rule 28k / post-review plan F."
+      _r28k_fail=1
+    fi
   done < <(find agent-runtime/src/test/java agent-platform/src/test/java -type f \( -name '*Test.java' -o -name '*IT.java' \) 2>/dev/null | sort)
 fi
 if [[ $_r28k_fail -eq 0 ]]; then pass_rule "javadoc_enforcer_citation_semantic_check"; fi

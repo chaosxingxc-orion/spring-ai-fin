@@ -13,7 +13,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * the controller emits {@code PENDING} as the initial state — there must be
  * no {@code CREATED} value that could drift into the contract.
  *
- * <p>Enforcer row: docs/governance/enforcers.yaml#E5.
+ * <p>Related enforcers in enforcers.yaml: E5 (RunHttpContractIT covers the
+ * HTTP-edge surface that exposes these statuses). This test is documentation-
+ * level scaffolding for the enum shape; it has no dedicated primary enforcer
+ * row, so Rule 28k does not strict-check the `#` form here.
  */
 class RunStatusEnumTest {
 

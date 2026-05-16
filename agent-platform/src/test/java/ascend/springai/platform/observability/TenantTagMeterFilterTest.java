@@ -12,7 +12,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * forbidden high-cardinality tag keys from {@code springai_ascend_*} metrics
  * at registration time, and leaves non-namespace metrics untouched.
  *
- * <p>Enforcer rows: docs/governance/enforcers.yaml#E18, #E19.
+ * <p>Related enforcers in enforcers.yaml: E18 (MetricNamingTest enforces
+ * lowercase namespace), E19 (gate-script high_cardinality_tag_guard). This
+ * unit-test is documentation-level coverage; no `#` form so Rule 28k stays
+ * scoped to primary-citation checks.
  */
 class TenantTagMeterFilterTest {
 

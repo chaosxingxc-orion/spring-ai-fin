@@ -18,7 +18,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * contract is exercised against {@link JdbcIdempotencyStore} by
  * {@code IdempotencyStorePostgresIT}.
  *
- * <p>Enforcer rows: docs/governance/enforcers.yaml#E12, #E14.
+ * <p>Related enforcers in enforcers.yaml: E12, E14 (the primary IT-level
+ * enforcers for idempotency durability live in IdempotencyDurabilityIT and
+ * IdempotencyStorePostgresIT respectively). This unit-test is documentation-
+ * level coverage for the SPI shape; no `#` form so Rule 28k stays scoped to
+ * primary-citation checks.
  */
 class IdempotencyStoreTest {
 

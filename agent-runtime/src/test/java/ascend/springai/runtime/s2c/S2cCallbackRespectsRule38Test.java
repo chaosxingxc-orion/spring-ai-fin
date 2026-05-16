@@ -17,7 +17,9 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  *
  * <p>Authority: ADR-0074; CLAUDE.md Rule 38 (No Thread.sleep) + Rule 46
  * (S2C Callback Envelope + Lifecycle Bound).
- * Enforcer row: docs/governance/enforcers.yaml#E84.
+ * Enforcer row: docs/governance/enforcers.yaml#E83 (post-review fix plan F /
+ * P1-2: prior Javadoc cited #E84 which is the engine-envelope boot-validation
+ * IT in agent-platform, not this no-Thread.sleep ArchUnit).
  */
 class S2cCallbackRespectsRule38Test {
 

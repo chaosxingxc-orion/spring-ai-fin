@@ -101,7 +101,7 @@ S2C touched the highest cross-cutting risk in the wave. The Phase 3a audit matri
 
 - `./mvnw test` → 200 tests / 0 failures (135 agent-runtime + 65 agent-platform)
 - `bash gate/check_architecture_sync.sh` → GATE: PASS with 66 active rules
-- `bash gate/test_architecture_sync_gate.sh` → 82/82 self-tests PASS
+- `bash gate/test_architecture_sync_gate.sh` → 86/86 self-tests PASS (v2.0.0-rc1: +2 sunset_expired/malformed + 2 Rule 28k positive/negative)
 - `bash gate/build_architecture_graph.sh` → 219+ nodes / 272+ edges; idempotent regen byte-identical
 
 ## Authority
