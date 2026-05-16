@@ -1,0 +1,167 @@
+id: ADR-0071
+title: "Engine Contract Structural Wave — umbrella for ADR-0072..0075 + L0 principle P-M"
+status: accepted
+date: 2026-05-16
+level: L0
+view: scenarios
+freeze_id: null
+
+supersedes: []
+extends:
+  - ADR-0068
+  - ADR-0069
+relates_to:
+  - ADR-0064
+  - ADR-0067
+  - ADR-0070
+
+decision_one_liner: |
+  The 2026-05-15 L0 proposal "Runtime-Engine Contract for Heterogeneous Agent
+  Execution" is absorbed as the W2.x Engine Contract Structural Wave: one new
+  L0 governing principle (P-M Heterogeneous Engine Contract & Server-Sovereign
+  Boundary), four substantive child ADRs (0072 Engine Envelope + Strict Matching,
+  0073 Engine Hooks + Runtime Middleware, 0074 S2C Capability Callback, 0075
+  Evolution Scope Boundary), and one cross-cutting structural-discipline rule
+  (Rule 48 Schema-First Domain Contracts). The wave's invariant is that every
+  new domain contract ships as a yaml schema first, a Java type that validates
+  against the schema second, and a runtime self-validation third — no new
+  prose-defined domain enum is permitted under this wave.
+
+triggering_inputs:
+  external_reviews:
+    - path: "docs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md"
+      authors: ["LucioIT architecture review team"]
+      thesis: |
+        Heterogeneous agent execution requires four L0-level decisions plus one
+        interaction pattern: a lightweight engine configuration envelope, strict
+        engine matching, Runtime-owned middleware via engine lifecycle hooks,
+        server-to-client (S2C) asynchronous capability invocation, and a default
+        evolution-scope boundary that limits the evolution mechanism to
+        server-controlled execution. The proposal stays at L0 by intent — it
+        names responsibility boundaries, not concrete APIs/schemas/classes.
+    - path: "docs/reviews/2026-05-16-engine-contract-structural-response.en.md"
+      authors: ["spring-ai-ascend architecture group"]
+      thesis: |
+        The five proposal sections are accepted as-is. The wave's structural
+        invariant ("yaml schema → validated Java type → runtime self-validate")
+        addresses the parallel R1/R2/R3 risks identified during pre-plan
+        reflection: R1 domain-layer prose drift (would reproduce family F1 — 79
+        of 158 historical defects), R2 build-time-only governance graph, and
+        R3 cross-rule envelope-propagation gap (would reproduce the Class-3
+        SpawnEnvelope 11-dim hidden-defect family seen in the fourteenth cycle).
+  internal_signal:
+    code_inspection:
+      - "agent-runtime/src/main/java/ascend/springai/runtime/orchestration/inmemory/SyncOrchestrator.java:86-90 — implicit instanceof switch, no engine_type discriminator, no envelope concept"
+      - "agent-runtime/src/main/java/ascend/springai/runtime/runs/Run.java:21-44 — record has no engine_type field"
+      - "agent-runtime/src/main/java/ascend/springai/runtime/resilience/SuspendReason.java:37 — AwaitExternal/AwaitApproval slots empty, natural extension point for AwaitClientCallback"
+      - "docs/governance/architecture-graph.yaml — no engine-contract / hook-surface / s2c-callback / evolution-scope nodes today"
+    historical_defect_round_count: 12
+    historical_defects_in_text_drift_family: 79
+    historical_defects_total: 158
+
+context: |
+  W1 (ADR-0068) shipped the structural substrate for governance — Layered 4+1
+  views, an architecture graph (188 nodes / 228 edges), front-matter discipline,
+  and Rule 28 enforcement coverage. ADR-0069 then filled that substrate with
+  eight L0 ironclad rules absorbed from LucioIT's W1 §6/§7 (P-E through P-L,
+  Rules 35-42).
+
+  The 2026-05-15 review extends the L0 corpus along an orthogonal axis:
+  heterogeneous engine execution. Where ADR-0069 governs *how the platform
+  manages threads, channels, planes, tenants, and capacity*, this proposal
+  governs *how the platform contracts with execution engines*. The two are
+  complementary — ADR-0069 shapes the substrate; this wave shapes the engine-
+  facing contract surface that runs on that substrate.
+
+  The wave's structural-downstreaming invariant is the design choice that
+  prevents the new contracts from re-introducing the family-F1 text drift that
+  W1 set out to eliminate. By fusing "new contract" with "yaml schema + runtime
+  self-validate", every new domain contract added under this wave is born with
+  an enforcer rather than relying on prose discipline.
+
+decision: |
+  - Phase 0 (this ADR + doctrine response):
+      Land L0 principle P-M in docs/governance/principle-coverage.yaml.
+      Land doctrine response at docs/reviews/2026-05-16-engine-contract-
+      structural-response.en.md including the §5 Phase 3a S2C Cross-Rule
+      Co-Design Audit Matrix (hard gate before Phase 3 code).
+      Add ADR-0071 (this file) as the wave umbrella.
+      No code change.
+
+  - Phase 1 (ADR-0072 Engine Envelope + Strict Matching):
+      Schema docs/contracts/engine-envelope.v1.yaml + Java surfaces (EngineEnvelope,
+      EngineType, EngineRegistry, EngineMatchingException). Refactor
+      SyncOrchestrator dispatch through the registry. Add Run.engineType.
+      Land Rules 43+44, gate rules 55+56, enforcers E74-E77.
+
+  - Phase 2 (ADR-0073 Engine Hooks + Runtime Middleware SPI):
+      Schema docs/contracts/engine-hooks.v1.yaml + EngineHookSurface SPI +
+      RuntimeMiddleware SPI + HookDispatcher. Wire 3 mandatory hooks
+      (on_error / before_suspension / before_resume) into reference executors.
+      Land Rule 45, gate rule 57, enforcers E78-E80.
+
+  - Phase 3 (ADR-0074 S2C Capability Callback):
+      HARD GATE: §5 of doctrine response (Cross-Rule Co-Design Audit) must be
+      reviewed before any code lands. Schema docs/contracts/s2c-callback.v1.yaml,
+      S2cCallbackEnvelope/Response/Transport SPI + InMemoryS2cCallbackTransport.
+      Fill SuspendReason.AwaitClientCallback. Extend SyncOrchestrator.executeLoop.
+      Add s2c.client.callback to skill-capacity.yaml. Add three logical mappings
+      to bus-channels.yaml. Land Rule 46, gate rule 58, enforcers E81-E84.
+
+  - Phase 4 (ADR-0075 Evolution Scope Boundary):
+      Schema docs/governance/evolution-scope.v1.yaml. Add evolution_export
+      discriminator on RunEvent. Wire Phase 2 hook events to declare scope.
+      Land Rule 47, gate rule 59, enforcers E85-E86.
+
+  - Phase 5 (R2 Pilot — runtime self-validation):
+      EngineRegistry reads engine-envelope.v1.yaml at boot (mirror
+      YamlSkillCapacityRegistry pattern). Fail-fast on registered adapter not
+      in known_engines or vice-versa. No new rule.
+
+  - Phase 6 (Rule 48 — Schema-First Domain Contracts):
+      Land Rule 48 + gate rule 60. Grandfather existing taxonomies (RunStatus,
+      RunMode, deployment_plane, SuspendReason variants) via
+      gate/schema-first-grandfathered.txt. Self-tests positive+negative.
+
+  - Phase 7 (Graph regen + status sync + release note):
+      Regenerate architecture-graph.yaml. Update architecture-status.yaml,
+      enforcers.yaml, principle-coverage.yaml, CLAUDE.md L0+L1, README.md
+      counts. Cut docs/releases/2026-05-1?-W2x-engine-contract-wave.en.md.
+
+consequences:
+  positive:
+    - "P-M is the first L0 principle that names a contract surface (engine-facing) rather than a substrate property (channels/planes/tenants); together with P-E..P-L it completes the L0 corpus axis."
+    - "Family F1 (text-form governance drift) gets a structural prevention via Rule 48; the next domain contract added cannot land as prose-only."
+    - "S2C callback is added without modifying any existing rule — proves the cross-rule co-design audit pattern (§5 of the response doctrine) as a reusable methodology for cross-cutting features."
+    - "EngineRegistry runtime self-validation is the first instance of a governance YAML being consumed at boot; if it works, it is the template for promoting other governance YAMLs (skill-capacity already partially does this; bus-channels, sandbox-policies, evolution-scope are candidates)."
+  negative:
+    - "Hook SPI unfreezes one wave earlier than W2 Telemetry Vertical originally scheduled. Documented in ADR-0073: only the SPI surface ships in W2.x; the consumer hooks (TokenCounterHook etc.) remain W2 scope."
+    - "Engine-payload schemas (engine-graph-payload.v1.yaml, engine-agent-loop-payload.v1.yaml) referenced by the envelope schema ship as minimal placeholders in W2.x — full schema design lives in W2 when the Postgres-backed orchestrator forces serialization decisions."
+    - "S2C reference transport is in-memory only at W2.x; production transports (webhook, SSE, WebSocket) are W3 scope per proposal §10 open question 6."
+    - "Schema-validation tooling (schema → Java codegen) is intentionally NOT chosen at W2.x — Phase 1+ uses hand-written records with a tiny SchemaValidator utility. Tooling choice (jsonschema2pojo / avro / custom) deferred to W3."
+
+alternatives_considered:
+  - alternative: "Land all 5 ADRs as prose under Rules 43-47, defer the structural-downstreaming invariant to a later wave."
+    why_rejected: "Would deterministically reproduce family F1 (79 of 158 historical defects). The whole point of the W1 structural substrate is to make new contracts born structured."
+  - alternative: "Promote the engine-envelope concept under existing P-D (SPI-Aligned, DFX-Explicit, Spec-Driven, TCK-Tested) instead of creating a new principle P-M."
+    why_rejected: "ADR-0074 (S2C) and ADR-0075 (evolution scope) are about the server-sovereign boundary, not about spec-precedes-impl. P-D already operationalises spec-precedence via Rules 4 and 32; bundling boundary concerns into P-D would dilute both. Open question recorded in wave plan §6 — revisit if review concludes otherwise."
+  - alternative: "Ship S2C as a flat ADR without the §5 cross-rule audit matrix."
+    why_rejected: "S2C touches Rules 20/35/38/41/42. The fourteenth-cycle SpawnEnvelope 11-dim propagation gap is the canonical cautionary tale: a cross-cutting feature that did not co-design with adjacent rules produced 11 hidden defects. The audit matrix is the explicit prevention."
+  - alternative: "Defer Rule 48 (Schema-First Domain Contracts) — let Phase 1-4 ship under the wave invariant on trust, codify the rule only after the pattern proves out."
+    why_rejected: "Rule 48 IS the codification — without it, the wave invariant is a one-time discipline that decays. Landing the rule in the same wave that proves the pattern is the standard ADR-0059 (Code-as-Contract) discipline: every active normative constraint ships with its enforcer in the same wave."
+
+verification:
+  cli:
+    - "bash gate/check_architecture_sync.sh → GATE: PASS (post-Phase-7 will be 61 active gate rules)"
+    - "bash gate/test_architecture_sync_gate.sh → all self-tests GREEN"
+    - "bash gate/build_architecture_graph.sh && git diff --quiet docs/governance/architecture-graph.yaml → idempotent regeneration"
+  gate:
+    - "Gate rules 55-61 added across phases 1-6"
+    - "Self-tests pair (positive + negative) for each new gate rule"
+  manual:
+    - "principle-coverage.yaml lists P-M with operationalised_by_rules including Rule-43..47"
+    - "docs/reviews/2026-05-16-engine-contract-structural-response.en.md §5 matrix exists and is complete (5 rows × 2 columns)"
+    - "Wave plan at D:/.claude/plans/https-github-com-chaosxingxc-orion-spri-compressed-taco.md is the canonical execution reference"
+
+enforcer_rows: []
+gate_rules: []

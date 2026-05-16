@@ -1,0 +1,139 @@
+id: ADR-0072
+title: "Engine Envelope + Strict Matching — first L1 expression of P-M"
+status: accepted
+date: 2026-05-16
+level: L1
+view: logical
+freeze_id: null
+
+supersedes: []
+extends:
+  - ADR-0071
+relates_to:
+  - ADR-0021
+  - ADR-0066
+
+decision_one_liner: |
+  Introduce a lightweight EngineEnvelope (yaml schema authority at
+  docs/contracts/engine-envelope.v1.yaml; mirrored by Java record
+  ascend.springai.runtime.engine.EngineEnvelope) and a central EngineRegistry
+  that strictly matches envelope.engineType to a registered ExecutorAdapter.
+  Pattern-matching on ExecutorDefinition subtypes is forbidden outside the
+  registry — Rule 43 enforces it. A mismatch raises EngineMatchingException;
+  the calling Run transitions to FAILED with reason engine_mismatch. No
+  fallback policy.
+
+triggering_inputs:
+  external_reviews:
+    - path: "docs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md"
+      authors: ["LucioIT architecture review team"]
+      thesis: |
+        Proposal §3 (Lightweight Engine Configuration Envelope) and §4 (Engine
+        Matching Rule). The envelope provides metadata for routing /
+        governance / observability, NOT a universal DSL. The Runtime must not
+        silently reinterpret a payload as another engine's configuration.
+  internal_signal:
+    - "Code inspection: SyncOrchestrator.java:86-90 used implicit instanceof switch on ExecutorDefinition subtypes — every new engine integration would either patch this site (Rule 6 violation) or invent a parallel registration path."
+    - "Run.java:21-44 has no engineType discriminator field; envelope-time engine identification was therefore impossible."
+
+context: |
+  The 2026-05-15 proposal raised this concern at L0 boundary level. ADR-0071
+  (the wave umbrella) accepted P-M and committed to a structural-downstreaming
+  invariant: every new domain contract ships as yaml schema → Java type →
+  runtime self-validate. ADR-0072 is the first concrete instance of that
+  invariant.
+
+  Today's runtime has exactly two engine kinds (graph, agent-loop) backed by
+  GraphExecutor and AgentLoopExecutor SPIs. The dispatch site at
+  SyncOrchestrator.java:86-90 used an implicit sealed-pattern switch on
+  ExecutorDefinition subtypes. Adding any new engine — even at W2 when the
+  Postgres-backed Orchestrator lands — would have required either patching
+  that switch (a Rule 6 fallback violation) or inventing a parallel
+  registration path that fragments the dispatch authority. The envelope +
+  registry pattern solves both.
+
+decision: |
+  - Schema docs/contracts/engine-envelope.v1.yaml is the SINGLE SOURCE OF
+    TRUTH for envelope shape. Required fields: name, engineType, payload.
+    Optional fields: identifier, version, owner, engineVersion, compatibility,
+    runtimeHints, observabilityHints. known_engines: declares the closed set
+    of supported engineType ids (graph, agent-loop) plus per-engine
+    payload_class and payload_schema_ref pointers (the per-engine payload
+    schemas are W2 placeholders).
+
+  - Java surfaces (agent-runtime/src/main/java/ascend/springai/runtime/engine/):
+      EngineEnvelope         — record mirroring the schema
+      EngineRegistry         — central authority; register / resolve /
+                                resolveByEngineType / resolveByPayload /
+                                validateAgainstSchema (Phase 5 R2 pilot)
+
+  - Java surfaces (agent-runtime/.../orchestration/spi/):
+      ExecutorAdapter        — uniform dispatch SPI; engineType + payloadType +
+                                execute(ctx, ExecutorDefinition, payload)
+      EngineMatchingException — raised on engine_type or payload_class mismatch
+      GraphExecutor (edited) — extends ExecutorAdapter; default engineType="graph",
+                                default payloadType=GraphDefinition.class,
+                                default execute() bridges to typed execute()
+      AgentLoopExecutor (edited) — same pattern, "agent-loop" / AgentLoopDefinition
+
+  - SyncOrchestrator constructor changes from
+      (RunRepository, Checkpointer, GraphExecutor, AgentLoopExecutor)
+    to
+      (RunRepository, Checkpointer, EngineRegistry).
+    Tests updated to wrap executors via EngineRegistry. Dispatch site (now
+    SyncOrchestrator.java:dispatch) calls
+      engineRegistry.resolveByPayload(def).execute(ctx, def, payload)
+    — no pattern matching on subtypes.
+
+  - Run.engineType field NOT added at W2.x — Run.mode (GRAPH | AGENT_LOOP)
+    serves as a 1:1 proxy. W2 promotes Run.mode → Run.engineType when the
+    Postgres-backed Orchestrator forces a persisted discriminator column.
+    Documented as deferred sub-clause in CLAUDE-deferred.md (44.b — to be
+    added in Phase 7).
+
+  - Rules 43 + 44 land in CLAUDE.md (Phase 7 batches the CLAUDE.md edit).
+    Enforcers E74-E77 added to enforcers.yaml. Gate Rules 55 + 56 added to
+    check_architecture_sync.sh with paired self-tests (positive + negative)
+    in test_architecture_sync_gate.sh.
+
+consequences:
+  positive:
+    - "Future engine integrations register a single ExecutorAdapter — no orchestrator patches."
+    - "The class-to-engineType mapping has exactly one location (the registry); Rule 43 archunit fences off pattern-matching elsewhere."
+    - "Strict matching is enforceable at boot via EngineRegistry.validateAgainstSchema() (Phase 5 wires this into the platform startup path)."
+    - "ExecutorAdapter is the natural carrier for the Phase 2 hook surface (EngineHookSurface) — adapters can advertise their hook capabilities alongside engineType + payloadType."
+  negative:
+    - "Existing tests that constructed SyncOrchestrator with the (graphExecutor, agentLoopExecutor) signature were updated to wrap executors in an EngineRegistry. Compile-time blast radius: 4 test files (RunStatusTransitionIT, NestedDualModeIT, SyncOrchestratorPostureGuardTest×2)."
+    - "Run.engineType field deferral means there is a momentary 'two sources of truth' window: envelope.engineType vs Run.mode. Both are derivable from the other; the gate only enforces the envelope side at Phase 1, with W2 promoting Run.mode → Run.engineType."
+    - "Per-engine payload schemas (engine-graph-payload.v1.yaml, engine-agent-loop-payload.v1.yaml) are W2 placeholders — Phase 1 only ships the envelope schema."
+
+alternatives_considered:
+  - alternative: "Keep the implicit instanceof switch in SyncOrchestrator and add an engineType field to ExecutorDefinition variants instead."
+    why_rejected: "Would couple ExecutorDefinition to the engine-name vocabulary, fragment the dispatch authority across executors, and leave no central place for the Phase 5 R2 self-validation pilot to live."
+  - alternative: "Codegen Java types from the yaml schema (jsonschema2pojo / avro / custom Maven plugin)."
+    why_rejected: "Tooling choice deferred to W3 — adding a codegen plugin in W2.x would expand the build-graph during the wave that is meant to prove the structural pattern. Hand-written records validating against the schema is sufficient for W2.x; codegen is an optimisation, not a requirement."
+  - alternative: "Add Run.engineType field at Phase 1 (per the original plan)."
+    why_rejected: "Run is a 14-field record with 6 with* methods; adding a field has 30+ call-site touchpoints and forces a backward-compat constructor pattern. Run.mode is already a 1:1 proxy. Deferred to W2 where the Postgres column forces the field; tracked as 44.b in CLAUDE-deferred.md."
+
+verification:
+  cli:
+    - "./mvnw -pl agent-runtime test → all existing tests GREEN with new SyncOrchestrator constructor"
+    - "./mvnw -pl agent-runtime test -Dtest=EngineRegistryResolveTest → positive resolve + mismatch + duplicate-registration tests GREEN"
+    - "./mvnw -pl agent-runtime test -Dtest=EngineEnvelopeValidationTest → required-field + nullable-default tests GREEN"
+    - "./mvnw -pl agent-runtime test -Dtest=EngineMatchingStrictnessIT → SyncOrchestrator with envelope mismatch raises EngineMatchingException; Run transitions to FAILED with engine_mismatch"
+    - "./mvnw -pl agent-runtime test -Dtest=EnginePayloadDispatchOnlyViaRegistryTest → ArchUnit forbids instanceof on ExecutorDefinition outside the registry"
+  gate:
+    - "bash gate/check_architecture_sync.sh → GATE: PASS with 62 active rules (60 prior + Rules 55 + 56)"
+    - "bash gate/test_architecture_sync_gate.sh → all self-tests GREEN with 4 new (positive + negative for each of 55, 56)"
+  manual:
+    - "grep -r 'instanceof ExecutorDefinition' agent-runtime/src/main → matches only inside engine.EngineRegistry"
+    - "docs/contracts/engine-envelope.v1.yaml present + parses + known_engines list non-empty"
+
+enforcer_rows:
+  - E74   # EnginePayloadDispatchOnlyViaRegistryTest (kind: archunit, level: L1, view: development)
+  - E75   # EngineMatchingStrictnessIT (kind: integration, level: L1, view: logical)
+  - E76   # engine_envelope_yaml_present_and_wellformed (kind: gate-script, level: L1, view: logical)
+  - E77   # engine_registry_covers_all_known_engines (kind: gate-script, level: L1, view: development)
+gate_rules:
+  - rule_55_engine_envelope_yaml_present_and_wellformed
+  - rule_56_engine_registry_covers_all_known_engines

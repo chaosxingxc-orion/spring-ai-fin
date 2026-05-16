@@ -1,0 +1,138 @@
+id: ADR-0073
+title: "Engine Lifecycle Hooks + Runtime-Owned Middleware SPI — second L1 expression of P-M"
+status: accepted
+date: 2026-05-16
+level: L1
+view: process
+freeze_id: null
+
+supersedes: []
+extends:
+  - ADR-0071
+  - ADR-0072
+relates_to:
+  - ADR-0061
+  - ADR-0062
+
+decision_one_liner: |
+  Stand up the engine-side hook surface (HookPoint enum + EngineHookSurface
+  SPI + RuntimeMiddleware SPI + HookContext + HookOutcome + HookDispatcher)
+  as declared in docs/contracts/engine-hooks.v1.yaml. Wire three "structural"
+  hooks (on_error, before_suspension, before_resume) into SyncOrchestrator at
+  W2.x. The remaining six hooks (LLM × 2, tool × 2, memory × 2) require
+  engine-side firing and land in W2 Telemetry Vertical alongside the first
+  consumer middlewares (TokenCounterHook, PiiRedactionHook,
+  CostAttributionHook, LlmSpanEmitterHook). Phase 2 ships the SPI surface
+  only; outcome handling (Fail aborts, ShortCircuit returns) lands in W2.
+
+triggering_inputs:
+  external_reviews:
+    - path: "docs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md"
+      authors: ["LucioIT architecture review team"]
+      thesis: |
+        Proposal §5: middleware integration belongs to the Runtime; engines
+        expose lifecycle hooks; engines must NOT depend on concrete middleware
+        implementations; cross-cutting policies (model gateway, tool authz,
+        memory governance, tenant policy, quota, observability, sandbox
+        routing, checkpoint, failure handling) attach via Runtime hooks.
+  internal_signal:
+    - "Hook SPI was previously declared 'frozen until W2 Telemetry Vertical' (ADR-0061 / ADR-0062). The 2026-05-15 proposal forces an earlier surface landing because middleware boundary is L0; the Phase 2 unfreeze is bounded by 'SPI only' to avoid prematurely shipping consumer hooks."
+    - "Code inspection: agent-runtime had no Hook / Interceptor / Lifecycle abstraction; only SuspendSignal + ResilienceContract carried lifecycle-like semantics. Adding new cross-cutting policies (e.g. tenant_policy enforcement) without a hook framework would have required patching every engine."
+
+context: |
+  ADR-0072 introduced EngineEnvelope + EngineRegistry — the first L1
+  expression of P-M (Heterogeneous Engine Contract). ADR-0073 introduces
+  the second L1 expression: the hook surface that lets Runtime-owned
+  middleware attach to engine execution without engines knowing the
+  middleware concrete types.
+
+  The proposal § names nine canonical hook points. Three are firable from
+  the orchestrator alone (on_error, before_suspension, before_resume) —
+  the orchestrator already has natural call-sites for them. Six require
+  engine-side firing (LLM × 2, tool × 2, memory × 2) because the
+  orchestrator does not see these events; they happen inside the engine's
+  execute() method as it calls the user's Reasoner / NodeFunction.
+
+  Phase 2 ships the SPI surface for all nine and wires the three
+  orchestrator-firable hooks. The other six hooks become effective in W2
+  when the Telemetry Vertical's consumer middlewares ship and the engines
+  add explicit fire() calls at their internal LLM / tool / memory call
+  points.
+
+decision: |
+  - Schema docs/contracts/engine-hooks.v1.yaml is the SINGLE SOURCE OF
+    TRUTH for the canonical hook list. Order matters; default failure
+    propagation is fail_fast for before_*/after_* and best_effort for
+    on_error.
+
+  - Java surfaces (agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/):
+      HookPoint           — 9-value enum mirroring yaml hooks: list
+      HookContext         — record (point, runId, tenantId, attributes Map)
+      HookOutcome         — sealed: Proceed | ShortCircuit(Object) | Fail(String)
+      RuntimeMiddleware   — @FunctionalInterface: HookOutcome onHook(HookContext)
+      EngineHookSurface   — @FunctionalInterface: Set<HookPoint> supportedHooks(); default empty()
+
+  - Java surfaces (agent-runtime/src/main/java/ascend/springai/runtime/engine/):
+      HookDispatcher      — invokes registered middlewares per HookPoint with declared ordering
+      EngineRegistry      — gains registerMiddleware(...) + hookDispatcher() accessor
+
+  - SyncOrchestrator wiring:
+      Constructor pulls hookDispatcher = engineRegistry.hookDispatcher() once.
+      executeLoop fires:
+        BEFORE_SUSPENSION  on caught SuspendSignal (before persisting checkpoint)
+        BEFORE_RESUME      after child returns (before transitioning parent back to RUNNING)
+        ON_ERROR           on caught RuntimeException (then rethrow)
+      Outcomes are LOGGED, NOT acted upon at Phase 2 (W2 wires Fail → Run.FAILED, ShortCircuit → return result).
+
+  - Tests:
+      HookDispatcherFireOrderTest — ordering, fail_fast, best_effort, throwing-middleware-conversion
+      EveryEngineDeclaresHookSurfaceTest — archunit allowEmptyShould(true) at W2.x
+      RuntimeMiddlewareInterceptsHooksIT — end-to-end: suspend/resume cycle fires the 3 mandatory hooks; uncaught exception fires ON_ERROR
+
+  - Gate Rule 57 (engine_hooks_yaml_present_and_wellformed) — bidirectional
+    yaml ↔ HookPoint enum check. Self-tests positive + negative.
+
+  - Enforcers E78 (gate), E79 (archunit), E80 (integration) added to
+    enforcers.yaml and L1 plan §11.
+
+consequences:
+  positive:
+    - "Future cross-cutting policies (tenant policy, quota, observability, sandbox routing, checkpoint) attach as RuntimeMiddleware without engine code changes — proposal §5.4 strict boundary preserved."
+    - "Hook ordering is declared in yaml, not code — middlewares loaded via DI in different orders behave deterministically."
+    - "HookDispatcher converts a throwing middleware to HookOutcome.Fail rather than crashing the orchestrator — the proposal's 'engines must NOT depend on concrete middleware' boundary is symmetric: middleware faults must NOT crash engines either."
+    - "ON_ERROR fires best_effort across the full chain — a failing error-handler middleware cannot mask the original error."
+  negative:
+    - "Hook SPI unfreezes one wave earlier than ADR-0061/ADR-0062 originally scheduled. Mitigated by 'Phase 2 ships SPI surface only' boundary — the consumer hooks (TokenCounterHook etc.) still wait for W2."
+    - "Six of nine hooks are not yet firable at W2.x because the orchestrator does not see LLM/tool/memory events. ADR-0073 documents this; W2 wires engine-side firing."
+    - "HookOutcome semantics (Fail aborts, ShortCircuit returns result) are NOT enforced at Phase 2 — only logged. A W2.x consumer cannot rely on Fail to abort a Run; it can only use Fail as a signal to fire metrics. W2 promotes outcome handling to behavioural."
+    - "HookContext.attributes is a loose Map<String, Object> at Phase 2; W2 hardens it via per-hook context records once the engine-side hooks ship and force schema decisions."
+
+alternatives_considered:
+  - alternative: "Make engines fire all 9 hooks now — push the LLM/tool/memory firing into the existing reference executors (SequentialGraphExecutor, IterativeAgentLoopExecutor)."
+    why_rejected: "Reference executors don't perform LLM/tool/memory invocations themselves; they call user-supplied NodeFunction / Reasoner lambdas. To fire LLM hooks the engine would need to introspect the lambda — out of scope and brittle. The natural firing point is inside production engine implementations (e.g. spring-ai-graph adapter at W2)."
+  - alternative: "Skip HookDispatcher; have SyncOrchestrator iterate the registered middlewares directly."
+    why_rejected: "HookDispatcher centralises ordering + failure propagation rules. Without it, every orchestrator (the W2 Postgres-backed orchestrator, the W3 Temporal-backed orchestrator) duplicates the same iteration logic and the rules drift."
+  - alternative: "Make HookOutcome enforcement (Fail aborts, ShortCircuit returns) live at Phase 2."
+    why_rejected: "Adds behavioural risk to a wave that was supposed to land SPI only. The W1.x suspend/resume + W2.x cursor flow are already complex; injecting middleware-driven Run termination paths without consumer hooks to validate the behaviour would ship untested code. W2 lands enforcement with the first real consumer."
+  - alternative: "Engines and middleware communicate through Spring's ApplicationEventPublisher."
+    why_rejected: "Couples runtime code to Spring (violates §4.7 SPI purity). The custom HookDispatcher is ~80 lines and lives in the runtime engine package; orchestration.spi remains pure java.*"
+
+verification:
+  cli:
+    - "./mvnw -pl agent-runtime test → all existing tests GREEN with the new SyncOrchestrator hook firing"
+    - "./mvnw -pl agent-runtime test -Dtest=HookDispatcherFireOrderTest → ordering, fail_fast, best_effort, throwing-middleware-conversion tests GREEN"
+    - "./mvnw -pl agent-runtime test -Dtest=RuntimeMiddlewareInterceptsHooksIT → SyncOrchestrator suspend/resume fires BEFORE_SUSPENSION + BEFORE_RESUME; uncaught exception fires ON_ERROR"
+    - "./mvnw -pl agent-runtime test -Dtest=EveryEngineDeclaresHookSurfaceTest → ArchUnit GREEN (allowEmptyShould true at W2.x)"
+  gate:
+    - "bash gate/check_architecture_sync.sh → GATE: PASS with 63 active rules (62 prior + Rule 57)"
+    - "bash gate/test_architecture_sync_gate.sh → all self-tests GREEN with 2 new (positive + negative for Rule 57)"
+  manual:
+    - "diff <(awk-extract docs/contracts/engine-hooks.v1.yaml hooks) <(grep-enum HookPoint.java) returns no diff"
+    - "grep -r 'hookDispatcher.fire' agent-runtime/src/main → matches three hook points in SyncOrchestrator.executeLoop"
+
+enforcer_rows:
+  - E78   # engine_hooks_yaml_present_and_wellformed (kind: gate-script, level: L1, view: logical)
+  - E79   # EveryEngineDeclaresHookSurfaceTest (kind: archunit, level: L1, view: development)
+  - E80   # RuntimeMiddlewareInterceptsHooksIT (kind: integration, level: L1, view: process)
+gate_rules:
+  - rule_57_engine_hooks_yaml_present_and_wellformed

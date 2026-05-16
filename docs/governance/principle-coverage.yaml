@@ -158,6 +158,39 @@ principles:
     deferred_operationalisers:
       - Rule-42.b   # SandboxExecutor runtime subsumption check — W2
 
+  # ---------------------------------------------------------------------
+  # W2.x Engine Contract Structural Wave — heterogeneous engine contract
+  # Authority: ADR-0071 (umbrella) + ADR-0072..0075 (substantive children)
+  # Driver review: 2026-05-15 L0 proposal (Runtime-Engine Contract for
+  # Heterogeneous Agent Execution).
+  # ---------------------------------------------------------------------
+
+  - id: P-M
+    name: "Heterogeneous Engine Contract & Server-Sovereign Boundary"
+    motivation: |
+      The platform supports heterogeneous execution engines through a
+      structured contract surface: a configuration envelope governs
+      registration / routing / observability, strict matching prevents
+      silent reinterpretation of engine-specific payloads, runtime-owned
+      middleware attaches via engine-declared lifecycle hooks, server-to-
+      client capability invocation is an explicit asynchronous protocol
+      bound to the suspend/resume loop, and the evolution mechanism manages
+      only server-controlled execution scope by default. (2026-05-15
+      L0 proposal §3-§7.)
+    operationalised_by_rules:
+      - Rule-43   # Engine Envelope Single Authority
+      - Rule-44   # Strict Engine Matching
+      - Rule-45   # Runtime-Owned Middleware via Engine Hooks
+      - Rule-46   # S2C Callback Envelope + Lifecycle Bound
+      - Rule-47   # Evolution Scope Default Boundary
+    cross_cutting_invariant:
+      rule: Rule-48   # Schema-First Domain Contracts
+      description: |
+        Every contract introduced under P-M MUST ship as yaml schema first,
+        Java type that validates against the schema second, and runtime
+        self-validation third. Rule 48 makes this gate-enforced beyond the
+        wave so future domain contracts inherit the discipline.
+
 # Legacy first-principle labels preserved for graph backward-compatibility.
 legacy_principles:
   - id: P1
