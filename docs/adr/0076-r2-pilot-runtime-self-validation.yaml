@@ -1,0 +1,119 @@
+id: ADR-0076
+title: "R2 Pilot - Runtime Self-Validates Engine Envelope Schema on Boot"
+status: accepted
+date: 2026-05-16
+level: L2
+view: process
+freeze_id: null
+
+supersedes: []
+extends:
+  - ADR-0071
+  - ADR-0072
+relates_to:
+  - ADR-0073
+  - ADR-0064
+
+decision_one_liner: |
+  Wire EngineRegistry.validateAgainstSchema() into Spring Boot startup via
+  EngineAutoConfiguration so the runtime fails fast at boot if the registered
+  ExecutorAdapter set does not match docs/contracts/engine-envelope.v1.yaml
+  known_engines. This is the first instance of a governance YAML being
+  consumed at runtime (R2: governance-as-runtime-contract) rather than only
+  at build/gate time (R1).
+
+triggering_inputs:
+  external_reviews:
+    - path: "docs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md"
+      authors: ["LucioIT architecture review team"]
+      thesis: |
+        Proposal §4.4: "the Runtime should reject the execution request" if a
+        required engine is unavailable; misconfiguration must surface at the
+        earliest possible moment - boot, not request handling.
+  internal_signal:
+    - "ADR-0072 shipped EngineRegistry.validateAgainstSchema() but never wired it into Spring. Tests constructed the registry manually; a production process running PlatformApplication would silently boot with an inconsistent adapter set and only fail at first request via EngineMatchingException. Phase 5 closes that gap."
+    - "Governance YAML files have until now been consumed exclusively by gate scripts at build time (R1). Phase 5 establishes the R2 pattern - the same YAML is BOTH a build-time gate input AND a runtime self-validation source of truth. This pattern is reused in upcoming W2.x phases (engine-hooks.v1.yaml, sandbox-policies.yaml runtime enforcement)."
+
+context: |
+  The W2.x wave invariant is yaml schema -> Java type -> runtime self-validate.
+  Phase 0 landed the L0 principle P-M (Heterogeneous Engine Contract).
+  Phase 1 landed the engine-envelope.v1.yaml schema + EngineEnvelope record +
+  EngineRegistry with strict matching and a (manually invoked)
+  validateAgainstSchema() method. Phase 5 is the R2 pilot - the smallest
+  closure that proves a governance YAML can become a runtime constraint
+  without requiring engines or adapters to be aware of governance plumbing.
+
+  The R2 pattern: a YAML file declares a constraint (here, the canonical list
+  of engineType IDs); a runtime registry loads the YAML at boot and asserts
+  the application's bean wiring matches. Mismatch aborts startup with
+  IllegalStateException so the process never reaches request-serving state.
+
+decision: |
+  - Create agent-platform/src/main/java/ascend/springai/platform/engine/EngineAutoConfiguration.java
+    that:
+      1. Registers SequentialGraphExecutor as a GraphExecutor bean (default,
+         @ConditionalOnMissingBean).
+      2. Registers IterativeAgentLoopExecutor as an AgentLoopExecutor bean
+         (default, @ConditionalOnMissingBean).
+      3. Builds an EngineRegistry bean that consumes every ExecutorAdapter in
+         the context, registers each, then calls validateAgainstSchema().
+      4. Exposes the schema path via @Value("${app.engine.envelope-schema-path:
+         docs/contracts/engine-envelope.v1.yaml}") so packaging can override.
+
+  - The auto-config class lives under ascend.springai.platform.engine; it is
+    picked up by PlatformApplication's @SpringBootApplication component scan
+    (same pattern as ResilienceAutoConfiguration). No
+    AutoConfiguration.imports file is required at this wave.
+
+  - Integration test agent-platform/src/test/java/ascend/springai/platform/engine/
+    EngineRegistryBootValidationIT.java drives three cases:
+      boot_succeeds_when_registered_adapters_match_known_engines
+      boot_fails_when_known_engine_has_no_adapter
+      boot_fails_when_adapter_not_in_known_engines
+    Each case uses SpringApplicationBuilder with a focused
+    @SpringBootConfiguration source so the test does not pull Postgres /
+    Flyway / OAuth2 stacks.
+
+  - No new gate rule is needed at this wave - the integration test plus the
+    self-validation code in EngineRegistry are the enforcer pair. A gate rule
+    that checks for the existence of the auto-config wiring would be
+    structural duplication of the integration test, which is the stronger
+    enforcer (observable behaviour vs. file existence).
+
+  - Enforcer row E81 added to docs/governance/enforcers.yaml pointing at the
+    failure-case integration-test method.
+
+consequences:
+  positive:
+    - "Misconfiguration cannot reach request-serving state - the process refuses to start. This is the Rule 9 ship-gate posture for the engine-dispatch surface."
+    - "Establishes the R2 pattern (governance-as-runtime-contract) as a first-class technique in the codebase. Reusable for sandbox-policies.yaml, skill-capacity.yaml runtime enforcement, future engine-hooks.v1.yaml consumer registration."
+    - "Adapter registration happens once at boot, not per request. Zero hot-path overhead."
+    - "@ConditionalOnMissingBean defaults allow integrators to substitute production engine implementations without touching the auto-config class."
+  negative:
+    - "Adds a runtime dependency on the docs/contracts/engine-envelope.v1.yaml file path. When the application is packaged as a jar, the YAML must either be available on the filesystem (current behaviour - works for repo-root maven launches) or copied onto the classpath. The fallback path in EngineRegistry.readYaml() already attempts classpath resolution, so jar deployments need only ensure the file ships under META-INF or src/main/resources at packaging time. ADR-0072 noted this; W2 hardens the packaging story."
+    - "The auto-config registers reference executors (SequentialGraphExecutor, IterativeAgentLoopExecutor) as beans where previously they were instantiated only in tests. This expands the per-bean surface but introduces no behavioural change at production - these adapters are stateless and side-effect free at construction."
+
+alternatives_considered:
+  - alternative: "Leave EngineRegistry.validateAgainstSchema() unwired; rely on the EngineMatchingException at first request to surface misconfiguration."
+    why_rejected: "Defers the failure to the request path. A misconfigured production deployment would pass health checks, accept traffic, and only fail when a specific tenant submitted a Run that required the missing engine. Boot-time fail-closed is the Rule 9 ship-gate posture."
+  - alternative: "Implement EngineRegistry as an @PostConstruct method inside an existing config class (e.g. RunControllerAutoConfiguration)."
+    why_rejected: "Couples engine wiring to run-controller wiring. Phase 5 keeps engine concerns in a dedicated ascend.springai.platform.engine package consistent with the wave's structural-downstreaming theme - each governance YAML gets its own auto-config class."
+  - alternative: "Use Spring's SmartLifecycle to defer validation to after-context-refresh."
+    why_rejected: "Validation must happen during bean creation so an invalid wiring aborts ApplicationContext startup with IllegalStateException, not at a later phase when partial state has been published. The current synchronous call inside @Bean is the strongest fail-fast posture."
+  - alternative: "Add a gate-script rule (Rule 58) that scans for EngineAutoConfiguration.validateAgainstSchema() being invoked."
+    why_rejected: "Static file scans for runtime wiring are brittle and easily bypassed. The integration test exercises actual Spring bootstrap behaviour - if the wiring is removed, EngineRegistryBootValidationIT.boot_fails_when_known_engine_has_no_adapter fails because the context boots successfully with a missing adapter. That is a stronger enforcer than a grep."
+
+verification:
+  cli:
+    - "./mvnw -pl agent-platform -Dtest=EngineRegistryBootValidationIT test - all three test methods GREEN"
+    - "./mvnw -pl agent-platform test-compile - compiles cleanly"
+  gate:
+    - "bash gate/check_architecture_sync.sh - PASS, no new gate rule required"
+    - "bash gate/test_architecture_sync_gate.sh - all self-tests GREEN, no new self-tests required"
+  manual:
+    - "grep -n 'validateAgainstSchema' agent-platform/src/main/java/ascend/springai/platform/engine/EngineAutoConfiguration.java returns exactly one call site inside the @Bean factory"
+    - "Boot PlatformApplication with -Dapp.engine.envelope-schema-path=/nonexistent.yaml -> startup fails with IllegalStateException"
+
+enforcer_rows:
+  - E81   # EngineRegistryBootValidationIT (kind: integration, level: L1, view: process)
+gate_rules: []

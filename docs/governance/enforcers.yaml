@@ -700,3 +700,75 @@
   view: process
   artifact: agent-runtime/src/test/java/ascend/springai/runtime/engine/RuntimeMiddlewareInterceptsHooksIT.java#suspend_resume_cycle_fires_before_suspension_then_before_resume
   asserts: "SyncOrchestrator fires HookPoint.BEFORE_SUSPENSION + HookPoint.BEFORE_RESUME on a suspend/resume cycle and HookPoint.ON_ERROR on a propagated RuntimeException -- proves the three Phase 2 mandatory hooks reach registered RuntimeMiddleware end-to-end through EngineRegistry.hookDispatcher()."
+
+# ---------------------------------------------------------------------------
+# W2.x Phase 3 — S2C Capability Callback (Rule 46 / ADR-0074 / P-M)
+# ---------------------------------------------------------------------------
+
+- id: E81
+  constraint_ref: "CLAUDE.md Rule 46 (S2C Callback Envelope + Lifecycle Bound); ADR-0074; P-M"
+  kind: gate-script
+  level: L1
+  view: logical
+  artifact: gate/check_architecture_sync.sh#s2c_callback_yaml_present_and_wellformed
+  asserts: "docs/contracts/s2c-callback.v1.yaml exists; declares schema header, request: and response: blocks, the 6 mandatory request fields (callback_id, server_run_id, capability_ref, request_payload, trace_id, idempotency_key per Phase 3a audit §5.2), and outcome_values closed at {ok, error, timeout}."
+
+- id: E82
+  constraint_ref: "CLAUDE.md Rule 46 (S2C Callback Envelope + Lifecycle Bound); ADR-0074; P-M"
+  kind: integration
+  level: L1
+  view: process
+  artifact: agent-runtime/src/test/java/ascend/springai/runtime/s2c/S2cCallbackRoundTripIT.java#happy_path_outcome_ok_propagates_payload_to_resume
+  asserts: "SyncOrchestrator catches S2cCallbackSignal, dispatches via InMemoryS2cCallbackTransport, validates response (callback_id match, outcome enum), and resumes the parent run with the response payload. Four cases: happy-path OK, callback_id mismatch -> s2c_response_invalid, outcome=ERROR -> s2c_client_error, no transport -> s2c_transport_unavailable."
+
+- id: E83
+  constraint_ref: "CLAUDE.md Rule 46; CLAUDE.md Rule 38 (No Thread.sleep); ADR-0074; P-H + P-M"
+  kind: archunit
+  level: L1
+  view: process
+  artifact: agent-runtime/src/test/java/ascend/springai/runtime/s2c/S2cCallbackRespectsRule38Test.java#s2c_package_must_not_call_thread_sleep
+  asserts: "No class under ascend.springai.runtime.s2c.. calls Thread.sleep(long) or Thread.sleep(long, int) -- the S2C wait MUST route through SuspendSignal/checkpoint (Chronos Hydration), never busy-wait."
+
+# ---------------------------------------------------------------------------
+# W2.x Phase 5 — R2 Pilot: runtime self-validate Engine Envelope (ADR-0076 / P-M)
+# ---------------------------------------------------------------------------
+
+- id: E84
+  constraint_ref: "Rule 28 / Rule 9 -- runtime self-validation of governance YAML (R2 pilot); ADR-0076"
+  kind: integration
+  level: L1
+  view: process
+  artifact: agent-platform/src/test/java/ascend/springai/platform/engine/EngineRegistryBootValidationIT.java#boot_fails_when_known_engine_has_no_adapter
+  asserts: "Spring Boot startup fails with IllegalStateException when the registered ExecutorAdapter set does not match docs/contracts/engine-envelope.v1.yaml#known_engines -- fail-fast at boot via EngineAutoConfiguration wiring. Three cases verified: match-succeeds, missing-adapter-fails, unknown-adapter-fails."
+
+# ---------------------------------------------------------------------------
+# W2.x Phase 6 — Schema-First Domain Contracts (Rule 48 / ADR-0077 / P-M cross-cutting)
+# ---------------------------------------------------------------------------
+
+- id: E85
+  constraint_ref: "CLAUDE.md Rule 48 (Schema-First Domain Contracts); ADR-0077; P-M cross-cutting invariant"
+  kind: gate-script
+  level: L0
+  view: scenarios
+  artifact: gate/check_architecture_sync.sh#schema_first_domain_contracts
+  asserts: "Every prose-enum site (<UPPERCASE_TYPE> | <UPPERCASE_TYPE>) in ARCHITECTURE.md (root) or agent-*/ARCHITECTURE.md outside fenced code blocks and markdown tables MUST be either (a) listed in gate/schema-first-grandfathered.txt with a matching file_path prefix or (b) accompanied by a docs/contracts/*.yaml or docs/governance/*.yaml reference within +/-5 lines. The grandfather list is closed (no additions after 2026-05-16) -- new domain taxonomies MUST land yaml-first, preventing recurrence of defect family F1 (79/158 historical text-drift defects)."
+
+# ---------------------------------------------------------------------------
+# W2.x Phase 4 — Evolution Scope Boundary (Rule 47 / ADR-0075 / P-M)
+# ---------------------------------------------------------------------------
+
+- id: E86
+  constraint_ref: "CLAUDE.md Rule 47 (Evolution Scope Default Boundary); ADR-0075; P-M"
+  kind: gate-script
+  level: L1
+  view: physical
+  artifact: gate/check_architecture_sync.sh#evolution_scope_yaml_present_and_wellformed
+  asserts: "docs/governance/evolution-scope.v1.yaml exists with schema: evolution-scope/v1, three discriminator blocks (in_scope, out_of_scope_default, opt_in_export) all present, in_scope and out_of_scope_default both non-empty, and opt_in_export.contract_required references telemetry-export.v1.yaml (W3 placeholder)."
+
+- id: E87
+  constraint_ref: "CLAUDE.md Rule 47 (Evolution Scope Default Boundary); ADR-0075; P-M"
+  kind: archunit
+  level: L1
+  view: development
+  artifact: agent-runtime/src/test/java/ascend/springai/runtime/evolution/EveryRunEventDeclaresEvolutionExportTest.java
+  asserts: "Every record class implementing ascend.springai.runtime.runs.RunEvent declares an evolutionExport() accessor returning ascend.springai.runtime.evolution.EvolutionExport. Armed with allowEmptyShould(true) at W2.x because RunEvent ships in W2 per ADR-0022 -- test starts asserting per-variant declaration when variants land."

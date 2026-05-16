@@ -69,8 +69,19 @@ class PlatformImportsOnlyRuntimePublicApiTest {
         // IterativeAgentLoopExecutor, InMemoryCheckpointer — stay hidden from
         // the HTTP edge. They're driven by the orchestration SPI from within
         // the runtime, not from the platform.
+        //
+        // W2.x Phase 5 (ADR-0076) exception: ascend.springai.platform.engine..
+        // IS the centralized engine-discovery wiring point per Rule 43 (Engine
+        // Envelope Single Authority). EngineAutoConfiguration legitimately
+        // constructs the two W0 reference executors as @Bean methods so Spring
+        // can wire them into EngineRegistry. This is NOT HTTP-edge coupling —
+        // it is the explicit, single, authorized wiring location. The original
+        // rule intent (prevent ad-hoc HTTP-edge access) is preserved by excluding
+        // ONLY the engine package; everything else under agent-platform.. still
+        // cannot reach these classes.
         ArchRule rule = noClasses()
                 .that().resideInAPackage("ascend.springai.platform..")
+                .and().resideOutsideOfPackage("ascend.springai.platform.engine..")
                 .should().dependOnClassesThat()
                 .haveFullyQualifiedName(
                         "ascend.springai.runtime.orchestration.inmemory.SyncOrchestrator")
@@ -80,10 +91,12 @@ class PlatformImportsOnlyRuntimePublicApiTest {
                         "ascend.springai.runtime.orchestration.inmemory.IterativeAgentLoopExecutor")
                 .orShould().dependOnClassesThat().haveFullyQualifiedName(
                         "ascend.springai.runtime.orchestration.inmemory.InMemoryCheckpointer")
-                .because("ADR-0055 / plan §18 F9: only InMemoryRunRegistry is the "
-                        + "legitimate in-memory adapter the HTTP edge wires. "
-                        + "Sync/Sequential/Iterative executors + InMemoryCheckpointer "
-                        + "stay internal to the runtime.");
+                .because("ADR-0055 / plan §18 F9 + ADR-0076 W2.x Phase 5 exception: only "
+                        + "InMemoryRunRegistry is the legitimate in-memory adapter the HTTP "
+                        + "edge wires. Sync/Sequential/Iterative executors + InMemoryCheckpointer "
+                        + "stay internal to the runtime EXCEPT inside ascend.springai.platform.engine.. "
+                        + "(EngineAutoConfiguration — the single authorized engine-discovery wiring "
+                        + "point per Rule 43).");
         rule.check(PLATFORM_MAIN_CLASSES);
     }
 }

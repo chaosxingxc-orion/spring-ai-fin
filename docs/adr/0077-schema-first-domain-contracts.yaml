@@ -1,0 +1,148 @@
+id: ADR-0077
+title: "Schema-First Domain Contracts — codify the W2.x prose-enum prohibition (P-M cross-cutting)"
+status: accepted
+date: 2026-05-16
+level: L1
+view: development
+freeze_id: null
+
+supersedes: []
+extends:
+  - ADR-0071
+  - ADR-0068
+relates_to:
+  - ADR-0072
+  - ADR-0073
+
+decision_one_liner: |
+  Land Rule 48 (Schema-First Domain Contracts) and gate Rule 60
+  (schema_first_domain_contracts) to forbid new prose-defined domain
+  enums in the architecture corpus. New enum taxonomies after
+  2026-05-16 MUST cite a yaml schema under docs/contracts/ or
+  docs/governance/. Existing prose enum sites are grandfathered in
+  gate/schema-first-grandfathered.txt; the list is closed.
+
+triggering_inputs:
+  external_reviews:
+    - path: "docs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md"
+      authors: ["LucioIT architecture review team"]
+      thesis: |
+        The W2.x review introduced principle P-M (Heterogeneous Engine
+        Contract) and the structural invariant "yaml schema → Java type
+        → runtime self-validate". Without a permanent rule that
+        forbids new prose-defined enums, the discipline decays after
+        the engineers who landed W2.x move on — text drift returns.
+  internal_signal:
+    - "Defect family F1 (text-drift between prose taxonomies and Java enums / yaml schemas) accounts for 79 of 158 historical closed defects (~50%). Every prior wave (W0 through W2.x Phase 5) repeatedly closed individual instances; none codified the structural prohibition that prevents recurrence."
+    - "ADR-0068 (Layered 4+1 Discipline / Architecture-Graph Truth) introduced the structural substrate (level × view × graph indices) but did not regulate the SHAPE of leaf-level taxonomies. ADR-0077 closes that gap: the substrate constrains structure; Rule 48 constrains content shape."
+    - "W2.x Phases 0/1/2/3a already shipped engine envelope + hook surfaces as yaml-schema-first contracts (docs/contracts/engine-envelope.v1.yaml, docs/contracts/engine-hooks.v1.yaml) with bidirectional gate enforcement (Rules 55 / 56 / 57). Rule 48 generalises that pattern into a permanent constraint covering ALL new domain taxonomies."
+
+context: |
+  The 2026-05-15 LucioIT supplement codified principle P-M
+  (Heterogeneous Engine Contract) — engines as plug-in implementations
+  behind a Runtime-owned envelope + hook surface. The W2.x wave
+  embodied the cross-cutting structural invariant
+  "yaml schema → Java type → runtime self-validate":
+
+    - docs/contracts/engine-envelope.v1.yaml is the single source of
+      truth for the engine envelope shape; EngineEnvelope.java mirrors
+      it; gate Rule 55/56 enforce bidirectional consistency.
+    - docs/contracts/engine-hooks.v1.yaml is the single source of
+      truth for the canonical hook list; HookPoint.java mirrors it;
+      gate Rule 57 enforces bidirectional consistency.
+
+  These are the FIRST two domain contracts in the corpus to follow
+  the schema-first shape. The historical pattern, by contrast, was
+  prose-first: §4 lists prose enums (RunMode, RunStatus, JoinPolicy,
+  SemanticOntology, SkillKind, SkillTrustTier, RunScope,
+  AdmissionDecision, BackpressureSignal) WITHOUT yaml schemas. Each
+  of those prose sites has been the site of at least one historical
+  text-drift defect (defect family F1).
+
+  Rule 48 codifies the W2.x doctrine into a permanent constraint:
+  every NEW domain enum from 2026-05-16 forward MUST cite a yaml
+  schema. Existing prose enums are grandfathered (the mass-rewrite
+  risk is real — see alternatives_considered) and migration is a W3
+  follow-up.
+
+  Rule 33 (Layered 4+1 Discipline) and Rule 34 (Architecture-Graph
+  Truth) gave the corpus its STRUCTURAL substrate — level × view ×
+  graph indices. Rule 48 is the LEAF-LEVEL companion: structure says
+  WHERE a constraint lives; Rule 48 says WHAT SHAPE its taxonomy
+  takes. Without leaf-shape discipline, structural discipline does
+  not prevent F1 recurrence.
+
+decision: |
+  - Introduce Rule 48 (Schema-First Domain Contracts) into Layer 1
+    of CLAUDE.md, integrated by Phase 7 alongside Rules 43-47.
+
+  - Introduce gate Rule 60 (schema_first_domain_contracts) into
+    gate/check_architecture_sync.sh. The rule scans
+    ARCHITECTURE.md (root) + agent-*/ARCHITECTURE.md for prose-enum
+    patterns of the shape `<TYPE> | <TYPE>` (uppercase identifiers
+    separated by pipes) outside fenced code blocks (```...```) and
+    yaml blocks. Every prose-enum site MUST be either:
+      (a) listed in gate/schema-first-grandfathered.txt with the
+          same file_path prefix; OR
+      (b) accompanied within ±5 lines by a reference matching
+          `docs/contracts/.*\.yaml` or `docs/governance/.*\.yaml`.
+    Otherwise the gate fails the rule.
+
+  - Introduce gate/schema-first-grandfathered.txt as the closed
+    grandfather list with 10 entries covering the existing prose
+    enum sites in ARCHITECTURE.md (root) + agent-platform/ARCHITECTURE.md.
+    File header asserts the list is closed — no entries added after
+    2026-05-16. Self-tests assert no novel additions.
+
+  - Add enforcer E82 (gate-script, level: L0, view: scenarios — Rule
+    48 is a CROSS-CUTTING text-discipline, not a per-module concern;
+    classified at L0/scenarios in line with cross-cutting reachability).
+
+  - Add positive + negative self-tests in
+    gate/test_architecture_sync_gate.sh:
+      positive: a fixture file containing a grandfathered prose enum
+                + corresponding grandfather-list entry passes Rule 60.
+      negative: a fixture file containing a NEW prose enum (not in
+                the grandfather list, no nearby yaml schema reference)
+                is flagged by Rule 60.
+
+  - Phase 7 (W2.x finale) batches Rule 48 into CLAUDE.md alongside
+    Rules 43-47, updates ARCHITECTURE.md §4 with the new constraint
+    number, regenerates docs/governance/architecture-graph.yaml.
+
+consequences:
+  positive:
+    - "F1 (text-drift between prose taxonomies and Java enums / yaml schemas) becomes structurally impossible for new taxonomies — every new enum has a single source of truth in yaml + a gate-enforced cross-check."
+    - "The W2.x doctrine 'yaml schema → Java type → runtime self-validate' becomes a PERMANENT engineering rule, not a wave-local convention. Future engineers who never read the W2.x reviews still encounter the rule when they try to add a prose enum."
+    - "Grandfather list is closed and AUDITABLE — every existing prose-enum site is named once, with a migration owner (W3 / CLAUDE-deferred 48.b)."
+    - "Rule 48 + Rule 33/34 form a complete defence: structure (level × view) + graph (reachability) + leaf shape (yaml-first taxonomies). Each layer addresses a distinct text-drift mode that prior waves closed individually but never structurally."
+  negative:
+    - "Existing prose enums remain in the corpus until W3 retrofit. New defects on those sites are still possible (mitigated only by self-discipline + the existing per-rule enforcers like RunStateMachine for RunStatus)."
+    - "Gate Rule 60 regex is necessarily heuristic — it scans for `<UPPERCASE_TYPE> | <UPPERCASE_TYPE>` outside fenced blocks. False positives are possible (e.g. SQL CHECK constraints in prose). The grandfather list must absorb such false positives explicitly."
+    - "The gate cannot enforce that NEW yaml schemas are well-shaped — it only requires their EXISTENCE near a new prose-enum site. Schema content quality remains a per-rule concern (e.g. Rule 55/56/57 for engine contracts)."
+    - "Phase 7 must integrate Rule 48 into CLAUDE.md AND update the L1 plan §11 + enforcers.yaml AND regenerate the architecture graph in a single batch — three artefacts move together. Forgotten regeneration would create graph staleness that gate Rule 38 catches at next CI run, not at PR creation."
+
+alternatives_considered:
+  - alternative: "Force every existing prose enum (RunMode, RunStatus, JoinPolicy, SemanticOntology, SkillKind, SkillTrustTier, RunScope, AdmissionDecision, BackpressureSignal, IdempotencyRecord status) to a yaml schema NOW — no grandfathering."
+    why_rejected: "Mass-rewrite risk is real. Each migration requires (1) a new docs/contracts/<name>.v1.yaml; (2) a bidirectional gate rule analogous to Rules 55/56/57; (3) ARCHITECTURE.md edits; (4) potentially Java-type changes to consume the new yaml at runtime. Doing 10 of these in W2.x Phase 6 (a 15-minute sub-phase) ships a half-finished pile of yaml files with no consumer. W3 schedules them serially with proper landing waves."
+  - alternative: "Make Rule 48 advisory only — emit a WARN line in the gate, do not fail."
+    why_rejected: "Text drift returns the moment a rule is advisory. The W2.x review explicitly cited prior advisory-rule decay as the mechanism that produced 79/158 F1 defects across W0-W1.x. Advisory enforcement is not enforcement; it is a TODO comment. Rule 48 must be ship-blocking from day one."
+  - alternative: "Replace the regex-scan approach with a structured-text-parser (e.g. parse ARCHITECTURE.md as Markdown AST, walk paragraphs, distinguish fenced blocks from prose at AST level)."
+    why_rejected: "Parser-based approach is more robust against false positives but introduces a Python or Node dependency in gate/, breaking the bash-only invariant the existing 59 gate rules maintain. Phase 6 ships a regex with explicit fenced-block exclusion + grandfather-list escape hatch; W3 may upgrade to a parser if false-positive rate proves unacceptable."
+  - alternative: "Apply Rule 48 to ALL repository markdown (docs/adr/*.yaml, docs/L2/*.md, docs/reviews/*.md), not just ARCHITECTURE.md."
+    why_rejected: "ARCHITECTURE.md (root + per-module) is the NORMATIVE corpus that downstream Java types must mirror. ADR yaml files are decision records; reviews are ephemeral analysis; L2 docs are technical deep-dives. Forbidding prose enums in non-normative artefacts adds friction without preventing F1, because F1 is specifically the divergence between NORMATIVE-CORPUS prose and Java types. W3 may extend Rule 48 to L2 docs after empirical evidence."
+
+verification:
+  cli:
+    - "bash gate/check_architecture_sync.sh → GATE: PASS with 60 active rules (59 prior + Rule 60)"
+    - "bash gate/test_architecture_sync_gate.sh → all self-tests GREEN with 2 new (positive + negative for Rule 60)"
+  gate:
+    - "Rule 60 (schema_first_domain_contracts) PASS on the current corpus — every prose-enum site is grandfathered."
+  manual:
+    - "Adding a NEW prose enum (e.g. `MyEnum = FOO | BAR`) in a fresh paragraph of ARCHITECTURE.md WITHOUT a nearby docs/contracts/myenum.v1.yaml reference AND WITHOUT a grandfather-list entry must fail Rule 60."
+    - "Adding the SAME prose enum WITH `See docs/contracts/myenum.v1.yaml.` within ±5 lines must PASS Rule 60."
+
+enforcer_rows:
+  - E82   # schema_first_domain_contracts (kind: gate-script, level: L0, view: scenarios)
+gate_rules:
+  - rule_60_schema_first_domain_contracts

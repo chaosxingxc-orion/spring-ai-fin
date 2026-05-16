@@ -1,0 +1,169 @@
+id: ADR-0074
+title: "Server-to-Client (S2C) Capability Callback Protocol — third L1 expression of P-M"
+status: accepted
+date: 2026-05-16
+level: L1
+view: process
+freeze_id: null
+
+supersedes: []
+extends:
+  - ADR-0071
+  - ADR-0072
+  - ADR-0073
+relates_to:
+  - ADR-0019
+  - ADR-0069
+  - ADR-0070
+
+decision_one_liner: |
+  Stand up the Server-to-Client (S2C) capability callback protocol declared in
+  docs/contracts/s2c-callback.v1.yaml. The new RuntimeException subtype
+  S2cCallbackSignal (in runtime.s2c.spi, NOT in orchestration.spi to preserve
+  E3 SPI purity) is the executor-side trigger. SyncOrchestrator catches it
+  BEFORE its generic RuntimeException on_error branch, persists checkpoint via
+  RunStatus.SUSPENDED + SuspendReason.AwaitClientCallback, dispatches the
+  envelope through the registered S2cCallbackTransport, validates the response
+  (callback_id match + outcome enum), and resumes the parent run with the
+  response payload. Runtime skill-capacity enforcement at the orchestrator is
+  documented as deferred to W2; the s2c.client.callback skill row in
+  skill-capacity.yaml + the three logical channel mappings in bus-channels.yaml
+  ship at W2.x as the contract declaration.
+
+triggering_inputs:
+  external_reviews:
+    - path: "docs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md"
+      authors: ["LucioIT architecture review team"]
+      thesis: |
+        Proposal §6: server-side execution may asynchronously invoke client-side
+        capabilities when the required tool / observation / business-side
+        operation is only available in the client environment. The pattern
+        MUST be treated as an asynchronous callback, not a transparent local
+        function call. The Runtime MUST handle latency, client offline,
+        timeout, retry, idempotency control, duplicate result handling,
+        partial failure handling, security/authorization, and trace
+        correlation between server and client.
+  internal_signal:
+    - "Phase 3a Cross-Rule Co-Design Audit Matrix (docs/reviews/2026-05-16-engine-contract-structural-response.en.md §5) named the resolution for each of the 5 affected rules (20, 35, 38, 41, 42); ADR-0074 implements those resolutions verbatim."
+    - "SuspendReason sealed interface already declared AwaitChild / AwaitTimer / AwaitExternal / AwaitApproval as empty placeholder variants (per ADR-0070 / ADR-0019). The new AwaitClientCallback variant extends the permits list naturally — no breaking change."
+    - "Initial Phase 3 design attempted to extend SuspendSignal in orchestration.spi with an Object clientCallback slot. A linter / external revert restored SuspendSignal to its W1 form. The accepted design uses a separate S2cCallbackSignal extends RuntimeException in runtime.s2c.spi — preserves orchestration.spi purity (E3 archunit) AND avoids forcing NodeFunction / Reasoner signatures to declare a new checked exception."
+
+context: |
+  S2C is the highest cross-cutting feature in the W2.x wave: it touches Rules
+  20 (RunStateMachine), 35 (Three-Track Channels), 38 (No Thread.sleep), 41
+  (Skill Capacity), and 42 (Sandbox Subsumption). The Phase 3a cross-rule
+  audit matrix (response doctrine §5) is the canonical reference for how each
+  rule is honoured; this ADR implements the audit decisions in code.
+
+  The fourteenth-cycle SpawnEnvelope 11-dim propagation gap is the cautionary
+  precedent: a cross-cutting feature added without explicit per-rule co-design
+  reliably produces a Class-3 hidden defect family. The audit matrix is the
+  structural prevention; ADR-0074 the structural ship.
+
+decision: |
+  - Schema docs/contracts/s2c-callback.v1.yaml is the SINGLE SOURCE OF TRUTH
+    for request + response shape. Six mandatory request fields (callback_id,
+    server_run_id, capability_ref, request_payload, trace_id, idempotency_key)
+    per the audit §5.2 cross-cutting propagation contract. Outcome enum closed
+    at OK | ERROR | TIMEOUT.
+
+  - Java surfaces (agent-runtime/src/main/java/ascend/springai/runtime/s2c/):
+      S2cCallbackEnvelope      — request record; validates 6 mandatory fields + W3C-32-char trace_id
+      S2cCallbackResponse      — response record; closed enum Outcome (OK / ERROR / TIMEOUT); error fields required iff outcome=ERROR
+      InMemoryS2cCallbackTransport — reference impl; Function-based; tests inject canned responses
+
+  - Java surfaces (agent-runtime/src/main/java/ascend/springai/runtime/s2c/spi/):
+      S2cCallbackSignal        — RuntimeException; executor-side trigger
+      S2cCallbackTransport     — SPI; CompletionStage<S2cCallbackResponse> dispatch(envelope)
+
+  - SuspendReason.AwaitClientCallback (new sealed variant in resilience package):
+      record AwaitClientCallback(UUID callbackId, String capabilityRef, Instant deadline)
+      Carries failure reason codes as constants:
+        S2C_RESPONSE_INVALID — validation failure (callback_id mismatch / null / unknown outcome)
+        S2C_CLIENT_ERROR     — outcome=ERROR from client
+        S2C_TIMEOUT          — outcome=TIMEOUT from transport
+
+  - EngineRegistry gains registerS2cCallbackTransport(...) + s2cCallbackTransport()
+    accessor. At most one transport may be registered (Rule 6 single
+    construction path); duplicate registration rejected.
+
+  - SyncOrchestrator wiring:
+      Constructor unchanged.
+      executeLoop adds a SECOND catch block (S2cCallbackSignal) placed BEFORE
+      the generic RuntimeException catch — so S2C suspension is never confused
+      with on_error.
+      handleClientCallback(run, envelope) is the new helper that:
+        (a) Fires BEFORE_SUSPENSION hook (with callback_id in attributes)
+        (b) Persists checkpoint via Run.withSuspension()
+        (c) transport.dispatch(envelope).toCompletableFuture().join()
+        (d) Validates response (null check, callback_id match)
+        (e) Routes OK / ERROR / TIMEOUT to appropriate Run transition
+        (f) Fires BEFORE_RESUME hook (on OK)
+
+  - skill-capacity.yaml adds s2c.client.callback row (capacity_per_tenant=4,
+    global_capacity=64, queue_strategy=suspend, timeout_ms=30000). RUNTIME
+    consultation of this skill row at orchestrator-time is DEFERRED to W2 —
+    the W2.x ship is the yaml declaration plus the audit matrix decision; W2
+    wires ResilienceContract.resolve into SyncOrchestrator.handleClientCallback.
+
+  - bus-channels.yaml adds three logical_mappings rows:
+      s2c.callback.request   -> control (high-priority out-of-band intent)
+      s2c.callback.response  -> data (heavy payload; inherits 16 KiB cap)
+      s2c.callback.heartbeat -> rhythm (in-flight liveness pulse)
+    No new physical channel.
+
+  - Tests:
+      S2cCallbackEnvelopeValidationTest — 6 mandatory field validation + W3C trace length + immutable defaults
+      S2cCallbackRoundTripIT — 4 integration cases: happy path, callback_id mismatch, outcome=ERROR, no transport
+      S2cCallbackRespectsRule38Test — ArchUnit: no Thread.sleep in runtime.s2c.. package
+
+  - Rule 46 + gate Rule 58 + enforcer rows E81-E84 land in CLAUDE.md / gate
+    scripts / enforcers.yaml as part of Phase 7 integration (main thread
+    batches all W2.x rule additions into CLAUDE.md once at Phase 7).
+
+consequences:
+  positive:
+    - "S2C is added WITHOUT modifying any existing rule — Rules 20/35/38/41/42 each accommodate S2C via existing extension points (SuspendReason sealed variant, bus-channels logical mappings, skill-capacity new row, existing schema-validation idiom). The Phase 3a audit matrix proves this structurally."
+    - "S2cCallbackSignal as RuntimeException avoids forcing NodeFunction / Reasoner SPI signature changes — existing lambdas continue to compile; only new S2C-aware lambdas reference the new signal class."
+    - "EngineRegistry concentrates ALL engine-contract state (adapters + middlewares + S2C transport) — the orchestrator pulls everything from a single source per Rule 6."
+    - "Validation of the response (callback_id match, outcome enum membership) runs BEFORE the resumed engine code sees the payload — Rule 42 (Sandbox Subsumption) is honoured."
+  negative:
+    - "Runtime skill-capacity enforcement at orchestrator (calling ResilienceContract.resolve before transport.dispatch) is deferred to W2. W2.x ships the yaml declaration + audit decision only. Risk: a saturated cluster cannot use the new skill row to suspend S2C callers at W2.x; first capacity enforcement lands with the W2 async orchestrator."
+    - "transport.dispatch(envelope).toCompletableFuture().join() blocks the orchestrator thread synchronously at W2.x. SyncOrchestrator is intentionally single-threaded recursive (W0 design); W2 async orchestrator uses proper non-blocking composition. Rule 38 still holds (no Thread.sleep; the block is on a CompletionStage)."
+    - "The InMemoryS2cCallbackTransport is the only shipping transport at W2.x. Production transports (webhook POST, SSE push, WebSocket, gRPC) ship in W3 per proposal §10 open question 6."
+    - "Schema validation is currently constructor-level (each record validates its own fields). The 'is response.outcome a known enum value' check is enforced by Java enum type itself (callers cannot construct unknown outcomes). The 'is request_payload schema-compliant for this capability_ref' check is W3 (requires the client capability registry)."
+
+alternatives_considered:
+  - alternative: "Extend SuspendSignal in orchestration.spi with an Object clientCallback slot. Single suspension exception hierarchy; orchestrator switches on isClientCallback()."
+    why_rejected: "Initial Phase 3 attempt. SPI purity rule E3 (orchestration.spi imports only java.*) requires the slot to be typed Object — a sharp edge: callers must cast. A linter / external revert restored SuspendSignal to its W1 form during Phase 3 implementation, treating the addition as out-of-scope. Accepted alternative: separate S2cCallbackSignal in runtime.s2c.spi. Pros of accepted design: SuspendSignal stays pure, S2cCallbackSignal is naturally typed, NodeFunction signature unchanged."
+  - alternative: "Make S2cCallbackSignal extend SuspendSignal — single throws-clause for executors that suspend for ANY reason."
+    why_rejected: "Would require un-finalising SuspendSignal (which the linter/user kept final) and would import runtime.s2c.* from orchestration.spi (E3 violation). Separate sibling hierarchy is cleaner — executor lambdas that don't do S2C don't need to know S2cCallbackSignal exists."
+  - alternative: "Make the transport synchronous: S2cCallbackResponse dispatch(S2cCallbackEnvelope) without CompletionStage."
+    why_rejected: "W3 production transports (webhook, SSE) are inherently asynchronous. Committing to a synchronous SPI now would force W3 transports to block their own callers. CompletionStage is the right abstraction; at W2.x the SyncOrchestrator joins as a deliberate choice matching its single-threaded recursive shape."
+  - alternative: "Wire ResilienceContract.resolve(tenant, 's2c.client.callback') into SyncOrchestrator.handleClientCallback at W2.x for runtime skill-capacity enforcement."
+    why_rejected: "SyncOrchestrator currently has no ResilienceContract dependency; injecting it expands the constructor + Spring wiring beyond the W2.x scope. Documented as W2 wiring under §Consequences. The s2c.client.callback skill row + the audit matrix decision land at W2.x to make the contract surface enumerable; the runtime hook lands when W2's Postgres-backed async orchestrator forces the question."
+  - alternative: "Add a S2cCallbackSkillCapacityIT integration test asserting saturation behaviour at W2.x."
+    why_rejected: "Saturation requires the runtime ResilienceContract wiring (deferred per above). An armed-empty test would assert nothing today; an armed-empty PassthroughTest would mislead reviewers into thinking saturation works. The contract is documented in ADR-0074 + the audit matrix; the test lands with the W2 wiring as a paired ship."
+
+verification:
+  cli:
+    - "./mvnw -pl agent-runtime test -Dtest=S2cCallbackEnvelopeValidationTest → 6-field validation tests GREEN"
+    - "./mvnw -pl agent-runtime test -Dtest=S2cCallbackRoundTripIT → 4 cases GREEN (happy, mismatch, error, no transport)"
+    - "./mvnw -pl agent-runtime test -Dtest=S2cCallbackRespectsRule38Test → ArchUnit GREEN (no Thread.sleep in s2c..)"
+    - "./mvnw -pl agent-runtime test → 135+ tests GREEN end-to-end"
+  gate:
+    - "bash gate/check_architecture_sync.sh → GATE: PASS with 64+ active rules (Rule 58 added by Phase 7 batch)"
+    - "Self-tests for Rule 58 (positive + negative) GREEN"
+  manual:
+    - "grep 'S2C client callback at node' agent-runtime/src/main → one match in S2cCallbackSignal.java only (the message constant)"
+    - "grep 's2c.client.callback' docs/governance/skill-capacity.yaml → 1 match"
+    - "grep 'logical_mappings' docs/governance/bus-channels.yaml → 1 match (block header)"
+    - "grep 'AwaitClientCallback' agent-runtime/src/main → matches in SuspendReason.java (sealed variant) and SyncOrchestrator.java (constant references)"
+
+enforcer_rows:
+  - E81   # gate-script — Phase 7 will add Rule 58 (s2c_callback_yaml_present_and_wellformed)
+  - E82   # integration — S2cCallbackRoundTripIT.happy_path
+  - E83   # archunit — S2cCallbackRespectsRule38Test
+  - E84   # integration — S2cCallbackEnvelopeValidationTest (or merged into E82 at Phase 7 discretion)
+gate_rules:
+  - rule_58_s2c_callback_yaml_present_and_wellformed   # added at Phase 7 batch

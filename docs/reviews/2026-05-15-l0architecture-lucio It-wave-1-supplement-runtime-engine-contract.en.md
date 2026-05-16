@@ -1,3 +1,14 @@
+---
+affects_level: L0
+affects_view: scenarios
+proposal_status: accepted
+authors: ["LucioIT architecture review team"]
+related_adrs: [ADR-0071, ADR-0072, ADR-0073, ADR-0074, ADR-0075]
+related_rules: [Rule-43, Rule-44, Rule-45, Rule-46, Rule-47, Rule-48]
+affects_artefact: []
+absorbed_by: "docs/reviews/2026-05-16-engine-contract-structural-response.en.md"
+---
+
 # L0 Architecture Proposal: Runtime-Engine Contract for Heterogeneous Agent Execution
 
 **Date:** 2026-05-15

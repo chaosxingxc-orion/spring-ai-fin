@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# spring-ai-ascend architecture-sync gate -- L1 Rule-28 expansion + Phase K + L1.x Telemetry Vertical + Layer-0 governing principles + W1.x L0 ironclad rules + W2.x Engine Contract Structural Wave (63 rules; Rules 1-29 + 28a-28j sub-checks + Rules 30-44 + Rules 45-52 W1.x + Rules 53-54 W1.x Phases 8-9 + Rules 55-57 W2.x Phases 1-2).
+# spring-ai-ascend architecture-sync gate -- L1 Rule-28 expansion + Phase K + L1.x Telemetry Vertical + Layer-0 governing principles + W1.x L0 ironclad rules + W2.x Engine Contract Structural Wave (66 rules; Rules 1-29 + 28a-28j sub-checks + Rules 30-44 + Rules 45-52 W1.x + Rules 53-54 W1.x Phases 8-9 + Rules 55-60 W2.x Phases 1-6).
 # Exits 0 if all rules pass, 1 if any fail.
 # Each rule prints PASS: <name> or FAIL: <name> -- <reason>.
 # Prints GATE: PASS or GATE: FAIL at the end.
@@ -81,6 +81,12 @@
 #  56.  engine_registry_covers_all_known_engines       -- bidirectional id <-> ENGINE_TYPE consistency between yaml and agent-runtime/src/main (Rule 44 / P-M, enforcer E77)
 #  --- W2.x Phase 2 — Engine Hooks + Runtime Middleware SPI (ADR-0073) ---
 #  57.  engine_hooks_yaml_present_and_wellformed       -- docs/contracts/engine-hooks.v1.yaml declares 9-hook list matching HookPoint enum (Rule 45 / P-M, enforcer E78)
+#  --- W2.x Phase 3 — S2C Capability Callback (ADR-0074) ---
+#  58.  s2c_callback_yaml_present_and_wellformed       -- docs/contracts/s2c-callback.v1.yaml declares request+response shape with 6 mandatory request fields and outcome enum (Rule 46 / P-M, enforcer E81)
+#  --- W2.x Phase 4 — Evolution Scope Boundary (ADR-0075) ---
+#  59.  evolution_scope_yaml_present_and_wellformed   -- docs/governance/evolution-scope.v1.yaml declares 3 discriminator blocks + telemetry-export ref (Rule 47 / P-M, enforcer E86)
+#  --- W2.x Phase 6 — Schema-First Domain Contracts (ADR-0077, Rule 48) ---
+#  60.  schema_first_domain_contracts                   -- prose enums in ARCHITECTURE.md require nearby yaml schema reference or grandfather entry (Rule 48 / P-M cross-cutting, enforcer E85)
 
 set -uo pipefail
 export LC_ALL=C
@@ -2314,6 +2320,137 @@ else
   done
 fi
 if [[ $_r57_fail -eq 0 ]]; then pass_rule "engine_hooks_yaml_present_and_wellformed"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 58 — s2c_callback_yaml_present_and_wellformed (enforcer E81, Rule 46 / P-M, ADR-0074)
+#
+# docs/contracts/s2c-callback.v1.yaml MUST exist with schema: header, a request:
+# block listing the 6 mandatory fields (callback_id, server_run_id, capability_ref,
+# request_payload, trace_id, idempotency_key), a response: block, and an
+# outcome_values: block declaring exactly {ok, error, timeout}.
+# Drift would let an S2C transport accept envelopes that violate the Phase 3a
+# cross-rule audit's propagation contract (response doctrine §5.2).
+# ---------------------------------------------------------------------------
+_r58_fail=0
+_r58_path="docs/contracts/s2c-callback.v1.yaml"
+if [[ ! -f "$_r58_path" ]]; then
+  fail_rule "s2c_callback_yaml_present_and_wellformed" "$_r58_path missing -- Rule 46 / P-M S2C callback contract unenforced"
+  _r58_fail=1
+else
+  if ! grep -qE '^schema:[[:space:]]+s2c-callback/v1[[:space:]]*$' "$_r58_path"; then
+    fail_rule "s2c_callback_yaml_present_and_wellformed" "$_r58_path missing 'schema: s2c-callback/v1' header"
+    _r58_fail=1
+  fi
+  if ! grep -qE '^request:[[:space:]]*$' "$_r58_path"; then
+    fail_rule "s2c_callback_yaml_present_and_wellformed" "$_r58_path missing request: block"
+    _r58_fail=1
+  fi
+  if ! grep -qE '^response:[[:space:]]*$' "$_r58_path"; then
+    fail_rule "s2c_callback_yaml_present_and_wellformed" "$_r58_path missing response: block"
+    _r58_fail=1
+  fi
+  # 6 mandatory request fields per audit §5.2
+  for _r58_field in callback_id server_run_id capability_ref request_payload trace_id idempotency_key; do
+    if ! grep -qE "^[[:space:]]+- ${_r58_field}([[:space:]]|#|\$)" "$_r58_path"; then
+      fail_rule "s2c_callback_yaml_present_and_wellformed" "$_r58_path missing mandatory request field: ${_r58_field}"
+      _r58_fail=1
+    fi
+  done
+  # Outcome enum closed at exactly ok | error | timeout
+  for _r58_oc in ok error timeout; do
+    if ! grep -qE "^[[:space:]]+- ${_r58_oc}([[:space:]]|#|\$)" "$_r58_path"; then
+      fail_rule "s2c_callback_yaml_present_and_wellformed" "$_r58_path outcome_values missing entry: ${_r58_oc}"
+      _r58_fail=1
+    fi
+  done
+fi
+if [[ $_r58_fail -eq 0 ]]; then pass_rule "s2c_callback_yaml_present_and_wellformed"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 59 — evolution_scope_yaml_present_and_wellformed (enforcer E86, Rule 47 / P-M, ADR-0075)
+#
+# docs/governance/evolution-scope.v1.yaml MUST exist with schema: header, three
+# discriminator blocks (in_scope, out_of_scope_default, opt_in_export), the
+# first two non-empty, and opt_in_export referencing telemetry-export.v1.yaml
+# (W3 placeholder). Drift would let the evolution plane silently widen its
+# surface beyond the server-sovereign boundary.
+# ---------------------------------------------------------------------------
+_r59_fail=0
+_r59_path="docs/governance/evolution-scope.v1.yaml"
+if [[ ! -f "$_r59_path" ]]; then
+  fail_rule "evolution_scope_yaml_present_and_wellformed" "$_r59_path missing -- Rule 47 / P-M evolution scope unenforced"
+  _r59_fail=1
+else
+  if ! grep -qE '^schema:[[:space:]]+evolution-scope/v1[[:space:]]*$' "$_r59_path"; then
+    fail_rule "evolution_scope_yaml_present_and_wellformed" "$_r59_path missing 'schema: evolution-scope/v1' header"
+    _r59_fail=1
+  fi
+  for _r59_block in in_scope out_of_scope_default opt_in_export; do
+    if ! grep -qE "^${_r59_block}:" "$_r59_path"; then
+      fail_rule "evolution_scope_yaml_present_and_wellformed" "$_r59_path missing top-level discriminator block '${_r59_block}:'"
+      _r59_fail=1
+    fi
+  done
+  for _r59_block in in_scope out_of_scope_default; do
+    _r59_count=$(awk -v b="^${_r59_block}:" '$0 ~ b {f=1; next} /^[a-z_]+:/{f=0} f && /^[[:space:]]+- [a-z_]+/ {n++} END{print n+0}' "$_r59_path")
+    if [[ "${_r59_count:-0}" -lt 1 ]]; then
+      fail_rule "evolution_scope_yaml_present_and_wellformed" "$_r59_path block '${_r59_block}:' is empty -- at least one entry required"
+      _r59_fail=1
+    fi
+  done
+  if ! grep -qE 'contract_required:[[:space:]]+telemetry-export\.v1\.yaml' "$_r59_path"; then
+    fail_rule "evolution_scope_yaml_present_and_wellformed" "$_r59_path opt_in_export.contract_required must reference 'telemetry-export.v1.yaml' (W3 placeholder)"
+    _r59_fail=1
+  fi
+fi
+if [[ $_r59_fail -eq 0 ]]; then pass_rule "evolution_scope_yaml_present_and_wellformed"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 60 — schema_first_domain_contracts (enforcer E85, Rule 48, ADR-0077)
+#
+# Forbid new prose-defined enum sites in the architecture corpus. Scan
+# ARCHITECTURE.md (root) + agent-*/ARCHITECTURE.md for the prose-enum pattern
+# `<UPPERCASE_TYPE> | <UPPERCASE_TYPE>` outside fenced code blocks and
+# markdown tables. For every match, the rule passes only when one of:
+#   (a) the file path appears as a prefix line in gate/schema-first-grandfathered.txt
+#       (file-level grandfather -- pre-W2.x existing taxonomies);
+#   (b) the file path is at file-level grandfather (i.e. has any '<path>:' entry).
+# The grandfather list is CLOSED: no entries added after 2026-05-16.
+# This rule codifies the W2.x doctrine "yaml schema -> Java type -> runtime
+# self-validate" into a permanent constraint.
+# ---------------------------------------------------------------------------
+_r60_fail=0
+_r60_grandfather="gate/schema-first-grandfathered.txt"
+_r60_files=(ARCHITECTURE.md agent-platform/ARCHITECTURE.md agent-runtime/ARCHITECTURE.md)
+if [[ ! -f "$_r60_grandfather" ]]; then
+  fail_rule "schema_first_domain_contracts" "$_r60_grandfather missing -- Rule 48 grandfather list required"
+  _r60_fail=1
+else
+  for _r60_file in "${_r60_files[@]}"; do
+    if [[ ! -f "$_r60_file" ]]; then continue; fi
+    _r60_candidates=$(awk '
+      BEGIN { in_fence = 0 }
+      /^```/ { in_fence = !in_fence; next }
+      { if (in_fence) next }
+      /^[[:space:]]*\|/ { next }
+      /[A-Z][A-Z_][A-Z_]*[[:space:]]*\|[[:space:]]*[A-Z][A-Z_][A-Z_]*/ { print NR }
+    ' "$_r60_file")
+    if [[ -z "$_r60_candidates" ]]; then continue; fi
+    # File-level grandfather check: if any line in grandfather list starts with this file path + ':', whitelist all matches.
+    if grep -qE "^${_r60_file}:" "$_r60_grandfather"; then continue; fi
+    while read -r _r60_ln; do
+      [[ -z "$_r60_ln" ]] && continue
+      _r60_lo=$(( _r60_ln - 5 )); [[ $_r60_lo -lt 1 ]] && _r60_lo=1
+      _r60_hi=$(( _r60_ln + 5 ))
+      if ! awk -v lo="$_r60_lo" -v hi="$_r60_hi" 'NR>=lo && NR<=hi' "$_r60_file" \
+         | grep -qE 'docs/(contracts|governance)/[^[:space:]]+\.yaml'; then
+        fail_rule "schema_first_domain_contracts" "$_r60_file:$_r60_ln prose enum without yaml-schema reference within +/-5 lines and not in $_r60_grandfather"
+        _r60_fail=1
+      fi
+    done <<< "$_r60_candidates"
+  done
+fi
+if [[ $_r60_fail -eq 0 ]]; then pass_rule "schema_first_domain_contracts"; fi
 
 # ---------------------------------------------------------------------------
 # Summary

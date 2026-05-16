@@ -1,0 +1,61 @@
+# Evolution Scope schema, version 1.
+#
+# Authority: ADR-0075 (Server-Controlled Evolution Scope Boundary).
+# Wave: W2.x Phase 4.
+# Driver review: docs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md (proposal §7).
+#
+# This file is the SINGLE SOURCE OF TRUTH for which categories of platform
+# observation are eligible to feed the evolution plane (deployment_plane:
+# evolution per Rule 39). The Java enum
+# ascend.springai.runtime.evolution.EvolutionExport mirrors the three
+# discriminator values (in_scope, out_of_scope, opt_in). Gate Rule 59 schema-
+# checks this file; the W2-shipped E86 ArchUnit test asserts every
+# RunEvent variant declares its evolution_export() at the type level.
+#
+# Self-enforced by gate Rule 59 (evolution_scope_yaml_present_and_wellformed).
+
+schema: evolution-scope/v1
+authority: ADR-0075
+
+# Proposal §7.2 verbatim:
+#   "The evolution plane consumes server-controlled signals only. The platform
+#    is sovereign over what is observable; client-autonomous behavior is
+#    explicitly out of scope unless exported through a declared telemetry
+#    contract."
+#
+# Categories the platform MAY persist into the evolution plane WITHOUT extra
+# opt-in. These are the events the runtime itself produces and owns.
+in_scope:
+  - server_execution_traces           # SyncOrchestrator step trace
+  - runtime_decisions                 # ResilienceContract / EngineRegistry resolutions
+  - engine_lifecycle_events           # EngineEnvelope dispatch, executor start/stop
+  - middleware_interaction_records    # HookDispatcher fire results (Phase 2)
+  - model_invocation_records          # LLM gateway call envelopes (server-side)
+  - server_tool_invocation_records    # Tools dispatched by the runtime (NOT client-local)
+  - checkpoint_resume_events          # SuspendSignal / Checkpointer cycles
+  - server_controlled_outcomes        # Run terminal status, FAILED reasons
+
+# Proposal §7.3 verbatim:
+#   "Client-side autonomy is out of the platform's training surface by default.
+#    The platform MUST NOT silently capture client-local behavior; doing so
+#    crosses the server-sovereign boundary and creates implicit data-rights
+#    obligations the platform did not contract for."
+#
+# Categories the evolution plane MUST NOT persist by default. These represent
+# behavior the client owns; capturing them without an explicit telemetry
+# contract is a P-M boundary violation.
+out_of_scope_default:
+  - client_local_state                # client SDK in-process state machine
+  - client_autonomous_decisions       # client-side branching not requested by server
+  - client_unexported_tool_behavior   # tools the client invoked locally without S2C
+  - business_operations_behind_client # downstream business systems behind the client
+  - local_user_interactions           # end-user UI events on the client
+
+# Opt-in export: clients MAY export specific categories from the
+# out_of_scope_default list ONLY by declaring a telemetry-export contract that
+# matches a future schema (W3 placeholder). The platform refuses opt-in
+# captures that lack a matching contract.
+opt_in_export:
+  contract_required: telemetry-export.v1.yaml   # placeholder; lands in W3
+  default: deny
+  enforcement: "EvolutionExport.OPT_IN events MUST resolve to a contract row before persistence"

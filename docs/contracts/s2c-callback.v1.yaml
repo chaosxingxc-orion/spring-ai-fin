@@ -1,0 +1,86 @@
+# Server-to-Client (S2C) Capability Callback schema, version 1.
+#
+# Authority: ADR-0074 (S2C Capability Callback Protocol).
+# Wave: W2.x Phase 3.
+# Driver review: docs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md (proposal §6).
+# Cross-rule audit: docs/reviews/2026-05-16-engine-contract-structural-response.en.md §5 (Phase 3a audit matrix).
+#
+# This file is the SINGLE SOURCE OF TRUTH for the S2C callback envelope +
+# response shape. The Java records ascend.springai.runtime.s2c.S2cCallbackEnvelope
+# and S2cCallbackResponse mirror this schema and validate required fields on
+# construction.
+#
+# Self-enforced by gate Rule 58 (s2c_callback_yaml_present_and_wellformed).
+
+schema: s2c-callback/v1
+authority: ADR-0074
+
+# REQUEST envelope -- server to client.
+# Six mandatory fields per the Phase 3a cross-rule audit (response doctrine §5.2)
+# to prevent the SpawnEnvelope 11-dim propagation gap (Class 3 hidden defects).
+request:
+  required_fields:
+    - callback_id            # UUID -- primary correlation key (present on every log line)
+    - server_run_id          # UUID -- correlates back to the suspending Run
+    - capability_ref         # string -- declared client capability id (W3 client capability registry)
+    - request_payload        # opaque -- validated by the capability-specific schema (W3 placeholder)
+    - trace_id               # W3C 32-char lowercase hex -- MUST equal suspending Run.traceId (ADR-0061)
+    - idempotency_key        # UUID -- client may retry; runtime dedupes within window
+  optional_fields:
+    - timeout_seconds        # int -- capped by s2c.client.callback skill capacity entry
+    - deadline               # ISO-8601 timestamp -- absolute deadline, overrides timeout_seconds
+    - request_attributes     # map<string, any> -- capability-specific extras
+
+# RESPONSE envelope -- client to server.
+response:
+  required_fields:
+    - callback_id            # MUST match the request callback_id; mismatch -> s2c_response_invalid
+    - outcome                # enum: ok | error | timeout
+    - client_trace_id        # W3C 32-char -- runtime correlates client execution with server
+  optional_fields:
+    - response_payload       # opaque -- per-capability schema
+    - error_code             # string -- if outcome=error
+    - error_message          # string -- if outcome=error
+    - response_attributes    # map<string, any>
+
+# Outcome enum -- closed set.
+outcome_values:
+  - ok          # client completed the capability successfully
+  - error       # client returned an error; Run transitions to FAILED with reason s2c_client_error
+  - timeout     # client did not respond within deadline; Run transitions to FAILED with reason s2c_timeout
+
+# Cross-rule resolutions per Phase 3a audit matrix (docs/reviews/2026-05-16-engine-contract-structural-response.en.md §5):
+cross_rule_resolutions:
+  rule_20_run_state_machine: |
+    The suspending Run transitions RUNNING -> SUSPENDED via SuspendReason.AwaitClientCallback
+    (a new sealed variant added to SuspendReason.java permits list). Resume:
+    SUSPENDED -> RUNNING on outcome=ok; SUSPENDED -> FAILED on outcome=error or timeout.
+    No new RunStatus.
+  rule_35_three_track_channels: |
+    Request rides the control channel (high-priority intent, out-of-band).
+    Response rides the data channel (heavy payload allowed; inherits 16 KiB cap per ARCHITECTURE.md §4 #13).
+    In-flight liveness rides the rhythm channel. No new physical channel.
+  rule_38_no_thread_sleep: |
+    The waiting Run suspends via SuspendSignal carrying AwaitClientCallback;
+    SyncOrchestrator's executeLoop catches the signal and unwinds the call stack.
+    No Thread.sleep in s2c.. package -- enforced by archunit E83.
+  rule_41_skill_capacity: |
+    Concurrent S2C callbacks consume the s2c.client.callback skill capacity declared
+    in docs/governance/skill-capacity.yaml. Over-cap callers receive
+    SuspendReason.RateLimited(s2c.client.callback, SKILL_CAPACITY_EXCEEDED) via
+    the Rule 41.b ResilienceContract.resolve path. Runtime enforcement at
+    SyncOrchestrator is deferred to W2 (see ADR-0074 §Consequences). At W2.x the
+    skill is declared in yaml; integration test E84 lands as armed-for-W2.
+  rule_42_sandbox_subsumption: |
+    Client response is untrusted external input. Runtime MUST validate response
+    against this schema before resume. Invalid response (missing callback_id,
+    callback_id mismatch, unknown outcome value) transitions Run to FAILED with
+    reason s2c_response_invalid. Validation runs BEFORE the resumed engine code
+    sees the response payload.
+
+# Strict-surface boundary (proposal §6.4):
+#   "client-side capability invocation should be explicitly modeled and governed
+#    by the Runtime. It should not be treated as a transparent local function call."
+#
+# In this codebase the strongest reading is taken: every S2C dispatch goes through
+# S2cCallbackTransport SPI; engines NEVER call client capabilities directly.

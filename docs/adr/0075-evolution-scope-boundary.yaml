@@ -1,0 +1,140 @@
+id: ADR-0075
+title: "Evolution Scope Boundary -- server-controlled evolution surface, fourth L1 expression of P-M"
+status: accepted
+date: 2026-05-16
+level: L1
+view: logical
+freeze_id: null
+
+supersedes: []
+extends:
+  - ADR-0071
+relates_to:
+  - ADR-0069   # P-I five-plane manifest (declares deployment_plane: evolution)
+  - ADR-0022   # RunEvent typed payload + streaming contract (W2 deferred)
+
+decision_one_liner: |
+  Lock the evolution-plane in/out scope as a machine-checked YAML schema
+  (docs/governance/evolution-scope.v1.yaml) plus a Java EvolutionExport
+  enum that mirrors the three discriminator values (IN_SCOPE, OUT_OF_SCOPE,
+  OPT_IN). Server-controlled signals are in scope by default; client-
+  autonomous behavior is out of scope unless exported through a future
+  telemetry-export.v1.yaml contract (W3). The W2.x ArchUnit test
+  EveryRunEventDeclaresEvolutionExportTest is armed with
+  allowEmptyShould(true) so it stays GREEN today (no RunEvent variants
+  ship until W2 per ADR-0022) and starts asserting the per-variant
+  declaration the moment the first record-implements-RunEvent lands.
+
+triggering_inputs:
+  external_reviews:
+    - path: "docs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md"
+      authors: ["LucioIT architecture review team"]
+      thesis: |
+        Proposal section 7.2 verbatim: "The evolution plane consumes
+        server-controlled signals only. The platform is sovereign over what
+        is observable; client-autonomous behavior is explicitly out of
+        scope unless exported through a declared telemetry contract."
+        Section 7.3 verbatim: "Client-side autonomy is out of the
+        platform's training surface by default. The platform MUST NOT
+        silently capture client-local behavior; doing so crosses the
+        server-sovereign boundary and creates implicit data-rights
+        obligations the platform did not contract for."
+  internal_signal:
+    - "Rule 39 (P-I, ADR-0069) introduced deployment_plane: evolution as a metadata-only label. There was no contract on what the evolution plane MAY ingest -- a Phase 4 silence that, if left to W2, would land as prose under family F1 (text-form drift, 79/158 historical defects)."
+    - "ADR-0022 declared a sealed RunEvent type but deferred implementation to W2. This phase makes the evolution-plane scope contract precede the RunEvent variants so every future variant is born with the per-variant declaration requirement, not retrofitted."
+    - "P-M's structural invariant from ADR-0071 (yaml schema first, validated Java type second, runtime self-validate third) requires a YAML schema landing in the same wave as the discriminator enum. This ADR ships both."
+
+context: |
+  ADR-0071 introduced L0 principle P-M (Heterogeneous Engine Contract +
+  Server-Sovereign Boundary). ADR-0072 + ADR-0073 + ADR-0074 (Phases 1-3
+  of W2.x) covered the engine envelope, hook surface, and S2C callback
+  protocol. ADR-0075 closes the wave's structural quadrant with the
+  evolution-plane scope contract -- the server-sovereign boundary
+  expressed as a machine-checked discriminator instead of prose.
+
+  Phase 4 is intentionally light on Java code because the RunEvent type
+  it would otherwise extend does not exist in agent-runtime/src/main
+  today. Two valid responses were considered:
+    (a) Land RunEvent now (out of scope -- ADR-0022 deferred it to W2 for
+        good reason; the typed payload codec, Flux streaming SPI, and
+        Postgres-backed orchestrator force schema decisions that have not
+        been made yet).
+    (b) Land just the EvolutionExport enum + the YAML contract + an
+        armed-but-empty ArchUnit test, so when RunEvent variants land in
+        W2 the test starts asserting the per-variant declaration without
+        any further governance edit.
+  This ADR chooses (b) per Rule 2 (surgical changes). The W2 plan now
+  carries an explicit acceptance criterion: "every record implements
+  RunEvent declares evolutionExport() returning EvolutionExport".
+
+decision: |
+  - Schema docs/governance/evolution-scope.v1.yaml is the SINGLE SOURCE
+    OF TRUTH for evolution-plane scope. It declares three top-level
+    discriminator blocks: in_scope (8 server-controlled categories),
+    out_of_scope_default (5 client-owned categories), opt_in_export
+    (placeholder referencing W3 telemetry-export.v1.yaml).
+
+  - Java surface (agent-runtime/src/main/java/ascend/springai/runtime/evolution/):
+      EvolutionExport   -- 3-value enum mirroring the YAML discriminators:
+                           IN_SCOPE, OUT_OF_SCOPE, OPT_IN
+      package-info.java -- documents the deferred RunEvent integration
+
+  - Test surface (agent-runtime/src/test/java/ascend/springai/runtime/evolution/):
+      EveryRunEventDeclaresEvolutionExportTest -- ArchUnit, asserts every
+      record implements RunEvent declares evolutionExport(): EvolutionExport.
+      Armed with allowEmptyShould(true) at W2.x because the RunEvent type
+      itself ships in W2 per ADR-0022.
+
+  - Gate Rule 59 (evolution_scope_yaml_present_and_wellformed) -- schema
+    check: file exists, schema header matches, three discriminator blocks
+    are present and non-empty, opt_in_export references a future
+    telemetry-export contract by name. Self-tests positive + negative.
+
+  - Enforcers E85 (gate) + E86 (archunit) added to enforcers.yaml and L1
+    plan section 11. Rule 47 lands in CLAUDE.md at Phase 7.
+
+  - The full RunEvent integration (sealed interface gains
+    EvolutionExport evolutionExport() accessor; every variant declares its
+    value) ships in W2 alongside RunEvent itself. The ArchUnit test is
+    pre-positioned so no governance edit is required at that time -- only
+    the variants need to add the accessor.
+
+consequences:
+  positive:
+    - "Server-sovereign boundary becomes machine-checked at the contract level (proposal section 7.2/7.3) -- no future ADR can silently widen the evolution surface to client-local state without first widening the YAML schema and triggering Rule 28 review."
+    - "EvolutionExport enum is born with three values that exactly mirror the YAML discriminators -- F1 text-form drift (79/158 historical defects) is structurally prevented for this contract."
+    - "Pre-positioned ArchUnit test means W2 RunEvent landing does NOT also need a governance PR; the test starts asserting the moment a variant ships."
+    - "Opt-in default: deny semantics force every future client-data export to ship a contract row first -- no implicit data-rights obligations."
+  negative:
+    - "RunEvent integration is deferred to W2; the per-variant declaration cannot be verified end-to-end at Phase 4. Mitigated by armed-empty ArchUnit and an explicit W2 acceptance criterion."
+    - "telemetry-export.v1.yaml is a placeholder reference; the W3 schema does not yet exist. Mitigated by the YAML's enforcement clause: OPT_IN events MUST resolve to a contract row before persistence -- when no contract exists, all OPT_IN attempts are rejected."
+    - "EvolutionExport enum has no constructor argument tying values to the YAML discriminator strings (e.g. enum constructor reading 'in_scope'). Phase 4 keeps the binding implicit (name() lower-cased == YAML key); a stricter compile-time tie lands when the enum gains its first non-test consumer in W2."
+
+alternatives_considered:
+  - alternative: "Land RunEvent (sealed interface + 6 variants from ADR-0022) in this phase so EvolutionExport has a real consumer."
+    why_rejected: "Out of scope per Rule 2 surgical changes. ADR-0022 deferred RunEvent for substantive technical reasons (PayloadCodec SPI, Flux streaming, Postgres serialization) that this wave does not solve. Adding 6 record types just to satisfy the ArchUnit test would ship dead code that the W2 wave will rewrite."
+  - alternative: "Skip the ArchUnit test entirely; rely on Rule 9 self-audit at W2 to catch missing declarations."
+    why_rejected: "The 14 prior reviewer cycles document that prose acceptance criteria deferred to a future wave reproduce family F1 drift at a high rate. The armed-empty ArchUnit is a structural commitment that survives reviewer turnover."
+  - alternative: "Define evolution scope inline in ADR-0075 as a prose enum (the historical default before W2.x)."
+    why_rejected: "Direct violation of P-M's structural invariant (yaml first, validated Java type second). Reproduces the exact F1 defect family P-M was created to close."
+  - alternative: "Make EvolutionExport a sealed interface with one record per discriminator instead of an enum."
+    why_rejected: "Three fixed values with no payload differences -- a sealed interface adds ceremony without expressing any new constraint. The enum keeps the binding to the YAML keys 1:1 and supports a switch-exhaustive consumer in W2."
+
+verification:
+  cli:
+    - "./mvnw -pl agent-runtime test-compile -- new EvolutionExport enum + package-info compile GREEN"
+    - "./mvnw -pl agent-runtime test -Dtest=EveryRunEventDeclaresEvolutionExportTest -- ArchUnit GREEN at W2.x with allowEmptyShould(true) because no RunEvent variants exist yet"
+    - "python -c \"import yaml,io; yaml.safe_load(io.open('docs/governance/evolution-scope.v1.yaml',encoding='utf-8'))\" -- yaml is well-formed"
+    - "python -c \"import yaml,io; yaml.safe_load(io.open('docs/adr/0075-evolution-scope-boundary.yaml',encoding='utf-8'))\" -- ADR yaml is well-formed"
+  gate:
+    - "bash gate/check_architecture_sync.sh -- GATE: PASS with 65 active rules (64 prior + Rule 59)"
+    - "bash gate/test_architecture_sync_gate.sh -- all self-tests GREEN with 2 new (positive + negative for Rule 59)"
+  manual:
+    - "grep -E '^\\s*-\\s+(in_scope|out_of_scope_default|opt_in_export)' docs/governance/evolution-scope.v1.yaml -- 3 top-level discriminator blocks present"
+    - "grep -E 'IN_SCOPE|OUT_OF_SCOPE|OPT_IN' agent-runtime/src/main/java/ascend/springai/runtime/evolution/EvolutionExport.java -- enum constants mirror YAML"
+
+enforcer_rows:
+  - E85   # evolution_scope_yaml_present_and_wellformed (kind: gate-script, level: L1, view: physical)
+  - E86   # EveryRunEventDeclaresEvolutionExportTest (kind: archunit, level: L1, view: development)
+gate_rules:
+  - rule_59_evolution_scope_yaml_present_and_wellformed

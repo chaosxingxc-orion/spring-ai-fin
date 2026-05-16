@@ -4,6 +4,7 @@ import ascend.springai.runtime.orchestration.spi.EngineMatchingException;
 import ascend.springai.runtime.orchestration.spi.ExecutorAdapter;
 import ascend.springai.runtime.orchestration.spi.ExecutorDefinition;
 import ascend.springai.runtime.orchestration.spi.RuntimeMiddleware;
+import ascend.springai.runtime.s2c.spi.S2cCallbackTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
@@ -50,6 +51,7 @@ public final class EngineRegistry {
     private final Map<String, ExecutorAdapter> adaptersByEngineType = new LinkedHashMap<>();
     private final Map<Class<? extends ExecutorDefinition>, ExecutorAdapter> adaptersByPayloadType = new LinkedHashMap<>();
     private final java.util.List<RuntimeMiddleware> middlewares = new java.util.ArrayList<>();
+    private S2cCallbackTransport s2cCallbackTransport;   // null until registered
 
     /**
      * Register an adapter under its {@link ExecutorAdapter#engineType()}.
@@ -230,6 +232,35 @@ public final class EngineRegistry {
      */
     public HookDispatcher hookDispatcher() {
         return new HookDispatcher(middlewares);
+    }
+
+    /**
+     * Register the S2C callback transport (ADR-0074, W2.x Phase 3). At most one
+     * transport may be registered; duplicate registration is rejected per Rule 6
+     * (single construction path). The orchestrator pulls this once at construction
+     * via {@link #s2cCallbackTransport()}; absence is OK and means S2C
+     * suspensions raise {@code s2c_transport_unavailable}.
+     */
+    public synchronized EngineRegistry registerS2cCallbackTransport(S2cCallbackTransport transport) {
+        Objects.requireNonNull(transport, "transport is required");
+        if (this.s2cCallbackTransport != null) {
+            throw new IllegalStateException("S2cCallbackTransport already registered ("
+                    + this.s2cCallbackTransport.getClass().getName()
+                    + ") -- explicit deregistration required first per Rule 6");
+        }
+        this.s2cCallbackTransport = transport;
+        LOG.info("EngineRegistry: registered S2cCallbackTransport {}", transport.getClass().getName());
+        return this;
+    }
+
+    /**
+     * Returns the registered S2C callback transport, or {@code null} when no
+     * transport has been registered. The orchestrator interprets null as
+     * "S2C suspension is not supported in this deployment" and fails any S2C
+     * suspension with reason {@code s2c_transport_unavailable}.
+     */
+    public S2cCallbackTransport s2cCallbackTransport() {
+        return s2cCallbackTransport;
     }
 
     private Object readYaml(String yamlPath) {

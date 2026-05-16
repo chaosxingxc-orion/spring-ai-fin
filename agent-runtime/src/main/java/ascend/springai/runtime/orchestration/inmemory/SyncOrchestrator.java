@@ -10,15 +10,21 @@ import ascend.springai.runtime.orchestration.spi.Orchestrator;
 import ascend.springai.runtime.orchestration.spi.RunContext;
 import ascend.springai.runtime.orchestration.spi.SuspendSignal;
 import ascend.springai.runtime.posture.AppPostureGate;
+import ascend.springai.runtime.resilience.SuspendReason;
 import ascend.springai.runtime.runs.Run;
 import ascend.springai.runtime.runs.RunMode;
 import ascend.springai.runtime.runs.RunRepository;
 import ascend.springai.runtime.runs.RunStatus;
+import ascend.springai.runtime.s2c.S2cCallbackEnvelope;
+import ascend.springai.runtime.s2c.S2cCallbackResponse;
+import ascend.springai.runtime.s2c.spi.S2cCallbackSignal;
+import ascend.springai.runtime.s2c.spi.S2cCallbackTransport;
 
 import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CompletionException;
 
 /**
  * Reference Orchestrator for in-memory / dev-posture execution.
@@ -100,6 +106,26 @@ public final class SyncOrchestrator implements Orchestrator {
                 run = runs.findById(run.runId()).orElseThrow();
                 run = runs.save(run.withStatus(RunStatus.RUNNING).withUpdatedAt(Instant.now()));
                 payload = childResult;
+            } catch (S2cCallbackSignal s2cSignal) {
+                // W2.x Phase 3 (ADR-0074): persist checkpoint, dispatch via transport,
+                // validate response, resume parent with response payload. Caught BEFORE
+                // the generic RuntimeException branch so S2C is never confused with on_error.
+                hookDispatcher.fire(new HookContext(
+                        HookPoint.BEFORE_SUSPENSION,
+                        run.runId(),
+                        run.tenantId(),
+                        Map.of("parentNodeKey", s2cSignal.parentNodeKey(),
+                                "callbackId", s2cSignal.envelope().callbackId())));
+                run = runs.save(run.withSuspension(s2cSignal.parentNodeKey(), Instant.now()));
+                Object newPayload = handleClientCallback(run, s2cSignal.envelope());
+                hookDispatcher.fire(new HookContext(
+                        HookPoint.BEFORE_RESUME,
+                        run.runId(),
+                        run.tenantId(),
+                        Map.of("callbackId", s2cSignal.envelope().callbackId())));
+                run = runs.findById(run.runId()).orElseThrow();
+                run = runs.save(run.withStatus(RunStatus.RUNNING).withUpdatedAt(Instant.now()));
+                payload = newPayload;
             } catch (RuntimeException e) {
                 hookDispatcher.fire(new HookContext(
                         HookPoint.ON_ERROR,
@@ -129,6 +155,63 @@ public final class SyncOrchestrator implements Orchestrator {
         return switch (def) {
             case ExecutorDefinition.GraphDefinition g -> RunMode.GRAPH;
             case ExecutorDefinition.AgentLoopDefinition a -> RunMode.AGENT_LOOP;
+        };
+    }
+
+    /**
+     * W2.x Phase 3 (ADR-0074): dispatch an S2C callback via the registered
+     * {@link S2cCallbackTransport}, await the response, validate, and return
+     * the validated payload to be used as the parent's resume payload.
+     *
+     * <p>Validation invariants (per s2c-callback.v1.yaml + Phase 3a audit matrix):
+     * <ul>
+     *   <li>Response {@code callbackId} MUST match request {@code callbackId}.</li>
+     *   <li>Outcome {@code ERROR}  -- Run transitions to FAILED with
+     *       {@link SuspendReason.AwaitClientCallback#S2C_CLIENT_ERROR}.</li>
+     *   <li>Outcome {@code TIMEOUT} -- Run transitions to FAILED with
+     *       {@link SuspendReason.AwaitClientCallback#S2C_TIMEOUT}.</li>
+     *   <li>Validation failure -- Run transitions to FAILED with
+     *       {@link SuspendReason.AwaitClientCallback#S2C_RESPONSE_INVALID}.</li>
+     *   <li>Transport unavailable -- Run transitions to FAILED with
+     *       {@code s2c_transport_unavailable}.</li>
+     * </ul>
+     *
+     * <p>The {@link CompletionStage} returned by the transport is awaited via
+     * {@code toCompletableFuture().join()} -- this is intentional at W2.x:
+     * SyncOrchestrator is single-threaded recursive; W2's async orchestrator
+     * will use non-blocking composition (no Thread.sleep involved, so Rule 38
+     * holds).
+     */
+    private Object handleClientCallback(Run run, S2cCallbackEnvelope envelope) {
+        S2cCallbackTransport transport = engineRegistry.s2cCallbackTransport();
+        if (transport == null) {
+            throw new IllegalStateException("s2c_transport_unavailable: SyncOrchestrator received "
+                    + "an S2C SuspendSignal but no S2cCallbackTransport is registered "
+                    + "(register via EngineRegistry.registerS2cCallbackTransport).");
+        }
+        S2cCallbackResponse response;
+        try {
+            response = transport.dispatch(envelope).toCompletableFuture().join();
+        } catch (CompletionException ce) {
+            throw new IllegalStateException("s2c_transport_failure: " + ce.getCause(), ce.getCause());
+        }
+        if (response == null) {
+            throw new IllegalStateException(SuspendReason.AwaitClientCallback.S2C_RESPONSE_INVALID
+                    + ": transport returned null response");
+        }
+        if (!Objects.equals(response.callbackId(), envelope.callbackId())) {
+            throw new IllegalStateException(SuspendReason.AwaitClientCallback.S2C_RESPONSE_INVALID
+                    + ": response.callbackId=" + response.callbackId()
+                    + " does not match request.callbackId=" + envelope.callbackId());
+        }
+        return switch (response.outcome()) {
+            case OK -> response.responsePayload();
+            case ERROR -> throw new IllegalStateException(
+                    SuspendReason.AwaitClientCallback.S2C_CLIENT_ERROR
+                            + ": " + response.errorCode() + " -- " + response.errorMessage());
+            case TIMEOUT -> throw new IllegalStateException(
+                    SuspendReason.AwaitClientCallback.S2C_TIMEOUT
+                            + ": client did not respond within deadline=" + envelope.deadline());
         };
     }
 }

@@ -44,3 +44,14 @@ skills:
 # Future skills (sandbox-execute, vector-search, tool-call) add rows here as
 # the corresponding executors ship. Until then the gate rule only validates
 # schema well-formedness, not coverage.
+
+  - id: s2c.client.callback
+    description: "Server-to-Client (S2C) capability callback (ADR-0074, W2.x Phase 3)"
+    capacity_per_tenant: 4                            # short-lived RPC; smaller than model-call
+    global_capacity: 64                               # bounded cluster footprint for client callbacks
+    queue_strategy: suspend                           # over-cap callers receive SuspendReason.RateLimited
+    timeout_ms: 30000                                 # 30s upper bound; longer waits use AwaitClientCallback.deadline
+    realised_by:
+      module_l0: agent-runtime
+      reactor_module: agent-runtime
+      enforcer: SyncOrchestrator.handleClientCallback (W2.x); ResilienceContract.resolve (W2 wiring)

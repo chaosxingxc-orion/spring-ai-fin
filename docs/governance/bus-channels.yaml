@@ -63,3 +63,37 @@ channels:
 # wave). The three channels are declared here so the contract surface is
 # enumerable and gate-checkable today; physical implementation lands W2 per
 # CLAUDE-deferred.md 35.b.
+
+# ---------------------------------------------------------------------------
+# Logical mappings (W2.x Phase 3, ADR-0074 / S2C Capability Callback Protocol)
+#
+# S2C callbacks ride the existing three physical channels via the following
+# logical mappings -- no new physical channel is added. Cross-rule resolution
+# documented in docs/reviews/2026-05-16-engine-contract-structural-response.en.md §5.1.
+# ---------------------------------------------------------------------------
+logical_mappings:
+  - id: s2c.callback.request
+    routes_on_channel: control
+    rationale: |
+      The server-to-client request is a high-priority out-of-band intent.
+      Riding the control channel guarantees it bypasses any congestion on
+      the data channel (e.g., large model-call payloads in flight).
+    authority: ADR-0074
+
+  - id: s2c.callback.response
+    routes_on_channel: data
+    rationale: |
+      The client-to-server response carries a payload of arbitrary capability-
+      specific size. Inherits the 16 KiB inline-payload cap on the data
+      channel (ARCHITECTURE.md §4 #13); larger responses use the
+      envelope+ref pattern via PayloadCodec SPI (Rule 22, deferred).
+    authority: ADR-0074
+
+  - id: s2c.callback.heartbeat
+    routes_on_channel: rhythm
+    rationale: |
+      In-flight client callbacks emit liveness pulses on the rhythm channel
+      so the server-side suspension monitor can detect a hung client and
+      trigger SuspendReason.AwaitClientCallback timeout enforcement
+      (W2 wiring; W2.x ships the schema declaration only).
+    authority: ADR-0074

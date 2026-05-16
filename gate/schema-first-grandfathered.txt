@@ -1,0 +1,26 @@
+# Grandfathered prose enum sites — pre-W2.x existing taxonomies allowed to keep prose form
+# under Rule 48 (Schema-First Domain Contracts) / gate Rule 60.
+#
+# Every entry below names an architecture-corpus site that defines a domain enum in prose
+# (e.g. `RunMode = GRAPH | AGENT_LOOP`) WITHOUT a sibling yaml schema under
+# docs/contracts/. These sites predate the introduction of Rule 48 (ADR-0077 /
+# W2.x Phase 6) and are allowed to keep prose form. Migration of each grandfathered
+# taxonomy to a yaml schema is a W3 follow-up (see `CLAUDE-deferred.md` 48.b).
+#
+# New enum taxonomies added AFTER 2026-05-16 MUST cite a yaml schema under
+# docs/contracts/ or docs/governance/, NOT add a new line here. The grandfather
+# list is closed — gate Rule 60 self-tests assert no new entries.
+#
+# Format: <file_path>:<short description of grandfathered taxonomy>
+# Authority: ADR-0077 (Schema-First Domain Contracts); P-M cross-cutting invariant.
+
+ARCHITECTURE.md:RunMode discriminator (GRAPH | AGENT_LOOP) at §source-tree line 118 — Java enum lives at agent-runtime/src/main/java/.../runs/RunMode.java
+ARCHITECTURE.md:RunStatus DFA legal transitions (PENDING → RUNNING | CANCELLED; etc.) at §4 #20 / lines 341-343 — Java enum + RunStateMachine validator already authoritative
+ARCHITECTURE.md:JoinPolicy (ALL | ANY | N_OF) and ChildFailurePolicy (PROPAGATE | IGNORE | COMPENSATE) at §4 #19 / line 336 — SuspendReason taxonomy, deferred to W2 contract docs
+ARCHITECTURE.md:SemanticOntology tag (FACT | PLACEHOLDER | HYPOTHESIS | REDACTED) at §4 #25 / line 385 — CausalPayloadEnvelope contract, deferred to W2
+ARCHITECTURE.md:SkillKind discriminator (JAVA_NATIVE | MCP_TOOL | SANDBOXED_CODE_INTERPRETER) at §4 #26 / line 401 — CapabilityRegistry contract, deferred to W2
+ARCHITECTURE.md:SkillTrustTier (VETTED | UNTRUSTED) at §4 #27 / line 410 — Skill SPI contract, deferred to W2
+ARCHITECTURE.md:RunScope discriminator (STEP_LOCAL | SWARM) at §4 #29 / line 429 — Run hierarchy contract, deferred to W4 planner toolset
+ARCHITECTURE.md:AdmissionDecision (Accepted | Delayed | Rejected | Yielded) at §4 #52 / line 719 — Long-Connection Containment contract (ADR-0050), deferred to W2
+ARCHITECTURE.md:BackpressureSignal (LOCAL_SATURATION | SKILL_SATURATION | TENANT_QUOTA_EXCEEDED | SHUTDOWN) at §4 #52 / line 721 — Long-Connection Containment contract (ADR-0050), deferred to W2
+agent-platform/ARCHITECTURE.md:IdempotencyRecord status CHECK constraint (CLAIMED|COMPLETED|FAILED) at line 84 — schema-layer enforcer E13 already authoritative

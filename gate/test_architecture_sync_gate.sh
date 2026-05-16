@@ -1809,9 +1809,197 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Rule 58 positive: s2c-callback yaml has schema + request + response + 6 mandatory fields + 3 outcome values
+# ---------------------------------------------------------------------------
+_r58_pos="$scratch/r58_pos"
+mkdir -p "$_r58_pos/docs/contracts"
+cat > "$_r58_pos/docs/contracts/s2c-callback.v1.yaml" <<'EOF'
+schema: s2c-callback/v1
+request:
+  required_fields:
+    - callback_id
+    - server_run_id
+    - capability_ref
+    - request_payload
+    - trace_id
+    - idempotency_key
+response:
+  required_fields:
+    - callback_id
+outcome_values:
+  - ok
+  - error
+  - timeout
+EOF
+_r58_pos_path="$_r58_pos/docs/contracts/s2c-callback.v1.yaml"
+_r58_pos_ok=1
+if ! grep -qE '^schema:[[:space:]]+s2c-callback/v1[[:space:]]*$' "$_r58_pos_path"; then _r58_pos_ok=0; fi
+if ! grep -qE '^request:[[:space:]]*$' "$_r58_pos_path"; then _r58_pos_ok=0; fi
+if ! grep -qE '^response:[[:space:]]*$' "$_r58_pos_path"; then _r58_pos_ok=0; fi
+for _f in callback_id server_run_id capability_ref request_payload trace_id idempotency_key; do
+  if ! grep -qE "^[[:space:]]+- ${_f}([[:space:]]|#|\$)" "$_r58_pos_path"; then _r58_pos_ok=0; fi
+done
+for _o in ok error timeout; do
+  if ! grep -qE "^[[:space:]]+- ${_o}([[:space:]]|#|\$)" "$_r58_pos_path"; then _r58_pos_ok=0; fi
+done
+if [[ "$_r58_pos_ok" -eq 1 ]]; then
+  ok "rule58_s2c_callback_yaml_pos" "s2c-callback yaml has all required structure"
+else
+  fail "rule58_s2c_callback_yaml_pos" "expected well-formed s2c-callback yaml"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 58 negative: s2c-callback yaml missing trace_id mandatory field
+# ---------------------------------------------------------------------------
+_r58_neg="$scratch/r58_neg"
+mkdir -p "$_r58_neg/docs/contracts"
+cat > "$_r58_neg/docs/contracts/s2c-callback.v1.yaml" <<'EOF'
+schema: s2c-callback/v1
+request:
+  required_fields:
+    - callback_id
+    - server_run_id
+    - capability_ref
+    - request_payload
+    # intentionally missing trace_id (Rule 58 negative fixture)
+    - idempotency_key
+response:
+  required_fields:
+    - callback_id
+outcome_values:
+  - ok
+  - error
+  - timeout
+EOF
+_r58_neg_flagged=0
+if ! grep -qE '^[[:space:]]+- trace_id([[:space:]]|#|$)' "$_r58_neg/docs/contracts/s2c-callback.v1.yaml"; then
+  _r58_neg_flagged=1
+fi
+if [[ "$_r58_neg_flagged" -eq 1 ]]; then
+  ok "rule58_s2c_callback_yaml_neg" "missing mandatory request field correctly flagged"
+else
+  fail "rule58_s2c_callback_yaml_neg" "expected missing-field detection"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 59 positive: evolution-scope yaml well-formed
+# ---------------------------------------------------------------------------
+_r59_pos="$scratch/r59_pos"
+mkdir -p "$_r59_pos/docs/governance"
+cat > "$_r59_pos/docs/governance/evolution-scope.v1.yaml" <<'EOF'
+schema: evolution-scope/v1
+in_scope:
+  - server_execution_traces
+out_of_scope_default:
+  - client_local_state
+opt_in_export:
+  contract_required: telemetry-export.v1.yaml
+EOF
+_r59_pos_path="$_r59_pos/docs/governance/evolution-scope.v1.yaml"
+_r59_pos_ok=1
+if ! grep -qE '^schema:[[:space:]]+evolution-scope/v1[[:space:]]*$' "$_r59_pos_path"; then _r59_pos_ok=0; fi
+for _b in in_scope out_of_scope_default opt_in_export; do
+  if ! grep -qE "^${_b}:" "$_r59_pos_path"; then _r59_pos_ok=0; fi
+done
+if ! grep -qE 'contract_required:[[:space:]]+telemetry-export\.v1\.yaml' "$_r59_pos_path"; then _r59_pos_ok=0; fi
+if [[ "$_r59_pos_ok" -eq 1 ]]; then
+  ok "rule59_evolution_scope_yaml_pos" "evolution-scope yaml has schema + 3 blocks + telemetry-export ref"
+else
+  fail "rule59_evolution_scope_yaml_pos" "expected well-formed evolution-scope yaml"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 59 negative: opt_in_export.contract_required missing
+# ---------------------------------------------------------------------------
+_r59_neg="$scratch/r59_neg"
+mkdir -p "$_r59_neg/docs/governance"
+cat > "$_r59_neg/docs/governance/evolution-scope.v1.yaml" <<'EOF'
+schema: evolution-scope/v1
+in_scope:
+  - server_execution_traces
+out_of_scope_default:
+  - client_local_state
+opt_in_export:
+  default: deny
+EOF
+_r59_neg_flagged=0
+if ! grep -qE 'contract_required:[[:space:]]+telemetry-export\.v1\.yaml' "$_r59_neg/docs/governance/evolution-scope.v1.yaml"; then
+  _r59_neg_flagged=1
+fi
+if [[ "$_r59_neg_flagged" -eq 1 ]]; then
+  ok "rule59_evolution_scope_yaml_neg" "missing telemetry-export contract_required correctly flagged"
+else
+  fail "rule59_evolution_scope_yaml_neg" "expected missing-contract_required detection"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 60 positive: grandfathered file containing prose enum passes (file-level grandfather)
+# ---------------------------------------------------------------------------
+_r60_pos="$scratch/r60_pos"
+mkdir -p "$_r60_pos/gate"
+cat > "$_r60_pos/ARCHITECTURE.md" <<'EOF'
+# Test fixture
+Grandfathered: RunMode discriminator GRAPH | AGENT_LOOP
+EOF
+cat > "$_r60_pos/gate/schema-first-grandfathered.txt" <<'EOF'
+# header
+ARCHITECTURE.md:RunMode discriminator GRAPH | AGENT_LOOP -- grandfathered
+EOF
+_r60_pos_ok=0
+if grep -qE "^ARCHITECTURE\.md:" "$_r60_pos/gate/schema-first-grandfathered.txt"; then
+  _r60_pos_ok=1
+fi
+if [[ "$_r60_pos_ok" -eq 1 ]]; then
+  ok "rule60_schema_first_pos" "grandfathered file-level entry tolerates prose enum"
+else
+  fail "rule60_schema_first_pos" "expected grandfather hit"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 60 negative: novel prose enum, no grandfather, no nearby yaml ref - flagged
+# ---------------------------------------------------------------------------
+_r60_neg="$scratch/r60_neg"
+mkdir -p "$_r60_neg/gate"
+cat > "$_r60_neg/ARCHITECTURE.md" <<'EOF'
+# Test fixture - novel prose enum, no grandfather, no yaml reference
+The MyNewEnum discriminator carries values: FOO | BAR | BAZ.
+No schema reference in surrounding paragraphs.
+EOF
+cat > "$_r60_neg/gate/schema-first-grandfathered.txt" <<'EOF'
+# header; no ARCHITECTURE.md entry
+EOF
+_r60_neg_cands=$(awk '
+  BEGIN { in_fence = 0 }
+  /^```/ { in_fence = !in_fence; next }
+  { if (in_fence) next }
+  /^[[:space:]]*\|/ { next }
+  /[A-Z][A-Z_][A-Z_]*[[:space:]]*\|[[:space:]]*[A-Z][A-Z_][A-Z_]*/ { print NR }
+' "$_r60_neg/ARCHITECTURE.md")
+_r60_neg_grandfathered=0
+if grep -qE "^ARCHITECTURE\.md:" "$_r60_neg/gate/schema-first-grandfathered.txt"; then
+  _r60_neg_grandfathered=1
+fi
+_r60_neg_flagged=0
+if [[ -n "$_r60_neg_cands" && "$_r60_neg_grandfathered" -eq 0 ]]; then
+  while read -r _ln; do
+    _lo=$(( _ln - 5 )); [[ $_lo -lt 1 ]] && _lo=1
+    _hi=$(( _ln + 5 ))
+    if ! awk -v lo="$_lo" -v hi="$_hi" 'NR>=lo && NR<=hi' "$_r60_neg/ARCHITECTURE.md" \
+       | grep -qE 'docs/(contracts|governance)/[^[:space:]]+\.yaml'; then
+      _r60_neg_flagged=1
+    fi
+  done <<< "$_r60_neg_cands"
+fi
+if [[ "$_r60_neg_flagged" -eq 1 ]]; then
+  ok "rule60_schema_first_neg" "novel prose enum without yaml ref correctly flagged"
+else
+  fail "rule60_schema_first_neg" "expected novel prose enum to be flagged"
+fi
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
-TOTAL=76
+TOTAL=82
 echo ""
 echo "Tests passed: ${passed}/${TOTAL}"
 

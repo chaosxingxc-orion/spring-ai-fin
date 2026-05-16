@@ -86,3 +86,6 @@ docs/verification/*.json
 #   - gate/log/local/         — local-only / failed / dirty-tree / fail-closed runs;
 #                               NEVER tracked, never delivery evidence (cycle-4 sec-A3)
 gate/log/local/
+
+# Local Claude Code runtime state (lock files, scheduled tasks); never committed
+.claude/
