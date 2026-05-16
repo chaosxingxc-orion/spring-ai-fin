@@ -3,6 +3,7 @@ package ascend.springai.runtime.orchestration.inmemory;
 import ascend.springai.runtime.engine.EngineRegistry;
 import ascend.springai.runtime.engine.HookDispatcher;
 import ascend.springai.runtime.orchestration.spi.Checkpointer;
+import ascend.springai.runtime.orchestration.spi.EngineMatchingException;
 import ascend.springai.runtime.orchestration.spi.ExecutorDefinition;
 import ascend.springai.runtime.orchestration.spi.HookContext;
 import ascend.springai.runtime.orchestration.spi.HookPoint;
@@ -126,6 +127,26 @@ public final class SyncOrchestrator implements Orchestrator {
                 run = runs.findById(run.runId()).orElseThrow();
                 run = runs.save(run.withStatus(RunStatus.RUNNING).withUpdatedAt(Instant.now()));
                 payload = newPayload;
+            } catch (EngineMatchingException eme) {
+                // Rule 44: engine_mismatch transitions the Run to FAILED with reason.
+                // Phase 7 audit fix (plan D:/.claude/plans/spi-atomic-willow.md L-1):
+                // prior code reached the generic RuntimeException branch which only
+                // fired ON_ERROR and rethrew, leaving the Run in its prior status.
+                // The idempotent guard avoids re-transition when a recursive parent
+                // frame catches the same exception (RunStateMachine forbids FAILED -> FAILED).
+                if (run.status() != RunStatus.FAILED) {
+                    run = runs.save(run.withStatus(RunStatus.FAILED).withFinishedAt(Instant.now()));
+                }
+                hookDispatcher.fire(new HookContext(
+                        HookPoint.ON_ERROR,
+                        run.runId(),
+                        run.tenantId(),
+                        Map.of("exception", eme.getClass().getName(),
+                                "message", String.valueOf(eme.getMessage()),
+                                "reason", "engine_mismatch",
+                                "requestedEngineType", String.valueOf(eme.requestedEngineType()),
+                                "actualPayloadType", String.valueOf(eme.actualPayloadType()))));
+                throw eme;
             } catch (RuntimeException e) {
                 hookDispatcher.fire(new HookContext(
                         HookPoint.ON_ERROR,

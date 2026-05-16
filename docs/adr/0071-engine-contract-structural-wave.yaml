@@ -21,11 +21,13 @@ decision_one_liner: |
   L0 governing principle (P-M Heterogeneous Engine Contract & Server-Sovereign
   Boundary), four substantive child ADRs (0072 Engine Envelope + Strict Matching,
   0073 Engine Hooks + Runtime Middleware, 0074 S2C Capability Callback, 0075
-  Evolution Scope Boundary), and one cross-cutting structural-discipline rule
-  (Rule 48 Schema-First Domain Contracts). The wave's invariant is that every
-  new domain contract ships as a yaml schema first, a Java type that validates
-  against the schema second, and a runtime self-validation third — no new
-  prose-defined domain enum is permitted under this wave.
+  Evolution Scope Boundary), one R2 pilot ADR (0076 Runtime Self-Validates
+  Engine Envelope Schema on Boot), and one cross-cutting structural-discipline
+  rule codified by ADR-0077 (Rule 48 Schema-First Domain Contracts). The wave's
+  invariant is that every new domain contract ships as a yaml schema first, a
+  Java type that validates against the schema second, and a runtime self-
+  validation third — no new prose-defined domain enum is permitted under this
+  wave.
 
 triggering_inputs:
   external_reviews:

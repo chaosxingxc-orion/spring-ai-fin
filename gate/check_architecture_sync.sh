@@ -2426,6 +2426,30 @@ if [[ ! -f "$_r60_grandfather" ]]; then
   fail_rule "schema_first_domain_contracts" "$_r60_grandfather missing -- Rule 48 grandfather list required"
   _r60_fail=1
 else
+  # Phase 7 audit fix (Rule 48 sunset discipline -- plan F2/F3 in
+  # D:/.claude/plans/spi-atomic-willow.md). Each grandfather entry MUST be
+  # pipe-delimited <path>|<sunset_date>|<desc>. Validate sunset_date format
+  # and that today <= sunset_date for every entry.
+  _r60_today=$(date +%Y-%m-%d)
+  while IFS= read -r _r60_line; do
+    [[ -z "$_r60_line" || "$_r60_line" =~ ^[[:space:]]*# ]] && continue
+    _r60_entry_path=$(printf '%s' "$_r60_line" | cut -d'|' -f1)
+    _r60_entry_sunset=$(printf '%s' "$_r60_line" | cut -d'|' -f2)
+    if [[ -z "$_r60_entry_path" || -z "$_r60_entry_sunset" ]]; then
+      fail_rule "schema_first_domain_contracts" "grandfather entry malformed (need <path>|<sunset>|<desc>): $_r60_line"
+      _r60_fail=1
+      continue
+    fi
+    if ! [[ "$_r60_entry_sunset" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+      fail_rule "schema_first_domain_contracts" "malformed sunset_date '$_r60_entry_sunset' for $_r60_entry_path in $_r60_grandfather (expected YYYY-MM-DD)"
+      _r60_fail=1
+      continue
+    fi
+    if [[ "$_r60_today" > "$_r60_entry_sunset" ]]; then
+      fail_rule "schema_first_domain_contracts" "$_r60_entry_path grandfather entry expired on $_r60_entry_sunset; retrofit required per CLAUDE-deferred.md 48.b"
+      _r60_fail=1
+    fi
+  done < "$_r60_grandfather"
   for _r60_file in "${_r60_files[@]}"; do
     if [[ ! -f "$_r60_file" ]]; then continue; fi
     _r60_candidates=$(awk '
@@ -2436,8 +2460,8 @@ else
       /[A-Z][A-Z_][A-Z_]*[[:space:]]*\|[[:space:]]*[A-Z][A-Z_][A-Z_]*/ { print NR }
     ' "$_r60_file")
     if [[ -z "$_r60_candidates" ]]; then continue; fi
-    # File-level grandfather check: if any line in grandfather list starts with this file path + ':', whitelist all matches.
-    if grep -qE "^${_r60_file}:" "$_r60_grandfather"; then continue; fi
+    # File-level grandfather check: if any line in grandfather list starts with this file path + '|', whitelist all matches.
+    if grep -qE "^${_r60_file}\|" "$_r60_grandfather"; then continue; fi
     while read -r _r60_ln; do
       [[ -z "$_r60_ln" ]] && continue
       _r60_lo=$(( _r60_ln - 5 )); [[ $_r60_lo -lt 1 ]] && _r60_lo=1

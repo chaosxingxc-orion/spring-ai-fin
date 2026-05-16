@@ -324,3 +324,53 @@ Composes with: ARCHITECTURE.md §7.2; ADR-0069; Rule 40; LucioIT W1 §7.2.
 **Rule (draft)**: `SandboxExecutor.execute(skill, logical_grant)` MUST cross-reference `logical_grant` against the per-skill row in `docs/governance/sandbox-policies.yaml`. If `logical_grant` declares any capability (outbound destination, filesystem path, syscall) wider than what the per-skill physical limit allows, the executor MUST reject the call with `SandboxSubsumptionViolation` BEFORE invoking the sandboxed code. Test: a synthetic request granting `outbound_network: allow_all` to a skill whose YAML declares an allowlist of `["api.openai.com:443"]` MUST be rejected.
 
 Composes with: ARCHITECTURE.md §7.4; ADR-0069; Rule 42; LucioIT W1 §7.4.
+
+---
+
+## Rule 44.b — Run.engineType Field Persistence [Deferred to W2]
+
+**Re-introduction trigger**: first W2+ orchestrator implementation that persists `Run` to Postgres and requires a discriminator column independent of `Run.mode` (target: W2; promoted when a third engine type ships or when `Run.mode` ceases to be 1:1 with engine identity).
+
+**Rule (draft)**: Promote `Run.mode` (`GRAPH | AGENT_LOOP`) to a first-class `Run.engineType` field. Flyway migration V3+ adds `engine_type VARCHAR(64) NOT NULL` with a check constraint against the `known_engines[].id` set declared in `docs/contracts/engine-envelope.v1.yaml`. A backfill statement maps `mode='GRAPH' → engine_type='spring_ai_graph_v1'` and `mode='AGENT_LOOP' → engine_type='iterative_agent_loop_v1'` (or whichever ids ship). The Java `Run` record gains `String engineType()` as a non-null accessor; `RunMode` is retained for backward-compatible reads but deprecated. Dispatch routing prefers `Run.engineType` over `Run.mode`.
+
+Composes with: ARCHITECTURE.md (Run record §source-tree); ADR-0072 §Consequences (the deferral was first declared here); Rule 44; Rule 11 (Contract Spine Completeness).
+
+---
+
+## Rule 44.c — Parent-Run Propagation on Child Failure [Deferred to W2]
+
+**Re-introduction trigger**: first W2 async orchestrator implementation that processes child-run failures asynchronously across JVM-boundary (target: W2 Postgres-backed orchestrator).
+
+**Rule (draft)**: When a child Run terminates with `FAILED` (including `engine_mismatch` per Rule 44), the parent Run MUST also transition to `FAILED` with a propagated reason that names the failing child (`child_failed:<childRunId>:<originalReason>`). The current `SyncOrchestrator.executeLoop()` only transitions the originating child Run; the parent remains in `SUSPENDED` waiting for a child result that will never arrive. W2 async orchestrator MUST add a parent-propagation hook that fires on every terminal child transition.
+
+Composes with: Rule 20 (Run State Transition Validity); Rule 44 (Strict Engine Matching); ARCHITECTURE.md §4 #20.
+
+---
+
+## Rule 46.b — ResilienceContract s2c.client.callback Wiring [Deferred to W2]
+
+**Re-introduction trigger**: first production S2C deployment with > 1 concurrent client (target: W2; conditioned on the first non-in-memory `S2cCallbackTransport` implementation shipping).
+
+**Rule (draft)**: `ResilienceContract.resolve(tenant, "s2c.client.callback")` MUST consult the `s2c.client.callback` row in `docs/governance/skill-capacity.yaml` at runtime. When per-tenant or global capacity is exhausted, the second concurrent caller MUST be SUSPENDED (Chronos Hydration per Rule 38) carrying `SuspendReason.RateLimited(S2C_CALLBACK_CAPACITY_EXCEEDED)`, NOT failed. The in-memory transport at W2.x consults the matrix but does not yet enforce it because there is only one client; production transports (webhook, SSE, WebSocket) must enforce on every dispatch.
+
+Composes with: Rule 46 (S2C Callback Envelope + Lifecycle Bound); Rule 41 (Skill Capacity Matrix); ADR-0074; ADR-0069 / LucioIT W1 §7.3.
+
+---
+
+## Rule 48.b — W3 Prose-Enum Schema-First Retrofit [Deferred to W3]
+
+**Re-introduction trigger**: W3 contract-design sprint kickoff (default target: 2026-09-30 — the working sunset date encoded in `gate/schema-first-grandfathered.txt`). Activates earlier if any grandfather entry's `sunset_date` is moved earlier via ADR.
+
+**Rule (draft)**: Every entry remaining in `gate/schema-first-grandfathered.txt` after its declared `sunset_date` MUST be retrofitted to a yaml schema under `docs/contracts/` or `docs/governance/`. The retrofit (a) replaces the prose enum with a fenced code block referencing the schema file, (b) lands a Java enum + ctor-level schema validation per Rule 48 doctrine, (c) removes the entry from the grandfather list. ADR-0078 (or successor) MUST schedule the retrofit waves; gate Rule 60 fails closed once any entry's sunset_date passes without retrofit (the sunset-fail logic is gate-enforced as of W2.x Phase 8).
+
+Composes with: Rule 48 (Schema-First Domain Contracts); ADR-0077; ADR-0068 (Layered 4+1 corpus); gate Rule 60 self-tests.
+
+---
+
+## Rule 48.c — EngineEnvelope Strict-Construction Validation [Deferred to W2]
+
+**Re-introduction trigger**: first `EngineEnvelope` construction outside a Spring-boot test harness — i.e., production code that constructs envelopes from external input (REST controller, message-bus consumer, client SDK) rather than from a programmer-controlled literal.
+
+**Rule (draft)**: The `EngineEnvelope` record constructor MUST reject `engineType` values not present in `docs/contracts/engine-envelope.v1.yaml#known_engines[].id`. Today the constructor validates only nullability; `engineType` membership is enforced lazily by `EngineRegistry.resolve()` at dispatch time. W2 promotion: load `known_engines` once at JVM startup (or on first envelope construction), cache, and reject in the ctor. Rationale for the deferral: today every envelope is built inside a Spring-managed context where `EngineRegistry.validateAgainstSchema()` has already run at boot per ADR-0076; user-supplied envelopes do not yet exist.
+
+Composes with: Rule 48 (Schema-First Domain Contracts); Rule 44 (Strict Engine Matching); ADR-0072; ADR-0076.

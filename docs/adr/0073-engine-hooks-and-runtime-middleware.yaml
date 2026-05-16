@@ -136,3 +136,41 @@ enforcer_rows:
   - E80   # RuntimeMiddlewareInterceptsHooksIT (kind: integration, level: L1, view: process)
 gate_rules:
   - rule_57_engine_hooks_yaml_present_and_wellformed
+
+# Hook ownership clarification — added in Phase 7 audit response
+# (D:/.claude/plans/spi-atomic-willow.md L-5). Earlier Phase 2 text was
+# ambiguous about whether engines must declare runtime-fired hooks
+# (BEFORE_SUSPENSION, BEFORE_RESUME, ON_ERROR) in their EngineHookSurface.
+# The nine canonical HookPoints split into two ownership classes:
+#
+#   runtime_fired (orchestrator-owned): on_error, before_suspension,
+#     before_resume. Fired by SyncOrchestrator.executeLoop() regardless of
+#     which engine executes. Engines NEED NOT declare these in
+#     EngineHookSurface.supportedHooks(); they are present implicitly on
+#     every engine path.
+#
+#   engine_fired (engine-owned): before_llm_invocation, after_llm_invocation,
+#     before_tool_invocation, after_tool_invocation, before_memory_read,
+#     after_memory_write. Fired by the engine's own execute() at internal
+#     LLM/tool/memory call-sites. The engine MUST declare these in
+#     EngineHookSurface.supportedHooks(). Reference executors
+#     (SequentialGraphExecutor, IterativeAgentLoopExecutor) at W2.x return
+#     empty() because they delegate to user lambdas without introspecting
+#     these events. W2 production engines fire them explicitly.
+#
+# The canonical map ships in docs/contracts/engine-hooks.v1.yaml under
+# `hook_ownership:`. Gate Rule 57 continues to validate the `hooks:` list ↔
+# HookPoint enum; the ownership map is supplementary metadata and does NOT
+# change the Java enum surface.
+hook_ownership:
+  runtime_fired:
+    - on_error
+    - before_suspension
+    - before_resume
+  engine_fired:
+    - before_llm_invocation
+    - after_llm_invocation
+    - before_tool_invocation
+    - after_tool_invocation
+    - before_memory_read
+    - after_memory_write

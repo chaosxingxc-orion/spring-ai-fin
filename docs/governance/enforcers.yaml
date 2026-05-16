@@ -772,3 +772,24 @@
   view: development
   artifact: agent-runtime/src/test/java/ascend/springai/runtime/evolution/EveryRunEventDeclaresEvolutionExportTest.java
   asserts: "Every record class implementing ascend.springai.runtime.runs.RunEvent declares an evolutionExport() accessor returning ascend.springai.runtime.evolution.EvolutionExport. Armed with allowEmptyShould(true) at W2.x because RunEvent ships in W2 per ADR-0022 -- test starts asserting per-variant declaration when variants land."
+
+# ---------------------------------------------------------------------------
+# W2.x Phase 7 audit response -- Rule 44 compliance closure + Phase 3a Matrix freeze
+# (plan D:/.claude/plans/spi-atomic-willow.md L-1 + L-12)
+# ---------------------------------------------------------------------------
+
+- id: E88
+  constraint_ref: "CLAUDE.md Rule 44 (Strict Engine Matching) -- FAILED-transition half; ADR-0072; P-M"
+  kind: integration
+  level: L1
+  view: process
+  artifact: agent-runtime/src/test/java/ascend/springai/runtime/engine/EngineMismatchTransitionsRunToFailedIT.java#engine_mismatch_transitions_run_to_failed_and_fires_on_error_with_reason
+  asserts: "SyncOrchestrator catches EngineMatchingException, transitions the Run to RunStatus.FAILED with finishedAt set, and fires HookPoint.ON_ERROR carrying reason=engine_mismatch + requestedEngineType + actualPayloadType. Closes the Rule 44 prose-vs-code gap surfaced by the Phase 7 self-audit -- E75 only asserted the exception-raising half, E88 asserts the Run-state-transition half."
+
+- id: E89
+  constraint_ref: "CLAUDE.md Rule 46 (S2C Callback) -- Phase 3a Cross-Rule Co-Design Audit Matrix freeze; ADR-0074; P-M"
+  kind: gate-script
+  level: L0
+  view: scenarios
+  artifact: docs/reviews/2026-05-16-engine-contract-structural-response.en.md
+  asserts: "The Phase 3a section 5 Cross-Rule Co-Design Audit Matrix is referenced by ADR-0074 line 47 and CLAUDE.md Rule 46 prose as the canonical Rules 20/35/38/41/42 interlock specification. Freeze invariant: this file MUST exist on disk; a future rename or split MUST update both anchors AND this enforcer row in the same PR. Today the assertion is structural (file exists); the matrix content itself is reviewed under PR review per Rule 9 ship-gate posture."

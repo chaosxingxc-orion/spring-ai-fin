@@ -80,7 +80,7 @@ decision: |
     structural duplication of the integration test, which is the stronger
     enforcer (observable behaviour vs. file existence).
 
-  - Enforcer row E81 added to docs/governance/enforcers.yaml pointing at the
+  - Enforcer row E84 added to docs/governance/enforcers.yaml pointing at the
     failure-case integration-test method.
 
 consequences:
@@ -115,5 +115,5 @@ verification:
     - "Boot PlatformApplication with -Dapp.engine.envelope-schema-path=/nonexistent.yaml -> startup fails with IllegalStateException"
 
 enforcer_rows:
-  - E81   # EngineRegistryBootValidationIT (kind: integration, level: L1, view: process)
+  - E84   # EngineRegistryBootValidationIT (kind: integration, level: L1, view: process)
 gate_rules: []

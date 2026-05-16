@@ -9,8 +9,8 @@
 #   - release_note_references_four_pillars
 
 version: 1
-generated_at: 2026-05-14
-release: L1.x
+generated_at: 2026-05-16
+release: W2.x Phase 7
 
 dimensions:
 
@@ -36,4 +36,4 @@ dimensions:
     baseline_metric: "tenant_isolation_test_count + audit_envelope_coverage_percent across shipped capabilities"
     current_value: "tenant_isolation_test_count=12, audit_envelope_coverage_percent=0 (audit envelopes land W2 per Rule 17/Rule 24 triggers)"
     measurement_status: "tenant_isolation_test_count is the count of shipped tests asserting tenant scope; manually tallied from architecture-status.yaml"
-    last_measured: 2026-05-14
+    last_measured: 2026-05-16

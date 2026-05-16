@@ -22,13 +22,14 @@ The architecture lives in **two coupled forms** (per ADR-0068):
 
 | Step | Open | Purpose |
 |---|---|---|
-| 1 | `CLAUDE.md` | Rules 1–34 (the active constraint set) and the four Layer-0 principles P-A..P-D |
+| 1 | `CLAUDE.md` | Rules 1–48 (the active constraint set) and the thirteen Layer-0 principles P-A..P-M |
 | 2 | `ARCHITECTURE.md` §0.4 | Layered 4+1 view map of root-level sections |
-| 3 | `docs/governance/architecture-graph.yaml` | All relationships, machine-readable |
+| 3 | `docs/governance/architecture-graph.yaml` | All relationships, machine-readable — canonical entry point |
 | 4 | `docs/governance/architecture-graph.mmd` (optional) | Mermaid render of the graph spine |
-| 5 | `docs/governance/enforcers.yaml` | 59 rows mapping constraints to enforcers |
+| 5 | `docs/governance/enforcers.yaml` | rows mapping constraints to enforcers (E1..E87 as of W2.x Phase 7) |
 | 6 | `docs/governance/architecture-status.yaml` | Capability ledger (what is shipped / verified) |
-| 7 | the ADR YAML referenced by the edge you are traversing | rationale and `extends:` / `relates_to:` |
+| 7 | `docs/CLAUDE-deferred.md` | Rules deferred to W1/W2/W3/W4 with re-introduction triggers |
+| 8 | the ADR YAML referenced by the edge you are traversing | rationale and `extends:` / `relates_to:` |
 
 ## Graph traversal cheatsheet
 

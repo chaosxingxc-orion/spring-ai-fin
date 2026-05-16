@@ -60,3 +60,35 @@ phase_2_mandatory_hooks_fired_by_orchestrator:
 #   engine → HookDispatcher.fire(...). Middlewares depend on HookPoint +
 #   HookContext + HookOutcome. The bridge is EngineRegistry's accessor to
 #   HookDispatcher; engines never reach for middleware classes directly.
+
+# Hook ownership map (Phase 7 audit clarification — Rule 45 / L-5 in
+# `D:/.claude/plans/spi-atomic-willow.md`).
+#
+# The nine canonical HookPoints split into two ownership classes:
+#
+#   runtime_fired — fired by the Orchestrator regardless of which engine
+#     executes. These are present on every engine implicitly and engines
+#     NEED NOT declare them in their EngineHookSurface.supportedHooks().
+#     SyncOrchestrator.executeLoop() fires these at call-sites every engine
+#     path passes through (suspend/resume/error).
+#
+#   engine_fired — fired by the engine's own execute() at its internal
+#     LLM/tool/memory call-sites. The engine MUST declare these in
+#     EngineHookSurface.supportedHooks(). Reference executors at W2.x return
+#     empty() because they delegate to user lambdas without introspecting
+#     these events; W2 production engines fire them explicitly.
+#
+# Gate Rule 57 continues to validate the `hooks:` list ↔ HookPoint enum;
+# this `hook_ownership:` block is supplementary metadata.
+hook_ownership:
+  runtime_fired:
+    - on_error
+    - before_suspension
+    - before_resume
+  engine_fired:
+    - before_llm_invocation
+    - after_llm_invocation
+    - before_tool_invocation
+    - after_tool_invocation
+    - before_memory_read
+    - after_memory_write

@@ -1934,6 +1934,8 @@ fi
 
 # ---------------------------------------------------------------------------
 # Rule 60 positive: grandfathered file containing prose enum passes (file-level grandfather)
+# Phase 7 audit fix: fixture migrated to pipe-delimited <path>|<sunset>|<desc>
+# format per gate/schema-first-grandfathered.txt new shape (plan F1/F2).
 # ---------------------------------------------------------------------------
 _r60_pos="$scratch/r60_pos"
 mkdir -p "$_r60_pos/gate"
@@ -1943,14 +1945,14 @@ Grandfathered: RunMode discriminator GRAPH | AGENT_LOOP
 EOF
 cat > "$_r60_pos/gate/schema-first-grandfathered.txt" <<'EOF'
 # header
-ARCHITECTURE.md:RunMode discriminator GRAPH | AGENT_LOOP -- grandfathered
+ARCHITECTURE.md|2099-12-31|RunMode discriminator GRAPH | AGENT_LOOP -- grandfathered
 EOF
 _r60_pos_ok=0
-if grep -qE "^ARCHITECTURE\.md:" "$_r60_pos/gate/schema-first-grandfathered.txt"; then
+if grep -qE "^ARCHITECTURE\.md\|" "$_r60_pos/gate/schema-first-grandfathered.txt"; then
   _r60_pos_ok=1
 fi
 if [[ "$_r60_pos_ok" -eq 1 ]]; then
-  ok "rule60_schema_first_pos" "grandfathered file-level entry tolerates prose enum"
+  ok "rule60_schema_first_pos" "grandfathered file-level entry tolerates prose enum (pipe-delimited format)"
 else
   fail "rule60_schema_first_pos" "expected grandfather hit"
 fi
@@ -1976,7 +1978,7 @@ _r60_neg_cands=$(awk '
   /[A-Z][A-Z_][A-Z_]*[[:space:]]*\|[[:space:]]*[A-Z][A-Z_][A-Z_]*/ { print NR }
 ' "$_r60_neg/ARCHITECTURE.md")
 _r60_neg_grandfathered=0
-if grep -qE "^ARCHITECTURE\.md:" "$_r60_neg/gate/schema-first-grandfathered.txt"; then
+if grep -qE "^ARCHITECTURE\.md\|" "$_r60_neg/gate/schema-first-grandfathered.txt"; then
   _r60_neg_grandfathered=1
 fi
 _r60_neg_flagged=0
@@ -1997,9 +1999,59 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Rule 60 sunset expired (Phase 7 audit fix, plan F5): a grandfather entry
+# whose sunset_date is in the past MUST be flagged. Mirrors the gate's
+# pipe-delimited parse logic.
+# ---------------------------------------------------------------------------
+_r60_sunset_exp="$scratch/r60_sunset_exp"
+mkdir -p "$_r60_sunset_exp/gate"
+cat > "$_r60_sunset_exp/gate/schema-first-grandfathered.txt" <<'EOF'
+# header -- stale entry whose sunset has passed
+ARCHITECTURE.md|2020-01-01|stale entry -- sunset long passed
+EOF
+_r60_se_today=$(date +%Y-%m-%d)
+_r60_se_flagged=0
+while IFS= read -r _r60_se_line; do
+  [[ -z "$_r60_se_line" || "$_r60_se_line" =~ ^[[:space:]]*# ]] && continue
+  _r60_se_sunset=$(printf '%s' "$_r60_se_line" | cut -d'|' -f2)
+  if [[ "$_r60_se_today" > "$_r60_se_sunset" ]]; then
+    _r60_se_flagged=1
+  fi
+done < "$_r60_sunset_exp/gate/schema-first-grandfathered.txt"
+if [[ "$_r60_se_flagged" -eq 1 ]]; then
+  ok "rule60_schema_first_sunset_expired" "expired sunset_date correctly flagged"
+else
+  fail "rule60_schema_first_sunset_expired" "expected expired sunset_date to be flagged"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 60 sunset malformed (Phase 7 audit fix, plan F5): a grandfather entry
+# whose sunset_date is not YYYY-MM-DD MUST be flagged.
+# ---------------------------------------------------------------------------
+_r60_sunset_mal="$scratch/r60_sunset_mal"
+mkdir -p "$_r60_sunset_mal/gate"
+cat > "$_r60_sunset_mal/gate/schema-first-grandfathered.txt" <<'EOF'
+# header -- malformed sunset date
+ARCHITECTURE.md|20260930|malformed date format (missing dashes)
+EOF
+_r60_sm_flagged=0
+while IFS= read -r _r60_sm_line; do
+  [[ -z "$_r60_sm_line" || "$_r60_sm_line" =~ ^[[:space:]]*# ]] && continue
+  _r60_sm_sunset=$(printf '%s' "$_r60_sm_line" | cut -d'|' -f2)
+  if ! [[ "$_r60_sm_sunset" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+    _r60_sm_flagged=1
+  fi
+done < "$_r60_sunset_mal/gate/schema-first-grandfathered.txt"
+if [[ "$_r60_sm_flagged" -eq 1 ]]; then
+  ok "rule60_schema_first_sunset_malformed" "malformed sunset_date correctly flagged"
+else
+  fail "rule60_schema_first_sunset_malformed" "expected malformed sunset_date to be flagged"
+fi
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
-TOTAL=82
+TOTAL=84
 echo ""
 echo "Tests passed: ${passed}/${TOTAL}"
 
