@@ -26,16 +26,6 @@ At L0/C1, `spring-ai-ascend` has exactly six internal first-class capability blo
 
 Keeping L0 to these six blocks prevents lower-level protocol, implementation, scheduler, state-machine, and test-contract details from being promoted into the top-level architecture. Those details belong in L1/L2 diagrams, relationship labels, legends, or notes.
 
-
-## Deployment custody modes
-
-The two enterprise adoption modes belong primarily in the **Physical View** because they describe who deploys and operates the Agent Service and where sensitive business data crosses trust boundaries:
-
-1. **Platform-hosted service mode**: a department with limited IT capacity holds only the Agent Client and calls an Agent Service deployed by the platform team.
-2. **Department-owned service mode**: an IT-capable department deploys its own Agent Service close to sensitive business data and may connect to MaaS directly under its own credential, network, and data-residency boundary.
-
-The Logical View should keep the same six L0 capabilities and only state ownership semantics. The Scenario View may mention both access modes as a contextual note. Do not create separate L0 components for each operating model; use notes, legends, deployment-plane annotations, or future L1 physical drill-downs.
-
 ## View list
 
 | View | Source | Primary export |

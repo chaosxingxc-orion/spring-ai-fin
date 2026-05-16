@@ -45,7 +45,6 @@ Rel(evolution, observability, "consumes telemetry for improvement loops", $tags=
 
 note right of ascend
 L0 scenario only: asynchronous, interruptible, resumable long-running tasks are shown conceptually.
-Deployment custody may be platform-hosted or department-owned; this changes physical trust boundaries, not the six L0 capabilities.
 Lower-level protocol objects, scheduler mechanics, and service-provider interfaces are intentionally deferred to L1/L2 drill-down diagrams.
 end note
 

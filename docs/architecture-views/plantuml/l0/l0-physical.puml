@@ -29,7 +29,7 @@ Deployment_Node(evolution_plane, "Evolution Plane", "Dedicated offline or near-r
   Container(evolution, $EVOLUTION_NAME, "Evolution capability", "Trajectory scoring plus prompt, skill, and policy optimization loops.", $tags="S-Side", $link=$L1_EVOLUTION)
 }
 
-System_Ext(model_gateway, $MODEL_GATEWAY_NAME, "MaaS or governed model access.", $tags="External")
+System_Ext(model_gateway, $MODEL_GATEWAY_NAME, "External model access.", $tags="External")
 System_Ext(iam, $IAM_NAME, "Identity, policy, and credential authority.", $tags="External")
 System_Ext(observability, $OBSERVABILITY_NAME, "Telemetry, audit, and governance platform.", $tags="External")
 
@@ -43,16 +43,13 @@ Rel(exec_engine, agent_middleware, "uses execution-time shared capabilities")
 Rel(agent_middleware, state_data, "persists and retrieves governed state and knowledge")
 Rel(agent_middleware, sandbox_infra, "delegates isolated tool execution", $tags="boundary")
 Rel(agent_middleware, model_gateway, "invokes governed model access")
-Rel(agent_service, model_gateway, "department-owned service mode may connect directly to MaaS under local policy", $tags="boundary")
 Rel(agent_service, iam, "checks identity, policy, and credentials")
 Rel(agent_bus, evolution, "streams operational and shadow traffic asynchronously", $tags="async")
 Rel(evolution, observability, "reads telemetry and emits governance insight", $tags="async")
 Rel(agent_service, observability, "emits online service health and audit events")
 
 note bottom of compute_plane
-Physical red lines and custody modes:
-- Platform-hosted mode: departments hold only Agent Client and call a platform-operated Agent Service.
-- Department-owned mode: IT-capable departments operate Agent Service near sensitive business data and may connect directly to MaaS.
+Physical red lines:
 - Untrusted code does not run directly in this plane.
 - Online execution must not be blocked by evolution analysis.
 - Detailed resource scheduling and channel design belong to L1/L2.
@@ -70,6 +67,5 @@ legend right
 | Bus & State Hub | Coordination plus durable state and knowledge dependencies. |
 | Sandbox Execution | Isolated untrusted code/tool substrate. |
 | Evolution | Non-blocking improvement analysis. |
-| Custody mode | Deployment ownership/trust-boundary choice, not an extra L0 capability. |
 endlegend
 @enduml

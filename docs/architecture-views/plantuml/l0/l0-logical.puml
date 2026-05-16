@@ -36,8 +36,7 @@ The S-Side may emit candidate updates, but does not own business truth by defaul
 end note
 
 note bottom of s_side
-Runtime trajectory, execution state, and governance state are service-side concerns.
-The Agent Service may be operated by a central platform team or by an IT-capable business department; this is a physical custody choice, not a new L0 capability.
+Runtime trajectory, execution state, and governance state are platform concerns.
 L1/L2 protocol objects, concrete interfaces, state machines, and schedulers are not promoted to L0 components.
 end note
 
