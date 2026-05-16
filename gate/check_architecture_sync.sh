@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# spring-ai-ascend architecture-sync gate -- L1 Rule-28 expansion + Phase K + L1.x Telemetry Vertical + Layer-0 governing principles + W1.x L0 ironclad rules + W2.x Engine Contract Structural Wave (66 rules; Rules 1-29 + 28a-28j sub-checks + Rules 30-44 + Rules 45-52 W1.x + Rules 53-54 W1.x Phases 8-9 + Rules 55-60 W2.x Phases 1-6).
+# spring-ai-ascend architecture-sync gate -- L1 Rule-28 expansion + Phase K + L1.x Telemetry Vertical + Layer-0 governing principles + W1.x L0 ironclad rules + W2.x Engine Contract Structural Wave + v2.0.0-rc2 second-pass closure (63 top-level active rules; Rules 1-29 + 28a-28k sub-checks + Rules 30-44 + Rules 45-52 W1.x + Rules 53-54 W1.x Phases 8-9 + Rules 55-60 W2.x Phases 1-6 + Rules 61-63 v2.0.0-rc2).
 # Exits 0 if all rules pass, 1 if any fail.
 # Each rule prints PASS: <name> or FAIL: <name> -- <reason>.
 # Prints GATE: PASS or GATE: FAIL at the end.
@@ -88,6 +88,10 @@
 #  59.  evolution_scope_yaml_present_and_wellformed   -- docs/governance/evolution-scope.v1.yaml declares 3 discriminator blocks + telemetry-export ref (Rule 47 / P-M, enforcer E86)
 #  --- W2.x Phase 6 — Schema-First Domain Contracts (ADR-0077, Rule 48) ---
 #  60.  schema_first_domain_contracts                   -- prose enums in ARCHITECTURE.md require nearby yaml schema reference or grandfather entry (Rule 48 / P-M cross-cutting, enforcer E85)
+#  --- v2.0.0-rc2 second-pass review closure (F-α / F-β / F-γ category audit) ---
+#  61.  legacy_powershell_gate_deprecated               -- gate/check_architecture_sync.ps1 contains DEPRECATED header AND is absent from architecture-status.yaml#architecture_sync_gate.implementation: (F-α P0-1)
+#  62.  contract_yaml_declares_status                   -- every docs/contracts/*.v1.yaml + 3 governance YAMLs declare top-level status: with allowed enum value (F-β structural prevention)
+#  63.  release_note_retracted_tag_qualified            -- every line in docs/releases/*.md mentioning a tag listed in docs/governance/retracted-tags.txt MUST contain "(retracted)" OR appear under a heading matching "Historical" / "Superseded" (F-γ structural prevention)
 
 set -uo pipefail
 export LC_ALL=C
@@ -2555,6 +2559,180 @@ else
   done
 fi
 if [[ $_r60_fail -eq 0 ]]; then pass_rule "schema_first_domain_contracts"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 61 — legacy_powershell_gate_deprecated (v2.0.0-rc2 / second-pass review P0-1)
+#
+# The PowerShell architecture-sync gate (gate/check_architecture_sync.ps1) was
+# frozen at Rule 29 in 2026-05 while the bash gate evolved to Rule 60+. The
+# second-pass review (docs/reviews/2026-05-16-l0-w2x-rc1-second-pass-architecture-review.en.md
+# §P0-1) required choosing one of two postures. v2.0.0-rc2 picked the
+# canonical-bash posture per the response document. This rule asserts BOTH
+# halves of that posture:
+#   (a) The PS script header carries the DEPRECATED marker.
+#   (b) The PS script is NOT listed in architecture-status.yaml under
+#       architecture_sync_gate.implementation: (a deprecated_implementations:
+#       sibling key is allowed).
+# Drift would let a stale "30-rule pass surface" be re-presented as a shipped
+# architecture-sync gate.
+# ---------------------------------------------------------------------------
+_r61_fail=0
+_r61_ps="gate/check_architecture_sync.ps1"
+_r61_status="docs/governance/architecture-status.yaml"
+if [[ ! -f "$_r61_ps" ]]; then
+  fail_rule "legacy_powershell_gate_deprecated" "$_r61_ps missing -- v2.0.0-rc2 deprecation stub expected"
+  _r61_fail=1
+else
+  if ! grep -qE '^\s*Write-Host\s+"DEPRECATED:' "$_r61_ps"; then
+    fail_rule "legacy_powershell_gate_deprecated" "$_r61_ps missing DEPRECATED Write-Host banner -- v2.0.0-rc2 second-pass review P0-1"
+    _r61_fail=1
+  fi
+fi
+if [[ ! -f "$_r61_status" ]]; then
+  fail_rule "legacy_powershell_gate_deprecated" "$_r61_status missing"
+  _r61_fail=1
+else
+  # Extract the architecture_sync_gate.implementation: block and verify the PS
+  # path is NOT inside it. The deprecated_implementations: sibling is OK.
+  # Capability keys live at 2-space indent (under `capabilities:`); sub-fields
+  # at 4-space indent. Exit-capability pattern must match the 2-space level
+  # specifically -- a 4-space pattern would never fire and in_cap would leak
+  # into every following capability's implementation: block.
+  _r61_in_impl=$(awk '
+    /^  architecture_sync_gate:[[:space:]]*$/ { in_cap=1; next }
+    in_cap && /^  [a-z_]+:/ { in_cap=0; in_impl=0; next }
+    in_cap && /^    implementation:[[:space:]]*$/ { in_impl=1; next }
+    in_cap && in_impl && /^    [a-z_]+:/ { in_impl=0 }
+    in_cap && in_impl && /^[[:space:]]+-[[:space:]]+gate\/check_architecture_sync\.ps1([[:space:]]|$)/ { print "found"; exit }
+  ' "$_r61_status")
+  if [[ -n "$_r61_in_impl" ]]; then
+    fail_rule "legacy_powershell_gate_deprecated" "$_r61_status lists $_r61_ps under architecture_sync_gate.implementation: -- v2.0.0-rc2 requires it under deprecated_implementations: only"
+    _r61_fail=1
+  fi
+fi
+if [[ $_r61_fail -eq 0 ]]; then pass_rule "legacy_powershell_gate_deprecated"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 62 — contract_yaml_declares_status (v2.0.0-rc2 / second-pass review F-β structural prevention)
+#
+# Every domain-contract YAML under docs/contracts/*.v1.yaml AND the three
+# previously-status-less governance YAMLs (skill-capacity, sandbox-policies,
+# bus-channels) MUST declare a top-level `status:` field with a value in
+# {design_only, schema_shipped, runtime_enforced}. This codifies the W2.x
+# "post-review status label" convention and prevents the F-β defect family
+# (deferred-as-live spec drift) from regrowing.
+# ---------------------------------------------------------------------------
+_r62_fail=0
+_r62_allowed_re='^(design_only|schema_shipped|runtime_enforced)$'
+_r62_files=(
+  "docs/contracts/engine-envelope.v1.yaml"
+  "docs/contracts/engine-hooks.v1.yaml"
+  "docs/contracts/s2c-callback.v1.yaml"
+  "docs/contracts/plan-projection.v1.yaml"
+  "docs/governance/evolution-scope.v1.yaml"
+  "docs/governance/skill-capacity.yaml"
+  "docs/governance/sandbox-policies.yaml"
+  "docs/governance/bus-channels.yaml"
+)
+for _r62_file in "${_r62_files[@]}"; do
+  if [[ ! -f "$_r62_file" ]]; then
+    fail_rule "contract_yaml_declares_status" "$_r62_file missing"
+    _r62_fail=1
+    continue
+  fi
+  _r62_status_val=$(awk '
+    /^status:[[:space:]]+/ {
+      v=$0
+      sub(/^status:[[:space:]]+/, "", v)
+      sub(/[[:space:]]+#.*$/, "", v)
+      sub(/[[:space:]]+$/, "", v)
+      print v
+      exit
+    }
+  ' "$_r62_file")
+  if [[ -z "$_r62_status_val" ]]; then
+    fail_rule "contract_yaml_declares_status" "$_r62_file missing top-level 'status:' field"
+    _r62_fail=1
+    continue
+  fi
+  if ! [[ "$_r62_status_val" =~ $_r62_allowed_re ]]; then
+    fail_rule "contract_yaml_declares_status" "$_r62_file has status: '$_r62_status_val' -- must be one of {design_only, schema_shipped, runtime_enforced}"
+    _r62_fail=1
+  fi
+done
+if [[ $_r62_fail -eq 0 ]]; then pass_rule "contract_yaml_declares_status"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 63 — release_note_retracted_tag_qualified (v2.0.0-rc2 / second-pass review F-γ structural prevention)
+#
+# Every tag listed in docs/governance/retracted-tags.txt MUST, wherever it is
+# mentioned in an active release note under docs/releases/*.md, appear either
+#   (a) on the same line as "(retracted)" (case-insensitive), OR
+#   (b) under a markdown heading (line starting with '#') containing
+#       "Historical" or "Superseded" (case-insensitive).
+# Drift would let a retracted tag be re-cited as a recommendation in a fresh
+# release-note section, recreating the F-γ stale-evidence defect that the
+# second-pass review's P1-2 finding flagged.
+# ---------------------------------------------------------------------------
+_r63_fail=0
+_r63_list="docs/governance/retracted-tags.txt"
+if [[ ! -f "$_r63_list" ]]; then
+  fail_rule "release_note_retracted_tag_qualified" "$_r63_list missing -- v2.0.0-rc2 second-pass review F-γ prevention expects this list"
+  _r63_fail=1
+else
+  # Extract just the tag column (first pipe field, comments skipped).
+  _r63_tags=$(awk -F'|' '
+    /^[[:space:]]*#/ { next }
+    NF >= 1 && length($1) > 0 {
+      t=$1
+      sub(/^[[:space:]]+/, "", t)
+      sub(/[[:space:]]+$/, "", t)
+      if (t != "") print t
+    }
+  ' "$_r63_list")
+  if [[ -z "$_r63_tags" ]]; then
+    pass_rule "release_note_retracted_tag_qualified"
+  else
+    shopt -s nullglob
+    for _r63_doc in docs/releases/*.md; do
+      [[ -f "$_r63_doc" ]] || continue
+      while IFS= read -r _r63_tag; do
+        [[ -z "$_r63_tag" ]] && continue
+        # Find every line number that mentions this tag in this doc.
+        _r63_lines=$(grep -nF "$_r63_tag" "$_r63_doc" | cut -d: -f1 || true)
+        [[ -z "$_r63_lines" ]] && continue
+        while IFS= read -r _r63_ln; do
+          [[ -z "$_r63_ln" ]] && continue
+          # Check (a): same line has "(retracted)" (case-insensitive).
+          _r63_lineval=$(sed -n "${_r63_ln}p" "$_r63_doc")
+          if echo "$_r63_lineval" | grep -qiE '\(retracted\)|retracted\b'; then
+            continue
+          fi
+          # Check (b): scan upward for the nearest markdown heading (line starting with '#'),
+          # check whether it contains "Historical" or "Superseded".
+          _r63_qualified=0
+          _r63_scan=$_r63_ln
+          while [[ $_r63_scan -gt 0 ]]; do
+            _r63_above=$(sed -n "${_r63_scan}p" "$_r63_doc")
+            if echo "$_r63_above" | grep -qE '^#'; then
+              if echo "$_r63_above" | grep -qiE 'historical|superseded'; then
+                _r63_qualified=1
+              fi
+              break
+            fi
+            _r63_scan=$((_r63_scan - 1))
+          done
+          if [[ $_r63_qualified -eq 0 ]]; then
+            fail_rule "release_note_retracted_tag_qualified" "$_r63_doc:$_r63_ln mentions retracted tag '$_r63_tag' without '(retracted)' qualifier on the line OR a 'Historical'/'Superseded' heading above"
+            _r63_fail=1
+          fi
+        done <<< "$_r63_lines"
+      done <<< "$_r63_tags"
+    done
+    shopt -u nullglob
+  fi
+fi
+if [[ $_r63_fail -eq 0 ]]; then pass_rule "release_note_retracted_tag_qualified"; fi
 
 # ---------------------------------------------------------------------------
 # Summary

@@ -2120,9 +2120,201 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# RULE 61 -- legacy_powershell_gate_deprecated  (v2.0.0-rc2 second-pass review P0-1)
+# Positive: PS stub with DEPRECATED banner + architecture-status.yaml lists PS only under deprecated_implementations:
+# Negative: PS stub missing the banner OR architecture-status.yaml still lists PS under implementation:
+# ---------------------------------------------------------------------------
+
+## Positive: well-formed deprecation surface passes
+_r61_pos="$scratch/r61_pos"
+mkdir -p "$_r61_pos/gate" "$_r61_pos/docs/governance"
+cat > "$_r61_pos/gate/check_architecture_sync.ps1" <<'EOF'
+#!/usr/bin/env pwsh
+Write-Host "DEPRECATED: this gate was frozen at Rule 29 in 2026-05."
+exit 2
+EOF
+# Realistic yaml: capabilities: at level 0, capability keys at 2-space indent,
+# sub-fields at 4-space indent. Include a SECOND capability with its own
+# implementation: list to confirm in_cap correctly resets across capabilities.
+cat > "$_r61_pos/docs/governance/architecture-status.yaml" <<'EOF'
+capabilities:
+  architecture_sync_gate:
+    shipped: true
+    implementation:
+      - gate/check_architecture_sync.sh
+    deprecated_implementations:
+      - gate/check_architecture_sync.ps1
+    tests:
+      - gate/test_architecture_sync_gate.sh
+  other_capability:
+    shipped: true
+    implementation:
+      - gate/check_architecture_sync.ps1
+    tests: []
+EOF
+_r61_pos_fail=0
+if ! grep -qE '^\s*Write-Host\s+"DEPRECATED:' "$_r61_pos/gate/check_architecture_sync.ps1"; then _r61_pos_fail=1; fi
+_r61_pos_in_impl=$(awk '
+  /^  architecture_sync_gate:[[:space:]]*$/ { in_cap=1; next }
+  in_cap && /^  [a-z_]+:/ { in_cap=0; in_impl=0; next }
+  in_cap && /^    implementation:[[:space:]]*$/ { in_impl=1; next }
+  in_cap && in_impl && /^    [a-z_]+:/ { in_impl=0 }
+  in_cap && in_impl && /^[[:space:]]+-[[:space:]]+gate\/check_architecture_sync\.ps1([[:space:]]|$)/ { print "found"; exit }
+' "$_r61_pos/docs/governance/architecture-status.yaml")
+if [[ -n "$_r61_pos_in_impl" ]]; then _r61_pos_fail=1; fi
+if [[ $_r61_pos_fail -eq 0 ]]; then
+  ok "rule61_legacy_ps_pos" "valid PS deprecation stub + impl-list exclusion passes (in_cap resets across capabilities)"
+else
+  fail "rule61_legacy_ps_pos" "expected PASS for valid PS deprecation surface"
+fi
+
+## Negative: PS still listed under implementation: triggers FAIL
+_r61_neg="$scratch/r61_neg"
+mkdir -p "$_r61_neg/gate" "$_r61_neg/docs/governance"
+cat > "$_r61_neg/gate/check_architecture_sync.ps1" <<'EOF'
+#!/usr/bin/env pwsh
+Write-Host "DEPRECATED: stub"
+exit 2
+EOF
+cat > "$_r61_neg/docs/governance/architecture-status.yaml" <<'EOF'
+capabilities:
+  architecture_sync_gate:
+    shipped: true
+    implementation:
+      - gate/check_architecture_sync.ps1
+      - gate/check_architecture_sync.sh
+    tests: []
+EOF
+_r61_neg_in_impl=$(awk '
+  /^  architecture_sync_gate:[[:space:]]*$/ { in_cap=1; next }
+  in_cap && /^  [a-z_]+:/ { in_cap=0; in_impl=0; next }
+  in_cap && /^    implementation:[[:space:]]*$/ { in_impl=1; next }
+  in_cap && in_impl && /^    [a-z_]+:/ { in_impl=0 }
+  in_cap && in_impl && /^[[:space:]]+-[[:space:]]+gate\/check_architecture_sync\.ps1([[:space:]]|$)/ { print "found"; exit }
+' "$_r61_neg/docs/governance/architecture-status.yaml")
+if [[ -n "$_r61_neg_in_impl" ]]; then
+  ok "rule61_legacy_ps_neg" "PS still under implementation: correctly triggers FAIL"
+else
+  fail "rule61_legacy_ps_neg" "expected FAIL for PS listed under implementation:"
+fi
+
+# ---------------------------------------------------------------------------
+# RULE 62 -- contract_yaml_declares_status  (v2.0.0-rc2 F-β structural prevention)
+# Positive: YAML with top-level status: schema_shipped passes
+# Negative: YAML missing status: field OR with unknown enum value triggers FAIL
+# ---------------------------------------------------------------------------
+
+## Positive: well-formed YAML with allowed status value
+_r62_pos="$scratch/r62_pos.yaml"
+cat > "$_r62_pos" <<'EOF'
+schema: example/v1
+status: schema_shipped
+authority: ADR-XXXX
+EOF
+_r62_pos_val=$(awk '
+  /^status:[[:space:]]+/ {
+    v=$0
+    sub(/^status:[[:space:]]+/, "", v)
+    sub(/[[:space:]]+#.*$/, "", v)
+    sub(/[[:space:]]+$/, "", v)
+    print v
+    exit
+  }
+' "$_r62_pos")
+_r62_allowed_re='^(design_only|schema_shipped|runtime_enforced)$'
+if [[ -n "$_r62_pos_val" ]] && [[ "$_r62_pos_val" =~ $_r62_allowed_re ]]; then
+  ok "rule62_contract_status_pos" "valid status: schema_shipped passes"
+else
+  fail "rule62_contract_status_pos" "expected PASS for status: schema_shipped"
+fi
+
+## Negative: YAML with unknown status value triggers FAIL
+_r62_neg="$scratch/r62_neg.yaml"
+cat > "$_r62_neg" <<'EOF'
+schema: example/v1
+status: live
+EOF
+_r62_neg_val=$(awk '
+  /^status:[[:space:]]+/ {
+    v=$0
+    sub(/^status:[[:space:]]+/, "", v)
+    sub(/[[:space:]]+#.*$/, "", v)
+    sub(/[[:space:]]+$/, "", v)
+    print v
+    exit
+  }
+' "$_r62_neg")
+if [[ -n "$_r62_neg_val" ]] && ! [[ "$_r62_neg_val" =~ $_r62_allowed_re ]]; then
+  ok "rule62_contract_status_neg" "unknown status: 'live' correctly triggers FAIL"
+else
+  fail "rule62_contract_status_neg" "expected FAIL for unknown status value"
+fi
+
+# ---------------------------------------------------------------------------
+# RULE 63 -- release_note_retracted_tag_qualified  (v2.0.0-rc2 F-γ structural prevention)
+# Positive: release note mentioning retracted tag on the same line as "(retracted)" passes
+# Negative: bare mention with no qualifier and no Historical/Superseded heading above triggers FAIL
+# ---------------------------------------------------------------------------
+
+## Positive: tag co-located with "(retracted)" qualifier
+_r63_pos="$scratch/r63_pos.md"
+cat > "$_r63_pos" <<'EOF'
+# Release v2.0.0-rc2
+
+**Tag:** `v2.0.0-rc2` (prior `v2.0.0-w2x-final` (retracted) superseded by rc1)
+EOF
+_r63_tag="v2.0.0-w2x-final"
+_r63_lines=$(grep -nF "$_r63_tag" "$_r63_pos" | cut -d: -f1)
+_r63_pos_fail=0
+while IFS= read -r _r63_ln; do
+  [[ -z "$_r63_ln" ]] && continue
+  _r63_lineval=$(sed -n "${_r63_ln}p" "$_r63_pos")
+  if echo "$_r63_lineval" | grep -qiE '\(retracted\)|retracted\b'; then continue; fi
+  _r63_pos_fail=1
+done <<< "$_r63_lines"
+if [[ $_r63_pos_fail -eq 0 ]]; then
+  ok "rule63_retracted_tag_pos" "tag with '(retracted)' qualifier on same line passes"
+else
+  fail "rule63_retracted_tag_pos" "expected PASS for tag co-located with '(retracted)'"
+fi
+
+## Negative: bare tag mention under a non-Historical heading triggers FAIL
+_r63_neg="$scratch/r63_neg.md"
+cat > "$_r63_neg" <<'EOF'
+# Release v2.0.0-x
+
+## Conclusion
+
+Recommended tag: `v2.0.0-w2x-final` on the merge commit.
+EOF
+_r63_neg_lines=$(grep -nF "$_r63_tag" "$_r63_neg" | cut -d: -f1)
+_r63_neg_caught=0
+while IFS= read -r _r63_ln; do
+  [[ -z "$_r63_ln" ]] && continue
+  _r63_lineval=$(sed -n "${_r63_ln}p" "$_r63_neg")
+  if echo "$_r63_lineval" | grep -qiE '\(retracted\)|retracted\b'; then continue; fi
+  _r63_qualified=0
+  _r63_scan=$_r63_ln
+  while [[ $_r63_scan -gt 0 ]]; do
+    _r63_above=$(sed -n "${_r63_scan}p" "$_r63_neg")
+    if echo "$_r63_above" | grep -qE '^#'; then
+      if echo "$_r63_above" | grep -qiE 'historical|superseded'; then _r63_qualified=1; fi
+      break
+    fi
+    _r63_scan=$((_r63_scan - 1))
+  done
+  if [[ $_r63_qualified -eq 0 ]]; then _r63_neg_caught=1; fi
+done <<< "$_r63_neg_lines"
+if [[ $_r63_neg_caught -eq 1 ]]; then
+  ok "rule63_retracted_tag_neg" "bare retracted-tag mention under non-Historical heading correctly triggers FAIL"
+else
+  fail "rule63_retracted_tag_neg" "expected FAIL for bare retracted tag with no qualifier"
+fi
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
-TOTAL=86
+TOTAL=92
 echo ""
 echo "Tests passed: ${passed}/${TOTAL}"
 

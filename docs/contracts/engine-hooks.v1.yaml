@@ -36,14 +36,34 @@ hooks:
   - on_error
 
 ordering: declared
+
+# ---------------------------------------------------------------------------
+# failure_propagation: TARGET semantics (deferred outcome consumption).
+#
+# IMPORTANT (rc2 truth alignment, P0-2):
+#   The block below describes the TARGET behavior that activates when
+#   HookOutcome consumption lands in W2 Telemetry Vertical per Rule 45.b.
+#   At W2.x Phase 2 / v2.0.0-rc2 the dispatcher fires hooks and returns
+#   outcomes, BUT the SyncOrchestrator DISCARDS the returned HookOutcome at
+#   every call-site (see SyncOrchestrator class Javadoc). Run-state effects
+#   described here (Fail -> Run.FAILED, ShortCircuit -> engine bypass) do
+#   NOT happen today.
+#
+#   The "fail_fast" semantics today apply only INSIDE the dispatcher chain
+#   (a non-Proceed outcome stops subsequent middlewares from firing for the
+#   same HookPoint in the same fire() call). The Run lifecycle is unaffected.
+# ---------------------------------------------------------------------------
 failure_propagation:
-  # Default: a middleware that returns HookOutcome.Fail aborts the dispatch
-  # chain. Subsequent hooks at the same point are not fired. The Run
-  # transitions to FAILED with the middleware-declared reason.
+  # TARGET (Rule 45.b, W2 Telemetry Vertical): a middleware that returns
+  # HookOutcome.Fail aborts the dispatch chain; subsequent hooks at the same
+  # point are not fired; the Run transitions to FAILED with the middleware-
+  # declared reason. TODAY (v2.0.0-rc2): only the chain-abort half is wired;
+  # Run.FAILED transition is deferred.
   default: fail_fast
-  # Per-hook override: on_error never fail-fasts (failing inside an error
+  # TARGET (Rule 45.b): on_error never fail-fasts (failing inside an error
   # handler would mask the original error). It always fires the full chain
-  # and aggregates outcomes via "first non-Proceed wins".
+  # and aggregates outcomes via "first non-Proceed wins". TODAY: outcomes
+  # from on_error are likewise discarded by the orchestrator.
   per_hook:
     on_error: best_effort
 

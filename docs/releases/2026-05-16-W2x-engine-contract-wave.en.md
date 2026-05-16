@@ -18,8 +18,8 @@ These counts replace any earlier "Updated counts" addendum table; per post-relea
 |---|---|
 | §4 constraints | 65 |
 | Active ADRs | 77 |
-| Active gate rules | 60 |
-| Gate self-test cases | 86 |
+| Active gate rules | 63 |
+| Gate self-test cases | 92 |
 | active engineering rules | 34 |
 | Layer-0 governing principles | 13 |
 | enforcer rows | 91 |
@@ -97,12 +97,13 @@ S2C touched the highest cross-cutting risk in the wave. The Phase 3a audit matri
 - **RunEvent + EvolutionExport integration** — `EvolutionExport` enum + armed-empty ArchUnit ship at W2.x; W2 RunEvent variants will declare `evolutionExport()`.
 - **Existing prose-enum retrofit** — 10 grandfathered entries in `gate/schema-first-grandfathered.txt` (RunStatus DFA, RunMode, deployment_plane, SuspendReason variants, RunScope, SkillKind, SkillTrustTier, JoinPolicy/ChildFailurePolicy, SemanticOntology, AdmissionDecision, BackpressureSignal, IdempotencyRecord CHECK). Retrofit scheduled per `CLAUDE-deferred.md` 48.b (W3).
 
-## Verification
+## Verification (v2.0.0-rc2 canonical)
 
-- `./mvnw test` → 200 tests / 0 failures (135 agent-runtime + 65 agent-platform)
-- `bash gate/check_architecture_sync.sh` → GATE: PASS with 66 active rules
-- `bash gate/test_architecture_sync_gate.sh` → 86/86 self-tests PASS (v2.0.0-rc1: +2 sunset_expired/malformed + 2 Rule 28k positive/negative)
-- `bash gate/build_architecture_graph.sh` → 219+ nodes / 272+ edges; idempotent regen byte-identical
+- `./mvnw clean verify` → 213 tests / 0 failures (146 agent-runtime + 67 agent-platform; see canonical baseline above)
+- `bash gate/check_architecture_sync.sh` → GATE: PASS with 63 active gate rules (60 + Rules 61–63 added in v2.0.0-rc2)
+- `bash gate/test_architecture_sync_gate.sh` → 92/92 self-tests PASS (86 + 6 added in v2.0.0-rc2 covering Rules 61/62/63 positive + negative)
+- `python gate/build_architecture_graph.py` → 246 nodes / 323 edges (Phase 7 baseline; rc2 regenerates idempotently)
+- `pwsh gate/check_architecture_sync.ps1` → exits 2 with `DEPRECATED` banner (v2.0.0-rc2: canonical-bash posture; PS entrypoint is fail-closed per second-pass review P0-1)
 
 ## Authority
 
@@ -113,7 +114,9 @@ S2C touched the highest cross-cutting risk in the wave. The Phase 3a audit matri
 
 ---
 
-# Addendum — W2.x Phase 7 Audit Response (2026-05-16 evening)
+# Addendum — W2.x Phase 7 Audit Response (Superseded by §Baseline counts above — historical narrative only)
+
+> **Supersession notice (v2.0.0-rc2, second-pass review P1-2):** every numeric and tag claim below this header is the Phase 7 *snapshot*, not the current rc2 baseline. The canonical numbers live in §Baseline counts and §Verification at the top of this release note. Where the historical text below disagrees with the top, the top wins. The Conclusion (`v2.0.0-w2x-final`) is retracted per the second-pass review.
 
 **Audit plan:** `D:/.claude/plans/spi-atomic-willow.md`
 **Trigger:** user request to audit conflicts between architecture declarations, engineering rules (CLAUDE.md), architecture decisions (ADRs), and SPI — and reflect on whether the corpus is L0-release-ready.
@@ -203,8 +206,10 @@ bash gate/check_architecture_sync.sh                     # PASS (60 rules)
 ./mvnw -pl agent-platform -am test                       # 65 / 0
 ```
 
-## Conclusion
+## Conclusion (Historical — rc2 supersession)
 
 The W2.x Engine Contract Structural Wave — including the Phase 7 audit response landed in this addendum — closes the structural coupling between (a) ARCHITECTURE.md prose, (b) CLAUDE.md L0/L1 rules, (c) ADR-0001..0077 decisions, and (d) the Java SPI surfaces under `agent-runtime/`. Every active normative claim is either enforced by a real artefact whose existence the gate verifies, or registered in `CLAUDE-deferred.md` with an explicit re-introduction trigger.
 
-**The corpus is L0-release-ready.** Recommended tag: **`v2.0.0-w2x-final`** on the merge commit.
+**Historical Phase 7 conclusion:** the corpus was declared L0-release-ready and the recommended tag was `v2.0.0-w2x-final` (retracted).
+
+**Canonical v2.0.0-rc2 conclusion:** the corpus is L0-release-ready. The recommended canonical tag is **`v2.0.0-rc2`** (the prior `v2.0.0-w2x-final` and the intermediate `v2.0.0-rc1` are both superseded; `v2.0.0-w2x-final` was retracted in `docs/governance/retracted-tags.txt`). See the rc2 response document `docs/reviews/2026-05-17-l0-w2x-rc1-second-pass-review-response.en.md` for the 4-finding closure evidence and category-audit summary.

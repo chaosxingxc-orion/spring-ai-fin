@@ -15,6 +15,15 @@
 version: 1
 generated_at: 2026-05-15
 
+# Post-rc2 status label (gate Rule 62 `contract_yaml_declares_status`): this
+# file ships the capacity SCHEMA + per-skill capacity declarations. The
+# `model-call` + `memory-write` rows are runtime_enforced today via
+# DefaultSkillResilienceContract.resolve (Rule 41.b, gate Rule 54, enforcer
+# E73). The `s2c.client.callback` row is schema_only at v2.0.0-rc2 —
+# SyncOrchestrator.handleClientCallback does not yet consult capacity
+# (see ResilienceContract integration deferred per CLAUDE-deferred.md 46.b).
+status: schema_shipped
+
 # Per-skill capacity declarations. At W1 entry the platform ships with two
 # baseline skills wired into the runtime (model-call, memory-write); additional
 # skills add rows here as they ship.
@@ -49,9 +58,16 @@ skills:
     description: "Server-to-Client (S2C) capability callback (ADR-0074, W2.x Phase 3)"
     capacity_per_tenant: 4                            # short-lived RPC; smaller than model-call
     global_capacity: 64                               # bounded cluster footprint for client callbacks
-    queue_strategy: suspend                           # over-cap callers receive SuspendReason.RateLimited
+    queue_strategy: suspend                           # TARGET: over-cap callers receive SuspendReason.RateLimited (W2 wiring per Rule 46.b)
     timeout_ms: 30000                                 # 30s upper bound; longer waits use AwaitClientCallback.deadline
     realised_by:
       module_l0: agent-runtime
       reactor_module: agent-runtime
-      enforcer: SyncOrchestrator.handleClientCallback (W2.x); ResilienceContract.resolve (W2 wiring)
+      # rc2 truth alignment: SyncOrchestrator.handleClientCallback today only
+      # validates the S2C response and transitions the Run to FAILED on the
+      # five typed failure modes (E82 round-trip + E90 FAILED-transition IT).
+      # It does NOT consult this capacity matrix. Capacity-driven admission
+      # via ResilienceContract.resolve is deferred to W2 per ADR-0074 §Consequences
+      # and CLAUDE-deferred.md 46.b. The capacity numbers above are advisory at
+      # v2.0.0-rc2 and become binding at W2 wiring.
+      enforcer: SyncOrchestrator.handleClientCallback (W2.x Phase 3 — transport + response validation only); ResilienceContract.resolve admission deferred to W2 per Rule 46.b

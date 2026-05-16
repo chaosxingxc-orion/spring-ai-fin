@@ -352,13 +352,13 @@ Enforced by Gate Rule 52 (`sandbox_policies_yaml_present_and_wellformed`) — sc
 
 ### W2.x Engine Contract Structural Wave (P-M)
 
-Six new rules absorb the 2026-05-15 L0 proposal "Runtime-Engine Contract for Heterogeneous Agent Execution" — see ADR-0071 (umbrella), ADR-0072 (envelope + matching), ADR-0073 (hooks + middleware), ADR-0074 (S2C callback), ADR-0075 (evolution scope), ADR-0077 (schema-first cross-cutting). All five substantive ADRs follow the wave's **structural invariant**: every new domain contract ships as `yaml schema → Java type that validates against the schema → runtime self-validate`. Rule 48 makes this invariant gate-enforced for future contracts.
+Six new rules absorb the 2026-05-15 L0 proposal "Runtime-Engine Contract for Heterogeneous Agent Execution" — see ADR-0071 (umbrella), ADR-0072 (envelope + matching), ADR-0073 (hooks + middleware), ADR-0074 (S2C callback), ADR-0075 (evolution scope), ADR-0077 (schema-first cross-cutting). All five substantive ADRs follow the wave's **structural invariant**: every new domain contract ships as `yaml schema → Java type that validates REQUIRED FIELDS on construction → runtime self-validates membership and other invariants at registry boot / dispatch`. Rule 48 makes this invariant gate-enforced for future contracts. Strict construction-time membership validation for `EngineEnvelope` is deferred to Rule 48.c (re-introduction trigger: first envelope built outside the Spring-boot test harness).
 
 ---
 
 #### Rule 43 — Engine Envelope Single Authority
 
-**Every Run dispatch MUST go through `EngineRegistry.resolve(envelope)` (or the convenience `resolveByPayload(def)`). Pattern-matching on `ExecutorDefinition` subtypes outside `ascend.springai.runtime.engine.EngineRegistry` is forbidden. The envelope schema `docs/contracts/engine-envelope.v1.yaml` is the single source of truth for engine metadata; the `EngineEnvelope` Java record validates against it on construction.**
+**Every Run dispatch MUST go through `EngineRegistry.resolve(envelope)` (or the convenience `resolveByPayload(def)`). Pattern-matching on `ExecutorDefinition` subtypes outside `ascend.springai.runtime.engine.EngineRegistry` is forbidden. The envelope schema `docs/contracts/engine-envelope.v1.yaml` is the single source of truth for engine metadata; the `EngineEnvelope` Java record mirrors the schema and validates required fields (nullability, blanks) on construction. `known_engines` membership is enforced by `EngineRegistry.resolve(...)` and registry boot validation (Phase 5 R2 pilot — enforcer E84); constructor-level membership validation is deferred to Rule 48.c.**
 
 Authority: ADR-0072 / P-M. Enforced by Gate Rule 55 (`engine_envelope_yaml_present_and_wellformed`, enforcer E76) and ArchUnit E74 (`EnginePayloadDispatchOnlyViaRegistryTest` — every concrete Orchestrator implementation depends on EngineRegistry).
 
@@ -412,4 +412,4 @@ Authority: ADR-0077 / P-M cross-cutting invariant. Enforced by Gate Rule 60 (`sc
 
 ## Deferred Rules
 
-See [`docs/CLAUDE-deferred.md`](docs/CLAUDE-deferred.md). Currently deferred: Rules 7, 8, 11, 13, 14, 15, 16, 17, 18, 19, 22, 23, 24, 26, 27 — plus sub-clauses 29.c, 30.b, 30.d, 31.b, 32.b, 32.c, 32.d, 35.b, 37.c, 40.b, 42.b, 44.b, 44.c, 45.b, 46.b, 48.b, 48.c. Each has an explicit re-introduction trigger. Rule 36.b activated in W1.x Phase 8 (`RunCursorFlowIT.createReturns202WithCursorWithin200ms`, enforcer E72, gate Rule 53 per ADR-0070); Rule 41.b activated in W1.x Phase 9 (`SkillCapacityResolutionIT.suspendsSecondCallerWhenCapacityIsOne`, enforcer E73, gate Rule 54 per ADR-0070).
+See [`docs/CLAUDE-deferred.md`](docs/CLAUDE-deferred.md). Currently deferred: Rules 7, 8, 11, 13, 14, 15, 16, 17, 18, 19, 22, 23, 24, 26, 27 — plus sub-clauses 29.c, 30.b, 30.d, 31.b, 32.b, 32.c, 32.d, 35.b, 37.c, 40.b, 42.b, 44.b, 44.c, 45.b, 46.b, 48.b, 48.c, 28k.b. Each has an explicit re-introduction trigger. Rule 36.b activated in W1.x Phase 8 (`RunCursorFlowIT.createReturns202WithCursorWithin200ms`, enforcer E72, gate Rule 53 per ADR-0070); Rule 41.b activated in W1.x Phase 9 (`SkillCapacityResolutionIT.suspendsSecondCallerWhenCapacityIsOne`, enforcer E73, gate Rule 54 per ADR-0070). Rule 28k.b added in v2.0.0-rc2 per second-pass review F-α category audit (schema↔Java-shape parity ArchUnit deferred to W3).

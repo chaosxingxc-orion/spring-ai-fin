@@ -17,6 +17,15 @@
 version: 1
 generated_at: 2026-05-15
 
+# Post-rc2 status label (gate Rule 62 `contract_yaml_declares_status`): this
+# file ships the channel SCHEMA + logical channel declarations. Physical
+# transport implementation (priority queues / Kafka topics / Tick Engine) is
+# deferred to W2 per CLAUDE-deferred.md 35.b. The `physical_channel:` strings
+# below (e.g. `in_memory_priority_queue_w0`) are in-process stubs at W0;
+# they do NOT yet provide physical isolation between control / data / rhythm
+# traffic.
+status: schema_shipped
+
 channels:
   - id: control
     priority: highest

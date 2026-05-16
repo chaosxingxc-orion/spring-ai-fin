@@ -53,8 +53,11 @@ public final class SyncOrchestrator implements Orchestrator {
      * <p>W2.x Phase 2 (ADR-0073): the orchestrator fires three structural
      * hooks ({@link HookPoint#ON_ERROR}, {@link HookPoint#BEFORE_SUSPENSION},
      * {@link HookPoint#BEFORE_RESUME}) via {@link EngineRegistry#hookDispatcher()}.
-     * Phase 2 logs outcomes only; outcome handling (Fail aborts, ShortCircuit
-     * returns) lands in W2 Telemetry Vertical.
+     * Returned {@link ascend.springai.runtime.orchestration.spi.HookOutcome} is
+     * DISCARDED at every call-site; Run-state consumption (Fail abort,
+     * ShortCircuit bypass) is deferred to W2 Telemetry Vertical per Rule 45.b.
+     * The discard is intentional — the dispatcher already enforces in-chain
+     * fail-fast among middlewares, but the Run lifecycle is unaffected today.
      */
     public SyncOrchestrator(RunRepository runs, Checkpointer checkpointer, EngineRegistry engineRegistry) {
         AppPostureGate.requireDevForInMemoryComponent("SyncOrchestrator");

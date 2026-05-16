@@ -15,6 +15,14 @@
 version: 1
 generated_at: 2026-05-15
 
+# Post-rc2 status label (gate Rule 62 `contract_yaml_declares_status`): this
+# file ships the policy SCHEMA + default_policy structure. Runtime
+# enforcement of logical-grant subsumption by SandboxExecutor is deferred to
+# W2 per CLAUDE-deferred.md 42.b. Per-skill rows below describe the TARGET
+# physical-sandbox subsumption; SandboxExecutor refusing over-wide grants
+# does not yet exist.
+status: schema_shipped
+
 # Default deny — any skill not explicitly declared below has zero outbound
 # network access and zero filesystem access.
 default_policy:

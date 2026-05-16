@@ -381,6 +381,25 @@ Composes with: Rule 48 (Schema-First Domain Contracts); ADR-0077; ADR-0068 (Laye
 
 ---
 
+## Rule 28k.b — Schema↔Java-Shape Parity ArchUnit [Deferred to W3]
+
+**Re-introduction trigger**: W3 contract-design sprint kickoff — the same trigger as Rule 48.b, since both close the structural gap surfaced by the v2.0.0-rc1 second-pass review F-α category audit.
+
+**Rule (draft)**: For every `docs/contracts/*.v1.yaml` schema that declares a `required_fields:` or `hooks:` (or equivalent ordered enum) block AND a paired Java type whose name is named in the YAML header comment, an ArchUnit test MUST assert bidirectional shape parity:
+- Every Java record component / enum constant has a matching YAML entry (no extra Java symbols).
+- Every YAML entry has a matching Java record component / enum constant (no extra YAML entries).
+
+**Background**: The W2.x wave shipped two strong parity enforcers — E77 (`engine_registry_covers_all_known_engines`: bidirectional `known_engines[].id` ↔ `ENGINE_TYPE`) and E78 (`engine_hooks_yaml_present_and_wellformed`: bidirectional `hooks:` list ↔ `HookPoint` enum). Three other mirror claims ship only schema-presence checks, not shape parity:
+- `EngineEnvelope` record `required_fields:` ↔ Java record components (only nullability validated today, partially covered by E76+E84).
+- `engine-hooks.v1.yaml` hook order ↔ `HookPoint` enum declaration order (E78 checks set membership, not order — though order is asserted in `engine-hooks.v1.yaml#ordering: declared`).
+- `evolution-scope.v1.yaml` discriminators ↔ `EvolutionExport` enum constants (E87 is armed-empty until W2 RunEvent variants ship).
+
+The rc2 second-pass review flagged these as P1 F-α instances (parity claims without binding cross-check). The reviewer's narrowed wording closes them at the prose level; this deferral records the structural fix.
+
+Composes with: Rule 28 (Code-as-Contract Coverage); Rule 48 (Schema-First Domain Contracts); ADR-0072; ADR-0073; ADR-0075; v2.0.0-rc1 second-pass review F-α category audit (`docs/reviews/2026-05-17-l0-w2x-rc1-second-pass-review-response.en.md` §2).
+
+---
+
 ## Rule 48.c — EngineEnvelope Strict-Construction Validation [Deferred to W2]
 
 **Re-introduction trigger**: first `EngineEnvelope` construction outside a Spring-boot test harness — i.e., production code that constructs envelopes from external input (REST controller, message-bus consumer, client SDK) rather than from a programmer-controlled literal.

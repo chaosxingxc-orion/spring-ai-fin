@@ -6,11 +6,15 @@
 #
 # This file is the SINGLE SOURCE OF TRUTH for what an EngineEnvelope is. The
 # Java record ascend.springai.runtime.engine.EngineEnvelope mirrors this
-# schema and validates against it on construction. The runtime EngineRegistry
-# loads this file at boot and asserts:
+# schema and validates REQUIRED FIELDS (nullability, blanks) on construction.
+# `known_engines` membership is enforced by EngineRegistry.resolve(...) and
+# registry boot validation (Phase 5 R2 pilot — runtime self-validation;
+# enforcer E84). Constructor-level membership validation is deferred to
+# Rule 48.c (see docs/CLAUDE-deferred.md — re-introduction trigger: first
+# envelope built outside the Spring-boot test harness). The runtime
+# EngineRegistry loads this file at boot and asserts:
 #   (a) every known_engines[].id has a registered ExecutorAdapter
 #   (b) every registered ExecutorAdapter's engineType() value is in known_engines
-# (Phase 5 R2 pilot — runtime self-validation.)
 #
 # The envelope is intentionally SHALLOW (proposal §3.2): it provides metadata
 # for routing / governance / observability, NOT a universal DSL. The

@@ -1,0 +1,9 @@
+# Retracted git tags — every entry MUST appear with a "(retracted)" qualifier
+# on the same line wherever it is mentioned in active artefacts under
+# docs/, README.md, or CLAUDE.md (gate Rule 63
+# `release_note_retracted_tag_qualified`).
+#
+# Format: <tag> | <retraction_date> | <retraction_reason>
+# Lines starting with # are comments.
+
+v2.0.0-w2x-final | 2026-05-16 | retracted by rc1 post-release fix; superseded by v2.0.0-rc1
