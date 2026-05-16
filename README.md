@@ -12,7 +12,7 @@
 
 - Formal release: [docs/releases/2026-05-14-L1-modular-russell-release.en.md](docs/releases/2026-05-14-L1-modular-russell-release.en.md) (L0 v2 superseded — marked historical)
 - Per-capability shipped/deferred ledger: [docs/governance/architecture-status.yaml](docs/governance/architecture-status.yaml)
-- Architecture baseline: 65 §4 constraints · 70 ADRs · 54 active gate rules · 70 self-tests · 28 active engineering rules · 12 Layer-0 governing principles · 73 enforcer rows · 105+ Maven tests GREEN (L1 release, Phase L per ADR-0060; Telemetry Vertical L1.x per ADR-0061/0062/0063; Layer-0 governing principles P-A..P-D per ADR-0064/0065/0066/0067; W1 Layered 4+1 + Architecture Graph + Phase M remediation per ADR-0068, Rules 33–34, gate Rules 37–44; W1.x Phase 1 L0 ironclad rules P-E..P-L per ADR-0069, Rules 35–42, gate Rules 45–52, enforcers E55–E71; W1.x Phase 8+9 cursor flow + ResilienceContract runtime per ADR-0070, Rules 36.b/41.b activated, gate Rules 53/54, enforcers E72/E73).
+- Architecture baseline: 65 §4 constraints · 77 ADRs · 60 active gate rules · 82 self-tests · 34 active engineering rules · 13 Layer-0 governing principles · 87 enforcer rows · 200 Maven tests GREEN (L1 release, Phase L per ADR-0060; Telemetry Vertical L1.x per ADR-0061/0062/0063; Layer-0 governing principles P-A..P-D per ADR-0064/0065/0066/0067; W1 Layered 4+1 + Architecture Graph + Phase M remediation per ADR-0068, Rules 33–34, gate Rules 37–44; W1.x Phase 1 L0 ironclad rules P-E..P-L per ADR-0069, Rules 35–42, gate Rules 45–52, enforcers E55–E71; W1.x Phase 8+9 cursor flow + ResilienceContract runtime per ADR-0070, Rules 36.b/41.b activated, gate Rules 53/54, enforcers E72/E73; W2.x Engine Contract Structural Wave P-M per ADR-0071..0077, Rules 43–48, gate Rules 55–60, enforcers E74–E87).
 
 ## Quick start
 
@@ -68,5 +68,5 @@ Full matrix: [docs/cross-cutting/posture-model.md](docs/cross-cutting/posture-mo
 
 - [docs/releases/](docs/releases/) — formal release notes.
 - [docs/governance/architecture-status.yaml](docs/governance/architecture-status.yaml) — capability ledger.
-- [gate/README.md](gate/README.md) — architecture-sync gate (54 rules + 70 self-tests).
+- [gate/README.md](gate/README.md) — architecture-sync gate (60 rules + 82 self-tests).
 - [docs/cross-cutting/oss-bill-of-materials.md](docs/cross-cutting/oss-bill-of-materials.md) — OSS dependency policy.

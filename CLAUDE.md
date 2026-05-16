@@ -34,6 +34,8 @@ Every Layer-0 principle is operationalised by one or more Layer-1 rules whose en
 
 - **P-L — Sandbox Permission Subsumption.** Logical authorizations issued by the bus MUST 1:1 map to physical sandbox restrictions (outbound IP whitelist, CPU cap, filesystem access). A logical grant cannot exceed what the physical sandbox enforces; otherwise the runtime authority is fictional. Enforced by Rule 42.
 
+- **P-M — Heterogeneous Engine Contract & Server-Sovereign Boundary.** The platform supports heterogeneous execution engines through a structured contract surface: a lightweight configuration envelope governs registration / routing / observability, strict matching prevents silent reinterpretation of engine-specific payloads, runtime-owned middleware attaches via engine-declared lifecycle hooks, server-to-client capability invocation is an explicit asynchronous protocol bound to the suspend/resume loop, and the evolution mechanism manages only server-controlled execution scope by default. Enforced by Rules 43–47; cross-cutting structural invariant operationalised by Rule 48 (Schema-First Domain Contracts).
+
 History of how the rule set evolved: [`docs/governance/rule-history.md`](docs/governance/rule-history.md). Principle ↔ rule mapping: [`docs/governance/principle-coverage.yaml`](docs/governance/principle-coverage.yaml) (machine-readable; the prior `.md` form was retired in Phase M per ADR-0068 — duplicate truth eliminated; humans read the YAML directly or traverse the graph via `docs/governance/SESSION-START-CONTEXT.md`).
 
 ---
@@ -345,6 +347,64 @@ Enforced by Gate Rule 51 (`skill_capacity_yaml_present_and_wellformed`) — sche
 The L0 motivation (LucioIT W1 §7.4): a logical authorization issued by the bus to a downstream node MUST NOT exceed what the physical sandbox enforces. Otherwise the bus's authorization is a paper grant — the sandbox refuses at runtime, but the failure mode is unpredictable. Subsumption makes the logical-vs-physical mapping 1:1.
 
 Enforced by Gate Rule 52 (`sandbox_policies_yaml_present_and_wellformed`) — schema check. Architecture reference: ADR-0069 / LucioIT W1 §7.4. Runtime enforcement (SandboxExecutor refusing over-wide grants) deferred to W2 per `CLAUDE-deferred.md` 42.b.
+
+---
+
+### W2.x Engine Contract Structural Wave (P-M)
+
+Six new rules absorb the 2026-05-15 L0 proposal "Runtime-Engine Contract for Heterogeneous Agent Execution" — see ADR-0071 (umbrella), ADR-0072 (envelope + matching), ADR-0073 (hooks + middleware), ADR-0074 (S2C callback), ADR-0075 (evolution scope), ADR-0077 (schema-first cross-cutting). All five substantive ADRs follow the wave's **structural invariant**: every new domain contract ships as `yaml schema → Java type that validates against the schema → runtime self-validate`. Rule 48 makes this invariant gate-enforced for future contracts.
+
+---
+
+#### Rule 43 — Engine Envelope Single Authority
+
+**Every Run dispatch MUST go through `EngineRegistry.resolve(envelope)` (or the convenience `resolveByPayload(def)`). Pattern-matching on `ExecutorDefinition` subtypes outside `ascend.springai.runtime.engine.EngineRegistry` is forbidden. The envelope schema `docs/contracts/engine-envelope.v1.yaml` is the single source of truth for engine metadata; the `EngineEnvelope` Java record validates against it on construction.**
+
+Authority: ADR-0072 / P-M. Enforced by Gate Rule 55 (`engine_envelope_yaml_present_and_wellformed`, enforcer E76) and ArchUnit E74 (`EnginePayloadDispatchOnlyViaRegistryTest` — every concrete Orchestrator implementation depends on EngineRegistry).
+
+---
+
+#### Rule 44 — Strict Engine Matching
+
+**A Run whose envelope declares `engine_type=X` MUST be executed only by the `ExecutorAdapter` registered under `X` in `EngineRegistry`. Mismatch raises `EngineMatchingException` and transitions the Run to FAILED with reason `engine_mismatch`. No fallback policy. No silent reinterpretation of the payload as another engine's configuration.**
+
+Authority: ADR-0072 / P-M. Enforced by Gate Rule 56 (`engine_registry_covers_all_known_engines` — bidirectional yaml↔ENGINE_TYPE consistency, enforcer E77) and integration test E75 (`EngineMatchingStrictnessIT`).
+
+---
+
+#### Rule 45 — Runtime-Owned Middleware via Engine Hooks
+
+**Cross-cutting policies (model gateway, tool authz, memory governance, tenant policy, quota, observability, sandbox routing, checkpoint, failure handling) MUST be expressed as `RuntimeMiddleware` listening on the canonical `HookPoint` events declared in `docs/contracts/engine-hooks.v1.yaml` (9 hooks: before/after LLM/tool/memory + before_suspension + before_resume + on_error). Engines MUST NOT depend on concrete middleware implementations. Hook ordering is declared (registration order); default failure propagation is fail-fast; `on_error` is best-effort.**
+
+Authority: ADR-0073 / P-M. Enforced by Gate Rule 57 (`engine_hooks_yaml_present_and_wellformed` — bidirectional yaml↔HookPoint-enum consistency, enforcer E78), ArchUnit E79 (`EveryEngineDeclaresHookSurfaceTest`), integration test E80 (`RuntimeMiddlewareInterceptsHooksIT`). W2.x Phase 2 ships SPI surface only; consumer hooks (TokenCounterHook, PiiRedactionHook, etc.) land in W2 Telemetry Vertical.
+
+---
+
+#### Rule 46 — S2C Callback Envelope + Lifecycle Bound
+
+**Server-to-Client capability invocation MUST go through `S2cCallbackEnvelope` + `S2cCallbackTransport` SPI. The waiting Run MUST suspend via `S2cCallbackSignal` (RuntimeException — separate hierarchy from `SuspendSignal` to preserve `orchestration.spi` purity), not block a thread. Callbacks consume the `s2c.client.callback` skill capacity declared in `docs/governance/skill-capacity.yaml`. Client responses MUST be validated against `docs/contracts/s2c-callback.v1.yaml` (callback_id match, outcome enum membership) BEFORE resume; invalid response transitions Run to FAILED with reason `s2c_response_invalid`.**
+
+The Phase 3a cross-rule co-design audit matrix in [`docs/reviews/2026-05-16-engine-contract-structural-response.en.md`](docs/reviews/2026-05-16-engine-contract-structural-response.en.md) §5 is the canonical reference for how this rule interlocks with Rules 20/35/38/41/42 — six mandatory request fields (callback_id, server_run_id, capability_ref, request_payload, trace_id, idempotency_key) propagate at every layer to prevent the Class-3 envelope-propagation gap (fourteenth-cycle SpawnEnvelope 11-dim precedent).
+
+Authority: ADR-0074 / P-M. Enforced by Gate Rule 58 (`s2c_callback_yaml_present_and_wellformed`, enforcer E81), integration test E82 (`S2cCallbackRoundTripIT`), ArchUnit E83 (`S2cCallbackRespectsRule38Test` — no Thread.sleep in s2c..). Runtime ResilienceContract integration for `s2c.client.callback` skill capacity deferred to W2 per ADR-0074 §Consequences.
+
+---
+
+#### Rule 47 — Evolution Scope Default Boundary
+
+**Every emitted `RunEvent` (when the variant ships in W2 per ADR-0022) MUST declare its `EvolutionExport` value per `docs/governance/evolution-scope.v1.yaml` (`IN_SCOPE | OUT_OF_SCOPE | OPT_IN`). Out-of-scope events MUST NOT be persisted by the evolution plane. Opt-in export requires the future `telemetry-export.v1.yaml` contract (W3 placeholder declared in `evolution-scope.v1.yaml#opt_in_export.contract_required`).**
+
+Authority: ADR-0075 / P-M. Enforced by Gate Rule 59 (`evolution_scope_yaml_present_and_wellformed` — 3-discriminator-block + telemetry-export-ref schema check, enforcer E86) and ArchUnit E87 (`EveryRunEventDeclaresEvolutionExportTest`, armed-empty until W2 RunEvent variants ship).
+
+---
+
+#### Rule 48 — Schema-First Domain Contracts
+
+**Every NEW domain enum or fixed-vocabulary taxonomy introduced in `ARCHITECTURE.md` (root) or `agent-*/ARCHITECTURE.md` (per-module) on or after 2026-05-16 MUST cite a yaml schema under `docs/contracts/` or `docs/governance/` within ±5 lines of the prose definition. Prose-defined enums of the shape `<TYPE> | <TYPE>` (uppercase identifiers separated by pipes) outside fenced code blocks (` ``` `) and yaml blocks are forbidden unless either (a) the section also references such a yaml schema or (b) the file is listed with a matching prefix in `gate/schema-first-grandfathered.txt`. The grandfather list is closed — no entries added after 2026-05-16; existing prose enums are scheduled for W3 retrofit per `CLAUDE-deferred.md` 48.b.**
+
+This rule codifies the W2.x doctrine "yaml schema → Java type → runtime self-validate" into a permanent engineering rule. Defect family F1 (text-drift between prose taxonomies and Java enums / yaml schemas) accounts for 79 of 158 historical closed defects (~50%). Every prior wave closed individual F1 instances by hand; none codified the structural prohibition that prevents recurrence. Rule 33 (Layered 4+1 Discipline) and Rule 34 (Architecture-Graph Truth) gave the corpus its STRUCTURAL substrate (level × view × graph indices); Rule 48 is the LEAF-LEVEL companion — structure says WHERE a constraint lives, Rule 48 says WHAT SHAPE its taxonomy takes.
+
+Authority: ADR-0077 / P-M cross-cutting invariant. Enforced by Gate Rule 60 (`schema_first_domain_contracts`, enforcer E85) with self-tests positive + negative. Companion W2.x contracts ADR-0072 (engine envelope, Rules 55/56) and ADR-0073 (engine hooks, Rule 57) are the first two domain enums to follow the schema-first shape.
 
 ---
 
