@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# spring-ai-ascend architecture-sync gate -- L1 Rule-28 expansion + Phase K + L1.x Telemetry Vertical + Layer-0 governing principles + W1.x L0 ironclad rules (60 rules; Rules 1-29 + 28a-28j sub-checks + Rules 30-44 + Rules 45-52 W1.x).
+# spring-ai-ascend architecture-sync gate -- L1 Rule-28 expansion + Phase K + L1.x Telemetry Vertical + Layer-0 governing principles + W1.x L0 ironclad rules + W2.x Engine Contract Structural Wave (63 rules; Rules 1-29 + 28a-28j sub-checks + Rules 30-44 + Rules 45-52 W1.x + Rules 53-54 W1.x Phases 8-9 + Rules 55-57 W2.x Phases 1-2).
 # Exits 0 if all rules pass, 1 if any fail.
 # Each rule prints PASS: <name> or FAIL: <name> -- <reason>.
 # Prints GATE: PASS or GATE: FAIL at the end.
@@ -76,6 +76,11 @@
 #  53.  cursor_flow_integration_test_present           -- RunCursorFlowIT asserts POST /v1/runs returns 202 within 200ms even with a 30s-blocking dispatcher (Rule 36.b / P-F, enforcer E72)
 #  --- W1.x Phase 9 — ResilienceContract runtime activation (ADR-0070) ---
 #  54.  skill_capacity_runtime_resolver_present        -- DefaultSkillResilienceContract implements resolve(tenant, skill) consulting SkillCapacityRegistry; rejection carries SuspendReason.RateLimited (Rule 41.b / P-K, enforcer E73)
+#  --- W2.x Phase 1 — Engine Envelope + Strict Matching (ADR-0072) ---
+#  55.  engine_envelope_yaml_present_and_wellformed    -- docs/contracts/engine-envelope.v1.yaml declares schema + known_engines + at least one id (Rule 43 / P-M, enforcer E76)
+#  56.  engine_registry_covers_all_known_engines       -- bidirectional id <-> ENGINE_TYPE consistency between yaml and agent-runtime/src/main (Rule 44 / P-M, enforcer E77)
+#  --- W2.x Phase 2 — Engine Hooks + Runtime Middleware SPI (ADR-0073) ---
+#  57.  engine_hooks_yaml_present_and_wellformed       -- docs/contracts/engine-hooks.v1.yaml declares 9-hook list matching HookPoint enum (Rule 45 / P-M, enforcer E78)
 
 set -uo pipefail
 export LC_ALL=C
@@ -2202,6 +2207,113 @@ else
   fi
 fi
 if [[ $_r54_fail -eq 0 ]]; then pass_rule "skill_capacity_runtime_resolver_present"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 55 — engine_envelope_yaml_present_and_wellformed (enforcer E76, Rule 43 / P-M, ADR-0072)
+#
+# docs/contracts/engine-envelope.v1.yaml is the single-source-of-truth for
+# the EngineEnvelope shape. Required: schema: header, known_engines: block,
+# at least one entry carrying an id:.
+# ---------------------------------------------------------------------------
+_r55_fail=0
+_r55_path="docs/contracts/engine-envelope.v1.yaml"
+if [[ ! -f "$_r55_path" ]]; then
+  fail_rule "engine_envelope_yaml_present_and_wellformed" "$_r55_path missing -- Rule 43 / P-M envelope schema unenforced"
+  _r55_fail=1
+else
+  if ! grep -qE '^schema:[[:space:]]+engine-envelope/v1[[:space:]]*$' "$_r55_path"; then
+    fail_rule "engine_envelope_yaml_present_and_wellformed" "$_r55_path missing 'schema: engine-envelope/v1' header"
+    _r55_fail=1
+  fi
+  if ! grep -qE '^known_engines:[[:space:]]*$' "$_r55_path"; then
+    fail_rule "engine_envelope_yaml_present_and_wellformed" "$_r55_path missing known_engines: block"
+    _r55_fail=1
+  fi
+  if ! grep -qE '^[[:space:]]+- id:[[:space:]]+\S+' "$_r55_path"; then
+    fail_rule "engine_envelope_yaml_present_and_wellformed" "$_r55_path known_engines: contains no '- id:' entry"
+    _r55_fail=1
+  fi
+fi
+if [[ $_r55_fail -eq 0 ]]; then pass_rule "engine_envelope_yaml_present_and_wellformed"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 56 — engine_registry_covers_all_known_engines (enforcer E77, Rule 44 / P-M, ADR-0072)
+#
+# Bidirectional consistency: every known_engines[].id in
+# docs/contracts/engine-envelope.v1.yaml MUST appear as a
+# String ENGINE_TYPE = "<id>" constant in agent-runtime/src/main, and every
+# such constant MUST appear in known_engines. This guarantees the Phase 5
+# EngineRegistry.validateAgainstSchema() boot check has matching inputs at
+# compile time -- Rule 44 strict matching cannot be silently broken by a
+# missing yaml row or a stale ENGINE_TYPE constant.
+# ---------------------------------------------------------------------------
+_r56_fail=0
+_r56_yaml="docs/contracts/engine-envelope.v1.yaml"
+_r56_main="agent-runtime/src/main/java"
+if [[ ! -f "$_r56_yaml" ]]; then
+  fail_rule "engine_registry_covers_all_known_engines" "$_r56_yaml missing -- cannot cross-check"
+  _r56_fail=1
+elif [[ ! -d "$_r56_main" ]]; then
+  fail_rule "engine_registry_covers_all_known_engines" "$_r56_main missing -- cannot cross-check"
+  _r56_fail=1
+else
+  _r56_yaml_ids=$(grep -E '^[[:space:]]+- id:[[:space:]]+' "$_r56_yaml" | sed -E 's/^[[:space:]]+- id:[[:space:]]+([A-Za-z0-9_.-]+).*/\1/' | sort -u)
+  _r56_src_ids=$(grep -rhE 'String[[:space:]]+ENGINE_TYPE[[:space:]]*=[[:space:]]*"[A-Za-z0-9_.-]+"' "$_r56_main" 2>/dev/null | sed -E 's/.*ENGINE_TYPE[[:space:]]*=[[:space:]]*"([A-Za-z0-9_.-]+)".*/\1/' | sort -u)
+  for _id in $_r56_yaml_ids; do
+    if ! echo "$_r56_src_ids" | grep -qxE "${_id}"; then
+      fail_rule "engine_registry_covers_all_known_engines" "yaml declares known_engines.id=$_id but no ENGINE_TYPE=\"$_id\" found in $_r56_main"
+      _r56_fail=1
+    fi
+  done
+  for _id in $_r56_src_ids; do
+    if ! echo "$_r56_yaml_ids" | grep -qxE "${_id}"; then
+      fail_rule "engine_registry_covers_all_known_engines" "ENGINE_TYPE=\"$_id\" in source has no matching - id: $_id in $_r56_yaml"
+      _r56_fail=1
+    fi
+  done
+fi
+if [[ $_r56_fail -eq 0 ]]; then pass_rule "engine_registry_covers_all_known_engines"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 57 — engine_hooks_yaml_present_and_wellformed (enforcer E78, Rule 45 / P-M, ADR-0073)
+#
+# docs/contracts/engine-hooks.v1.yaml MUST exist with schema:, hooks: list of
+# exactly the 9 canonical hook names, and bidirectionally agree with the
+# HookPoint enum constants in agent-runtime/src/main. Drift in either
+# direction breaks Rule 45 (Runtime-Owned Middleware via Engine Hooks).
+# ---------------------------------------------------------------------------
+_r57_fail=0
+_r57_yaml="docs/contracts/engine-hooks.v1.yaml"
+_r57_enum="agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/HookPoint.java"
+if [[ ! -f "$_r57_yaml" ]]; then
+  fail_rule "engine_hooks_yaml_present_and_wellformed" "$_r57_yaml missing -- Rule 45 / P-M hook surface unenforced"
+  _r57_fail=1
+elif [[ ! -f "$_r57_enum" ]]; then
+  fail_rule "engine_hooks_yaml_present_and_wellformed" "$_r57_enum missing -- cannot cross-check HookPoint enum"
+  _r57_fail=1
+else
+  if ! grep -qE '^schema:[[:space:]]+engine-hooks/v1[[:space:]]*$' "$_r57_yaml"; then
+    fail_rule "engine_hooks_yaml_present_and_wellformed" "$_r57_yaml missing 'schema: engine-hooks/v1' header"
+    _r57_fail=1
+  fi
+  # Extract hook names from yaml (lines under 'hooks:' that look like '  - <name>')
+  _r57_yaml_hooks=$(awk '/^hooks:/{f=1;next} /^[a-z_]+:/{f=0} f && /^[[:space:]]+- [a-z_]+/{gsub(/^[[:space:]]+- /,""); print}' "$_r57_yaml" | sort -u)
+  # Extract HookPoint enum constants (lines like '    BEFORE_LLM_INVOCATION,' or '    ON_ERROR')
+  _r57_enum_consts=$(grep -E '^[[:space:]]+[A-Z_]+[,;]?[[:space:]]*$' "$_r57_enum" | sed -E 's/[[:space:]]+([A-Z_]+)[,;]?[[:space:]]*/\1/' | tr 'A-Z_' 'a-z_' | sort -u)
+  for _hook in $_r57_yaml_hooks; do
+    if ! echo "$_r57_enum_consts" | grep -qxE "${_hook}"; then
+      fail_rule "engine_hooks_yaml_present_and_wellformed" "yaml declares hook=$_hook but no matching HookPoint enum constant"
+      _r57_fail=1
+    fi
+  done
+  for _const in $_r57_enum_consts; do
+    if ! echo "$_r57_yaml_hooks" | grep -qxE "${_const}"; then
+      fail_rule "engine_hooks_yaml_present_and_wellformed" "HookPoint enum has constant $_const with no matching yaml hooks: entry"
+      _r57_fail=1
+    fi
+  done
+fi
+if [[ $_r57_fail -eq 0 ]]; then pass_rule "engine_hooks_yaml_present_and_wellformed"; fi
 
 # ---------------------------------------------------------------------------
 # Summary

@@ -1,6 +1,9 @@
 package ascend.springai.runtime.orchestration.inmemory;
 
+import ascend.springai.runtime.engine.EngineRegistry;
+import ascend.springai.runtime.orchestration.spi.AgentLoopExecutor;
 import ascend.springai.runtime.orchestration.spi.ExecutorDefinition;
+import ascend.springai.runtime.orchestration.spi.GraphExecutor;
 import ascend.springai.runtime.orchestration.spi.RunContext;
 import ascend.springai.runtime.orchestration.spi.SuspendSignal;
 import org.junit.jupiter.api.Test;
@@ -23,25 +26,27 @@ class SyncOrchestratorPostureGuardTest {
         // APP_POSTURE not set in test env → dev posture → AppPostureGate warns, does not throw.
         var registry = new InMemoryRunRegistry();
         var checkpointer = new InMemoryCheckpointer();
+        var engines = stubEngineRegistry();
 
-        assertThatCode(() -> new SyncOrchestrator(
-                registry,
-                checkpointer,
-                (ctx, def, payload) -> payload,       // stub GraphExecutor
-                (ctx, def, payload) -> payload         // stub AgentLoopExecutor
-        )).doesNotThrowAnyException();
+        assertThatCode(() -> new SyncOrchestrator(registry, checkpointer, engines))
+                .doesNotThrowAnyException();
     }
 
     @Test
     void construction_wires_all_required_dependencies() {
         var registry = new InMemoryRunRegistry();
         var checkpointer = new InMemoryCheckpointer();
-        var orchestrator = new SyncOrchestrator(
-                registry,
-                checkpointer,
-                (ctx, def, payload) -> payload,
-                (ctx, def, payload) -> payload
-        );
+        var orchestrator = new SyncOrchestrator(registry, checkpointer, stubEngineRegistry());
         assertThat(orchestrator).isNotNull();
+    }
+
+    /**
+     * Stub graph + agent-loop executors registered via EngineRegistry — Rule 43
+     * forbids pattern-matching on ExecutorDefinition subtypes outside the registry.
+     */
+    private static EngineRegistry stubEngineRegistry() {
+        GraphExecutor stubGraph = (RunContext ctx, ExecutorDefinition.GraphDefinition def, Object payload) -> payload;
+        AgentLoopExecutor stubLoop = (RunContext ctx, ExecutorDefinition.AgentLoopDefinition def, Object payload) -> payload;
+        return new EngineRegistry().register(stubGraph).register(stubLoop);
     }
 }

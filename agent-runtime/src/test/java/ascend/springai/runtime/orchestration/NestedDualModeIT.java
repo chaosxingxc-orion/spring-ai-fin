@@ -1,5 +1,6 @@
 package ascend.springai.runtime.orchestration;
 
+import ascend.springai.runtime.engine.EngineRegistry;
 import ascend.springai.runtime.orchestration.inmemory.InMemoryCheckpointer;
 import ascend.springai.runtime.orchestration.inmemory.InMemoryRunRegistry;
 import ascend.springai.runtime.orchestration.inmemory.IterativeAgentLoopExecutor;
@@ -42,8 +43,10 @@ class NestedDualModeIT {
     void three_level_graph_agentloop_graph_nesting_completes() {
         InMemoryCheckpointer checkpointer = new InMemoryCheckpointer();
         InMemoryRunRegistry registry = new InMemoryRunRegistry();
-        Orchestrator orchestrator = new SyncOrchestrator(registry, checkpointer,
-                new SequentialGraphExecutor(), new IterativeAgentLoopExecutor());
+        EngineRegistry engines = new EngineRegistry()
+                .register(new SequentialGraphExecutor())
+                .register(new IterativeAgentLoopExecutor());
+        Orchestrator orchestrator = new SyncOrchestrator(registry, checkpointer, engines);
 
         // L3 Graph: g1 → g2, produces "GRAPH-L3"
         ExecutorDefinition.GraphDefinition l3Graph = new ExecutorDefinition.GraphDefinition(

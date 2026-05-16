@@ -1,0 +1,62 @@
+# Engine Lifecycle Hooks schema, version 1.
+#
+# Authority: ADR-0073 (Engine Hooks + Runtime Middleware).
+# Wave: W2.x Phase 2.
+# Driver review: docs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md (proposal §5).
+#
+# This file is the SINGLE SOURCE OF TRUTH for the canonical hook surface.
+# The Java enum ascend.springai.runtime.orchestration.spi.HookPoint mirrors
+# the `hooks:` list (one enum constant per ordered entry). Gate Rule 57 cross-
+# checks the two sides at build time so the schema and code never drift.
+#
+# Self-enforced by gate Rule 57 (engine_hooks_yaml_present_and_wellformed).
+
+schema: engine-hooks/v1
+authority: ADR-0073
+
+# Canonical hook list. Order is significant — registered middlewares fire in
+# the order declared here for `before_*` hooks; `after_*` hooks fire in
+# reverse registration order so an outermost middleware can clean up after an
+# innermost one (LIFO unwind). HookDispatcher enforces this.
+hooks:
+  - before_llm_invocation
+  - after_llm_invocation
+  - before_tool_invocation
+  - after_tool_invocation
+  - before_memory_read
+  - after_memory_write
+  - before_suspension
+  - before_resume
+  - on_error
+
+ordering: declared
+failure_propagation:
+  # Default: a middleware that returns HookOutcome.Fail aborts the dispatch
+  # chain. Subsequent hooks at the same point are not fired. The Run
+  # transitions to FAILED with the middleware-declared reason.
+  default: fail_fast
+  # Per-hook override: on_error never fail-fasts (failing inside an error
+  # handler would mask the original error). It always fires the full chain
+  # and aggregates outcomes via "first non-Proceed wins".
+  per_hook:
+    on_error: best_effort
+
+# Phase 2 wiring scope (ADR-0073):
+#   At W2.x the SyncOrchestrator fires only the three "structural" hooks —
+#   on_error, before_suspension, before_resume — because those are the
+#   points the current code already has natural call-sites for. The
+#   remaining six (LLM × 2, tool × 2, memory × 2) require engine-side
+#   firing and land in W2 Telemetry Vertical alongside the first consumer
+#   middlewares (TokenCounterHook, PiiRedactionHook, CostAttributionHook,
+#   LlmSpanEmitterHook).
+phase_2_mandatory_hooks_fired_by_orchestrator:
+  - on_error
+  - before_suspension
+  - before_resume
+
+# Strict-surface boundary (proposal §5.4):
+#   Engines MUST NOT depend on concrete middleware implementations. The
+#   only dependency direction is engine → HookPoint (the enum) and
+#   engine → HookDispatcher.fire(...). Middlewares depend on HookPoint +
+#   HookContext + HookOutcome. The bridge is EngineRegistry's accessor to
+#   HookDispatcher; engines never reach for middleware classes directly.

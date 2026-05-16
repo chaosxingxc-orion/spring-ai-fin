@@ -636,3 +636,67 @@
   view: process
   artifact: agent-runtime/src/test/java/ascend/springai/runtime/resilience/SkillCapacityResolutionIT.java#suspendsSecondCallerWhenCapacityIsOne
   asserts: "ResilienceContract.resolve(tenant, skill) consults docs/governance/skill-capacity.yaml at runtime; the second concurrent caller for a 1-capacity skill is rejected with SkillResolution.admitted=false carrying SuspendReason.RateLimited(SKILL_CAPACITY_EXCEEDED) — proves the contract maps capacity exhaustion to would-suspend (Rule 41 / P-K), NOT to would-fail."
+
+# ---------------------------------------------------------------------------
+# W2.x Phase 1 — Engine Envelope + Strict Matching (Rules 43, 44 / ADR-0072 / P-M)
+# ---------------------------------------------------------------------------
+
+- id: E74
+  constraint_ref: "CLAUDE.md Rule 43 (Engine Envelope Single Authority); ADR-0072; P-M"
+  kind: archunit
+  level: L1
+  view: development
+  artifact: agent-runtime/src/test/java/ascend/springai/runtime/engine/EnginePayloadDispatchOnlyViaRegistryTest.java#every_orchestrator_implementation_depends_on_engine_registry
+  asserts: "every concrete Orchestrator implementation in agent-runtime/src/main depends on ascend.springai.runtime.engine.EngineRegistry -- dispatch authority is centralised; pattern-matching on ExecutorDefinition subtypes outside the registry is the prohibited shape (the source-level instanceof scan is gate Rule 56's responsibility)."
+
+- id: E75
+  constraint_ref: "CLAUDE.md Rule 44 (Strict Engine Matching); ADR-0072; P-M"
+  kind: integration
+  level: L1
+  view: logical
+  artifact: agent-runtime/src/test/java/ascend/springai/runtime/engine/EngineMatchingStrictnessIT.java#payload_with_no_registered_adapter_raises_engine_mismatch
+  asserts: "SyncOrchestrator.run with a payload class for which no ExecutorAdapter is registered raises EngineMatchingException carrying engine_mismatch -- proves no silent reinterpretation, no fallback policy (Rule 44 strongest reading)."
+
+- id: E76
+  constraint_ref: "CLAUDE.md Rule 43 (Engine Envelope Single Authority); ADR-0072; P-M"
+  kind: gate-script
+  level: L1
+  view: logical
+  artifact: gate/check_architecture_sync.sh#engine_envelope_yaml_present_and_wellformed
+  asserts: "docs/contracts/engine-envelope.v1.yaml exists; declares schema: engine-envelope/v1, known_engines: block, and at least one '- id:' entry -- the single source of truth for envelope shape is gate-validated."
+
+- id: E77
+  constraint_ref: "CLAUDE.md Rule 44 (Strict Engine Matching); ADR-0072; P-M"
+  kind: gate-script
+  level: L1
+  view: development
+  artifact: gate/check_architecture_sync.sh#engine_registry_covers_all_known_engines
+  asserts: "bidirectional consistency between known_engines[].id in docs/contracts/engine-envelope.v1.yaml and String ENGINE_TYPE = \"<id>\" constants in agent-runtime/src/main -- guarantees the Phase 5 EngineRegistry.validateAgainstSchema boot check has matching inputs at compile time."
+
+# ---------------------------------------------------------------------------
+# W2.x Phase 2 — Engine Lifecycle Hooks + Runtime Middleware SPI (Rule 45 / ADR-0073 / P-M)
+# ---------------------------------------------------------------------------
+
+- id: E78
+  constraint_ref: "CLAUDE.md Rule 45 (Runtime-Owned Middleware via Engine Hooks); ADR-0073; P-M"
+  kind: gate-script
+  level: L1
+  view: logical
+  artifact: gate/check_architecture_sync.sh#engine_hooks_yaml_present_and_wellformed
+  asserts: "docs/contracts/engine-hooks.v1.yaml declares schema: engine-hooks/v1, a hooks: list, and bidirectionally agrees with the HookPoint enum constants in agent-runtime/src/main -- the canonical hook surface and the Java enum never drift."
+
+- id: E79
+  constraint_ref: "CLAUDE.md Rule 45 (Runtime-Owned Middleware via Engine Hooks); ADR-0073; P-M"
+  kind: archunit
+  level: L1
+  view: development
+  artifact: agent-runtime/src/test/java/ascend/springai/runtime/engine/EveryEngineDeclaresHookSurfaceTest.java#every_executor_adapter_exposes_hook_surface
+  asserts: "every concrete GraphExecutor / AgentLoopExecutor implementation under agent-runtime/src/main exposes a hookSurface() method (default empty allowed) -- structural pre-condition for the EngineHookSurface contract; allowEmptyShould(true) is intentional at W2.x while Phase 2 ships SPI surface only."
+
+- id: E80
+  constraint_ref: "CLAUDE.md Rule 45 (Runtime-Owned Middleware via Engine Hooks); ADR-0073; P-M"
+  kind: integration
+  level: L1
+  view: process
+  artifact: agent-runtime/src/test/java/ascend/springai/runtime/engine/RuntimeMiddlewareInterceptsHooksIT.java#suspend_resume_cycle_fires_before_suspension_then_before_resume
+  asserts: "SyncOrchestrator fires HookPoint.BEFORE_SUSPENSION + HookPoint.BEFORE_RESUME on a suspend/resume cycle and HookPoint.ON_ERROR on a propagated RuntimeException -- proves the three Phase 2 mandatory hooks reach registered RuntimeMiddleware end-to-end through EngineRegistry.hookDispatcher()."

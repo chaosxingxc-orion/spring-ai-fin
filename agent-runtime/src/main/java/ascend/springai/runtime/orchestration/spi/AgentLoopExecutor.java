@@ -7,8 +7,39 @@ package ascend.springai.runtime.orchestration.spi;
  *
  * resumePayload is null on first call; on resume it carries the child run's final result.
  * The saved iteration index (via RunContext.checkpointer()) is replayed with resumePayload.
+ *
+ * <p>W2.x Phase 1: every {@code AgentLoopExecutor} is automatically an
+ * {@link ExecutorAdapter} with {@code engineType() = "agent-loop"}. The bridge
+ * default method casts the incoming {@link ExecutorDefinition} to
+ * {@link ExecutorDefinition.AgentLoopDefinition} or raises
+ * {@link EngineMatchingException}. See ADR-0072 + CLAUDE.md Rule 44.
  */
-public interface AgentLoopExecutor {
+public interface AgentLoopExecutor extends ExecutorAdapter {
+
+    /** Stable engine identifier. MUST match {@code known_engines[].id} in engine-envelope.v1.yaml. */
+    String ENGINE_TYPE = "agent-loop";
+
+    @Override
+    default String engineType() {
+        return ENGINE_TYPE;
+    }
+
+    @Override
+    default Class<? extends ExecutorDefinition> payloadType() {
+        return ExecutorDefinition.AgentLoopDefinition.class;
+    }
+
+    @Override
+    default Object execute(RunContext ctx, ExecutorDefinition def, Object payload) throws SuspendSignal {
+        if (def instanceof ExecutorDefinition.AgentLoopDefinition a) {
+            return execute(ctx, a, payload);
+        }
+        throw new EngineMatchingException(
+                ENGINE_TYPE,
+                def == null ? "null" : def.getClass().getSimpleName(),
+                "AgentLoopExecutor cannot execute payload of type " + (def == null ? "null" : def.getClass().getSimpleName())
+                        + " — engine_mismatch");
+    }
 
     /**
      * Execute or resume the agent loop defined by {@code def} within the given {@code ctx}.

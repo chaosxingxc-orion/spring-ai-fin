@@ -1630,9 +1630,188 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Rule 55 positive: engine-envelope.v1.yaml carries schema + known_engines + id
+# ---------------------------------------------------------------------------
+_r55_pos="$scratch/r55_pos"
+mkdir -p "$_r55_pos/docs/contracts"
+cat > "$_r55_pos/docs/contracts/engine-envelope.v1.yaml" <<'EOF'
+schema: engine-envelope/v1
+authority: ADR-0072
+known_engines:
+  - id: graph
+    payload_class: ExecutorDefinition.GraphDefinition
+  - id: agent-loop
+    payload_class: ExecutorDefinition.AgentLoopDefinition
+EOF
+_r55_pos_ok=1
+if ! grep -qE '^schema:[[:space:]]+engine-envelope/v1[[:space:]]*$' "$_r55_pos/docs/contracts/engine-envelope.v1.yaml"; then
+  _r55_pos_ok=0
+fi
+if ! grep -qE '^known_engines:[[:space:]]*$' "$_r55_pos/docs/contracts/engine-envelope.v1.yaml"; then
+  _r55_pos_ok=0
+fi
+if ! grep -qE '^[[:space:]]+- id:[[:space:]]+\S+' "$_r55_pos/docs/contracts/engine-envelope.v1.yaml"; then
+  _r55_pos_ok=0
+fi
+if [[ "$_r55_pos_ok" -eq 1 ]]; then
+  ok "rule55_engine_envelope_yaml_pos" "schema + known_engines + id all present"
+else
+  fail "rule55_engine_envelope_yaml_pos" "expected schema/known_engines/id detection"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 55 negative: engine-envelope.v1.yaml missing known_engines: block
+# ---------------------------------------------------------------------------
+_r55_neg="$scratch/r55_neg"
+mkdir -p "$_r55_neg/docs/contracts"
+cat > "$_r55_neg/docs/contracts/engine-envelope.v1.yaml" <<'EOF'
+schema: engine-envelope/v1
+authority: ADR-0072
+# intentionally missing known_engines: (Rule 55 negative fixture)
+EOF
+_r55_neg_missing=1
+if grep -qE '^known_engines:[[:space:]]*$' "$_r55_neg/docs/contracts/engine-envelope.v1.yaml"; then
+  _r55_neg_missing=0
+fi
+if [[ "$_r55_neg_missing" -eq 1 ]]; then
+  ok "rule55_engine_envelope_yaml_neg" "missing known_engines: correctly flagged"
+else
+  fail "rule55_engine_envelope_yaml_neg" "expected missing-known_engines detection"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 56 positive: yaml ids and ENGINE_TYPE constants agree bidirectionally
+# ---------------------------------------------------------------------------
+_r56_pos="$scratch/r56_pos"
+mkdir -p "$_r56_pos/docs/contracts"
+mkdir -p "$_r56_pos/agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi"
+cat > "$_r56_pos/docs/contracts/engine-envelope.v1.yaml" <<'EOF'
+schema: engine-envelope/v1
+known_engines:
+  - id: graph
+  - id: agent-loop
+EOF
+cat > "$_r56_pos/agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/GraphExecutor.java" <<'EOF'
+package ascend.springai.runtime.orchestration.spi;
+public interface GraphExecutor {
+  String ENGINE_TYPE = "graph";
+}
+EOF
+cat > "$_r56_pos/agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/AgentLoopExecutor.java" <<'EOF'
+package ascend.springai.runtime.orchestration.spi;
+public interface AgentLoopExecutor {
+  String ENGINE_TYPE = "agent-loop";
+}
+EOF
+_r56_pos_yaml_ids=$(grep -E '^[[:space:]]+- id:[[:space:]]+' "$_r56_pos/docs/contracts/engine-envelope.v1.yaml" | sed -E 's/^[[:space:]]+- id:[[:space:]]+([A-Za-z0-9_.-]+).*/\1/' | sort -u)
+_r56_pos_src_ids=$(grep -rhE 'String[[:space:]]+ENGINE_TYPE[[:space:]]*=[[:space:]]*"[A-Za-z0-9_.-]+"' "$_r56_pos/agent-runtime/src/main/java" 2>/dev/null | sed -E 's/.*ENGINE_TYPE[[:space:]]*=[[:space:]]*"([A-Za-z0-9_.-]+)".*/\1/' | sort -u)
+_r56_pos_ok=1
+for _id in $_r56_pos_yaml_ids; do
+  if ! echo "$_r56_pos_src_ids" | grep -qxE "${_id}"; then _r56_pos_ok=0; fi
+done
+for _id in $_r56_pos_src_ids; do
+  if ! echo "$_r56_pos_yaml_ids" | grep -qxE "${_id}"; then _r56_pos_ok=0; fi
+done
+if [[ "$_r56_pos_ok" -eq 1 ]]; then
+  ok "rule56_engine_registry_covers_pos" "yaml ids and ENGINE_TYPE constants match bidirectionally"
+else
+  fail "rule56_engine_registry_covers_pos" "expected bidirectional consistency"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 56 negative: yaml declares 'graph' but source has only 'agent-loop'
+# ---------------------------------------------------------------------------
+_r56_neg="$scratch/r56_neg"
+mkdir -p "$_r56_neg/docs/contracts"
+mkdir -p "$_r56_neg/agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi"
+cat > "$_r56_neg/docs/contracts/engine-envelope.v1.yaml" <<'EOF'
+schema: engine-envelope/v1
+known_engines:
+  - id: graph
+  - id: agent-loop
+EOF
+cat > "$_r56_neg/agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/AgentLoopExecutor.java" <<'EOF'
+package ascend.springai.runtime.orchestration.spi;
+public interface AgentLoopExecutor {
+  String ENGINE_TYPE = "agent-loop";
+  // intentionally NO GraphExecutor with ENGINE_TYPE = "graph" (Rule 56 negative fixture)
+}
+EOF
+_r56_neg_yaml_ids=$(grep -E '^[[:space:]]+- id:[[:space:]]+' "$_r56_neg/docs/contracts/engine-envelope.v1.yaml" | sed -E 's/^[[:space:]]+- id:[[:space:]]+([A-Za-z0-9_.-]+).*/\1/' | sort -u)
+_r56_neg_src_ids=$(grep -rhE 'String[[:space:]]+ENGINE_TYPE[[:space:]]*=[[:space:]]*"[A-Za-z0-9_.-]+"' "$_r56_neg/agent-runtime/src/main/java" 2>/dev/null | sed -E 's/.*ENGINE_TYPE[[:space:]]*=[[:space:]]*"([A-Za-z0-9_.-]+)".*/\1/' | sort -u)
+_r56_neg_flagged=0
+for _id in $_r56_neg_yaml_ids; do
+  if ! echo "$_r56_neg_src_ids" | grep -qxE "${_id}"; then _r56_neg_flagged=1; fi
+done
+if [[ "$_r56_neg_flagged" -eq 1 ]]; then
+  ok "rule56_engine_registry_covers_neg" "missing ENGINE_TYPE for declared known_engine correctly flagged"
+else
+  fail "rule56_engine_registry_covers_neg" "expected missing-ENGINE_TYPE detection"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 57 positive: hook yaml + enum agree on the 9-hook list bidirectionally
+# ---------------------------------------------------------------------------
+_r57_pos="$scratch/r57_pos"
+mkdir -p "$_r57_pos/docs/contracts"
+mkdir -p "$_r57_pos/agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi"
+cat > "$_r57_pos/docs/contracts/engine-hooks.v1.yaml" <<'EOF'
+schema: engine-hooks/v1
+hooks:
+  - before_llm_invocation
+  - on_error
+EOF
+cat > "$_r57_pos/agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/HookPoint.java" <<'EOF'
+package ascend.springai.runtime.orchestration.spi;
+public enum HookPoint {
+    BEFORE_LLM_INVOCATION,
+    ON_ERROR
+}
+EOF
+_r57_pos_yaml=$(awk '/^hooks:/{f=1;next} /^[a-z_]+:/{f=0} f && /^[[:space:]]+- [a-z_]+/{gsub(/^[[:space:]]+- /,""); print}' "$_r57_pos/docs/contracts/engine-hooks.v1.yaml" | sort -u)
+_r57_pos_enum=$(grep -E '^[[:space:]]+[A-Z_]+[,;]?[[:space:]]*$' "$_r57_pos/agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/HookPoint.java" | sed -E 's/[[:space:]]+([A-Z_]+)[,;]?[[:space:]]*/\1/' | tr 'A-Z_' 'a-z_' | sort -u)
+_r57_pos_ok=1
+for _h in $_r57_pos_yaml; do if ! echo "$_r57_pos_enum" | grep -qxE "${_h}"; then _r57_pos_ok=0; fi; done
+for _e in $_r57_pos_enum; do if ! echo "$_r57_pos_yaml" | grep -qxE "${_e}"; then _r57_pos_ok=0; fi; done
+if [[ "$_r57_pos_ok" -eq 1 ]]; then
+  ok "rule57_engine_hooks_yaml_pos" "hook yaml + HookPoint enum agree bidirectionally"
+else
+  fail "rule57_engine_hooks_yaml_pos" "expected bidirectional agreement"
+fi
+
+# ---------------------------------------------------------------------------
+# Rule 57 negative: yaml has on_error but enum is missing the ON_ERROR constant
+# ---------------------------------------------------------------------------
+_r57_neg="$scratch/r57_neg"
+mkdir -p "$_r57_neg/docs/contracts"
+mkdir -p "$_r57_neg/agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi"
+cat > "$_r57_neg/docs/contracts/engine-hooks.v1.yaml" <<'EOF'
+schema: engine-hooks/v1
+hooks:
+  - before_llm_invocation
+  - on_error
+EOF
+cat > "$_r57_neg/agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/HookPoint.java" <<'EOF'
+package ascend.springai.runtime.orchestration.spi;
+public enum HookPoint {
+    BEFORE_LLM_INVOCATION
+    // intentionally missing ON_ERROR (Rule 57 negative fixture)
+}
+EOF
+_r57_neg_yaml=$(awk '/^hooks:/{f=1;next} /^[a-z_]+:/{f=0} f && /^[[:space:]]+- [a-z_]+/{gsub(/^[[:space:]]+- /,""); print}' "$_r57_neg/docs/contracts/engine-hooks.v1.yaml" | sort -u)
+_r57_neg_enum=$(grep -E '^[[:space:]]+[A-Z_]+[,;]?[[:space:]]*$' "$_r57_neg/agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/HookPoint.java" | sed -E 's/[[:space:]]+([A-Z_]+)[,;]?[[:space:]]*/\1/' | tr 'A-Z_' 'a-z_' | sort -u)
+_r57_neg_flagged=0
+for _h in $_r57_neg_yaml; do if ! echo "$_r57_neg_enum" | grep -qxE "${_h}"; then _r57_neg_flagged=1; fi; done
+if [[ "$_r57_neg_flagged" -eq 1 ]]; then
+  ok "rule57_engine_hooks_yaml_neg" "missing HookPoint enum constant for declared yaml hook correctly flagged"
+else
+  fail "rule57_engine_hooks_yaml_neg" "expected missing-enum-constant detection"
+fi
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
-TOTAL=70
+TOTAL=76
 echo ""
 echo "Tests passed: ${passed}/${TOTAL}"
 

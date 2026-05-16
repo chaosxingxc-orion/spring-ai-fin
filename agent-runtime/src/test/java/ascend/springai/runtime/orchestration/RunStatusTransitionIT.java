@@ -1,5 +1,6 @@
 package ascend.springai.runtime.orchestration;
 
+import ascend.springai.runtime.engine.EngineRegistry;
 import ascend.springai.runtime.orchestration.inmemory.InMemoryCheckpointer;
 import ascend.springai.runtime.orchestration.inmemory.InMemoryRunRegistry;
 import ascend.springai.runtime.orchestration.inmemory.IterativeAgentLoopExecutor;
@@ -27,8 +28,10 @@ class RunStatusTransitionIT {
     @Test
     void parent_transitions_through_suspended_and_back_to_succeeded() {
         InMemoryRunRegistry registry = new InMemoryRunRegistry();
-        Orchestrator orchestrator = new SyncOrchestrator(registry, new InMemoryCheckpointer(),
-                new SequentialGraphExecutor(), new IterativeAgentLoopExecutor());
+        EngineRegistry engines = new EngineRegistry()
+                .register(new SequentialGraphExecutor())
+                .register(new IterativeAgentLoopExecutor());
+        Orchestrator orchestrator = new SyncOrchestrator(registry, new InMemoryCheckpointer(), engines);
 
         // Child graph: single terminal node
         ExecutorDefinition.GraphDefinition childGraph = new ExecutorDefinition.GraphDefinition(
