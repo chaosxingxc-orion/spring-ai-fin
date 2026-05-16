@@ -1,0 +1,71 @@
+@startuml l0-physical
+!include ../common/theme.puml
+!include ../common/links.puml
+!include ../common/l0-elements.puml
+
+title L0 Physical View - Production Deployment Planes and Isolation Boundaries
+
+Deployment_Node(edge_plane, "Edge Access Plane", "Lightweight and stateless") {
+  Container(business_app, $BUSINESS_APP_NAME, "Business servers / terminals", "Enterprise entry points that own business context.", $tags="C-Side")
+  Container(agent_client, $AGENT_CLIENT_NAME, "Client capability", $AGENT_CLIENT_DESC, $tags="C-Side", $link=$L1_AGENT_CLIENT)
+}
+
+Deployment_Node(compute_plane, "Compute & Control Plane", "Horizontally scalable service compute") {
+  Container(agent_service, $AGENT_SERVICE_NAME, "Enterprise service boundary", $AGENT_SERVICE_DESC, $tags="S-Side", $link=$L1_AGENT_SERVICE)
+  Container(exec_engine, $EXECUTION_ENGINE_NAME, "Execution control", $EXECUTION_ENGINE_DESC, $tags="S-Side", $link=$L1_EXECUTION_ENGINE)
+}
+
+Deployment_Node(bus_state_plane, "Bus & State Hub Plane", "High I/O state hub") {
+  Container(agent_bus, $AGENT_BUS_NAME, "Coordination hub", $AGENT_BUS_DESC, $tags="S-Side", $link=$L1_AGENT_BUS)
+  System_Ext(state_data, "State, Durable, Vector, and Knowledge Stores", "External or platform-managed persistence dependencies with tenant isolation below application logic where possible.", $tags="External")
+  Container(agent_middleware, $AGENT_MIDDLEWARE_NAME, "Shared infrastructure capability", $AGENT_MIDDLEWARE_DESC, $tags="S-Side", $link=$L1_AGENT_MIDDLEWARE)
+}
+
+Deployment_Node(sandbox_plane, "Sandbox Execution Plane", "Physically isolated untrusted execution") {
+  System_Ext(sandbox_infra, $SANDBOX_INFRA_NAME, "Runs untrusted generated code and third-party tools outside compute/control services.", $tags="External")
+}
+
+Deployment_Node(evolution_plane, "Evolution Plane", "Dedicated offline or near-real-time compute pool") {
+  Container(evolution, $EVOLUTION_NAME, "Evolution capability", "Trajectory scoring plus prompt, skill, and policy optimization loops.", $tags="S-Side", $link=$L1_EVOLUTION)
+}
+
+System_Ext(model_gateway, $MODEL_GATEWAY_NAME, "External model access.", $tags="External")
+System_Ext(iam, $IAM_NAME, "Identity, policy, and credential authority.", $tags="External")
+System_Ext(observability, $OBSERVABILITY_NAME, "Telemetry, audit, and governance platform.", $tags="External")
+
+Rel(business_app, agent_client, "uses local or embedded access")
+Rel(agent_client, agent_service, "submits tasks and receives observable state")
+Rel(agent_service, exec_engine, "controls execution")
+Rel(agent_service, agent_bus, "coordinates runtime collaboration")
+Rel(exec_engine, agent_bus, "emits events and receives coordination signals")
+Rel(agent_service, agent_middleware, "uses shared platform capabilities")
+Rel(exec_engine, agent_middleware, "uses execution-time shared capabilities")
+Rel(agent_middleware, state_data, "persists and retrieves governed state and knowledge")
+Rel(agent_middleware, sandbox_infra, "delegates isolated tool execution", $tags="boundary")
+Rel(agent_middleware, model_gateway, "invokes governed model access")
+Rel(agent_service, iam, "checks identity, policy, and credentials")
+Rel(agent_bus, evolution, "streams operational and shadow traffic asynchronously", $tags="async")
+Rel(evolution, observability, "reads telemetry and emits governance insight", $tags="async")
+Rel(agent_service, observability, "emits online service health and audit events")
+
+note bottom of compute_plane
+Physical red lines:
+- Untrusted code does not run directly in this plane.
+- Online execution must not be blocked by evolution analysis.
+- Detailed resource scheduling and channel design belong to L1/L2.
+end note
+
+note bottom of bus_state_plane
+Tenant data isolation should be enforced below application logic where possible, such as row, schema, or database isolation.
+Skill resources are governed conceptually by tenant quota and global capacity; detailed scheduling is lower-level design.
+end note
+
+legend right
+|= Plane |= L0 deployment meaning |
+| Edge Access | Business entry and client access. |
+| Compute & Control | Service boundary and execution control. |
+| Bus & State Hub | Coordination plus durable state and knowledge dependencies. |
+| Sandbox Execution | Isolated untrusted code/tool substrate. |
+| Evolution | Non-blocking improvement analysis. |
+endlegend
+@enduml

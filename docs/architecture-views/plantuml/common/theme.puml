@@ -1,0 +1,28 @@
+' Shared C4-PlantUML theme for spring-ai-ascend L0 architecture views.
+!include <C4/C4_Deployment>
+
+LAYOUT_LEFT_RIGHT()
+LAYOUT_WITH_LEGEND()
+HIDE_STEREOTYPE()
+
+skinparam defaultFontName "Inter, Arial, sans-serif"
+skinparam shadowing false
+skinparam wrapWidth 240
+skinparam maxMessageSize 180
+skinparam ArrowColor #455A64
+skinparam ArrowFontColor #263238
+skinparam TitleFontColor #1F2937
+skinparam TitleFontSize 22
+skinparam LegendBorderColor #B0BEC5
+skinparam LegendBackgroundColor #FAFAFA
+
+AddElementTag("C-Side", $bgColor="#E8F3FF", $fontColor="#0B3D67", $borderColor="#4F83B8")
+AddElementTag("S-Side", $bgColor="#EEF7EE", $fontColor="#214D2B", $borderColor="#6BAF6B")
+AddElementTag("External", $bgColor="#F7F7F7", $fontColor="#374151", $borderColor="#9CA3AF")
+AddElementTag("Future", $bgColor="#FFF7E6", $fontColor="#7A4B00", $borderColor="#D89B28")
+AddElementTag("Governance", $bgColor="#F3E8FF", $fontColor="#4C1D95", $borderColor="#8B5CF6")
+AddElementTag("Plane", $bgColor="#F8FAFC", $fontColor="#334155", $borderColor="#94A3B8")
+
+AddRelTag("async", $textColor="#6D28D9", $lineColor="#7C3AED", $lineStyle=DashedLine())
+AddRelTag("future", $textColor="#9A6700", $lineColor="#D89B28", $lineStyle=DashedLine())
+AddRelTag("boundary", $textColor="#0F766E", $lineColor="#0F766E", $lineStyle=DashedLine())

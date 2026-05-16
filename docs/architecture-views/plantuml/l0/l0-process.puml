@@ -1,0 +1,48 @@
+@startuml l0-process
+!include ../common/theme.puml
+!include ../common/links.puml
+!include ../common/l0-elements.puml
+
+title L0 Process View - Asynchronous Long-Running Task Lifecycle
+
+Person(operator, $BUSINESS_OPERATOR_NAME, "Keeps business authority.", $tags="C-Side")
+System_Ext(business_app, $BUSINESS_APP_NAME, "Public task-driving interface.", $tags="C-Side")
+Container(agent_client, $AGENT_CLIENT_NAME, "SDK / API facade", $AGENT_CLIENT_DESC, $tags="C-Side", $link=$L1_AGENT_CLIENT)
+Container(agent_service, $AGENT_SERVICE_NAME, "Enterprise service boundary", $AGENT_SERVICE_DESC, $tags="S-Side", $link=$L1_AGENT_SERVICE)
+Container(exec_engine, $EXECUTION_ENGINE_NAME, "Execution capability", $EXECUTION_ENGINE_DESC, $tags="S-Side", $link=$L1_EXECUTION_ENGINE)
+Container(agent_middleware, $AGENT_MIDDLEWARE_NAME, "Shared capability layer", $AGENT_MIDDLEWARE_DESC, $tags="S-Side", $link=$L1_AGENT_MIDDLEWARE)
+Container(agent_bus, $AGENT_BUS_NAME, "Coordination hub", $AGENT_BUS_DESC, $tags="S-Side", $link=$L1_AGENT_BUS)
+Container(evolution, $EVOLUTION_NAME, "Improvement loop", $EVOLUTION_DESC, $tags="S-Side", $link=$L1_EVOLUTION)
+
+Rel(operator, business_app, "initiates and reviews work")
+Rel_D(business_app, agent_client, "invokes platform access")
+Rel_D(agent_client, agent_service, "submits long-running task")
+Rel_D(agent_service, exec_engine, "accepts and dispatches execution")
+Rel_D(exec_engine, exec_engine, "performs Workflow or AgentLoop style work")
+Rel_D(exec_engine, agent_middleware, "uses memory, skill, sandbox, knowledge, trace, or governance capability when needed")
+Rel_D(agent_service, agent_middleware, "uses policy, tenant, and service governance capabilities")
+Rel_D(exec_engine, agent_bus, "emits collaboration events and receives coordination signals")
+Rel_D(agent_service, agent_bus, "coordinates cross-agent and cross-service communication")
+Rel_D(agent_bus, evolution, "publishes operational and shadow traffic asynchronously", $tags="async")
+Rel_D(evolution, agent_service, "feeds improvement candidates without blocking online execution", $tags="async")
+Rel_U(agent_service, agent_client, "returns progress, intermediate state, completion, or resumable handoff")
+Rel_U(agent_client, business_app, "surfaces observable task state")
+Rel_U(business_app, operator, "keeps business authority over outcomes")
+
+note right of agent_service
+L0 process mechanisms:
+- asynchronous long-running execution;
+- interruptible and resumable lifecycle;
+- non-blocking resource release for waits;
+- cross-service coordination;
+- asynchronous evolution feedback.
+Lower-level pull, pressure, channel, and protocol details are refined in L1/L2.
+end note
+
+legend right
+|= Relation style |= Meaning |
+| Solid process arrows | Macro online task path. |
+| Dashed purple arrows | Asynchronous feedback path. |
+| Self relation | Execution style is named without expanding internal engine components. |
+endlegend
+@enduml

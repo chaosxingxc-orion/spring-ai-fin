@@ -1,0 +1,28 @@
+' Shared L0 names and descriptions. Keep this file at L0/C1 abstraction only.
+!$SPRING_AI_ASCEND = "spring-ai-ascend"
+
+!$AGENT_CLIENT_NAME = "Agent Client"
+!$AGENT_CLIENT_DESC = "C-Side access facade for task submission, progress, completion, and resumable handoff."
+
+!$AGENT_SERVICE_NAME = "Agent Service"
+!$AGENT_SERVICE_DESC = "S-Side enterprise service boundary for task intake, runtime governance, and execution coordination."
+
+!$EXECUTION_ENGINE_NAME = "Agent Execution Engine"
+!$EXECUTION_ENGINE_DESC = "Executes Workflow and AgentLoop style work while keeping lower-level engine details outside L0."
+
+!$AGENT_BUS_NAME = "Agent Bus"
+!$AGENT_BUS_DESC = "Coordinates cross-agent and cross-service collaboration and publishes operational traffic."
+
+!$AGENT_MIDDLEWARE_NAME = "Agent Middleware"
+!$AGENT_MIDDLEWARE_DESC = "Shared memory, skill, sandbox, knowledge, trace, and governance capabilities."
+
+!$EVOLUTION_NAME = "Agent Evolution Layer"
+!$EVOLUTION_DESC = "Consumes operational data asynchronously and feeds improvement loops."
+
+!$BUSINESS_APP_NAME = "Business Application / Enterprise Terminal"
+!$BUSINESS_OPERATOR_NAME = "Enterprise Developer / Business Operator"
+!$MODEL_GATEWAY_NAME = "External Model Gateway"
+!$IAM_NAME = "Enterprise IAM / Policy / Credential System"
+!$DATA_SYSTEMS_NAME = "Enterprise Data / Knowledge Systems"
+!$SANDBOX_INFRA_NAME = "Sandbox Infrastructure"
+!$OBSERVABILITY_NAME = "Observability / Governance Platform"
