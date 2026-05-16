@@ -1,0 +1,61 @@
+@startuml l0-development
+!include ../common/theme.puml
+!include ../common/links.puml
+!include ../common/l0-elements.puml
+
+title L0 Development View - Repository Modules Supporting the Six Capabilities
+
+System_Boundary(repo, "Current repository modules") {
+  Container(agent_platform, "agent-platform", "Maven module", "Northbound HTTP facade, health endpoint, tenant filter, idempotency filter, and posture-aware edge concerns.", $tags="S-Side")
+  Container(agent_runtime_module, "agent-runtime", "Maven module", "Repository module name. Supports the Agent Service capability and execution-related kernel baseline: orchestration contracts, run lifecycle model, execution abstraction baseline, and in-memory reference execution.", $tags="S-Side")
+  Container(dependencies, "spring-ai-ascend-dependencies", "Maven BOM", "Dependency pinning and build alignment.", $tags="Governance")
+  Container(graphmemory, "spring-ai-ascend-graphmemory-starter", "Spring starter", "Graph memory starter and adapter shell.", $tags="S-Side")
+}
+
+System_Boundary(l0_caps, "L0 capability labels") {
+  Container(agent_client, $AGENT_CLIENT_NAME, "Capability", $AGENT_CLIENT_DESC, $tags="C-Side", $link=$L1_AGENT_CLIENT)
+  Container(agent_service, $AGENT_SERVICE_NAME, "Capability", $AGENT_SERVICE_DESC, $tags="S-Side", $link=$L1_AGENT_SERVICE)
+  Container(exec_engine, $EXECUTION_ENGINE_NAME, "Capability", $EXECUTION_ENGINE_DESC, $tags="S-Side", $link=$L1_EXECUTION_ENGINE)
+  Container(agent_bus, $AGENT_BUS_NAME, "Capability", $AGENT_BUS_DESC, $tags="S-Side", $link=$L1_AGENT_BUS)
+  Container(agent_middleware, $AGENT_MIDDLEWARE_NAME, "Capability", $AGENT_MIDDLEWARE_DESC, $tags="S-Side", $link=$L1_AGENT_MIDDLEWARE)
+  Container(evolution, $EVOLUTION_NAME, "Capability", $EVOLUTION_DESC, $tags="S-Side", $link=$L1_EVOLUTION)
+}
+
+System_Boundary(future, "Future / deferred module split candidates") {
+  Container(future_client, "agent-client-sdk-java", "Future module", "Client SDK packaging for C-Side adoption.", $tags="Future")
+  Container(future_bus, "agent-bus-java", "Future module", "Dedicated bus implementation package.", $tags="Future")
+  Container(future_evolution, "agent-evolution-python", "Future module", "Isolated evolution analysis and optimization runtime.", $tags="Future")
+  Container(future_middleware, "richer middleware adapters", "Future packages", "Additional memory, knowledge, sandbox, model, trace, and governance adapters.", $tags="Future")
+  Container(future_contracts, "contract governance package", "Future artifact", "Executable conformance checks for public contracts; not an L0 core capability.", $tags="Future")
+}
+
+Rel(agent_platform, agent_service, "exposes service boundary and edge concerns")
+Rel(agent_runtime_module, agent_service, "implements current service/runtime kernel baseline")
+Rel(agent_runtime_module, exec_engine, "implements execution abstraction baseline")
+Rel(graphmemory, agent_middleware, "contributes memory adapter shell")
+Rel(dependencies, agent_platform, "pins dependency versions")
+Rel(dependencies, agent_runtime_module, "pins dependency versions")
+Rel(dependencies, graphmemory, "pins dependency versions")
+
+Rel(future_client, agent_client, "future packaging", $tags="future")
+Rel(future_bus, agent_bus, "future dedicated bus package", $tags="future")
+Rel(future_evolution, evolution, "future isolated evolution runtime", $tags="future")
+Rel(future_middleware, agent_middleware, "future adapter expansion", $tags="future")
+Rel(future_contracts, agent_service, "future code-as-contract evidence for service-facing contracts", $tags="future")
+
+note bottom of repo
+Development red lines:
+- Core/runtime contracts do not depend on business applications.
+- Core/runtime contracts do not directly bind to concrete middleware implementations.
+- Middleware implementations are injected through service/runtime adapters.
+- The evolution layer is isolated from the Java service/execution path through bus or serialized contracts.
+- This view stays at module direction, not class or interface internals.
+end note
+
+legend right
+|= Tag |= Meaning |
+| Current repository modules | Code that exists today. |
+| L0 capability labels | Architectural names used by the top-level diagrams. |
+| Future | Deferred packaging or governance support, not a current L0 core block. |
+endlegend
+@enduml

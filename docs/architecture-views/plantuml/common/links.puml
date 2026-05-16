@@ -1,0 +1,7 @@
+' L1 drill-down placeholders. The linked SVG files may be added later.
+!$L1_AGENT_CLIENT = "../l1/agent-client/client-logical.svg"
+!$L1_AGENT_SERVICE = "../l1/agent-service/service-logical.svg"
+!$L1_EXECUTION_ENGINE = "../l1/execution-engine/execution-logical.svg"
+!$L1_AGENT_BUS = "../l1/agent-bus/bus-logical.svg"
+!$L1_AGENT_MIDDLEWARE = "../l1/agent-middleware/middleware-logical.svg"
+!$L1_EVOLUTION = "../l1/evolution/evolution-logical.svg"
