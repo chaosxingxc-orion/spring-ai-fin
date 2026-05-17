@@ -236,6 +236,15 @@ artefacts:
     - agent-runtime/module-metadata.yaml
     - spring-ai-ascend-dependencies/module-metadata.yaml
     - spring-ai-ascend-graphmemory-starter/module-metadata.yaml
+    # 2026-05-17: six-module materialization PR added five new module-metadata.yaml files
+    # (each declaring deployment_plane: per Rule 39 / P-I). Gate Rule 49 scans every
+    # <module>/module-metadata.yaml on disk; ADR-0069's modified: list is historical
+    # record of the ADR-write-time set, not the runtime input list.
+    - agent-client/module-metadata.yaml
+    - agent-bus/module-metadata.yaml
+    - agent-middleware/module-metadata.yaml
+    - agent-execution-engine/module-metadata.yaml
+    - agent-evolve/module-metadata.yaml
 
 verification:
   - "bash gate/check_architecture_sync.sh exits 0 with Gate Rules 45-52 added; all gate sub-rules pass on the populated YAML inputs."

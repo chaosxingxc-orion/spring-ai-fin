@@ -9,14 +9,15 @@ generated_at: 2026-05-13
 
 # Source: root pom.xml <modules> list updated 2026-05-13 post-seventh third pass
 repository_counts:
-  note: "Canonical counts -- derived from root pom.xml modules list. All documents reference these; no document may claim a different count without updating this block."
-  reactor_modules: 4
+  note: "Canonical counts -- derived from root pom.xml modules list. All documents reference these; no document may claim a different count without updating this block. Bumped 2026-05-17 for the six-module materialization PR (T2.A scaffolds agent-client, agent-bus, agent-middleware, agent-execution-engine, agent-evolve; T2.B1 extracts middleware code; T2.B2 engine-code extraction deferred to follow-up PR per the back-dep snag documented at agent-execution-engine/ARCHITECTURE.md)."
+  reactor_modules: 9
   sdk_spi_starters: 0
   sidecar_adapter_starters: 1
   alternate_framework_profiles: 0
-  internal_modules: 2
+  internal_modules: 7      # agent-platform + agent-runtime + 5 new (agent-client/bus/middleware/execution-engine/evolve)
   bom_module: 1
-  total_reactor_modules: 4
+  total_reactor_modules: 9
+  skeleton_modules: 5      # agent-client, agent-bus, agent-evolve are fully empty; agent-middleware contains extracted code; agent-execution-engine awaits T2.B2
 
 capabilities:
 

@@ -8,7 +8,7 @@
 
 ## Context
 
-The reactor has four modules today (`agent-platform`, `agent-runtime`, `spring-ai-ascend-dependencies`, `spring-ai-ascend-graphmemory-starter`). They build with `mvn -pl <module> -am test` but their versions, kinds, and semver policies are scattered — partly in `pom.xml`, partly in `architecture-status.yaml`, partly in `README.md`. A new contributor cannot answer "what kind of module is this and how stable is its API?" without piecing together multiple files.
+The reactor had four modules at ADR-write time (`agent-platform`, `agent-runtime`, `spring-ai-ascend-dependencies`, `spring-ai-ascend-graphmemory-starter`) and has nine modules as of 2026-05-17 after the six-module materialization PR added `agent-client`, `agent-bus`, `agent-middleware`, `agent-execution-engine`, `agent-evolve`. They build with `mvn -pl <module> -am test` but their versions, kinds, and semver policies are scattered — partly in `pom.xml`, partly in `architecture-status.yaml`, partly in `README.md`. A new contributor cannot answer "what kind of module is this and how stable is its API?" without piecing together multiple files.
 
 Rule 28 demands an executable enforcer for each "must / forbidden / required" sentence. The cleanest enforcer is a yaml file per module with required keys + a gate rule that asserts presence and completeness.
 

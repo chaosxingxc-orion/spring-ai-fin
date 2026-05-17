@@ -65,16 +65,20 @@ decision: |
     propagation is fail_fast for before_*/after_* and best_effort for
     on_error.
 
-  - Java surfaces (agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/):
+  - Java surfaces (agent-middleware/src/main/java/ascend/springai/middleware/spi/ — moved here from agent-runtime/orchestration/spi/ in PR 2026-05-17 six-module materialization, T2.B1):
       HookPoint           — 9-value enum mirroring yaml hooks: list
       HookContext         — record (point, runId, tenantId, attributes Map)
       HookOutcome         — sealed: Proceed | ShortCircuit(Object) | Fail(String)
       RuntimeMiddleware   — @FunctionalInterface: HookOutcome onHook(HookContext)
-      EngineHookSurface   — @FunctionalInterface: Set<HookPoint> supportedHooks(); default empty()
 
-  - Java surfaces (agent-runtime/src/main/java/ascend/springai/runtime/engine/):
+  - Java surface (agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/):
+      EngineHookSurface   — @FunctionalInterface: Set<HookPoint> supportedHooks(); default empty() — stays in agent-runtime because it is consumed by ExecutorAdapter (which itself remains in agent-runtime pending T2.B2 engine extraction)
+
+  - Java surfaces (agent-middleware/src/main/java/ascend/springai/middleware/ — moved here from agent-runtime/engine/ in the same PR):
       HookDispatcher      — invokes registered middlewares per HookPoint with declared ordering
-      EngineRegistry      — gains registerMiddleware(...) + hookDispatcher() accessor
+
+  - Java surface (agent-runtime/src/main/java/ascend/springai/runtime/engine/):
+      EngineRegistry      — gains registerMiddleware(...) + hookDispatcher() accessor; stays in agent-runtime until T2.B2 engine extraction lands (back-dep on Run/RunContext blocks current extraction — see agent-execution-engine/ARCHITECTURE.md)
 
   - SyncOrchestrator wiring:
       Constructor pulls hookDispatcher = engineRegistry.hookDispatcher() once.

@@ -66,7 +66,7 @@ Reserved name: `agent-runtime-tck` (sibling of `agent-runtime`). Adding it as a 
 
 ## Alternatives considered
 
-**Alt A — Ship TCK scaffolding today as a 5th reactor module.** Rejected: Gate Rule 28e (`module_count_invariant`) currently asserts exactly 4 modules; adding a 5th would force a rule change before the conformance content exists to justify it. Defer until alternative SPI implementations are proposed.
+**Alt A — Ship TCK scaffolding today as a 5th reactor module.** Rejected: Gate Rule 28e (`module_count_invariant`) at ADR-write time asserted exactly 4 modules; adding a TCK module would force a rule change before the conformance content exists to justify it. (Post-write: the count was raised to 9 by the 2026-05-17 six-module materialization PR for a different reason; TCK module reservation remains W2 per CLAUDE-deferred.md 32.b.) Defer until alternative SPI implementations are proposed.
 
 **Alt B — Treat DFX as a free-form section in `<module>/ARCHITECTURE.md`.** Rejected: ARCHITECTURE.md is prose; DFX is structured (5 fixed dimensions). A yaml lets the gate check schema completeness mechanically.
 
@@ -90,5 +90,5 @@ Reserved name: `agent-runtime-tck` (sibling of `agent-runtime`). Adding it as a 
 - [x] DFX yaml is required for `kind ∈ {platform, domain}` only; optional for others.
 - [x] Five DFX dimensions are enumerated.
 - [x] TCK module name (`<module>-tck`) is reserved; conformance content is deferred with explicit W2 trigger.
-- [x] Module count invariant interaction is acknowledged (E27 / Rule 28e — will need bump when TCK lands).
+- [x] Module count invariant interaction is acknowledged (E27 / Rule 28e — was hard-coded 4 at ADR-write; bumped to 9 by 2026-05-17 six-module materialization PR; will need further bumps when TCK lands and when Phase C collapses agent-platform + agent-runtime into agent-service).
 - [x] §4 #63 anchors Rule 32 in the architectural corpus.

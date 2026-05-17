@@ -38,7 +38,7 @@ Rule 28 (Code-as-Contract) requires every constraint to have an executable enfor
 - **E1** — `gate/check_architecture_sync.sh` Rule 10: agent-runtime/pom.xml does not depend on agent-platform.
 - **E2** — `RuntimeMustNotDependOnPlatformTest` (ArchUnit): no class under `ascend.springai.runtime..` imports `ascend.springai.platform..`.
 - **E4** — `HttpEdgeMustNotImportMemorySpiTest` (ArchUnit): `agent-platform` does not import `runtime.memory.spi..`.
-- **E27** — `module_count_invariant`: root pom declares exactly 4 modules at L1.
+- **E27** — `module_count_invariant`: root pom declares exactly 9 modules (bumped from 4 to 9 by the 2026-05-17 six-module materialization PR; canonical count now lives in `docs/governance/architecture-status.yaml#repository_counts.total_reactor_modules` and is data-driven cross-checked by Rule 64).
 
 Self-tests in `gate/test_architecture_sync_gate.sh` exercise both PASS (no offending dep) and FAIL (offending dep injected) cases.
 

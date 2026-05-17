@@ -122,6 +122,8 @@ Every future resilience or fallback ADR MUST reference this red line and classif
 - **W2**: northbound HTTP/SSE/gRPC bindings (in conjunction with §4 #11 streaming surface and ADR-0050 cross-service bus).
 - **W3+**: `agent-client-sdk/` Maven module — C-Side library implementing the protocol (deferred design slot per archived analysis at `docs/archive/2026-05-13-serverless-architecture-future-direction.md`).
 
+> **Post-impl note (2026-05-17 six-module materialization PR):** the W3+ module landed as a skeleton under the short name `agent-client/` (not `agent-client-sdk/`) — the long suffix was redundant once the team-facing six-module decomposition (AgentClient / AgentService / Middleware / AgentBus / AgentEvolve / AgentExecutionEngine) made the module name self-describing. Skeleton contents: `agent-client/pom.xml`, `agent-client/module-metadata.yaml` (plane: `edge`, kind: `domain`), `agent-client/ARCHITECTURE.md`, `agent-client/src/main/java/ascend/springai/client/spi/package-info.java`, `docs/dfx/agent-client.yaml`. Full protocol implementation remains deferred to W3+ per this ADR.
+
 ### Out of scope
 
 - Java implementation of any of the named contracts (deferred to W2+).

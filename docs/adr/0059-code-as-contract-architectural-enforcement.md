@@ -66,7 +66,7 @@ Nine new gate sub-rules implement Rule 28:
 | 28b | `high_cardinality_tag_guard` | No source contains `Tag.of("run_id"\|"idempotency_key"\|"jwt_sub"\|"body", …)`. |
 | 28c | `no_secret_patterns` | gitleaks-style regex pass over tracked files; pre-existing noise allow-list is inline-annotated. |
 | 28d | `out_of_scope_name_guard` | Names of W2+ deferred concepts must not appear in `agent-*/src/main/java`. |
-| 28e | `module_count_invariant` | Root `pom.xml` `<module>` count equals exactly 4 (L1 invariant). |
+| 28e | `module_count_invariant` | Root `pom.xml` `<module>` count equals the canonical total in `architecture-status.yaml#repository_counts.total_reactor_modules` (was hard-coded 4 at L1; bumped to 9 by the 2026-05-17 six-module materialization PR and cross-validated data-driven by Rule 64). |
 | 28f | `enforcers_yaml_wellformed` | `docs/governance/enforcers.yaml` schema-valid; every row has all five fields. |
 | 28g | `no_prose_only_constraint_marker` | No `TODO: enforce`, `FIXME: enforcer`, `deferred: test` markers in architecture corpus. |
 | 28h | `l1_review_checklist_present` | Every ADR `0055*–0059*` includes the §16 review-checklist sub-section. |

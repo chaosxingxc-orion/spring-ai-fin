@@ -5,9 +5,15 @@
 # Driver review: docs/reviews/2026-05-15-l0architecture-lucio It-wave-1-supplement-runtime-engine-contract.en.md (proposal §5).
 #
 # This file is the SINGLE SOURCE OF TRUTH for the canonical hook surface.
-# The Java enum ascend.springai.runtime.orchestration.spi.HookPoint mirrors
-# the `hooks:` list (one enum constant per ordered entry). Gate Rule 57 cross-
-# checks the two sides at build time so the schema and code never drift.
+# The Java enum ascend.springai.middleware.spi.HookPoint mirrors the `hooks:`
+# list (one enum constant per ordered entry). Gate Rule 57 cross-checks the
+# two sides at build time so the schema and code never drift.
+#
+# NOTE (2026-05-17 six-module materialization PR): the enum was moved from
+# ascend.springai.runtime.orchestration.spi.HookPoint to
+# ascend.springai.middleware.spi.HookPoint along with the entire middleware
+# SPI surface. The schema (this file) is unchanged; only the Java location
+# moved. Gate Rule 57 implementation already follows the new path.
 #
 # Self-enforced by gate Rule 57 (engine_hooks_yaml_present_and_wellformed).
 

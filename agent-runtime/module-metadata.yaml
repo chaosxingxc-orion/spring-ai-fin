@@ -12,7 +12,9 @@ dfx_doc: docs/dfx/agent-runtime.yaml
 spi_packages:
   - ascend.springai.runtime.orchestration.spi
   - ascend.springai.runtime.memory.spi
-allowed_dependencies: []
+  - ascend.springai.runtime.s2c.spi           # added 2026-05-17 — s2c.spi package moved here in v2.0.0-rc3 per cross-constraint audit α-4/β-2; declaration was missing until Rule 66 spi_package_exhaustiveness surfaced it
+allowed_dependencies:
+  - agent-middleware                          # added 2026-05-17 — agent-runtime depends on agent-middleware after T2.B1 middleware extraction (HookPoint/RuntimeMiddleware/HookContext/HookOutcome/HookDispatcher moved to agent-middleware); Rule 65 module_metadata_pom_dep_parity cross-checks this against agent-runtime/pom.xml
 forbidden_dependencies:
   - agent-platform        # Rule 10 module_dep_direction; runtime is independent of platform
 deployment_plane: compute_control   # Rule 39 / P-I — five-plane topology; cognitive engine lives on the Compute & Control plane alongside the gateway
