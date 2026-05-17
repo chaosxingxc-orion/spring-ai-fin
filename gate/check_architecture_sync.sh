@@ -120,6 +120,27 @@ fail_rule() {
 }
 
 # ---------------------------------------------------------------------------
+# Scan-cache adoption (PR-E3 of the gate-efficiency wave, 2026-05-17).
+# Source gate/lib/scan_cache.sh ONCE here so all rules can read the
+# pre-computed file lists ($_SCAN_MODULE_METADATA, $_SCAN_ACTIVE_DOCS,
+# $_SCAN_MIGRATION_SQL, $_SCAN_AGENT_JAVA_MAIN) instead of each running
+# their own find. The cache is conditional on $GATE_SCAN_CACHE_ENABLED
+# (loaded from gate/config.yaml via gate/lib/load_config.sh); when disabled,
+# the env vars are empty and rules fall back to their original inline find.
+# Authority: docs/governance/rules/rule-70.md + PR-E3 plan.
+# ---------------------------------------------------------------------------
+if [[ -f "$repo_root/gate/lib/load_config.sh" ]]; then
+  GATE_REPO_ROOT="$repo_root"
+  # shellcheck source=gate/lib/load_config.sh
+  source "$repo_root/gate/lib/load_config.sh"
+  gate_load_config 2>/dev/null || true
+fi
+if [[ -f "$repo_root/gate/lib/scan_cache.sh" ]]; then
+  # shellcheck source=gate/lib/scan_cache.sh
+  source "$repo_root/gate/lib/scan_cache.sh"
+fi
+
+# ---------------------------------------------------------------------------
 # Rule 1 — status_enum_invalid
 # docs/governance/architecture-status.yaml status: values must be in the
 # allowed enum. Any other value is a FAIL.
@@ -1104,7 +1125,7 @@ PY
     fail_rule "tenant_column_present" "$_mig declares a tenant-scoped table without a tenant_id column. Per Rule 28a / enforcer E15."
     _r28a_fail=1
   fi
-done < <(find . -path '*/src/main/resources/db/migration/*.sql' -not -path './target/*' 2>/dev/null | sort || true)
+done < <(printf '%s\n' "${_SCAN_MIGRATION_SQL:-$(find . -path '*/src/main/resources/db/migration/*.sql' -not -path './target/*' 2>/dev/null | sort || true)}" | grep -E '\.sql$' || true)
 if [[ $_r28a_fail -eq 0 ]]; then pass_rule "tenant_column_present"; fi
 
 # ---------------------------------------------------------------------------
@@ -2154,7 +2175,7 @@ while IFS= read -r _r49_meta; do
     fail_rule "deployment_plane_in_module_metadata" "$_r49_meta declares deployment_plane: $_r49_plane (not in {edge, compute_control, bus_state, sandbox, evolution, none})"
     _r49_fail=1
   fi
-done <<< "$(find . -maxdepth 3 -name module-metadata.yaml -not -path './target/*' -not -path './.claude/*' 2>/dev/null)"
+done <<< "${_SCAN_MODULE_METADATA:-$(find . -maxdepth 3 -name module-metadata.yaml -not -path './target/*' -not -path './.claude/*' 2>/dev/null)}"
 if [[ $_r49_fail -eq 0 ]]; then pass_rule "deployment_plane_in_module_metadata"; fi
 
 # ---------------------------------------------------------------------------
@@ -2838,7 +2859,7 @@ while IFS= read -r _r65_meta; do
       _r65_fail=1
     fi
   done <<< "$_r65_pom_deps"
-done <<< "$(find . -maxdepth 3 -name module-metadata.yaml -not -path './target/*' -not -path './.claude/*' 2>/dev/null)"
+done <<< "${_SCAN_MODULE_METADATA:-$(find . -maxdepth 3 -name module-metadata.yaml -not -path './target/*' -not -path './.claude/*' 2>/dev/null)}"
 if [[ $_r65_fail -eq 0 ]]; then pass_rule "module_metadata_pom_dep_parity"; fi
 
 # ---------------------------------------------------------------------------
@@ -2865,7 +2886,7 @@ while IFS= read -r _r66_meta; do
       _r66_fail=1
     fi
   done <<< "$(find "$_r66_src" -type d -name spi 2>/dev/null)"
-done <<< "$(find . -maxdepth 3 -name module-metadata.yaml -not -path './target/*' -not -path './.claude/*' 2>/dev/null)"
+done <<< "${_SCAN_MODULE_METADATA:-$(find . -maxdepth 3 -name module-metadata.yaml -not -path './target/*' -not -path './.claude/*' 2>/dev/null)}"
 if [[ $_r66_fail -eq 0 ]]; then pass_rule "spi_package_exhaustiveness"; fi
 
 # ===========================================================================
