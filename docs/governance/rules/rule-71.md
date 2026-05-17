@@ -20,7 +20,7 @@ CLAUDE-deferred.md (~9.3K tokens) is consulted only when a re-introduction trigg
 
 The gate scans two surfaces:
 
-1. **CLAUDE.md** — lines matching `^@docs/CLAUDE-deferred\.md` (the Claude Code auto-load include syntax). Plain Markdown references like `[CLAUDE-deferred.md](docs/CLAUDE-deferred.md)` are allowed and unaffected.
+1. **CLAUDE.md** — lines matching `^@docs/CLAUDE-deferred\.md` (the Claude Code auto-load include syntax). Plain Markdown references to `docs/CLAUDE-deferred.md` (without the `@` auto-load prefix) are allowed and unaffected.
 2. **SESSION-START-CONTEXT.md** — lines mentioning `CLAUDE-deferred.md` are filtered for `ALWAYS` or `ALWAYS-LOAD` markers in the Load column. The intended row uses `(ON-DEMAND)` to mark the file as load-on-trigger.
 
 Either signal fails the gate.
