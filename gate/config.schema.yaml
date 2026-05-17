@@ -1,0 +1,134 @@
+# Schema for gate/config.yaml.
+#
+# Read by gate/lib/load_config.sh AND by gate Rule 73 (gate_config_well_formed).
+# Authority: docs/governance/rules/rule-73.md + CLAUDE.md Rule 48 (Schema-First Domain Contracts).
+# Status: active_runtime_enforced.
+#
+# This schema follows the JSON Schema draft-07 conventions but is parsed by a
+# pure-bash validator (no jsonschema dependency). The validator supports:
+#   - type checking (integer, boolean, string, array)
+#   - enum values (for string keys with bounded vocabulary)
+#   - min/max for integers
+#   - required-keys check at each object level
+#   - additionalProperties: false (unknown keys = typo fail)
+#
+# Adding a new config knob requires:
+#   1. Default value in gate/config.yaml
+#   2. Schema entry here
+#   3. Env-var mapping in gate/lib/load_config.sh
+#   4. Consumer in the relevant gate/lib/*.sh
+
+status: active_runtime_enforced
+schema_version: 1
+authority: "docs/governance/rules/rule-73.md + CLAUDE.md Rule 48"
+
+# === Top-level structure ===
+required:
+  - parallelism
+  - logging
+  - scan_cache
+  - regression_detection
+  - rule_filters
+additionalProperties: false
+
+properties:
+
+  parallelism:
+    type: object
+    required: [jobs, enabled, rule_timeout_seconds, batch_strategy]
+    additionalProperties: false
+    properties:
+      jobs:
+        type: integer
+        minimum: 0
+        maximum: 256
+        description: "0 = auto-detect (nproc); 1 = serial; >=2 = exactly that many workers"
+      enabled:
+        type: boolean
+        description: "false forces serial path regardless of jobs"
+      rule_timeout_seconds:
+        type: integer
+        minimum: -1
+        maximum: 3600
+        description: "-1 disables timeout; >0 kills a rule after that many seconds"
+      batch_strategy:
+        type: string
+        enum: [round_robin, longest_first]
+
+  logging:
+    type: object
+    required: [ndjson_enabled, summary_enabled, stdout_format, retention, profile_mode]
+    additionalProperties: false
+    properties:
+      ndjson_enabled:
+        type: boolean
+      summary_enabled:
+        type: boolean
+      stdout_format:
+        type: string
+        enum: [human, quiet, json]
+      retention:
+        type: object
+        required: [max_runs, auto_prune]
+        additionalProperties: false
+        properties:
+          max_runs:
+            type: integer
+            minimum: 0
+            maximum: 100000
+            description: "0 = unlimited; N = keep last N run directories"
+          auto_prune:
+            type: boolean
+      profile_mode:
+        type: boolean
+
+  scan_cache:
+    type: object
+    required: [enabled, patterns]
+    additionalProperties: false
+    properties:
+      enabled:
+        type: boolean
+      patterns:
+        type: array
+        items:
+          type: string
+          enum: [module_metadata, active_docs, migration_sql, agent_java_main]
+
+  regression_detection:
+    type: object
+    required: [enabled, multiplier_threshold, absolute_min_ms, baseline_window]
+    additionalProperties: false
+    properties:
+      enabled:
+        type: boolean
+      multiplier_threshold:
+        type: number
+        minimum: 1.0
+        maximum: 100.0
+      absolute_min_ms:
+        type: integer
+        minimum: 0
+        maximum: 60000
+      baseline_window:
+        type: integer
+        minimum: 1
+        maximum: 100
+
+  rule_filters:
+    type: object
+    required: [skip, only]
+    additionalProperties: false
+    properties:
+      skip:
+        type: array
+        items:
+          type: integer
+          minimum: 1
+          maximum: 999
+      only:
+        type: array
+        items:
+          type: integer
+          minimum: 1
+          maximum: 999

@@ -89,3 +89,7 @@ gate/log/local/
 
 # Local Claude Code runtime state (lock files, scheduled tasks); never committed
 .claude/
+
+# Gate run logs (per-run NDJSON; gitignored per token-optimization wave PR-E1)
+gate/log/runs/
+gate/log/latest

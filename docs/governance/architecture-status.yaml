@@ -1386,3 +1386,20 @@ capabilities:
       - gate/check_architecture_sync.sh
       - gate/test_architecture_sync_gate.sh
     allowed_claim: "2026-05-17 CLAUDE.md token-optimization wave PR1 shipped — Rules 67-71 + enforcers E97-E101 land the kernel/card split + budget gate + deferred demote. Per-rule cards under docs/governance/rules/rule-NN.md carry kernel: scalars that byte-match the CLAUDE.md body (Rule 68); kernel-size bounded by per-card kernel_cap of 12 (daily principles) or 6 (architectural + ironclad) (Rule 67); every active rule has a card (Rule 69); always-loaded budget gate (Rule 70) measures bytes/lines/tokens of every file in gate/always-loaded-budget.txt and fails on overage; CLAUDE-deferred.md demoted from always-loaded set (Rule 71). Always-loaded total dropped from ~99K to ~10.6K tokens per session."
+
+  gate_config_well_formed:
+    status: test_verified
+    shipped: true
+    l0_decision: D:/.claude/plans/tokens-token-buzzing-sprout.md
+    l2_documents:
+      - D:/.claude/plans/tokens-token-buzzing-sprout.md
+      - docs/governance/rules/rule-73.md
+    implementation:
+      - gate/config.yaml
+      - gate/config.schema.yaml
+      - gate/lib/load_config.sh
+      - gate/check_architecture_sync.sh
+    tests:
+      - gate/check_architecture_sync.sh
+      - gate/test_architecture_sync_gate.sh
+    allowed_claim: "2026-05-17 gate-script efficiency wave PR-E1 shipped — Rule 73 (gate_config_well_formed, enforcer E103) validates gate/config.yaml against gate/config.schema.yaml on every gate run. Validator (gate_validate_config_against_schema in gate/lib/load_config.sh) checks required top-level keys, leaf types/ranges, enums (batch_strategy, stdout_format), and runtime-resolved values (parallelism.jobs after env override). Configuration knob system enables team-wide tuning of concurrency, logging, scan cache, regression detection, and rule filters without code changes; env vars override config for CI / one-shot use. Schema-first per Rule 48 (CLAUDE.md)."

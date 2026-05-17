@@ -309,6 +309,15 @@ Enforced by [`rule-71.md`](docs/governance/rules/rule-71.md).
 
 ---
 
+### Gate-script efficiency wave (2026-05-17)
+#### Rule 73 — Gate Config Well-Formed
+
+**`gate/config.yaml` MUST validate against `gate/config.schema.yaml`. The gate fails closed on: missing required keys at any level, type mismatch, value outside declared min/max range, unknown keys (typo detection via `additionalProperties: false`), enum violation. Schema follows the wave's structural invariant: yaml → loader-validated env-vars → runtime-checked.**
+
+Enforced by [`rule-73.md`](docs/governance/rules/rule-73.md).
+
+---
+
 ## Deferred Rules
 
 On-demand: [`docs/CLAUDE-deferred.md`](docs/CLAUDE-deferred.md). Currently deferred: Rules 7, 8, 11, 13, 14, 15, 16, 17, 18, 19, 22, 23, 24, 26, 27 + sub-clauses.

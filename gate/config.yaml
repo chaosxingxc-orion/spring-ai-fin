@@ -1,0 +1,48 @@
+# Gate execution configuration.
+#
+# Edit defaults here; override per-invocation via env vars listed in each key.
+# Override hierarchy (highest -> lowest): env var > gate/config.yaml > hardcoded fallback.
+#
+# Validated by gate Rule 73 (gate_config_well_formed, enforcer E103) on every run.
+# Authority: docs/governance/rules/rule-73.md + D:/.claude/plans/tokens-token-buzzing-sprout.md.
+#
+# Format constraints (because the loader is a pure-bash parser, not a full YAML engine):
+#   - All values are scalars (int, bool, string) or single-level arrays of scalars.
+#   - No anchors, no merges, no flow style ({a: b}), no multi-document streams.
+#   - Each leaf key MUST be indented exactly 2 spaces under its section.
+#   - Booleans MUST be 'true' or 'false' (lowercase).
+#   - Arrays MUST use block style ('- item' per line); '[]' allowed for empty arrays only.
+
+parallelism:
+  jobs: 8                      # number of parallel workers (env: GATE_JOBS)
+                               #   1 = serial; 0 = auto (= nproc); N = exactly N workers
+  enabled: true                # false -> force serial path (env: GATE_PARALLEL=0)
+  rule_timeout_seconds: 60     # kill a rule that exceeds this; -1 = no timeout (env: GATE_RULE_TIMEOUT)
+  batch_strategy: round_robin  # round_robin | longest_first (env: GATE_BATCH_STRATEGY)
+
+logging:
+  ndjson_enabled: true         # write per-rule.ndjson (env: GATE_LOG_NDJSON)
+  summary_enabled: true        # write summary.json (env: GATE_LOG_SUMMARY)
+  stdout_format: human         # human | quiet | json (env: GATE_LOG_STDOUT)
+  retention:
+    max_runs: 100              # keep last N run directories; 0 = unlimited (env: GATE_LOG_MAX_RUNS)
+    auto_prune: true           # auto-prune at end of run (env: GATE_LOG_AUTO_PRUNE)
+  profile_mode: false          # emit per-rule timings to stderr at end (env: GATE_PROFILE)
+
+scan_cache:
+  enabled: true                # pre-scan shared file lists once per gate run (env: GATE_SCAN_CACHE)
+  patterns:                    # which find patterns to cache; empty list = no caching
+    - module_metadata
+    - active_docs
+    - migration_sql
+    - agent_java_main
+
+regression_detection:
+  enabled: true                # Rule 72 active (env: GATE_RULE_72)
+  multiplier_threshold: 2.0    # current/median > this triggers alert (env: GATE_REGRESSION_MULTIPLIER)
+  absolute_min_ms: 200         # ignore rules under this duration (env: GATE_REGRESSION_MIN_MS)
+  baseline_window: 5           # rolling median over last N runs (env: GATE_BASELINE_WINDOW)
+
+rule_filters:
+  skip: []                     # rule numbers to skip (env: GATE_SKIP, comma-separated)
+  only: []                     # if non-empty, run ONLY these rules (env: GATE_ONLY)

@@ -2846,10 +2846,150 @@ else
   fail "rule71_deferred_doc_not_in_always_loaded_neg" "expected FAIL but auto-load directive not detected"
 fi
 
+# ===========================================================================
+# 2026-05-17 gate-script efficiency wave PR-E1 -- Rule 73 self-tests
+# Authority: D:/.claude/plans/tokens-token-buzzing-sprout.md + docs/governance/rules/rule-73.md
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# RULE 73 -- gate_config_well_formed
+# Positive: well-formed gate/config.yaml validates -> pass
+# Negative 1: malformed YAML / parse error -> fail
+# Negative 2: out-of-range value (jobs: 999) -> fail
+# Negative 3: unknown key (typo detection) -> fail (currently best-effort
+#             since our pure-bash validator only enforces required-keys +
+#             type/range/enum on the validated leaves; full additionalProperties
+#             check is a Phase 2 enhancement)
+# ---------------------------------------------------------------------------
+
+## Positive: shipping config.yaml validates
+_r73_pos_repo="$repo_root"
+_r73_pos_result=$(bash -c "
+  GATE_REPO_ROOT='$_r73_pos_repo'
+  source gate/lib/load_config.sh
+  gate_load_config >/dev/null 2>&1
+  gate_validate_config_against_schema >/dev/null 2>&1
+  printf '%s\n' \"\${GATE_CONFIG_VALID:-false}\"
+")
+_r73_pos_valid=$(printf '%s\n' "$_r73_pos_result" | head -1)
+if [[ "$_r73_pos_valid" == "true" ]]; then
+  ok "rule73_gate_config_well_formed_pos" "shipping config.yaml validates against schema"
+else
+  fail "rule73_gate_config_well_formed_pos" "expected VALID=true but got '$_r73_pos_valid'"
+fi
+
+## Negative 1: missing config file
+_r73_neg1_dir="$scratch/r73_neg1"
+mkdir -p "$_r73_neg1_dir/gate/lib"
+cp "$repo_root/gate/lib/load_config.sh" "$_r73_neg1_dir/gate/lib/load_config.sh"
+cp "$repo_root/gate/config.schema.yaml" "$_r73_neg1_dir/gate/config.schema.yaml"
+# Intentionally do NOT copy gate/config.yaml
+_r73_neg1_result=$(bash -c "
+  GATE_REPO_ROOT='$_r73_neg1_dir'
+  source $_r73_neg1_dir/gate/lib/load_config.sh
+  gate_load_config >/dev/null 2>&1
+  gate_validate_config_against_schema >/dev/null 2>&1
+  printf '%s' \"\${GATE_CONFIG_VALID:-false}\"
+")
+if [[ "$_r73_neg1_result" == "false" ]]; then
+  ok "rule73_gate_config_missing_neg" "missing gate/config.yaml correctly triggers FAIL"
+else
+  fail "rule73_gate_config_missing_neg" "expected FAIL for missing config but got VALID=$_r73_neg1_result"
+fi
+
+## Negative 2: out-of-range jobs value
+_r73_neg2_dir="$scratch/r73_neg2"
+mkdir -p "$_r73_neg2_dir/gate/lib"
+cp "$repo_root/gate/lib/load_config.sh" "$_r73_neg2_dir/gate/lib/load_config.sh"
+cp "$repo_root/gate/config.schema.yaml" "$_r73_neg2_dir/gate/config.schema.yaml"
+cat > "$_r73_neg2_dir/gate/config.yaml" <<'YAMLEOF'
+parallelism:
+  jobs: 999
+  enabled: true
+  rule_timeout_seconds: 60
+  batch_strategy: round_robin
+logging:
+  ndjson_enabled: true
+  summary_enabled: true
+  stdout_format: human
+  retention:
+    max_runs: 100
+    auto_prune: true
+  profile_mode: false
+scan_cache:
+  enabled: true
+  patterns:
+    - module_metadata
+regression_detection:
+  enabled: true
+  multiplier_threshold: 2.0
+  absolute_min_ms: 200
+  baseline_window: 5
+rule_filters:
+  skip: []
+  only: []
+YAMLEOF
+_r73_neg2_result=$(bash -c "
+  GATE_REPO_ROOT='$_r73_neg2_dir'
+  source $_r73_neg2_dir/gate/lib/load_config.sh
+  gate_load_config >/dev/null 2>&1
+  gate_validate_config_against_schema >/dev/null 2>&1
+  printf '%s' \"\${GATE_CONFIG_VALID:-false}\"
+")
+if [[ "$_r73_neg2_result" == "false" ]]; then
+  ok "rule73_gate_config_out_of_range_neg" "out-of-range jobs=999 correctly triggers FAIL"
+else
+  fail "rule73_gate_config_out_of_range_neg" "expected FAIL for jobs=999 but got VALID=$_r73_neg2_result"
+fi
+
+## Negative 3: invalid batch_strategy enum value
+_r73_neg3_dir="$scratch/r73_neg3"
+mkdir -p "$_r73_neg3_dir/gate/lib"
+cp "$repo_root/gate/lib/load_config.sh" "$_r73_neg3_dir/gate/lib/load_config.sh"
+cp "$repo_root/gate/config.schema.yaml" "$_r73_neg3_dir/gate/config.schema.yaml"
+cat > "$_r73_neg3_dir/gate/config.yaml" <<'YAMLEOF'
+parallelism:
+  jobs: 8
+  enabled: true
+  rule_timeout_seconds: 60
+  batch_strategy: BOGUS_STRATEGY
+logging:
+  ndjson_enabled: true
+  summary_enabled: true
+  stdout_format: human
+  retention:
+    max_runs: 100
+    auto_prune: true
+  profile_mode: false
+scan_cache:
+  enabled: true
+  patterns: []
+regression_detection:
+  enabled: true
+  multiplier_threshold: 2.0
+  absolute_min_ms: 200
+  baseline_window: 5
+rule_filters:
+  skip: []
+  only: []
+YAMLEOF
+_r73_neg3_result=$(bash -c "
+  GATE_REPO_ROOT='$_r73_neg3_dir'
+  source $_r73_neg3_dir/gate/lib/load_config.sh
+  gate_load_config >/dev/null 2>&1
+  gate_validate_config_against_schema >/dev/null 2>&1
+  printf '%s' \"\${GATE_CONFIG_VALID:-false}\"
+")
+if [[ "$_r73_neg3_result" == "false" ]]; then
+  ok "rule73_gate_config_invalid_enum_neg" "invalid batch_strategy enum correctly triggers FAIL"
+else
+  fail "rule73_gate_config_invalid_enum_neg" "expected FAIL for invalid enum but got VALID=$_r73_neg3_result"
+fi
+
 # ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
-TOTAL=108
+TOTAL=112
 echo ""
 echo "Tests passed: ${passed}/${TOTAL}"
 

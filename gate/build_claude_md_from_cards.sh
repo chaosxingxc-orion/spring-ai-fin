@@ -186,6 +186,13 @@ TAIL
 
 for n in 67 68 69 70 71; do emit_rule "$n"; done
 
+cat <<'TAIL_E1'
+
+### Gate-script efficiency wave (2026-05-17)
+TAIL_E1
+
+for n in 73; do emit_rule "$n"; done
+
 cat <<'TAIL2'
 
 ## Deferred Rules

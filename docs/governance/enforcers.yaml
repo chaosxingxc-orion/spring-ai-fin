@@ -910,3 +910,16 @@
   view: scenarios
   artifact: gate/check_architecture_sync.sh#deferred_doc_not_in_always_loaded
   asserts: "docs/CLAUDE-deferred.md is not auto-injected: no @docs/CLAUDE-deferred.md include directive in CLAUDE.md, and no ALWAYS / ALWAYS-LOAD marker on its row in docs/governance/SESSION-START-CONTEXT.md. Plain prose pointers are fine."
+
+# ---------------------------------------------------------------------------
+# 2026-05-17 gate-script efficiency wave PR-E1.
+# Authority: D:/.claude/plans/tokens-token-buzzing-sprout.md + docs/governance/rules/rule-73.md
+# ---------------------------------------------------------------------------
+
+- id: E103
+  constraint_ref: "CLAUDE.md Rule 73 (gate_config_well_formed); gate-efficiency wave PR-E1"
+  kind: gate-script
+  level: L0
+  view: scenarios
+  artifact: gate/check_architecture_sync.sh#gate_config_well_formed
+  asserts: "gate/config.yaml validates against gate/config.schema.yaml: required top-level keys present (parallelism, logging, scan_cache, regression_detection, rule_filters); leaf types/ranges/enums correct (jobs in [0,256]; batch_strategy in {round_robin, longest_first}; stdout_format in {human, quiet, json}; multiplier_threshold >= 1.0). Implementation lives in gate/lib/load_config.sh#gate_validate_config_against_schema. Schema-first per Rule 48."

@@ -102,6 +102,8 @@
 #  69.  every_active_rule_has_card                      -- every #### Rule NN heading in CLAUDE.md has a sibling docs/governance/rules/rule-NN.md; every card is either referenced by CLAUDE.md or listed in docs/CLAUDE-deferred.md (Rule 69 / PR1, enforcer E99)
 #  70.  always_loaded_budget_enforced                   -- gate/measure_always_loaded_tokens.sh exits 0 (no file exceeds its ceiling in gate/always-loaded-budget.txt) (Rule 70 / PR1, enforcer E100)
 #  71.  deferred_doc_not_in_always_loaded               -- docs/CLAUDE-deferred.md not auto-injected (no @-include in CLAUDE.md, no ALWAYS-LOAD mark in SESSION-START-CONTEXT.md once demoted) (Rule 71 / PR1, enforcer E101)
+#  --- 2026-05-17 gate-script efficiency wave PR-E1 (enforcer E103) ---
+#  73.  gate_config_well_formed                          -- gate/config.yaml validates against gate/config.schema.yaml (required keys, types, ranges, enums, no unknown keys) (Rule 73 / PR-E1, enforcer E103)
 
 set -uo pipefail
 export LC_ALL=C
@@ -3101,6 +3103,56 @@ if [[ -f "$_r71_sscontext" ]]; then
   fi
 fi
 if [[ $_r71_fail -eq 0 ]]; then pass_rule "deferred_doc_not_in_always_loaded"; fi
+
+# ===========================================================================
+# Gate-script efficiency wave PR-E1 (2026-05-17)
+# Authority: D:/.claude/plans/tokens-token-buzzing-sprout.md + docs/governance/rules/rule-73.md
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# Rule 73 -- gate_config_well_formed (enforcer E103)
+#
+# Sources gate/lib/load_config.sh and runs the validator. Fails if:
+#   - gate/config.yaml or gate/config.schema.yaml missing
+#   - YAML parser detected malformed input (__ERROR__ sentinel)
+#   - Required top-level key missing
+#   - Type / range / enum violation on any validated leaf
+#
+# The validator implementation lives in gate/lib/load_config.sh
+# (gate_validate_config_against_schema). This rule is the gate-side wrapper.
+# ---------------------------------------------------------------------------
+_r73_fail=0
+_r73_loader='gate/lib/load_config.sh'
+_r73_config='gate/config.yaml'
+_r73_schema='gate/config.schema.yaml'
+if [[ ! -f "$_r73_loader" ]]; then
+  fail_rule "gate_config_well_formed" "$_r73_loader missing -- cannot validate gate/config.yaml"
+  _r73_fail=1
+elif [[ ! -f "$_r73_config" ]]; then
+  fail_rule "gate_config_well_formed" "$_r73_config missing"
+  _r73_fail=1
+elif [[ ! -f "$_r73_schema" ]]; then
+  fail_rule "gate_config_well_formed" "$_r73_schema missing"
+  _r73_fail=1
+else
+  # Run validation in a subshell so we don't pollute the main shell with
+  # the loader's exported GATE_* variables. Capture VALID + ERRORS via stdout.
+  _r73_result=$(bash -c '
+    source '"'$_r73_loader'"'
+    gate_load_config >/dev/null 2>&1
+    gate_validate_config_against_schema >/dev/null 2>&1
+    printf "%s\n" "${GATE_CONFIG_VALID:-false}"
+    printf "%s" "${GATE_CONFIG_ERRORS:-}"
+  ')
+  _r73_valid=$(printf '%s\n' "$_r73_result" | head -1)
+  _r73_errors=$(printf '%s\n' "$_r73_result" | tail -n +2)
+  if [[ "$_r73_valid" == "true" ]]; then
+    pass_rule "gate_config_well_formed"
+  else
+    fail_rule "gate_config_well_formed" "$(printf '%s' "$_r73_errors" | tr '\n' ';')"
+    _r73_fail=1
+  fi
+fi
 
 # ---------------------------------------------------------------------------
 # Summary
