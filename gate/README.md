@@ -1,6 +1,6 @@
 # gate/ — Architecture-Sync Gate
 
-> Document-corpus consistency checks for spring-ai-ascend. **63 active gate rules** (canonical bash), backed by **92 self-tests**. The W1 *Layered 4+1 + Architecture Graph* wave (ADR-0068) added Rules 37–40 over the post-L1 36-rule baseline; Phase M added Rules 41–44; W1.x L0-ironclad-rule wave added Rules 45–52; W1.x Phases 8–9 added Rules 53–54; W2.x Engine Contract Structural Wave added Rules 55–60; v2.0.0-rc2 second-pass review closure added Rules 61–63.
+> Document-corpus consistency checks for spring-ai-ascend. **66 active gate rules** (canonical bash), backed by **98 self-tests**. The W1 *Layered 4+1 + Architecture Graph* wave (ADR-0068) added Rules 37–40 over the post-L1 36-rule baseline; Phase M added Rules 41–44; W1.x L0-ironclad-rule wave added Rules 45–52; W1.x Phases 8–9 added Rules 53–54; W2.x Engine Contract Structural Wave added Rules 55–60; v2.0.0-rc2 second-pass review closure added Rules 61–63; the 2026-05-17 cross-corpus consistency audit added Rules 64–66 (prevention rules: data-driven module count, metadata-vs-pom dep parity, SPI package exhaustiveness — enforcers E94–E96).
 >
 > **Python ≥ 3.10 required** for `gate/build_architecture_graph.py` and `gate/migrate_adrs_to_yaml.py`. Install once: `pip install -r gate/requirements.txt`. Rule 38 (`architecture_graph_well_formed`) fails fast with a clear message if PyYAML is missing.
 >
@@ -15,10 +15,19 @@ It does **not** prove the running system behaves correctly. That is the operator
 ## Canonical entrypoint
 
 ```bash
-bash gate/check_architecture_sync.sh        # 63 active gate rules
-bash gate/test_architecture_sync_gate.sh    # 92 self-tests
+bash gate/check_parallel.sh                 # 63 active gate rules, parallel (~7min wall-clock)
+bash gate/check_architecture_sync.sh        # 63 active gate rules, serial   (~24min wall-clock)
+bash gate/test_architecture_sync_gate.sh    # 92 self-tests (~20s)
 python gate/build_architecture_graph.py     # regenerate the architecture-graph
 ```
+
+`gate/check_parallel.sh` is the wrapper used by CI. It reads
+`gate/check_architecture_sync.sh`, splits it on `# Rule N — <slug>` markers,
+round-robin distributes rules into 8 batches (override with `GATE_JOBS=N`),
+and runs them in parallel. Identical PASS/FAIL semantics and deterministic
+output ordering; opt out with `GATE_PARALLEL=0` to fall through to the
+serial canonical script. Add `GATE_PROFILE=1` to dump per-rule wall-clock
+to stderr.
 
 Exit `0` and `GATE: PASS` if all rules pass; exit `1` and `GATE: FAIL` if any rule fails. Per-rule output is `PASS: <name>` or `FAIL: <name> -- <reason>`.
 
@@ -41,7 +50,7 @@ Run the bash entrypoint from Git Bash / WSL / any POSIX shell on Windows.
 |------|------|
 | `check_architecture_sync.sh` | **Canonical L0 release gate (63 active rules).** |
 | `check_architecture_sync.ps1` | DEPRECATED (v2.0.0-rc2). Fail-closed stub; see deprecation banner. |
-| `test_architecture_sync_gate.sh` | Self-test harness — 92 cases covering Rules 1–6, 16, 19, 22, 24, 25, 26, 27, 28, 28j, 28k, 29, 60 (sunset), 61, 62, 63. |
+| `test_architecture_sync_gate.sh` | Self-test harness — 98 cases covering Rules 1–6, 16, 19, 22, 24, 25, 26, 27, 28, 28j, 28k, 29, 60 (sunset), 61, 62, 63, 64, 65, 66. |
 | `build_architecture_graph.py` | Regenerates `docs/governance/architecture-graph.yaml` from the authoritative inputs (Rule 34). |
 | `doctor.sh` / `doctor.ps1` | Dev-only env probe (not a gate). |
 | `run_operator_shape_smoke.sh` / `.ps1` | Dev-only fail-closed smoke shells (not a gate). |
@@ -56,7 +65,7 @@ The bash script's header comment is the single source of truth for the rule list
 
 ## Self-test coverage
 
-`gate/test_architecture_sync_gate.sh` runs 92 cases — positive + negative fixtures per the rules most prone to regression. The script prints `Tests passed: 92/92` on success. The header at the top of the file lists which rule IDs have self-test coverage; the `TOTAL=` line at the bottom is the authoritative count (the early `TOTAL=` near the top of the file is stale and overridden).
+`gate/test_architecture_sync_gate.sh` runs 98 cases — positive + negative fixtures per the rules most prone to regression. The script prints `Tests passed: 98/98` on success. The header at the top of the file lists which rule IDs have self-test coverage; the `TOTAL=` line at the bottom is the authoritative count (the early `TOTAL=` near the top of the file is stale and overridden).
 
 ## See also
 

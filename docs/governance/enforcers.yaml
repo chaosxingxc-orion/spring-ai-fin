@@ -835,3 +835,32 @@
   view: development
   artifact: agent-runtime/src/test/java/ascend/springai/runtime/architecture/SpiPurityGeneralizedArchTest.java#s2c_spi_imports_only_java_and_same_package_siblings
   asserts: "Every class under ascend.springai.runtime.s2c.spi MUST depend only on java.* + same-spi-package siblings. Strengthened in v2.0.0-rc3 once S2cCallbackEnvelope and S2cCallbackResponse were moved here from runtime.s2c per cross-constraint audit α-4 / β-2. orchestration.spi is intentionally excluded (its long-standing dependency on runs.* kernel domain types is a known exception)."
+
+# ---------------------------------------------------------------------------
+# 2026-05-17 cross-corpus consistency audit prevention rules.
+# Authority: docs/reviews/2026-05-17-cross-corpus-consistency-audit-response.en.md
+# ---------------------------------------------------------------------------
+
+- id: E94
+  constraint_ref: "CLAUDE.md Rule 28 + ADR-0055 + ADR-0059 + ADR-0067; cross-corpus consistency audit 2026-05-17 / G1 (hardcoded module count drift)"
+  kind: gate-script
+  level: L0
+  view: scenarios
+  artifact: gate/check_architecture_sync.sh#module_count_data_driven
+  asserts: "Root pom.xml <module> count equals the canonical total_reactor_modules in docs/governance/architecture-status.yaml#repository_counts. Module-count changes update one file (the YAML), not four (gate + 3 ADRs). Drift surfaced by 2026-05-17 audit when six-module materialization PR landed and the count was hard-coded in 4 places."
+
+- id: E95
+  constraint_ref: "CLAUDE.md Rule 31 (Independent Module Evolution); cross-corpus consistency audit 2026-05-17 / G2 (metadata-vs-pom drift)"
+  kind: gate-script
+  level: L0
+  view: development
+  artifact: gate/check_architecture_sync.sh#module_metadata_pom_dep_parity
+  asserts: "Every ascend.springai sibling artifact declared inside a <dependency> block of <module>/pom.xml appears in the same module's module-metadata.yaml allowed_dependencies. Drift surfaced by 2026-05-17 audit when agent-runtime/pom.xml gained an agent-middleware dep after T2.B1 but agent-runtime/module-metadata.yaml's allowed_dependencies remained empty."
+
+- id: E96
+  constraint_ref: "CLAUDE.md Rule 32 (SPI + DFX + TCK Co-Design); cross-corpus consistency audit 2026-05-17 / G3 (SPI surface drift)"
+  kind: gate-script
+  level: L0
+  view: development
+  artifact: gate/check_architecture_sync.sh#spi_package_exhaustiveness
+  asserts: "Every */spi/ leaf directory under <module>/src/main/java appears in <module>/module-metadata.yaml spi_packages. Drift surfaced by 2026-05-17 audit when agent-runtime contained an ascend.springai.runtime.s2c.spi directory that was undeclared in spi_packages; Rule 36 (domain_module_has_spi_package) verified declared packages existed on disk but did not enforce the reverse direction (every on-disk SPI directory is declared)."

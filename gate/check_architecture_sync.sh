@@ -39,7 +39,7 @@
 #  28b. high_cardinality_tag_guard                     -- no Tag.of("run_id"|"idempotency_key"|"jwt_sub"|"body", …) in agent-*/main (enforcer E19)
 #  28c. no_secret_patterns                             -- gitleaks-style sweep of tracked files; allowlist via 'secret-allowlist:' (enforcer E20)
 #  28d. out_of_scope_name_guard                        -- W2+ deferred names absent from agent-*/main (enforcer E26)
-#  28e. module_count_invariant                         -- root pom.xml declares exactly 4 <module> entries (enforcer E27)
+#  28e. module_count_invariant                         -- root pom.xml declares exactly 9 <module> entries (enforcer E27; bumped from 4 to 9 by 2026-05-17 six-module materialization PR; canonical count lives in docs/governance/architecture-status.yaml#repository_counts.total_reactor_modules and is data-driven cross-checked by Rule 64)
 #  28f. enforcers_yaml_wellformed                      -- docs/governance/enforcers.yaml every row has all 5 fields + legal kind (enforcer E29)
 #  28g. no_prose_only_constraint_marker                -- no TODO/FIXME/XXX/deferred:enforce|enforcer|test|gate in CLAUDE.md / ARCHITECTURE.md (enforcer E30)
 #  28h. l1_review_checklist_present                    -- ADRs 0055–0059 contain '§16 Review Checklist' (enforcer E31)
@@ -92,6 +92,10 @@
 #  61.  legacy_powershell_gate_deprecated               -- gate/check_architecture_sync.ps1 contains DEPRECATED header AND is absent from architecture-status.yaml#architecture_sync_gate.implementation: (F-α P0-1)
 #  62.  contract_yaml_declares_status                   -- every docs/contracts/*.v1.yaml + 3 governance YAMLs declare top-level status: with allowed enum value (F-β structural prevention)
 #  63.  release_note_retracted_tag_qualified            -- every line in docs/releases/*.md mentioning a tag listed in docs/governance/retracted-tags.txt MUST contain "(retracted)" OR appear under a heading matching "Historical" / "Superseded" (F-γ structural prevention)
+#  --- 2026-05-17 cross-corpus consistency audit prevention rules (G1/G2/G3 closure, enforcers E94-E96) ---
+#  64.  module_count_data_driven                        -- root pom.xml <module> count equals docs/governance/architecture-status.yaml#repository_counts.total_reactor_modules (G1 prevention; canonical count lives in one place)
+#  65.  module_metadata_pom_dep_parity                  -- every ascend.springai <dependency> in <module>/pom.xml appears in <module>/module-metadata.yaml allowed_dependencies (G2 prevention; metadata cannot lag behind pom)
+#  66.  spi_package_exhaustiveness                      -- every */spi/ directory under <module>/src/main/java appears in <module>/module-metadata.yaml spi_packages (G3 prevention; metadata declares the full SPI surface)
 
 set -uo pipefail
 export LC_ALL=C
@@ -1157,16 +1161,24 @@ if [[ $_r28d_fail -eq 0 ]]; then pass_rule "out_of_scope_name_guard"; fi
 
 # ---------------------------------------------------------------------------
 # Rule 28e — module_count_invariant (enforcer E27)
-# Root pom.xml MUST declare exactly 4 <module> entries at L1 (spring-ai-ascend-
+# Root pom.xml MUST declare exactly 9 <module> entries after the six-module
+# materialization wave (PR 2026-05-17): the original 4 (spring-ai-ascend-
 # dependencies, agent-platform, agent-runtime, spring-ai-ascend-graphmemory-
-# starter). Any extra module is rejected; L1 plan decision D3.
+# starter) + 5 new (agent-client, agent-bus, agent-middleware,
+# agent-execution-engine, agent-evolve). Any other count is rejected; L1
+# plan decision D3 extended for the 6-module shape.
+#
+# Phase C follow-up will collapse agent-platform + agent-runtime → agent-service
+# bringing the count back to 8 (BoM + 6 substantive + graphmemory starter).
+# When that lands, this constant moves to 8 and the comment is updated.
 # ---------------------------------------------------------------------------
 _r28e_fail=0
 _root_pom='pom.xml'
+_r28e_expected=9
 if [[ -f "$_root_pom" ]]; then
   _module_count=$(grep -c '<module>' "$_root_pom" 2>/dev/null || echo 0)
-  if [[ "$_module_count" -ne 4 ]]; then
-    fail_rule "module_count_invariant" "$_root_pom declares $_module_count <module> entries; L1 requires exactly 4. Per Rule 28e / enforcer E27 / plan decision D3."
+  if [[ "$_module_count" -ne "$_r28e_expected" ]]; then
+    fail_rule "module_count_invariant" "$_root_pom declares $_module_count <module> entries; L1 (six-module materialization) requires exactly $_r28e_expected. Per Rule 28e / enforcer E27 / plan decision D3."
     _r28e_fail=1
   fi
 fi
@@ -2374,7 +2386,9 @@ if [[ $_r56_fail -eq 0 ]]; then pass_rule "engine_registry_covers_all_known_engi
 # ---------------------------------------------------------------------------
 _r57_fail=0
 _r57_yaml="docs/contracts/engine-hooks.v1.yaml"
-_r57_enum="agent-runtime/src/main/java/ascend/springai/runtime/orchestration/spi/HookPoint.java"
+# Updated 2026-05-17: HookPoint moved from agent-runtime/orchestration/spi/ to
+# agent-middleware/spi/ during the six-module materialization PR (T2.B1).
+_r57_enum="agent-middleware/src/main/java/ascend/springai/middleware/spi/HookPoint.java"
 if [[ ! -f "$_r57_yaml" ]]; then
   fail_rule "engine_hooks_yaml_present_and_wellformed" "$_r57_yaml missing -- Rule 45 / P-M hook surface unenforced"
   _r57_fail=1
@@ -2733,6 +2747,118 @@ else
   fi
 fi
 if [[ $_r63_fail -eq 0 ]]; then pass_rule "release_note_retracted_tag_qualified"; fi
+
+# ===========================================================================
+# Cross-corpus consistency audit prevention rules (2026-05-17)
+# Authority: docs/reviews/2026-05-17-cross-corpus-consistency-audit-response.en.md
+# Closes structural design flaws G1, G2, G3 surfaced by the audit:
+#   G1 — module count was hardcoded in 4 places
+#   G2 — no metadata-vs-pom dependency cross-check
+#   G3 — no SPI-package exhaustiveness cross-check
+# Rules 64-66 with enforcer rows E94-E96 and 6 self-tests (2 per rule).
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# Rule 64 — module_count_data_driven (enforcer E94, G1 prevention)
+#
+# The canonical module count lives in
+# docs/governance/architecture-status.yaml#repository_counts.total_reactor_modules.
+# Rule 28e (module_count_invariant) checks against a hard-coded constant; this
+# rule cross-checks the canonical value vs the actual count of <module> entries
+# in root pom.xml. Adding a new reactor module thus updates ONE file
+# (architecture-status.yaml), not four (gate + ADR-0055 + ADR-0059 + ADR-0067).
+# ---------------------------------------------------------------------------
+_r64_fail=0
+_r64_status='docs/governance/architecture-status.yaml'
+_r64_pom='pom.xml'
+if [[ ! -f "$_r64_status" ]]; then
+  fail_rule "module_count_data_driven" "$_r64_status missing -- cannot cross-check canonical module count (G1 prevention)"
+  _r64_fail=1
+elif [[ ! -f "$_r64_pom" ]]; then
+  fail_rule "module_count_data_driven" "$_r64_pom missing -- cannot count <module> entries"
+  _r64_fail=1
+else
+  _r64_canonical=$(grep -E '^[[:space:]]*total_reactor_modules:[[:space:]]*[0-9]+' "$_r64_status" | head -1 | sed -E 's/^[[:space:]]*total_reactor_modules:[[:space:]]*([0-9]+).*/\1/')
+  _r64_pom_count=$(grep -c '<module>' "$_r64_pom" 2>/dev/null || echo 0)
+  if [[ -z "$_r64_canonical" ]]; then
+    fail_rule "module_count_data_driven" "$_r64_status missing repository_counts.total_reactor_modules field (G1 prevention)"
+    _r64_fail=1
+  elif [[ "$_r64_canonical" != "$_r64_pom_count" ]]; then
+    fail_rule "module_count_data_driven" "$_r64_pom declares $_r64_pom_count <module> entries; canonical total_reactor_modules in $_r64_status is $_r64_canonical (G1 prevention -- update one file, not many)"
+    _r64_fail=1
+  fi
+fi
+if [[ $_r64_fail -eq 0 ]]; then pass_rule "module_count_data_driven"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 65 — module_metadata_pom_dep_parity (enforcer E95, G2 prevention)
+#
+# For each <module>/module-metadata.yaml, every ascend.springai sibling
+# artifact declared in <module>/pom.xml's <dependencies> MUST appear in
+# allowed_dependencies of the metadata. Catches drift where a developer
+# adds a dep to the pom but forgets to update the metadata declaration.
+# ---------------------------------------------------------------------------
+_r65_fail=0
+while IFS= read -r _r65_meta; do
+  [[ -z "$_r65_meta" ]] && continue
+  _r65_mod_dir="$(dirname "$_r65_meta")"
+  _r65_pom="${_r65_mod_dir}/pom.xml"
+  [[ -f "$_r65_pom" ]] || continue
+  # Extract ascend.springai sibling deps from pom — only inside <dependency> blocks
+  # (excludes the <parent> block at top, which would otherwise be a false positive).
+  # Skip <dependencyManagement> block — those are managed versions for downstream
+  # modules (BoM-style), not direct compile-time deps of the current module.
+  _r65_pom_deps=$(awk '
+    /<dependencyManagement>/ { in_mgmt=1; next }
+    /<\/dependencyManagement>/ { in_mgmt=0; next }
+    !in_mgmt && /<dependency>/ { in_dep=1; want=0; next }
+    /<\/dependency>/ { in_dep=0; want=0; next }
+    in_dep && /<groupId>ascend\.springai<\/groupId>/ { want=1; next }
+    in_dep && want && /<artifactId>/ {
+      gsub(/^[[:space:]]*<artifactId>/, "")
+      gsub(/<\/artifactId>.*/, "")
+      print
+      want=0
+    }
+  ' "$_r65_pom" | sort -u)
+  # Extract allowed_dependencies block entries from metadata
+  _r65_meta_allowed=$(awk '/^allowed_dependencies:/{flag=1; next} /^[a-zA-Z_]/{flag=0} flag && /^[[:space:]]*-[[:space:]]+/{gsub(/^[[:space:]]*-[[:space:]]+/,""); gsub(/[[:space:]#].*$/,""); print}' "$_r65_meta" | sort -u)
+  while IFS= read -r _r65_dep; do
+    [[ -z "$_r65_dep" ]] && continue
+    if ! echo "$_r65_meta_allowed" | grep -qxF "$_r65_dep"; then
+      fail_rule "module_metadata_pom_dep_parity" "$_r65_pom declares dependency on '$_r65_dep' (ascend.springai sibling) but $_r65_meta allowed_dependencies does not list it (G2 prevention)"
+      _r65_fail=1
+    fi
+  done <<< "$_r65_pom_deps"
+done <<< "$(find . -maxdepth 3 -name module-metadata.yaml -not -path './target/*' -not -path './.claude/*' 2>/dev/null)"
+if [[ $_r65_fail -eq 0 ]]; then pass_rule "module_metadata_pom_dep_parity"; fi
+
+# ---------------------------------------------------------------------------
+# Rule 66 — spi_package_exhaustiveness (enforcer E96, G3 prevention)
+#
+# For each <module>/module-metadata.yaml, every src/main/java/.../spi
+# directory MUST appear in spi_packages. Catches drift where a developer
+# adds a new SPI package (e.g. runtime.s2c.spi) but forgets to declare it
+# in the metadata.
+# ---------------------------------------------------------------------------
+_r66_fail=0
+while IFS= read -r _r66_meta; do
+  [[ -z "$_r66_meta" ]] && continue
+  _r66_mod_dir="$(dirname "$_r66_meta")"
+  _r66_src="${_r66_mod_dir}/src/main/java"
+  [[ -d "$_r66_src" ]] || continue
+  _r66_declared=$(awk '/^spi_packages:/{flag=1; next} /^[a-zA-Z_]/{flag=0} flag && /^[[:space:]]*-[[:space:]]+/{gsub(/^[[:space:]]*-[[:space:]]+/,""); gsub(/[[:space:]#].*$/,""); print}' "$_r66_meta" | sort -u)
+  while IFS= read -r _r66_dir; do
+    [[ -z "$_r66_dir" ]] && continue
+    _r66_pkg="${_r66_dir#${_r66_src}/}"
+    _r66_pkg="${_r66_pkg//\//.}"
+    if ! echo "$_r66_declared" | grep -qxF "$_r66_pkg"; then
+      fail_rule "spi_package_exhaustiveness" "$_r66_dir exists on disk but package '$_r66_pkg' is not declared in $_r66_meta spi_packages (G3 prevention)"
+      _r66_fail=1
+    fi
+  done <<< "$(find "$_r66_src" -type d -name spi 2>/dev/null)"
+done <<< "$(find . -maxdepth 3 -name module-metadata.yaml -not -path './target/*' -not -path './.claude/*' 2>/dev/null)"
+if [[ $_r66_fail -eq 0 ]]; then pass_rule "spi_package_exhaustiveness"; fi
 
 # ---------------------------------------------------------------------------
 # Summary

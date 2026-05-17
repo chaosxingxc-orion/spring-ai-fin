@@ -2311,10 +2311,226 @@ else
   fail "rule63_retracted_tag_neg" "expected FAIL for bare retracted tag with no qualifier"
 fi
 
+# ===========================================================================
+# 2026-05-17 cross-corpus consistency audit prevention rules — self-tests
+# Authority: docs/reviews/2026-05-17-cross-corpus-consistency-audit-response.en.md
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# RULE 64 -- module_count_data_driven
+# Positive: pom <module> count == architecture-status.yaml total_reactor_modules → pass
+# Negative: count mismatch → fail
+# ---------------------------------------------------------------------------
+
+## Positive: matched count
+_r64_pos="$scratch/r64_pos"
+mkdir -p "$_r64_pos/docs/governance"
+cat > "$_r64_pos/pom.xml" <<'EOF'
+<project>
+  <modules>
+    <module>a</module>
+    <module>b</module>
+    <module>c</module>
+  </modules>
+</project>
+EOF
+cat > "$_r64_pos/docs/governance/architecture-status.yaml" <<'EOF'
+repository_counts:
+  total_reactor_modules: 3
+EOF
+_r64_pos_canonical=$(grep -E '^[[:space:]]*total_reactor_modules:[[:space:]]*[0-9]+' "$_r64_pos/docs/governance/architecture-status.yaml" | head -1 | sed -E 's/^[[:space:]]*total_reactor_modules:[[:space:]]*([0-9]+).*/\1/')
+_r64_pos_count=$(grep -c '<module>' "$_r64_pos/pom.xml" 2>/dev/null || echo 0)
+if [[ "$_r64_pos_canonical" == "$_r64_pos_count" ]]; then
+  ok "rule64_module_count_data_driven_pos" "pom <module> count $_r64_pos_count == canonical $_r64_pos_canonical (PASS)"
+else
+  fail "rule64_module_count_data_driven_pos" "expected match but got pom=$_r64_pos_count canonical=$_r64_pos_canonical"
+fi
+
+## Negative: count mismatch
+_r64_neg="$scratch/r64_neg"
+mkdir -p "$_r64_neg/docs/governance"
+cat > "$_r64_neg/pom.xml" <<'EOF'
+<project>
+  <modules>
+    <module>a</module>
+    <module>b</module>
+  </modules>
+</project>
+EOF
+cat > "$_r64_neg/docs/governance/architecture-status.yaml" <<'EOF'
+repository_counts:
+  total_reactor_modules: 5
+EOF
+_r64_neg_canonical=$(grep -E '^[[:space:]]*total_reactor_modules:[[:space:]]*[0-9]+' "$_r64_neg/docs/governance/architecture-status.yaml" | head -1 | sed -E 's/^[[:space:]]*total_reactor_modules:[[:space:]]*([0-9]+).*/\1/')
+_r64_neg_count=$(grep -c '<module>' "$_r64_neg/pom.xml" 2>/dev/null || echo 0)
+if [[ "$_r64_neg_canonical" != "$_r64_neg_count" ]]; then
+  ok "rule64_module_count_data_driven_neg" "mismatch pom=$_r64_neg_count canonical=$_r64_neg_canonical correctly triggers FAIL"
+else
+  fail "rule64_module_count_data_driven_neg" "expected mismatch detection but values agreed"
+fi
+
+# ---------------------------------------------------------------------------
+# RULE 65 -- module_metadata_pom_dep_parity
+# Positive: every pom ascend.springai sibling appears in metadata allowed_dependencies → pass
+# Negative: pom dep missing from metadata → fail
+# ---------------------------------------------------------------------------
+
+## Positive: pom declares agent-middleware, metadata lists it
+_r65_pos="$scratch/r65_pos"
+mkdir -p "$_r65_pos"
+cat > "$_r65_pos/pom.xml" <<'EOF'
+<project>
+  <parent>
+    <groupId>ascend.springai</groupId>
+    <artifactId>spring-ai-ascend-parent</artifactId>
+  </parent>
+  <artifactId>agent-foo</artifactId>
+  <dependencies>
+    <dependency>
+      <groupId>ascend.springai</groupId>
+      <artifactId>agent-middleware</artifactId>
+    </dependency>
+  </dependencies>
+</project>
+EOF
+cat > "$_r65_pos/module-metadata.yaml" <<'EOF'
+module: agent-foo
+kind: domain
+allowed_dependencies:
+  - agent-middleware
+forbidden_dependencies: []
+EOF
+_r65_pos_deps=$(awk '
+  /<dependency>/ { in_dep=1; want=0; next }
+  /<\/dependency>/ { in_dep=0; want=0; next }
+  in_dep && /<groupId>ascend\.springai<\/groupId>/ { want=1; next }
+  in_dep && want && /<artifactId>/ {
+    gsub(/^[[:space:]]*<artifactId>/, "")
+    gsub(/<\/artifactId>.*/, "")
+    print
+    want=0
+  }
+' "$_r65_pos/pom.xml" | sort -u)
+_r65_pos_allowed=$(awk '/^allowed_dependencies:/{flag=1; next} /^[a-zA-Z_]/{flag=0} flag && /^[[:space:]]*-[[:space:]]+/{gsub(/^[[:space:]]*-[[:space:]]+/,""); gsub(/[[:space:]#].*$/,""); print}' "$_r65_pos/module-metadata.yaml" | sort -u)
+_r65_pos_fail=0
+while IFS= read -r _dep; do
+  [[ -z "$_dep" ]] && continue
+  if ! echo "$_r65_pos_allowed" | grep -qxF "$_dep"; then _r65_pos_fail=1; fi
+done <<< "$_r65_pos_deps"
+if [[ $_r65_pos_fail -eq 0 ]]; then
+  ok "rule65_module_metadata_pom_dep_parity_pos" "pom dep agent-middleware appears in metadata allowed_dependencies (PASS)"
+else
+  fail "rule65_module_metadata_pom_dep_parity_pos" "expected PASS — pom dep was declared in metadata"
+fi
+
+## Negative: pom adds agent-bus but metadata doesn't list it
+_r65_neg="$scratch/r65_neg"
+mkdir -p "$_r65_neg"
+cat > "$_r65_neg/pom.xml" <<'EOF'
+<project>
+  <parent>
+    <groupId>ascend.springai</groupId>
+    <artifactId>spring-ai-ascend-parent</artifactId>
+  </parent>
+  <artifactId>agent-foo</artifactId>
+  <dependencies>
+    <dependency>
+      <groupId>ascend.springai</groupId>
+      <artifactId>agent-bus</artifactId>
+    </dependency>
+  </dependencies>
+</project>
+EOF
+cat > "$_r65_neg/module-metadata.yaml" <<'EOF'
+module: agent-foo
+kind: domain
+allowed_dependencies: []
+forbidden_dependencies: []
+EOF
+_r65_neg_deps=$(awk '
+  /<dependency>/ { in_dep=1; want=0; next }
+  /<\/dependency>/ { in_dep=0; want=0; next }
+  in_dep && /<groupId>ascend\.springai<\/groupId>/ { want=1; next }
+  in_dep && want && /<artifactId>/ {
+    gsub(/^[[:space:]]*<artifactId>/, "")
+    gsub(/<\/artifactId>.*/, "")
+    print
+    want=0
+  }
+' "$_r65_neg/pom.xml" | sort -u)
+_r65_neg_allowed=$(awk '/^allowed_dependencies:/{flag=1; next} /^[a-zA-Z_]/{flag=0} flag && /^[[:space:]]*-[[:space:]]+/{gsub(/^[[:space:]]*-[[:space:]]+/,""); gsub(/[[:space:]#].*$/,""); print}' "$_r65_neg/module-metadata.yaml" | sort -u)
+_r65_neg_caught=0
+while IFS= read -r _dep; do
+  [[ -z "$_dep" ]] && continue
+  if ! echo "$_r65_neg_allowed" | grep -qxF "$_dep"; then _r65_neg_caught=1; fi
+done <<< "$_r65_neg_deps"
+if [[ $_r65_neg_caught -eq 1 ]]; then
+  ok "rule65_module_metadata_pom_dep_parity_neg" "pom dep agent-bus missing from metadata correctly triggers FAIL"
+else
+  fail "rule65_module_metadata_pom_dep_parity_neg" "expected FAIL but the missing dep was not detected"
+fi
+
+# ---------------------------------------------------------------------------
+# RULE 66 -- spi_package_exhaustiveness
+# Positive: every on-disk */spi/ directory is declared in spi_packages → pass
+# Negative: undeclared SPI directory exists on disk → fail
+# ---------------------------------------------------------------------------
+
+## Positive: one SPI dir, declared
+_r66_pos="$scratch/r66_pos"
+mkdir -p "$_r66_pos/src/main/java/ascend/springai/foo/spi"
+cat > "$_r66_pos/module-metadata.yaml" <<'EOF'
+module: agent-foo
+kind: domain
+spi_packages:
+  - ascend.springai.foo.spi
+allowed_dependencies: []
+forbidden_dependencies: []
+EOF
+_r66_pos_declared=$(awk '/^spi_packages:/{flag=1; next} /^[a-zA-Z_]/{flag=0} flag && /^[[:space:]]*-[[:space:]]+/{gsub(/^[[:space:]]*-[[:space:]]+/,""); gsub(/[[:space:]#].*$/,""); print}' "$_r66_pos/module-metadata.yaml" | sort -u)
+_r66_pos_fail=0
+while IFS= read -r _dir; do
+  [[ -z "$_dir" ]] && continue
+  _pkg="${_dir#${_r66_pos}/src/main/java/}"
+  _pkg="${_pkg//\//.}"
+  if ! echo "$_r66_pos_declared" | grep -qxF "$_pkg"; then _r66_pos_fail=1; fi
+done <<< "$(find "$_r66_pos/src/main/java" -type d -name spi 2>/dev/null)"
+if [[ $_r66_pos_fail -eq 0 ]]; then
+  ok "rule66_spi_package_exhaustiveness_pos" "declared SPI dir matches on-disk SPI dir (PASS)"
+else
+  fail "rule66_spi_package_exhaustiveness_pos" "expected PASS — declared SPI dir was present"
+fi
+
+## Negative: two SPI dirs on disk, only one declared
+_r66_neg="$scratch/r66_neg"
+mkdir -p "$_r66_neg/src/main/java/ascend/springai/foo/spi"
+mkdir -p "$_r66_neg/src/main/java/ascend/springai/bar/spi"
+cat > "$_r66_neg/module-metadata.yaml" <<'EOF'
+module: agent-foo
+kind: domain
+spi_packages:
+  - ascend.springai.foo.spi
+allowed_dependencies: []
+forbidden_dependencies: []
+EOF
+_r66_neg_declared=$(awk '/^spi_packages:/{flag=1; next} /^[a-zA-Z_]/{flag=0} flag && /^[[:space:]]*-[[:space:]]+/{gsub(/^[[:space:]]*-[[:space:]]+/,""); gsub(/[[:space:]#].*$/,""); print}' "$_r66_neg/module-metadata.yaml" | sort -u)
+_r66_neg_caught=0
+while IFS= read -r _dir; do
+  [[ -z "$_dir" ]] && continue
+  _pkg="${_dir#${_r66_neg}/src/main/java/}"
+  _pkg="${_pkg//\//.}"
+  if ! echo "$_r66_neg_declared" | grep -qxF "$_pkg"; then _r66_neg_caught=1; fi
+done <<< "$(find "$_r66_neg/src/main/java" -type d -name spi 2>/dev/null)"
+if [[ $_r66_neg_caught -eq 1 ]]; then
+  ok "rule66_spi_package_exhaustiveness_neg" "undeclared on-disk SPI dir correctly triggers FAIL"
+else
+  fail "rule66_spi_package_exhaustiveness_neg" "expected FAIL — undeclared SPI dir was not detected"
+fi
+
 # ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
-TOTAL=92
+TOTAL=98
 echo ""
 echo "Tests passed: ${passed}/${TOTAL}"
 
