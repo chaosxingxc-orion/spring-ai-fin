@@ -40,7 +40,7 @@ fi
 
 passed=0
 failed=0
-TOTAL=112
+TOTAL=117
 
 # PR-E4: parallel-aware ok()/fail().
 # Serial mode (TEST_RESULT_FILE unset): increment globals + print directly.
@@ -3133,6 +3133,174 @@ fi
 
 }
 
+# ===========================================================================
+# 2026-05-17 gate-script efficiency wave PR-E2 -- NDJSON logging self-tests
+# Authority: PR-E2 plan + gate/lib/aggregate_summary.sh + gate/lib/prune_old_runs.sh
+# ===========================================================================
+test_rule_e2_ndjson_logging() {
+# ---------------------------------------------------------------------------
+# PR-E2 self-tests for the NDJSON / summary / retention pipeline.
+#
+# Strategy: synthesize a tiny GATE_LOG_DIR with 3 fake NDJSON lines (deliberately
+# out-of-order to also exercise the in-place sort), invoke aggregate_summary.sh
+# on it, then assert each expected artifact / property. A 5th test exercises
+# prune_old_runs.sh on 5 synthetic run dirs.
+#
+# Validation via python is fed via stdin -- MSYS / git-bash maps /tmp/... to a
+# Windows path Python can't open by path, but stdin works regardless.
+# ---------------------------------------------------------------------------
+
+_re2_root="$scratch/re2_root"
+mkdir -p "$_re2_root/gate/log/runs"
+mkdir -p "$_re2_root/gate/log/benchmarks"
+mkdir -p "$_re2_root/gate/lib"
+cp "$repo_root/gate/lib/aggregate_summary.sh" "$_re2_root/gate/lib/aggregate_summary.sh"
+cp "$repo_root/gate/lib/prune_old_runs.sh"    "$_re2_root/gate/lib/prune_old_runs.sh"
+printf '{}\n' > "$_re2_root/gate/log/benchmarks/median.json"
+
+_re2_run_id="testsha_1700000000"
+_re2_log_dir="$_re2_root/gate/log/runs/${_re2_run_id}"
+mkdir -p "$_re2_log_dir"
+
+# Synthesize per-rule.ndjson with 3 lines in REVERSE rule_number order to
+# also exercise the in-place sort step.
+cat > "$_re2_log_dir/per-rule.ndjson" <<'NDJSON'
+{"rule_id":"73_gate_config_well_formed","rule_number":73,"rule_slug":"gate_config_well_formed","status":"PASS","duration_ms":120,"finished_at":"2026-05-17T22:00:00Z","reason":null,"worker_pid":1234}
+{"rule_id":"1_status_enum_invalid","rule_number":1,"rule_slug":"status_enum_invalid","status":"PASS","duration_ms":80,"finished_at":"2026-05-17T22:00:00Z","reason":null,"worker_pid":1235}
+{"rule_id":"28a_arch_prose_rules_section_present","rule_number":28,"rule_slug":"arch_prose_rules_section_present","status":"FAIL","duration_ms":200,"finished_at":"2026-05-17T22:00:00Z","reason":"synthetic test reason","worker_pid":1234}
+NDJSON
+
+cat > "$_re2_log_dir/manifest.txt" <<'MANI'
+run_id=testsha_1700000000
+git_sha=testsha
+started_at=2026-05-17T21:59:00Z
+hostname=test-host
+platform=test
+jobs=8
+parallel=true
+source_script=gate/check_architecture_sync.sh
+MANI
+
+# Run aggregate_summary against the synthetic dir.
+GATE_REPO_ROOT="$_re2_root" \
+GATE_LOGGING_SUMMARY_ENABLED="true" \
+  bash "$_re2_root/gate/lib/aggregate_summary.sh" "$_re2_log_dir" >/dev/null 2>&1
+
+# Create the latest symlink (or text fallback) the way check_parallel.sh does.
+(
+  cd "$_re2_root/gate/log" 2>/dev/null || exit 0
+  if MSYS=winsymlinks:nativestrict ln -sfn "runs/${_re2_run_id}" latest 2>/dev/null; then
+    :
+  elif ln -sfn "runs/${_re2_run_id}" latest 2>/dev/null; then
+    :
+  else
+    printf 'runs/%s\n' "$_re2_run_id" > latest.txt
+  fi
+)
+
+# -------- Test 1: per-rule.ndjson present + valid JSON ---------------------
+_re2_t1_file="$_re2_log_dir/per-rule.ndjson"
+_re2_t1_lines=0
+[[ -f "$_re2_t1_file" ]] && _re2_t1_lines=$(wc -l < "$_re2_t1_file" 2>/dev/null || echo 0)
+_re2_t1_valid=0
+if [[ "$_re2_t1_lines" -ge 1 ]] && command -v python >/dev/null 2>&1; then
+  if cat "$_re2_t1_file" | python -c "
+import json,sys
+for ln in sys.stdin:
+    ln=ln.strip()
+    if not ln: continue
+    try: json.loads(ln)
+    except Exception: sys.exit(1)
+sys.exit(0)
+" >/dev/null 2>&1; then
+    _re2_t1_valid=1
+  fi
+fi
+if [[ "$_re2_t1_lines" -ge 1 && "$_re2_t1_valid" -eq 1 ]]; then
+  ok "rule_e2_ndjson_per_rule_present" "per-rule.ndjson exists with $_re2_t1_lines valid JSON lines"
+else
+  fail "rule_e2_ndjson_per_rule_present" "expected >=1 valid JSON line; got lines=$_re2_t1_lines valid=$_re2_t1_valid"
+fi
+
+# -------- Test 2: summary.json present with record_type=summary -----------
+_re2_t2_file="$_re2_log_dir/summary.json"
+_re2_t2_rt=""
+if [[ -f "$_re2_t2_file" ]]; then
+  _re2_t2_rt=$(cat "$_re2_t2_file" | python -c "
+import json,sys
+d=json.load(sys.stdin)
+print(d.get('record_type',''))
+" 2>/dev/null || true)
+fi
+if [[ "$_re2_t2_rt" == "summary" ]]; then
+  ok "rule_e2_summary_present" "summary.json has record_type=summary"
+else
+  fail "rule_e2_summary_present" "expected record_type=summary, got '$_re2_t2_rt'"
+fi
+
+# -------- Test 3: latest symlink (or fallback) resolves ------------------
+_re2_t3_resolved=""
+if [[ -L "$_re2_root/gate/log/latest" ]]; then
+  _re2_t3_resolved=$(readlink "$_re2_root/gate/log/latest" 2>/dev/null || true)
+elif [[ -f "$_re2_root/gate/log/latest.txt" ]]; then
+  _re2_t3_resolved=$(head -1 "$_re2_root/gate/log/latest.txt" 2>/dev/null || true)
+fi
+# Resolved value should reference our run_id and the target dir must exist.
+if [[ "$_re2_t3_resolved" == "runs/${_re2_run_id}" ]] && [[ -d "$_re2_root/gate/log/$_re2_t3_resolved" ]]; then
+  ok "rule_e2_latest_symlink_resolves" "latest -> $_re2_t3_resolved (dir exists)"
+else
+  fail "rule_e2_latest_symlink_resolves" "expected runs/${_re2_run_id} resolvable, got '$_re2_t3_resolved'"
+fi
+
+# -------- Test 4: NDJSON sorted ascending by rule_number ------------------
+# Pipe through python (avoids MSYS path mapping); python emits 'OK' on success.
+_re2_t4_check=$(cat "$_re2_log_dir/per-rule.ndjson" | python -c "
+import json,sys
+prev=-1
+for ln in sys.stdin:
+    ln=ln.strip()
+    if not ln: continue
+    try:
+        n=int(json.loads(ln).get('rule_number',-1))
+    except Exception:
+        print('PARSE-ERROR'); sys.exit(1)
+    if n < prev:
+        print('UNSORTED'); sys.exit(1)
+    prev=n
+print('OK')
+" 2>/dev/null || echo "FAIL")
+if [[ "$_re2_t4_check" == "OK" ]]; then
+  ok "rule_e2_ndjson_sorted_by_rule_number" "per-rule.ndjson is ascending by rule_number"
+else
+  fail "rule_e2_ndjson_sorted_by_rule_number" "per-rule.ndjson not sorted ($_re2_t4_check)"
+fi
+
+# -------- Test 5: prune_old_runs.sh respects max_runs ---------------------
+_re2_t5_root="$scratch/re2_prune_root"
+mkdir -p "$_re2_t5_root/gate/log/runs"
+mkdir -p "$_re2_t5_root/gate/lib"
+cp "$repo_root/gate/lib/prune_old_runs.sh" "$_re2_t5_root/gate/lib/prune_old_runs.sh"
+# Create 5 fake run dirs with monotonically increasing mtimes.
+for _re2_t5_i in 1 2 3 4 5; do
+  mkdir -p "$_re2_t5_root/gate/log/runs/run_${_re2_t5_i}"
+  # touch -d explicitly orders them; fall back to plain touch if -d unsupported.
+  touch -d "2026-05-17 21:00:0${_re2_t5_i}" "$_re2_t5_root/gate/log/runs/run_${_re2_t5_i}" 2>/dev/null \
+    || touch "$_re2_t5_root/gate/log/runs/run_${_re2_t5_i}"
+done
+GATE_REPO_ROOT="$_re2_t5_root" \
+GATE_LOGGING_RETENTION_MAX_RUNS=2 \
+GATE_LOGGING_RETENTION_AUTO_PRUNE=true \
+GATE_LOG_RUNS_DIR="$_re2_t5_root/gate/log/runs" \
+  bash "$_re2_t5_root/gate/lib/prune_old_runs.sh" >/dev/null 2>&1
+_re2_t5_remaining=$(find "$_re2_t5_root/gate/log/runs" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
+if [[ "$_re2_t5_remaining" -eq 2 ]]; then
+  ok "rule_e2_prune_respects_max_runs" "5 dirs pruned down to 2 newest"
+else
+  fail "rule_e2_prune_respects_max_runs" "expected 2 dirs remaining, got $_re2_t5_remaining"
+fi
+
+}
+
 # ---------------------------------------------------------------------------
 # PR-E4: Parallel orchestrator.
 #
@@ -3142,7 +3310,7 @@ fi
 # to a per-batch file. After all batches complete, we sort + concatenate the
 # results for deterministic stdout, then count PASS/FAIL.
 # ---------------------------------------------------------------------------
-TOTAL=112
+TOTAL=117
 
 _pre4_all_tests=$(declare -F | awk '/^declare -f test_rule/{print $3}' | sort)
 _pre4_jobs="${GATE_PARALLELISM_JOBS:-8}"

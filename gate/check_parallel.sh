@@ -32,12 +32,65 @@ export LC_ALL=C
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
-SOURCE_SCRIPT="gate/check_architecture_sync.sh"
-JOBS="${GATE_JOBS:-8}"
-PROFILE="${GATE_PROFILE:-0}"
+# ---------------------------------------------------------------------------
+# PR-E1 config loader -- populates GATE_PARALLELISM_JOBS, GATE_LOGGING_*, etc.
+# PR-E2 wave consumes the logging knobs to enable NDJSON / summary / retention.
+# Both are no-ops if the files are absent (graceful fallback to hardcoded defaults).
+# ---------------------------------------------------------------------------
+if [[ -f "$repo_root/gate/lib/load_config.sh" ]]; then
+  GATE_REPO_ROOT="$repo_root"
+  export GATE_REPO_ROOT
+  # shellcheck source=gate/lib/load_config.sh
+  source "$repo_root/gate/lib/load_config.sh"
+  gate_load_config 2>/dev/null || true
+fi
 
-if [[ "${GATE_PARALLEL:-1}" == "0" ]]; then
+SOURCE_SCRIPT="gate/check_architecture_sync.sh"
+# Env var GATE_JOBS still wins; falls back to GATE_PARALLELISM_JOBS (config); finally 8.
+JOBS="${GATE_JOBS:-${GATE_PARALLELISM_JOBS:-8}}"
+PROFILE="${GATE_PROFILE:-${GATE_LOGGING_PROFILE_MODE:-0}}"
+[[ "$PROFILE" == "true" ]] && PROFILE=1
+[[ "$PROFILE" == "false" ]] && PROFILE=0
+
+if [[ "${GATE_PARALLEL:-1}" == "0" ]] || [[ "${GATE_PARALLELISM_ENABLED:-true}" == "false" ]]; then
   exec bash "$SOURCE_SCRIPT"
+fi
+
+# ---------------------------------------------------------------------------
+# PR-E2 NDJSON logging setup: per-run log directory under gate/log/runs/.
+# Each gate run produces:
+#   gate/log/runs/<sha>_<ts>/per-rule.ndjson   (one JSON object per rule)
+#   gate/log/runs/<sha>_<ts>/summary.json      (aggregated stats)
+#   gate/log/runs/<sha>_<ts>/manifest.txt      (run-scoped metadata)
+# A gate/log/latest symlink (or fallback latest.txt file on systems without
+# symlink support) points at the newest run. Honors GATE_LOGGING_NDJSON_ENABLED.
+# ---------------------------------------------------------------------------
+GATE_NDJSON_ENABLED="${GATE_LOGGING_NDJSON_ENABLED:-true}"
+GATE_SUMMARY_ENABLED="${GATE_LOGGING_SUMMARY_ENABLED:-true}"
+GATE_STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || printf '1970-01-01T00:00:00Z')"
+GATE_GIT_SHA="$(git rev-parse --short HEAD 2>/dev/null || echo nogit)"
+GATE_UNIX_TS="$(date +%s 2>/dev/null || echo 0)"
+GATE_RUN_ID="${GATE_GIT_SHA}_${GATE_UNIX_TS}"
+
+if [[ "$GATE_NDJSON_ENABLED" == "true" ]]; then
+  GATE_LOG_DIR="${repo_root}/gate/log/runs/${GATE_RUN_ID}"
+  mkdir -p "$GATE_LOG_DIR"
+  : > "$GATE_LOG_DIR/per-rule.ndjson"
+  # Write the run manifest -- aggregate_summary.sh reads this back.
+  {
+    echo "# gate run manifest (PR-E2 / NDJSON wave)"
+    echo "run_id=${GATE_RUN_ID}"
+    echo "git_sha=${GATE_GIT_SHA}"
+    echo "started_at=${GATE_STARTED_AT}"
+    echo "hostname=$(hostname 2>/dev/null || echo unknown)"
+    echo "platform=$(uname -s 2>/dev/null || echo unknown)"
+    echo "jobs=${JOBS}"
+    echo "parallel=true"
+    echo "source_script=${SOURCE_SCRIPT}"
+  } > "$GATE_LOG_DIR/manifest.txt"
+  export GATE_LOG_DIR
+else
+  GATE_LOG_DIR=""
 fi
 
 if [[ ! -f "$SOURCE_SCRIPT" ]]; then
@@ -132,6 +185,7 @@ for b in $(seq 0 $((JOBS - 1))); do
         out_file="$WORK_DIR/out_${rule_id}.txt"
         exit_file="$WORK_DIR/exit_${rule_id}.txt"
         ms_file="$WORK_DIR/ms_${rule_id}.txt"
+        pid_file="$WORK_DIR/pid_${rule_id}.txt"
         cat >> "$batch_script" <<RULE
 T0_${idx}=\$(date +%s%3N)
 (
@@ -141,6 +195,7 @@ T0_${idx}=\$(date +%s%3N)
 ) > "$out_file" 2>&1
 echo "\$?" > "$exit_file"
 echo "\$(( \$(date +%s%3N) - T0_${idx} ))" > "$ms_file"
+echo "\$\$" > "$pid_file"
 RULE
       done
 done
@@ -157,9 +212,28 @@ find "$WORK_DIR" -maxdepth 1 -name 'batch_*.sh' -type f -print0 \
 failed_rules=0
 total_subfailures=0
 profile_rows=""
+
+# Resolve python binary once; consumed by _gate_json_escape and inline NDJSON.
+GATE_PYTHON_BIN="$(command -v python3 || command -v python || echo '')"
+export GATE_PYTHON_BIN
+
+# JSON-escape helper for the NDJSON reason field.
+_gate_json_escape() {
+  if [[ -n "$GATE_PYTHON_BIN" ]]; then
+    printf '%s' "$1" | "$GATE_PYTHON_BIN" -c 'import json,sys; sys.stdout.write(json.dumps(sys.stdin.read()))' 2>/dev/null \
+      && return 0
+  fi
+  # Fallback (no python): minimal escape; quote-then-emit.
+  printf '"%s"' "$(printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' | tr '\n\t\r' '   ')"
+}
+
 while IFS=$'\t' read -r idx slug _ _; do
   rule_id="${idx}_${slug}"
-  cat "$WORK_DIR/out_${rule_id}.txt" 2>/dev/null || true
+  rule_out="$(cat "$WORK_DIR/out_${rule_id}.txt" 2>/dev/null || true)"
+  printf '%s' "$rule_out"
+  # Some rule bodies don't append a trailing newline; ensure separation in stdout.
+  case "$rule_out" in *$'\n') ;; '') ;; *) echo ;; esac
+
   rc=0
   [[ -s "$WORK_DIR/exit_${rule_id}.txt" ]] && rc="$(cat "$WORK_DIR/exit_${rule_id}.txt")"
   [[ -z "$rc" ]] && rc=0
@@ -170,11 +244,69 @@ while IFS=$'\t' read -r idx slug _ _; do
   elapsed_ms=0
   [[ -s "$WORK_DIR/ms_${rule_id}.txt" ]] && elapsed_ms="$(cat "$WORK_DIR/ms_${rule_id}.txt")"
   profile_rows="${profile_rows}${elapsed_ms}\t${rule_id}\n"
+
+  # ---- PR-E2: append one NDJSON line per rule to per-rule.ndjson ----------
+  if [[ -n "$GATE_LOG_DIR" ]]; then
+    # Split the slug field into rule_number + rule_slug. The slug format is
+    # "<num>[<a-z>]_<rule_slug>" (e.g. "73_gate_config_well_formed", "28a_...").
+    rule_number_part="${slug%%_*}"
+    rule_slug_only="${slug#*_}"
+    # Numeric component (strip trailing letter for the rule_number JSON field).
+    rule_number_int="${rule_number_part%%[a-z]}"
+    # Pid the worker batch ran in.
+    worker_pid=0
+    [[ -s "$WORK_DIR/pid_${rule_id}.txt" ]] && worker_pid="$(cat "$WORK_DIR/pid_${rule_id}.txt")"
+    # Status + reason. If rc != 0 and the rule body emitted FAIL: lines, the
+    # first FAIL line's reason becomes our reason. Else generic "non-zero exit".
+    if [[ "$rc" -eq 0 ]]; then
+      status="PASS"
+      reason_json="null"
+    else
+      status="FAIL"
+      first_fail_line="$(printf '%s' "$rule_out" | grep -m1 '^FAIL:' || true)"
+      if [[ -n "$first_fail_line" ]]; then
+        # Strip "FAIL: <slug> -- " prefix
+        reason_text="$(printf '%s' "$first_fail_line" | sed -E 's/^FAIL:[[:space:]]+[^-]*--[[:space:]]*//')"
+      else
+        reason_text="rule body exited non-zero (rc=$rc) without emitting FAIL line"
+      fi
+      reason_json="$(_gate_json_escape "$reason_text")"
+    fi
+    finished_iso="$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo 1970-01-01T00:00:00Z)"
+    # Note: rule_number in JSON is the integer; rule_id keeps the optional letter.
+    rule_id_full="${rule_number_part}_${rule_slug_only}"
+    printf '{"rule_id":"%s","rule_number":%d,"rule_slug":"%s","status":"%s","duration_ms":%d,"finished_at":"%s","reason":%s,"worker_pid":%d}\n' \
+      "$rule_id_full" "$rule_number_int" "$rule_slug_only" "$status" "$elapsed_ms" "$finished_iso" "$reason_json" "$worker_pid" \
+      >> "$GATE_LOG_DIR/per-rule.ndjson"
+  fi
 done < "$WORK_DIR/manifest.tsv"
 
 if [[ "$PROFILE" == "1" ]]; then
   echo "--- gate parallel profile (per-rule wall-clock, ms, slowest first) ---" >&2
   printf '%b' "$profile_rows" | sort -rn | head -20 >&2
+fi
+
+# ---------------------------------------------------------------------------
+# PR-E2: finalize the run -- sort per-rule.ndjson, write summary.json, prune.
+# ---------------------------------------------------------------------------
+if [[ -n "$GATE_LOG_DIR" ]]; then
+  bash "$repo_root/gate/lib/aggregate_summary.sh" "$GATE_LOG_DIR" || true
+  # Refresh the gate/log/latest symlink. ln -sfn is atomic on POSIX. On
+  # MSYS / git-bash the env var below enables real symlinks; on plain
+  # systems without symlink privileges we fall back to a latest.txt file.
+  (
+    cd "$repo_root/gate/log" 2>/dev/null || exit 0
+    if MSYS=winsymlinks:nativestrict ln -sfn "runs/${GATE_RUN_ID}" latest 2>/dev/null; then
+      :
+    elif ln -sfn "runs/${GATE_RUN_ID}" latest 2>/dev/null; then
+      :
+    else
+      # Fallback: write a text file pointing at the run dir. Self-tests
+      # treat either form as authoritative.
+      printf 'runs/%s\n' "$GATE_RUN_ID" > latest.txt
+    fi
+  )
+  bash "$repo_root/gate/lib/prune_old_runs.sh" || true
 fi
 
 if [[ "$failed_rules" -eq 0 ]]; then
