@@ -1,0 +1,28 @@
+# Always-loaded governance/architecture set -- per-file byte ceilings.
+#
+# Enforced by gate Rule 70 (always_loaded_budget_enforced, enforcer E100).
+# Authority: docs/governance/rules/rule-70.md + CLAUDE.md token-optimization wave (2026-05-17).
+#
+# Token estimate: bytes / 4 (English+code heuristic).
+#
+# Lines starting with '#' are comments; empty lines are ignored.
+# Format: <relpath>=<max_bytes>
+# A ceiling of 0 means "kept on disk but excluded from the always-loaded budget"
+# (used after a file has been demoted to on-demand).
+#
+# Initial PR1 ceilings are loose -- they freeze TODAY'S sizes so the gate passes
+# on the unshrunk corpus. The kernel-shrink step of PR1 tightens CLAUDE.md to
+# 8000 bytes. Subsequent PRs (PR2/PR3/PR4) tighten the YAML mirrors + ARCH.md
+# ceilings as their sharding lands.
+
+# === ALWAYS-LOADED SET (per docs/governance/SESSION-START-CONTEXT.md) ===
+# PR1 (token-optimization wave): CLAUDE.md shrunk from 43.6K to ~21.5K bytes (51% reduction)
+# via per-rule + per-principle cards under docs/governance/{rules,principles}/. CLAUDE-deferred.md
+# demoted to on-demand (ceiling 0). Future PRs tighten the YAML / ARCH.md ceilings.
+CLAUDE.md=25000
+ARCHITECTURE.md=80000
+AGENTS.md=5000
+docs/governance/SESSION-START-CONTEXT.md=6000
+docs/governance/architecture-graph.yaml=130000
+docs/governance/architecture-status.yaml=95000
+docs/CLAUDE-deferred.md=0

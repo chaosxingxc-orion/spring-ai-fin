@@ -864,3 +864,49 @@
   view: development
   artifact: gate/check_architecture_sync.sh#spi_package_exhaustiveness
   asserts: "Every */spi/ leaf directory under <module>/src/main/java appears in <module>/module-metadata.yaml spi_packages. Drift surfaced by 2026-05-17 audit when agent-runtime contained an ascend.springai.runtime.s2c.spi directory that was undeclared in spi_packages; Rule 36 (domain_module_has_spi_package) verified declared packages existed on disk but did not enforce the reverse direction (every on-disk SPI directory is declared)."
+
+# ---------------------------------------------------------------------------
+# 2026-05-17 CLAUDE.md token-optimization wave PR1.
+# Authority: D:/.claude/plans/tokens-token-buzzing-sprout.md + docs/governance/rules/rule-{67..71}.md
+# Goal: shrink always-loaded governance set from ~99K -> ~10.6K tokens / session.
+# ---------------------------------------------------------------------------
+
+- id: E97
+  constraint_ref: "CLAUDE.md Rule 67 (claude_md_kernel_size_bounded); token-optimization wave PR1"
+  kind: gate-script
+  level: L0
+  view: scenarios
+  artifact: gate/check_architecture_sync.sh#claude_md_kernel_size_bounded
+  asserts: "Each '#### Rule NN' section in CLAUDE.md fits under the per-rule kernel_cap declared in docs/governance/rules/rule-NN.md (daily principles: cap 12; architectural + ironclad: cap 6). If a card does not exist yet, the rule is SKIPPED for that section (Rule 69 catches the missing card)."
+
+- id: E98
+  constraint_ref: "CLAUDE.md Rule 68 (claude_md_kernel_matches_card); token-optimization wave PR1"
+  kind: gate-script
+  level: L0
+  view: scenarios
+  artifact: gate/check_architecture_sync.sh#claude_md_kernel_matches_card
+  asserts: "For every docs/governance/rules/rule-NN.md card, the kernel: scalar in YAML front-matter byte-matches (after whitespace normalisation) the body paragraph of '#### Rule NN' in CLAUDE.md. Prevents semantic drift between kernel and card."
+
+- id: E99
+  constraint_ref: "CLAUDE.md Rule 69 (every_active_rule_has_card); token-optimization wave PR1"
+  kind: gate-script
+  level: L0
+  view: scenarios
+  artifact: gate/check_architecture_sync.sh#every_active_rule_has_card
+  asserts: "Every '#### Rule NN' heading in CLAUDE.md has a sibling docs/governance/rules/rule-NN.md (zero-padded). Every card either appears as a heading in CLAUDE.md or as a 'Rule NN' reference in docs/CLAUDE-deferred.md. Orphan cards fail."
+
+- id: E100
+  constraint_ref: "CLAUDE.md Rule 70 (always_loaded_budget_enforced); token-optimization wave PR1"
+  kind: gate-script
+  level: L0
+  view: scenarios
+  artifact: gate/check_architecture_sync.sh#always_loaded_budget_enforced
+  asserts: "gate/measure_always_loaded_tokens.sh walks every file in gate/always-loaded-budget.txt; the rule fails if any file exceeds its declared byte ceiling. Primary defence against CLAUDE.md regressing back to its pre-shrink size."
+
+- id: E101
+  constraint_ref: "CLAUDE.md Rule 71 (deferred_doc_not_in_always_loaded); token-optimization wave PR1"
+  kind: gate-script
+  level: L0
+  view: scenarios
+  artifact: gate/check_architecture_sync.sh#deferred_doc_not_in_always_loaded
+  asserts: "docs/CLAUDE-deferred.md is not auto-injected: no @docs/CLAUDE-deferred.md include directive in CLAUDE.md, and no ALWAYS / ALWAYS-LOAD marker on its row in docs/governance/SESSION-START-CONTEXT.md. Plain prose pointers are fine."

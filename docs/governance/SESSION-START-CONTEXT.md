@@ -20,16 +20,19 @@ The architecture lives in **two coupled forms** (per ADR-0068):
 
 ## Reading order
 
-| Step | Open | Purpose |
-|---|---|---|
-| 1 | `CLAUDE.md` | Rules 1–48 (the active constraint set) and the thirteen Layer-0 principles P-A..P-M |
-| 2 | `ARCHITECTURE.md` §0.4 | Layered 4+1 view map of root-level sections |
-| 3 | `docs/governance/architecture-graph.yaml` | All relationships, machine-readable — canonical entry point |
-| 4 | `docs/governance/architecture-graph.mmd` (optional) | Mermaid render of the graph spine |
-| 5 | `docs/governance/enforcers.yaml` | rows mapping constraints to enforcers (E1..E87 as of W2.x Phase 7) |
-| 6 | `docs/governance/architecture-status.yaml` | Capability ledger (what is shipped / verified) |
-| 7 | `docs/CLAUDE-deferred.md` | Rules deferred to W1/W2/W3/W4 with re-introduction triggers |
-| 8 | the ADR YAML referenced by the edge you are traversing | rationale and `extends:` / `relates_to:` |
+| Step | Open | Load | Purpose |
+|---|---|---|---|
+| 1 | `CLAUDE.md` | ALWAYS-LOAD | Rule kernels (one paragraph each) + Layer-0 principle index. Full rule bodies live in per-rule cards (see step 1a). |
+| 1a | `docs/governance/rules/rule-NN.md` + `docs/governance/principles/P-X.md` | ON-DEMAND | Expanded body for the specific rule / principle you are touching. Loaded only when needed. |
+| 2 | `ARCHITECTURE.md` §0.4 | ALWAYS-LOAD | Layered 4+1 view map of root-level sections |
+| 3 | `docs/governance/architecture-graph.yaml` | ALWAYS-LOAD | All relationships, machine-readable — canonical entry point |
+| 4 | `docs/governance/architecture-graph.mmd` | OPTIONAL | Mermaid render of the graph spine |
+| 5 | `docs/governance/enforcers.yaml` | ALWAYS-LOAD | rows mapping constraints to enforcers (E1..E101 as of token-optimization PR1) |
+| 6 | `docs/governance/architecture-status.yaml` | ALWAYS-LOAD | Capability ledger (what is shipped / verified) |
+| 7 | `docs/CLAUDE-deferred.md` | (ON-DEMAND) | Rules deferred to W1/W2/W3/W4 with re-introduction triggers — load only when re-introducing a deferred rule |
+| 8 | the ADR YAML referenced by the edge you are traversing | ON-DEMAND | rationale and `extends:` / `relates_to:` |
+
+The always-loaded budget per file is declared in [`gate/always-loaded-budget.txt`](../../gate/always-loaded-budget.txt) and policed by Gate Rule 70 (`always_loaded_budget_enforced`). To measure the current state: `bash gate/measure_always_loaded_tokens.sh`.
 
 ## Graph traversal cheatsheet
 

@@ -1,195 +1,115 @@
 # CLAUDE.md
 
-## Language Rule
+**Translate all instructions into English before any model call.** Never pass non-English text into an LLM prompt, tool argument, or task goal.
 
-**Translate all instructions into English before any model call.** Never pass Chinese, Japanese, or other non-English text into an LLM prompt, tool argument, or task goal.
+Bodies of every principle and rule below live under `docs/governance/{principles,rules}/` and are loaded on-demand. CLAUDE.md is the kernel index. Drift policed by Gate Rules 67/68/69; always-loaded byte budget by Rule 70 (`gate/measure_always_loaded_tokens.sh`).
 
----
+## Layer 0 — Governing Principles
 
-## Layer 0 — Governing Principles (non-negotiable)
+| ID | Title | Operationalised by | Body |
+|---|---|---|---|
+| **P-A** | Business / Platform Decoupling + Developer Self-Service | Rule 29 | [card](docs/governance/principles/P-A.md) |
+| **P-B** | Four Competitive Pillars | Rule 30 | [card](docs/governance/principles/P-B.md) |
+| **P-C** | Code-as-Everything, Rapid Evolution, Independent Modules | Rule 28, Rule 31 | [card](docs/governance/principles/P-C.md) |
+| **P-D** | SPI-Aligned, DFX-Explicit, Spec-Driven, TCK-Tested | Rule 32 | [card](docs/governance/principles/P-D.md) |
+| **P-E** | Multi-Track Bus Physical Channel Isolation | Rule 35 | [card](docs/governance/principles/P-E.md) |
+| **P-F** | Cursor Flow & Asynchronous Client Boundary | Rule 36 | [card](docs/governance/principles/P-F.md) |
+| **P-G** | Absolute Non-Blocking I/O | Rule 37 | [card](docs/governance/principles/P-G.md) |
+| **P-H** | Chronos Hydration | Rule 38 | [card](docs/governance/principles/P-H.md) |
+| **P-I** | Five-Plane Distributed Topology | Rule 39 | [card](docs/governance/principles/P-I.md) |
+| **P-J** | Storage-Engine Tenant Isolation | Rule 40 | [card](docs/governance/principles/P-J.md) |
+| **P-K** | Skill-Dimensional Resource Arbitration | Rule 41 | [card](docs/governance/principles/P-K.md) |
+| **P-L** | Sandbox Permission Subsumption | Rule 42 | [card](docs/governance/principles/P-L.md) |
+| **P-M** | Heterogeneous Engine Contract & Server-Sovereign Boundary | Rule 43, Rule 44, Rule 45, Rule 46, Rule 47, Rule 48 | [card](docs/governance/principles/P-M.md) |
 
-Every Layer-0 principle is operationalised by one or more Layer-1 rules whose enforcer ships in the same PR (Rule 28 — Code-as-Contract). Sub-clauses without a feasible enforcer-today are staged in `docs/CLAUDE-deferred.md` with explicit re-introduction triggers.
+History: [`rule-history.md`](docs/governance/rule-history.md). Mapping: [`principle-coverage.yaml`](docs/governance/principle-coverage.yaml).
 
-- **P-A — Business / Platform Decoupling + Developer Self-Service.** Business code and Platform code are decoupled. Customization-by-source-patch into platform internals is forbidden. All architecture and solution design MUST be developer-friendly: configuration-driven extension, debug-friendly telemetry, and self-service closure (a developer can build, run, and test an agent end-to-end against the platform without platform-team intervention). Enforced by Rule 29.
-
-- **P-B — Four Competitive Pillars.** Platform competitiveness rests on four continuously-improvable dimensions — **Performance** (latency, throughput), **Cost** (per-call + infra), **Developer Onboarding** (time-to-first-agent + surface complexity), **Governance** (tenant isolation, audit, eval, safety). Each dimension MUST have a published baseline that future releases can be measured against. Enforced by Rule 30.
-
-- **P-C — Code-as-Everything, Rapid Evolution, Independent Modules.** Every architectural constraint is code. Modules evolve independently — each builds, tests, and upgrades on its own, with high cohesion and low coupling. Production-environment upgrades are lightweight (BoM + starter pattern + semver compatibility). Enforced by Rule 28 + Rule 31.
-
-- **P-D — SPI-Aligned, DFX-Explicit, Spec-Driven, TCK-Tested.** Every domain module ships an SPI; every platform/domain module declares its Design-for-X posture (releasability, resilience, availability, vulnerability, observability); contracts precede implementation; alternative implementations must pass a TCK to be conformant. Enforced by Rule 32 (TCK content deferred per `CLAUDE-deferred.md` 32.b/32.c).
-
-- **P-E — Multi-Track Bus Physical Channel Isolation.** Cross-service internal communication is sliced into three physically isolated channels — `control` (out-of-band PAUSE/KILL/CANCEL intents, highest priority), `data` (in-band heavy-load payload bodies), and `rhythm` (heartbeat / liveness pulses). No congestion on one channel can paralyse another. Enforced by Rule 35.
-
-- **P-F — Cursor Flow & Asynchronous Client Boundary.** The Client → Runtime boundary is non-blocking by ironclad rule. Long-horizon task submissions return a Task Cursor immediately; clients consume process state via SSE and intermediate-result checkpoints via Webhook. No long-poll, no synchronous blocking. Enforced by Rule 36.
-
-- **P-G — Absolute Non-Blocking I/O.** External I/O calls (model gateway, vector DB, sandbox dispatch) MUST use Reactive or Virtual Threads. The OS-level worker thread MUST be released during the I/O wait so other Agents can proceed. Enforced by Rule 37. *(v2.0.0-rc3 honesty: the W2.x synchronous S2C bridge in `SyncOrchestrator.handleClientCallback` blocks on `.toCompletableFuture().join()` — this is a deliberately deferred exception tracked under Rule 46.c. Production deployments that need non-blocking S2C must wait for the W2 async orchestrator.)*
-
-- **P-H — Chronos Hydration.** Long-horizon waits in business code MUST be declarative suspension (`SuspendSignal`), not physical thread sleep. The sleeping process self-destructs and re-hydrates on the bus wake-pulse. Enforced by Rule 38.
-
-- **P-I — Five-Plane Distributed Topology.** Production deployment is divided into five physically isolated planes — Edge Access (Client SDK), Compute & Control (Runtime + Engine), Bus & State Hub (Bus + Middleware persistence), Sandbox Execution (untrusted code), and Evolution (Python ML). Workloads with different characteristics MUST NOT share infrastructure. Enforced by Rule 39.
-
-- **P-J — Storage-Engine Tenant Isolation.** Tenant isolation lives at the storage engine, not the application code. Every tenant-scoped table MUST enable Row-Level Security policies; even a fully-compromised application tier cannot leak across tenants. Enforced by Rule 40 (V1/V2 grandfathered per `gate/rls-baseline-grandfathered.txt`; W2 retrofit per `CLAUDE-deferred.md` 40.b).
-
-- **P-K — Skill-Dimensional Resource Arbitration.** A 2D defence net — Tenant Quota × Global Skill Capacity — protects the cluster. When a skill capacity pool fills, the scheduler suspends only the Agent processes blocked on that specific skill, freeing OS threads for unrelated work. Enforced by Rule 41.
-
-- **P-L — Sandbox Permission Subsumption.** Logical authorizations issued by the bus MUST 1:1 map to physical sandbox restrictions (outbound IP whitelist, CPU cap, filesystem access). A logical grant cannot exceed what the physical sandbox enforces; otherwise the runtime authority is fictional. Enforced by Rule 42.
-
-- **P-M — Heterogeneous Engine Contract & Server-Sovereign Boundary.** The platform supports heterogeneous execution engines through a structured contract surface: a lightweight configuration envelope governs registration / routing / observability, strict matching prevents silent reinterpretation of engine-specific payloads, runtime-owned middleware attaches via engine-declared lifecycle hooks, server-to-client capability invocation is an explicit asynchronous protocol bound to the suspend/resume loop, and the evolution mechanism manages only server-controlled execution scope by default. Enforced by Rules 43–47; cross-cutting structural invariant operationalised by Rule 48 (Schema-First Domain Contracts).
-
-History of how the rule set evolved: [`docs/governance/rule-history.md`](docs/governance/rule-history.md). Principle ↔ rule mapping: [`docs/governance/principle-coverage.yaml`](docs/governance/principle-coverage.yaml) (machine-readable; the prior `.md` form was retired in Phase M per ADR-0068 — duplicate truth eliminated; humans read the YAML directly or traverse the graph via `docs/governance/SESSION-START-CONTEXT.md`).
-
----
-
-## Layer 1 — Engineering Rules (enforceable)
+## Layer 1 — Engineering Rules
 
 ### Daily principles
-
 #### Rule 1 — Root-Cause + Strongest-Interpretation Before Plan
 
 **Before writing any plan, fix, or feature — surface assumptions, name confusion, and state tradeoffs. Then (a) name the root cause mechanically and (b) choose the strongest valid reading of the requirement.**
 
-**(a) Root-cause discipline** — required before any plan:
-1. **Observed failure**: exact error message or test output
-2. **Execution path**: which function calls which, where it diverges from expectation
-3. **Root cause statement**: one sentence — "X happens because Y at line Z, which causes W"
-4. **Evidence**: file:line references that confirm the cause, not the symptom
-
-**(b) Strongest-interpretation defaults:**
-- "Gate" → **blocking**, not notification
-- "Isolation" → **per-tenant/profile scope**, not process scope
-- "Persist" → **survives restart**, not in-memory
-- "Compatible" → **same signature + same semantics**, not "same name"
-
-**Enforcement**: A PR without the four-line root-cause block is rejected.
+Enforced by [`rule-01.md`](docs/governance/rules/rule-01.md).
 
 ---
-
 #### Rule 2 — Simplicity & Surgical Changes
 
 **Minimum code that solves the stated problem. Touch only what the task requires.**
 
-- No speculative features, one-use abstractions, unrequested configurability, or impossible-scenario error handling.
-- Reach for a library before inventing a framework; reach for a function before inventing a class hierarchy.
-- Do not improve, reformat, or rename adjacent code in the same commit. Match surrounding style exactly.
-- Remove only imports/variables/functions that **your** change made unused — leave pre-existing dead code for a separate cleanup commit.
-- Commits spanning >1 defect ID or >2 distinct modules must be split.
+Enforced by [`rule-02.md`](docs/governance/rules/rule-02.md).
 
 ---
-
 #### Rule 3 — Pre-Commit Checklist
 
-Before every commit, audit every touched file. Fix defects before committing — "I'll fix it later" is forbidden.
+Before every commit, audit every touched file. Fix defects before committing — "I'll fix it later" is forbidden. **Smoke + lint** required before commits touching server entry points, runtime adapters, or dependency-wiring modules.
 
-| Dimension | Check |
-|-----------|-------|
-| **Contract truth** | No empty stubs, `TODO`-bodied methods, or `UnsupportedOperationException` placeholders shipped on the default path. |
-| **Orphan config** | Every parameter / config field / env var is consumed downstream. |
-| **Error visibility** | No silent swallow. Every catch re-raises, logs at `WARNING+`, or converts to typed failure. |
-| **Lint green** | Project linter exits 0. No suppression added in the same commit as the offending line. |
-| **Test honesty** | No mocks on the unit under test in integration tests. No assertion that accepts failure as success. |
-
-**Smoke + lint** required before commits touching server entry points, runtime adapters, or dependency-wiring modules.
+Enforced by [`rule-03.md`](docs/governance/rules/rule-03.md).
 
 ---
-
 #### Rule 4 — Three-Layer Testing, With Honest Assertions
 
 A feature is implementable only when all three layers are designed. A feature is shippable only when all three are green and Rule 9 passes.
 
-- **Layer 1 — Unit**: one function/method per test; mock only external network or fault injection.
-- **Layer 2 — Integration**: real components wired together. **Zero mocks on the subsystem under test.** Skip with the test framework's skip annotation if a dependency is absent — never fake it.
-- **Layer 3 — E2E**: drive through the public interface (HTTP / CLI / top-level API); assert on observable outputs, not internal variables.
-
-**Test honesty is not optional**: mocking the subsystem under test in integration = mislabeled unit test.
+Enforced by [`rule-04.md`](docs/governance/rules/rule-04.md).
 
 ---
 
 ### Class / resource patterns
-
 #### Rule 5 — Concurrency / Async Resource Lifetime
 
 **Every async or reactive resource has a lifetime bound to exactly one execution context.**
 
-**Forbidden patterns:**
-1. Constructing an async/reactive resource in a constructor of a sync-facing class, then driving it via per-call `asyncio.run` / `block()` / `Mono.block()`.
-2. Sharing one client/session across two independent event loops or schedulers.
-3. Wrapping an async library with a sync façade that spins a fresh event loop or scheduler per method.
-
-**Required patterns** — pick one: async-native (use under owning context), sync bridge (single durable bridge on dedicated thread), or per-call construction (cheap resources only).
+Enforced by [`rule-05.md`](docs/governance/rules/rule-05.md).
 
 ---
-
 #### Rule 6 — Single Construction Path Per Resource Class
 
 **For every shared-state resource, exactly one builder/factory owns construction. All consumers receive the instance by dependency injection.**
 
-Inline fallbacks of the shape `x or DefaultX()` / `x != null ? x : new DefaultX()` are forbidden.
-
-When a class needs tenant scoping, scope is a **required constructor argument**. Missing scope must be a hard error.
+Enforced by [`rule-06.md`](docs/governance/rules/rule-06.md).
 
 ---
 
 ### Delivery process
-
 #### Rule 9 — Self-Audit is a Ship Gate, Not a Disclosure
 
 A self-audit with open findings in a downstream-correctness category **blocks delivery**.
 
-**Ship-blocking categories:**
-- Model / LLM path (gateway, adapter, streaming, async lifetime, retry, rate-limit)
-- Run lifecycle (stage, state machine, cancellation, resume, watchdog)
-- HTTP / API contract (path, method, body, status, auth)
-- Security boundary (path traversal, shell injection, auth bypass, tenant-scope escape)
-- Resource lifetime (async clients, file handles, subprocesses, connection pools)
-- Observability (missing metric, log, or health signal for a failure path)
-
-**Forbidden:** any phrasing that ships with open ship-blocking findings.
+Enforced by [`rule-09.md`](docs/governance/rules/rule-09.md).
 
 ---
-
 #### Rule 10 — Posture-Aware Defaults
 
 **Every config knob, fallback path, and persistence backend declares its default behaviour under three postures: `dev` / `research` / `prod`.**
 
-- `dev`: permissive — warnings only, in-memory backends allowed.
-- `research` / `prod`: fail-closed — required config present, durable persistence, fallbacks emit metrics.
-
-Posture set by `APP_POSTURE` env var (default `dev`). Read once at startup; never hard-code at call sites. Per-module posture coverage matrix: [`docs/governance/posture-coverage.md`](docs/governance/posture-coverage.md). Tests MUST cover `dev` and `research` paths for any new contract.
+Enforced by [`rule-10.md`](docs/governance/rules/rule-10.md).
 
 ---
 
 ### Architectural enforcement
-
 #### Rule 20 — Run State Transition Validity
 
 **Every `Run.withStatus(newStatus)` mutation MUST call `RunStateMachine.validate(this.status, newStatus)` before constructing the updated record. Illegal transitions MUST throw `IllegalStateException`.**
 
-Legal DFA: `PENDING → RUNNING | CANCELLED`; `RUNNING → SUSPENDED | SUCCEEDED | FAILED | CANCELLED`; `SUSPENDED → RUNNING | EXPIRED | FAILED | CANCELLED`; `FAILED → RUNNING`; `SUCCEEDED`, `CANCELLED`, `EXPIRED` are terminal.
-
-Enforced by `RunStateMachine.validate(from, to)` (wired into `Run.withStatus` + `Run.withSuspension`) and unit-tested in `RunStateMachineTest`. Architecture reference: §4 #20, ADR-0020.
+Enforced by [`rule-20.md`](docs/governance/rules/rule-20.md).
 
 ---
-
 #### Rule 21 — Tenant Propagation Purity
 
 **No production class under `ascend.springai.runtime..` (main sources) may import any class under `ascend.springai.platform..`. The original narrow case — no import of `TenantContextHolder` — remains the specific instance most likely to be violated and is asserted independently as defence-in-depth.**
 
-`TenantContextHolder` is a request-scoped HTTP-edge ThreadLocal (valid only for the duration of an HTTP request). Runtime production code MUST source tenant identity from `RunContext.tenantId()` instead. Timer-driven resumes and async orchestration have no HTTP request and would silently receive null from the ThreadLocal. The L1 generalisation (ADR-0055) extends the ban from the single ThreadLocal class to the whole platform package, because every platform-side class encodes request-scoped or HTTP-edge concerns that have no defined meaning in runtime contexts (timer-driven resumes, async orchestration, Temporal activities).
-
-Enforced by `RuntimeMustNotDependOnPlatformTest` (ArchUnit — broad, L1 contract per ADR-0055) and `TenantPropagationPurityTest` (ArchUnit — narrow, original Rule 21 per ADR-0023). Test classes are intentionally excluded — `TenantContextFilterTest` may read the holder to verify filter behaviour. Architecture reference: §4 #22, ADR-0023 (origin), ADR-0055 (L1 generalisation).
+Enforced by [`rule-21.md`](docs/governance/rules/rule-21.md).
 
 ---
-
 #### Rule 25 — Architecture-Text Truth
 
 **Every `shipped: true` row in `docs/governance/architecture-status.yaml` MUST have a non-empty `tests:` list pointing to a real test class. Every `implementation:` path MUST exist on disk. Every prose claim in `ARCHITECTURE.md` / `agent-*/ARCHITECTURE.md` that names an enforcer ("enforced by X", "asserted by X", "tested by X") MUST be backed by X actually performing the named assertion.**
 
-Path-existence violations caught by Gate Rule 7 (`shipped_impl_paths_exist`). Version-drift violations caught by Gate Rule 8 (`no_hardcoded_versions_in_arch`). Route-exposure violations caught by Gate Rule 9 (`openapi_path_consistency`). Module-dep-direction violations caught by Gate Rule 10 (`module_dep_direction`). Prose-enforcer claims without a real enforcer are a ship-blocking finding under Rule 9.
-
-Architecture reference: §4 #24, ADR-0025 / ADR-0026 / ADR-0027.
+Enforced by [`rule-25.md`](docs/governance/rules/rule-25.md).
 
 ---
-
 #### Rule 28 — Code-as-Contract (L1 Governing Rule)
 
 **Every active normative constraint MUST be enforced by code, registered in `docs/governance/enforcers.yaml`, and reach at least one of:**
@@ -200,226 +120,195 @@ Architecture reference: §4 #24, ADR-0025 / ADR-0026 / ADR-0027.
 4. A **schema constraint** (NOT NULL / UNIQUE / CHECK / PRIMARY KEY) at the storage layer.
 5. A **compile-time check** (`@ConfigurationProperties` + `@Valid`, sealed types, package-info enforcement).
 
-**Coverage discipline.** New normative constraints are gate-enforced via the meta-rule `constraint_enforcer_coverage` and sub-checks 28a–28j (path existence, anchor existence, hardcoded versions, prose-only markers, module count, mandatory tags, etc.). Per-sentence audit across `ARCHITECTURE.md` (root + per-module), ADR decision rules, and `docs/plans/*.md` is enforced via PR review under Rule 9 (Self-Audit Ship Gate) — no automated sentence scanner exists today.
-
-**Scope.** Rule 28 covers shipped *and* deferred constraints, positive capabilities *and* negative invariants ("X must NOT happen" requires an enforcer that detects X).
-
-**No deferred enforcers for active constraints.** An *active* constraint (any rule paragraph or ARCHITECTURE.md §4 entry whose status is `active_runtime_enforced` or `active_schema_enforced` per the Constraint State Taxonomy below) and its enforcer ship in the same PR. "Test deferred to next sprint" is forbidden for active constraints — drop the constraint or land the enforcer. *Deferred sub-clauses* (e.g. Rule 46.c, Rule 48.b, Rule 28k.b) and *design-only contracts* (`status: design_only` per Rule 62 / cross-constraint audit β-4) are explicitly permitted as long as each carries an explicit re-introduction trigger in `docs/CLAUDE-deferred.md` (or its own YAML file). They do NOT require a same-PR enforcer because they make no present-tense runtime claim.
-
-**Constraint State Taxonomy** (added in v2.0.0-rc3 per cross-constraint audit β-4 / γ-3 to formalize the vocabulary that gate Rule 62 polices). Every contract YAML under `docs/contracts/*.v1.yaml` and the listed governance YAMLs (`skill-capacity.yaml`, `sandbox-policies.yaml`, `bus-channels.yaml`, `evolution-scope.v1.yaml`, `plan-projection.v1.yaml`) MUST declare a top-level `status:` field with one of:
-
-| Status | Meaning | Enforcer requirement |
-|---|---|---|
-| `active_runtime_enforced` (or legacy alias `runtime_enforced`) | The contract is shipped and a runtime path enforces it today (e.g. registry boot validation, request-time check, ArchUnit test). | MUST have an enforcer row in `docs/governance/enforcers.yaml` referencing a real `*Test.java` / `*IT.java` / gate-script rule. |
-| `active_schema_enforced` (or legacy alias `schema_shipped`) | The schema YAML is shipped + structurally validated (gate Rule 62 / similar), but the runtime consumer is deferred. | MUST have a gate-script row asserting the schema is well-formed; MAY defer the runtime consumer via a `docs/CLAUDE-deferred.md` sub-clause with a re-introduction trigger. |
-| `design_only` | The contract is declared as design surface only; no schema validation, no runtime consumer. | MUST have a `docs/CLAUDE-deferred.md` entry with an explicit re-introduction trigger. MUST NOT use present-tense prose for runtime effects. |
-
-A **separate vocabulary** at `docs/governance/architecture-status.yaml` per-capability rows uses `{design_accepted, implemented_unverified, test_verified, deferred_w1, deferred_w2}` (enforced by gate Rule 1). The two vocabularies are NOT interchangeable — `status:` in a contract YAML obeys the Constraint State Taxonomy above; `status:` in `architecture-status.yaml` obeys the gate-Rule-1 enum. Reviewers MUST NOT cross-cite values between them.
-
-**Self-enforcement.** `docs/governance/enforcers.yaml` is the machine-readable cross-reference (every active constraint → ≥ 1 enforcer row → real artifact). Gate Rule 28 (`constraint_enforcer_coverage`) plus sub-checks 28a–28j police the index itself.
-
-Architecture reference: §4 #45, ADR-0059.
+Enforced by [`rule-28.md`](docs/governance/rules/rule-28.md).
 
 ---
 
 ### Governing principles (Layer-0 enforceable expressions)
-
 #### Rule 29 — Business/Platform Decoupling Enforcement
 
 **Platform code MUST NOT contain business-specific customizations. Business and example code MUST extend the platform via SPI + `@ConfigurationProperties` only — never by patching `*.impl.*` or `ascend.springai.platform..`. The platform MUST ship a runnable quickstart (`docs/quickstart.md`) referenced from `README.md` so a developer reaches first-agent execution without platform-team intervention.**
 
-Enforced by E48 (`SpiPurityGeneralizedArchTest`) and Gate Rule 31 (`quickstart_present`). Architecture reference: §4 #60, ADR-0064. Deferred sub-clauses: quickstart smoke-run in CI (W1 — see `CLAUDE-deferred.md` 29.c).
+Enforced by [`rule-29.md`](docs/governance/rules/rule-29.md).
 
 ---
-
 #### Rule 30 — Competitive Baselines Required
 
 **Every release MUST publish `docs/governance/competitive-baselines.yaml` declaring four pillar dimensions — `performance`, `cost`, `developer_onboarding`, `governance` — each with a named `baseline_metric` and a `current_value` (or `N/A` for not-yet-instrumented). The most recent `docs/releases/*.md` release note MUST mention all four pillar names. A regression in any `current_value` MUST be paired with a `regression_adr:` reference in the row.**
 
-Enforced by Gate Rule 32 (`competitive_baselines_present_and_wellformed`) and Gate Rule 33 (`release_note_references_four_pillars`). Architecture reference: §4 #61, ADR-0065. Deferred sub-clauses: git-diff regression-ADR pairing (30.b); measurement automation (W2/W3 — see `CLAUDE-deferred.md` 30.d).
+Enforced by [`rule-30.md`](docs/governance/rules/rule-30.md).
 
 ---
-
 #### Rule 31 — Independent Module Evolution
 
 **Every reactor module under `<module>/pom.xml` MUST own a sibling `<module>/module-metadata.yaml` declaring `module`, `kind ∈ {platform | domain | starter | bom | sample}`, `version`, and `semver_compatibility`. Each module MUST build and test in isolation via `mvn -pl <module> -am test`. Inter-module dependency direction is governed by Rule 10 (`module_dep_direction`).**
 
-Enforced by Gate Rule 34 (`module_metadata_present_and_complete`) and existing Gate Rule 10. Architecture reference: §4 #62, ADR-0066. Deferred sub-clauses: runtime semver compatibility enforcement (W2 — see `CLAUDE-deferred.md` 31.b).
+Enforced by [`rule-31.md`](docs/governance/rules/rule-31.md).
 
 ---
-
 #### Rule 32 — SPI + DFX + TCK Co-Design
 
 **Every module declared `kind: domain` in `module-metadata.yaml` MUST expose at least one `*.spi.*` package containing ≥ 1 public interface, listed under `spi_packages:`. Every module with `kind: platform` or `kind: domain` MUST publish a `docs/dfx/<module>.yaml` covering five DFX dimensions — `releasability`, `resilience`, `availability`, `vulnerability`, `observability` — each with a non-empty body. The sibling `<module>-tck` reactor module and conformance suite are deferred per `CLAUDE-deferred.md` 32.b / 32.c (W2 trigger).**
 
-Enforced by E48 (`SpiPurityGeneralizedArchTest`), Gate Rule 35 (`dfx_yaml_present_and_wellformed`), and Gate Rule 36 (`domain_module_has_spi_package`). Architecture reference: §4 #63, ADR-0067. Deferred sub-clauses: TCK module scaffolding (32.b), TCK conformance content (32.c), vulnerability-scanner integration (32.d).
+Enforced by [`rule-32.md`](docs/governance/rules/rule-32.md).
 
 ---
 
 ### Vibe-Coding-era structural discipline
-
 #### Rule 33 — Layered 4+1 Discipline
 
 **Every architecture artefact (`ARCHITECTURE.md` section, `docs/adr/*.yaml`, `docs/L2/*.md`, `docs/reviews/*.md`) MUST declare two front-matter keys: `level: L0 | L1 | L2` and `view: logical | development | process | physical | scenarios`. The root `ARCHITECTURE.md` is the canonical L0 corpus; per-module `agent-*/ARCHITECTURE.md` files are L1; deep technical designs in `docs/L2/` are L2. Each level MUST organise its content under the 4+1 view headings; L2 MAY omit views not relevant to the feature. All change proposals in `docs/reviews/` MUST declare `affects_level:` and `affects_view:`. Phase-released L0/L1 artefacts are read-only — further edits MUST flow through `docs/reviews/`.**
 
-This rule is the in-repo expression of the chief-architect doctrine (`docs/reviews/2026-05-14-architecture-governance-in-vibe-coding-era.en.md`): a flat ADR pile creates "tubular vision and context collapse" for both human reviewers and LLM agents — they remember constraint A and forget constraint B. View × level decomposition keeps each fragment small enough to load fully. The defect taxonomy from nine prior review rounds shows ~50% of all closed defects fall into the text-form drift family; structural decomposition is the primary mitigation.
-
-Enforced by Gate Rule 37 (`architecture_artefact_front_matter`), Gate Rule 39 (`review_proposal_front_matter`), and `ArchitectureLayeringTest` (ArchUnit, agent-platform). Architecture reference: §4 #64, ADR-0068.
+Enforced by [`rule-33.md`](docs/governance/rules/rule-33.md).
 
 ---
-
 #### Rule 34 — Architecture-Graph Truth
 
 **`docs/governance/architecture-graph.yaml` is the single machine-readable index of architectural relationships. It MUST be generated, never hand-edited, by `gate/build_architecture_graph.sh` from authoritative inputs (`docs/governance/principle-coverage.yaml`, `enforcers.yaml`, `architecture-status.yaml`, `module-metadata.yaml`, and the `docs/adr/*.yaml` corpus). The graph MUST encode at minimum these edge classes: `principle → rule`, `rule → enforcer`, `enforcer → test`, `enforcer → artefact`, `capability → test`, `module → module` (allowed / forbidden), `adr → adr` (`supersedes` / `extends` / `relates_to`), and `(level, view) → artefact`. The `supersedes` and `extends` sub-graphs MUST be DAGs. Every edge endpoint MUST resolve to a real graph node or file path. The build script MUST be idempotent — re-running on the same inputs MUST produce a byte-identical output.**
 
-This rule operationalises the principle that an LLM cannot traverse what it has not been shown. The pre-existing YAML side-files (`enforcers.yaml`, `architecture-status.yaml`, etc.) are indexes but supply no joins; reasoning about which test ultimately enforces principle P-B today requires chaining through prose ADR citations the model has to ingest sequentially. The graph encodes those joins as first-class edges and the gate validates the joins close.
-
-Enforced by Gate Rule 38 (`architecture_graph_well_formed`) and Gate Rule 40 (`enforcer_reachable_from_principle`). Architecture reference: §4 #65, ADR-0068.
+Enforced by [`rule-34.md`](docs/governance/rules/rule-34.md).
 
 ---
 
 ### L0 ironclad rules (W1.x absorption of LucioIT L0 §6/§7)
-
 #### Rule 35 — Three-Track Channel Isolation
 
 **Cross-service internal communication MUST be sliced into three physically isolated channels declared in `docs/governance/bus-channels.yaml`: `control` (out-of-band, highest priority), `data` (in-band, heavy-load), and `rhythm` (heartbeat/liveness). No two channels may share a `physical_channel:` identifier. The `data` channel inherits the 16 KiB inline-payload cap from §4 #13.**
 
-The L0 motivation (LucioIT W1 §6.4): any single network-congestion event must NOT cause global paralysis. A slow text-to-video transfer on `data` cannot block a `PAUSE` intent on `control`.
-
-Enforced by Gate Rule 45 (`bus_channels_three_track_present`) — schema check on the YAML and uniqueness of `physical_channel`. Architecture reference: ADR-0069 / LucioIT W1 §6.4. Physical channel implementation deferred to W2 per `CLAUDE-deferred.md` 35.b.
+Enforced by [`rule-35.md`](docs/governance/rules/rule-35.md).
 
 ---
-
 #### Rule 36 — Cursor Flow Mandate
 
 **Every long-horizon Runtime API endpoint MUST return a Task Cursor immediately and MUST NOT hold the client connection while work executes. The contract surface (request → cursor → polled status / SSE / Webhook) MUST be declared in `docs/contracts/openapi-v1.yaml` for at least one runs operation; new long-running endpoints MUST follow the same shape.**
 
-The L0 motivation (LucioIT W1 §6.1): synchronous long-poll dies under enterprise load — clients holding 10s+ HTTP connections exhaust threadpools client-side AND server-side. The Task Cursor + SSE/Webhook pattern eliminates client busy-waiting.
-
-Enforced by Gate Rule 46 (`cursor_flow_documented`) — checks `docs/contracts/openapi-v1.yaml` declares at least one 202-returning endpoint or an explicit `cursor:` schema. Architecture reference: ADR-0069 / LucioIT W1 §6.1. Integration-test enforcement deferred to W1.x Phase 6 per `CLAUDE-deferred.md` 36.b.
+Enforced by [`rule-36.md`](docs/governance/rules/rule-36.md).
 
 ---
-
 #### Rule 37 — Reactive External I/O
 
 **No production class under `agent-runtime/src/main/java/**` may import `org.springframework.web.client.RestTemplate` or `org.springframework.jdbc.core.JdbcTemplate`. External I/O in runtime code MUST go through Reactive (`WebClient` / `R2dbcEntityTemplate`) or Virtual-Thread-backed clients.**
 
-The L0 motivation (LucioIT W1 §6.3): a single blocking external call holds an OS thread for tens of seconds; ~10 stuck calls paralyse a 256-thread cluster. Reactive / Virtual Threads release the OS thread during the wait.
-
-Enforced by Gate Rule 47 (`no_blocking_io_in_runtime_main`) — source scan for the forbidden imports. Scope is intentionally narrow to `agent-runtime` (the cognitive kernel); existing `agent-platform` `JdbcTemplate` uses (`HealthCheckRepository`, `PlatformOssApiProbe`) are out of scope and migrate to R2DBC in W2 per `CLAUDE-deferred.md` 37.c. Architecture reference: ADR-0069 / LucioIT W1 §6.3.
+Enforced by [`rule-37.md`](docs/governance/rules/rule-37.md).
 
 ---
-
 #### Rule 38 — No Thread.sleep in Business Code
 
 **No production class under `agent-platform/src/main/java/**` or `agent-runtime/src/main/java/**` may invoke `Thread.sleep(...)` or `TimeUnit.<unit>.sleep(...)`. Long-horizon waits MUST be expressed as declarative suspension (`SuspendSignal`) and resumed by the bus-level Tick Engine.**
 
-The L0 motivation (LucioIT W1 §6.4): physical sleep holds a thread for the wait duration; with 1000 sleeping agents, the system is paralysed. Chronos Hydration self-destructs the sleeping process and re-hydrates it on the bus wake-pulse.
-
-Enforced by Gate Rule 48 (`no_thread_sleep_in_business_code`) — source scan for `Thread.sleep` and `TimeUnit.<x>.sleep`. Test code (`src/test/java`), gate scripts, and Awaitility usage are excluded. Architecture reference: ADR-0069 / LucioIT W1 §6.4.
+Enforced by [`rule-38.md`](docs/governance/rules/rule-38.md).
 
 ---
-
 #### Rule 39 — Five-Plane Manifest
 
 **Every `<module>/module-metadata.yaml` MUST declare `deployment_plane:` whose value is one of `edge | compute_control | bus_state | sandbox | evolution | none`. The plane assignment MUST match the L0 §7.1 topology — Edge Access (Agent Client SDK), Compute & Control (Runtime + Execution Engine), Bus & State Hub (Bus + Middleware persistence), Sandbox Execution (untrusted code), Evolution (Python ML). BoMs and build-time-only modules use `none`.**
 
-The L0 motivation (LucioIT W1 §7.1): workloads with different characteristics (latency-sensitive HTTP vs. throughput-sensitive ML training vs. untrusted sandbox code) MUST NOT share infrastructure. Interference between them produces the avalanche failure mode that costs production AI platforms most uptime.
-
-Enforced by Gate Rule 49 (`deployment_plane_in_module_metadata`) — schema check on every module-metadata.yaml. Architecture reference: ADR-0069 / LucioIT W1 §7.1.
+Enforced by [`rule-39.md`](docs/governance/rules/rule-39.md).
 
 ---
-
 #### Rule 40 — Storage-Engine Tenant Isolation
 
 **Every Flyway migration that creates a table with a `tenant_id` column MUST enable Postgres Row-Level Security in the same migration (`ALTER TABLE <name> ENABLE ROW LEVEL SECURITY` plus per-tenant `CREATE POLICY`). Migrations predating this rule are listed in `gate/rls-baseline-grandfathered.txt` and MUST be retrofitted in W2.**
 
-The L0 motivation (LucioIT W1 §7.2): application-layer tenant isolation is "insecure" — a single bypass (path traversal, ORM injection, broken filter) breaks every tenant. RLS at the storage engine ensures even a fully-compromised application tier cannot read across tenants.
-
-Enforced by Gate Rule 50 (`rls_for_new_tenant_tables`) — scans every `agent-*/src/main/resources/db/migration/V*.sql` for tables with `tenant_id` and requires either matching `ENABLE ROW LEVEL SECURITY` in the same file OR an entry in the grandfather list. Architecture reference: ADR-0069 / LucioIT W1 §7.2. Grandfather retrofit deferred to W2 per `CLAUDE-deferred.md` 40.b.
+Enforced by [`rule-40.md`](docs/governance/rules/rule-40.md).
 
 ---
-
 #### Rule 41 — Skill Capacity Matrix
 
 **`docs/governance/skill-capacity.yaml` MUST exist and declare, per skill, both `capacity_per_tenant` and `global_capacity` fields plus a `queue_strategy` (`suspend` or `fail`). The runtime `ResilienceContract.resolve(tenant, skill)` MUST consult this matrix; over-cap callers are SUSPENDED, not rejected (Chronos Hydration interlock with Rule 38).**
 
-The L0 motivation (LucioIT W1 §7.3): a single high-frequency skill (slow external API) can exhaust the cluster's connection pool and CPU. The 2D defence net (Tenant Quota × Global Skill Capacity) lets the scheduler suspend only the Agent processes blocked on that specific skill, leaving lightweight reasoning tasks free to proceed on freed OS threads.
-
-Enforced by Gate Rule 51 (`skill_capacity_yaml_present_and_wellformed`) — schema check. Architecture reference: ADR-0069 / LucioIT W1 §7.3. Runtime enforcement (ResilienceContract.resolve consulting the matrix) deferred to W1.x Phase 6 per `CLAUDE-deferred.md` 41.b.
+Enforced by [`rule-41.md`](docs/governance/rules/rule-41.md).
 
 ---
-
 #### Rule 42 — Sandbox Permission Subsumption
 
 **`docs/governance/sandbox-policies.yaml` MUST exist with a `default_policy:` block (six required keys: `outbound_network`, `filesystem_read`, `filesystem_write`, `cpu_cap_millicores`, `memory_cap_megabytes`, `wall_clock_cap_seconds`). Per-skill rows MUST NOT widen the default policy beyond what the physical sandbox can enforce. The runtime `SandboxExecutor` MUST refuse a logical permission grant whose scope exceeds the declared physical limits.**
 
-The L0 motivation (LucioIT W1 §7.4): a logical authorization issued by the bus to a downstream node MUST NOT exceed what the physical sandbox enforces. Otherwise the bus's authorization is a paper grant — the sandbox refuses at runtime, but the failure mode is unpredictable. Subsumption makes the logical-vs-physical mapping 1:1.
-
-Enforced by Gate Rule 52 (`sandbox_policies_yaml_present_and_wellformed`) — schema check. Architecture reference: ADR-0069 / LucioIT W1 §7.4. Runtime enforcement (SandboxExecutor refusing over-wide grants) deferred to W2 per `CLAUDE-deferred.md` 42.b.
+Enforced by [`rule-42.md`](docs/governance/rules/rule-42.md).
 
 ---
 
 ### W2.x Engine Contract Structural Wave (P-M)
-
-Six new rules absorb the 2026-05-15 L0 proposal "Runtime-Engine Contract for Heterogeneous Agent Execution" — see ADR-0071 (umbrella), ADR-0072 (envelope + matching), ADR-0073 (hooks + middleware), ADR-0074 (S2C callback), ADR-0075 (evolution scope), ADR-0077 (schema-first cross-cutting). All five substantive ADRs follow the wave's **structural invariant**: every new domain contract ships as `yaml schema → Java type that validates REQUIRED FIELDS on construction → runtime self-validates membership and other invariants at registry boot / dispatch`. Rule 48 makes this invariant gate-enforced for future contracts. Strict construction-time membership validation for `EngineEnvelope` is deferred to Rule 48.c (re-introduction trigger: first envelope built outside the Spring-boot test harness).
-
----
-
 #### Rule 43 — Engine Envelope Single Authority
 
 **Every Run dispatch MUST go through `EngineRegistry.resolve(envelope)` (or the convenience `resolveByPayload(def)`). Pattern-matching on `ExecutorDefinition` subtypes outside `ascend.springai.runtime.engine.EngineRegistry` is forbidden. The envelope schema `docs/contracts/engine-envelope.v1.yaml` is the single source of truth for engine metadata; the `EngineEnvelope` Java record mirrors the schema and validates required fields (nullability, blanks) on construction. `known_engines` membership is enforced by `EngineRegistry.resolve(...)` and registry boot validation (Phase 5 R2 pilot — enforcer E84); constructor-level membership validation is deferred to Rule 48.c.**
 
-Authority: ADR-0072 / P-M. Enforced by Gate Rule 55 (`engine_envelope_yaml_present_and_wellformed`, enforcer E76) and ArchUnit E74 (`EnginePayloadDispatchOnlyViaRegistryTest` — every concrete Orchestrator implementation depends on EngineRegistry).
+Enforced by [`rule-43.md`](docs/governance/rules/rule-43.md).
 
 ---
-
 #### Rule 44 — Strict Engine Matching
 
 **A Run whose envelope declares `engine_type=X` MUST be executed only by the `ExecutorAdapter` registered under `X` in `EngineRegistry`. Mismatch raises `EngineMatchingException` and transitions the Run to FAILED with reason `engine_mismatch`. No fallback policy. No silent reinterpretation of the payload as another engine's configuration.**
 
-Authority: ADR-0072 / P-M. Enforced by Gate Rule 56 (`engine_registry_covers_all_known_engines` — bidirectional yaml↔ENGINE_TYPE consistency, enforcer E77) and integration test E75 (`EngineMatchingStrictnessIT`).
+Enforced by [`rule-44.md`](docs/governance/rules/rule-44.md).
 
 ---
-
 #### Rule 45 — Runtime-Owned Middleware via Engine Hooks
 
 **Cross-cutting policies (model gateway, tool authz, memory governance, tenant policy, quota, observability, sandbox routing, checkpoint, failure handling) MUST be expressed as `RuntimeMiddleware` listening on the canonical `HookPoint` events declared in `docs/contracts/engine-hooks.v1.yaml` (9 hooks: before/after LLM/tool/memory + before_suspension + before_resume + on_error). Engines MUST NOT depend on concrete middleware implementations. Hook ordering is declared (registration order); default failure propagation is fail-fast; `on_error` is best-effort.**
 
-Authority: ADR-0073 / P-M. Enforced by Gate Rule 57 (`engine_hooks_yaml_present_and_wellformed` — bidirectional yaml↔HookPoint-enum consistency, enforcer E78), ArchUnit E79 (`EveryEngineDeclaresHookSurfaceTest`), integration test E80 (`RuntimeMiddlewareInterceptsHooksIT`). W2.x Phase 2 ships SPI surface only; consumer hooks (TokenCounterHook, PiiRedactionHook, etc.) land in W2 Telemetry Vertical.
-
-**W2.x scope clarification (post-release review fix plan D / P0-3):** At W2.x the dispatcher fires hooks and middlewares may return `HookOutcome.Fail` / `HookOutcome.ShortCircuit`, but **the orchestrator does NOT consume outcomes** — outcomes are logged. The fail-fast property applies inside the dispatcher chain (a non-`Proceed` outcome stops subsequent middlewares from firing for the same `HookPoint`), NOT to the Run lifecycle. Run-state consumption of outcomes (Fail → `Run.FAILED`, ShortCircuit → engine bypass) is deferred to W2 Telemetry Vertical per `CLAUDE-deferred.md` 45.b — ADR-0073 §Consequences line "Outcomes are LOGGED, NOT acted upon at Phase 2" is the controlling design. `on_error` remains best-effort across the chain.
+Enforced by [`rule-45.md`](docs/governance/rules/rule-45.md).
 
 ---
-
 #### Rule 46 — S2C Callback Envelope + Lifecycle Bound
 
 **Server-to-Client capability invocation MUST go through `S2cCallbackEnvelope` + `S2cCallbackTransport` SPI (both under `ascend.springai.runtime.s2c.spi` after the v2.0.0-rc3 package move per cross-constraint audit α-4 / β-2). The waiting Run MUST suspend via `SuspendSignal.forClientCallback(...)` — a checked-suspension variant introduced in v2.0.0-rc3 per cross-constraint audit α-2 / β-5 to preserve ADR-0019's compile-time-visible-suspension doctrine; the prior parallel unchecked `S2cCallbackSignal` was deleted. The orchestrator MUST mark the parent Run SUSPENDED with `SuspendReason.AwaitClientCallback`. Callbacks consume the `s2c.client.callback` skill capacity declared in `docs/governance/skill-capacity.yaml`. Client responses MUST be validated against `docs/contracts/s2c-callback.v1.yaml` (callback_id match, outcome enum membership) BEFORE resume; invalid response transitions Run to FAILED with reason `s2c_response_invalid`. Non-blocking lifecycle for the W2.x synchronous bridge is deferred to Rule 46.c (W2 async orchestrator).**
 
-The Phase 3a cross-rule co-design audit matrix in [`docs/reviews/2026-05-16-engine-contract-structural-response.en.md`](docs/reviews/2026-05-16-engine-contract-structural-response.en.md) §5 is the canonical reference for how this rule interlocks with Rules 20/35/38/41/42 — six mandatory request fields (callback_id, server_run_id, capability_ref, request_payload, trace_id, idempotency_key) propagate at every layer to prevent the Class-3 envelope-propagation gap (fourteenth-cycle SpawnEnvelope 11-dim precedent).
-
-Authority: ADR-0074 / P-M. Enforced by Gate Rule 58 (`s2c_callback_yaml_present_and_wellformed`, enforcer E81), integration test E82 (`S2cCallbackRoundTripIT`), ArchUnit E83 (`S2cCallbackRespectsRule38Test` — no Thread.sleep in s2c..). Runtime ResilienceContract integration for `s2c.client.callback` skill capacity deferred to W2 per ADR-0074 §Consequences.
+Enforced by [`rule-46.md`](docs/governance/rules/rule-46.md).
 
 ---
-
 #### Rule 47 — Evolution Scope Default Boundary
 
 **Every emitted `RunEvent` (when the variant ships in W2 per ADR-0022) MUST declare its `EvolutionExport` value per `docs/governance/evolution-scope.v1.yaml` (`IN_SCOPE | OUT_OF_SCOPE | OPT_IN`). Out-of-scope events MUST NOT be persisted by the evolution plane. Opt-in export requires the future `telemetry-export.v1.yaml` contract (W3 placeholder declared in `evolution-scope.v1.yaml#opt_in_export.contract_required`).**
 
-Authority: ADR-0075 / P-M. Enforced by Gate Rule 59 (`evolution_scope_yaml_present_and_wellformed` — 3-discriminator-block + telemetry-export-ref schema check, enforcer E86) and ArchUnit E87 (`EveryRunEventDeclaresEvolutionExportTest`, armed-empty until W2 RunEvent variants ship).
+Enforced by [`rule-47.md`](docs/governance/rules/rule-47.md).
 
 ---
-
 #### Rule 48 — Schema-First Domain Contracts
 
 **Every NEW domain enum or fixed-vocabulary taxonomy introduced in `ARCHITECTURE.md` (root) or `agent-*/ARCHITECTURE.md` (per-module) on or after 2026-05-16 MUST cite a yaml schema under `docs/contracts/` or `docs/governance/` within ±5 lines of the prose definition. Prose-defined enums of the shape `<TYPE> | <TYPE>` (uppercase identifiers separated by pipes) outside fenced code blocks (` ``` `) and yaml blocks are forbidden unless either (a) the section also references such a yaml schema or (b) the file is listed with a matching prefix in `gate/schema-first-grandfathered.txt`. The grandfather list is closed to new additions; every entry MUST declare a `sunset_date` (format `YYYY-MM-DD`) in the second pipe-delimited field. Gate Rule 60 fails closed once today's date exceeds any entry's sunset_date without retrofit; advancing a sunset_date forward requires an ADR cited inline in the entry description. Per-entry retrofit triggers and the default sunset schedule are documented in `CLAUDE-deferred.md` 48.b.**
 
-This rule codifies the W2.x doctrine "yaml schema → Java type → runtime self-validate" into a permanent engineering rule. Defect family F1 (text-drift between prose taxonomies and Java enums / yaml schemas) accounts for 79 of 158 historical closed defects (~50%). Every prior wave closed individual F1 instances by hand; none codified the structural prohibition that prevents recurrence. Rule 33 (Layered 4+1 Discipline) and Rule 34 (Architecture-Graph Truth) gave the corpus its STRUCTURAL substrate (level × view × graph indices); Rule 48 is the LEAF-LEVEL companion — structure says WHERE a constraint lives, Rule 48 says WHAT SHAPE its taxonomy takes.
+Enforced by [`rule-48.md`](docs/governance/rules/rule-48.md).
 
-Authority: ADR-0077 / P-M cross-cutting invariant. Enforced by Gate Rule 60 (`schema_first_domain_contracts`, enforcer E85) with self-tests positive + negative. Companion W2.x contracts ADR-0072 (engine envelope, Rules 55/56) and ADR-0073 (engine hooks, Rule 57) are the first two domain enums to follow the schema-first shape.
+---
+
+### Token-optimization wave (2026-05-17)
+#### Rule 67 — CLAUDE.md Kernel Size Bounded
+
+**Each `#### Rule NN` section in `CLAUDE.md` MUST fit under the `kernel_cap:` declared in the matching `docs/governance/rules/rule-NN.md` card. Daily principles (Rules 1, 2, 3, 4, 9, 10) cap at 12 lines below the heading; architectural and ironclad rules (Rules 5, 6, 20–48 + 67–71) cap at 8.**
+
+Enforced by [`rule-67.md`](docs/governance/rules/rule-67.md).
+
+---
+#### Rule 68 — CLAUDE.md Kernel Matches Card
+
+**For every `docs/governance/rules/rule-NN.md` card, the `kernel:` scalar in YAML front-matter MUST byte-match (after whitespace normalisation) the body paragraph under `#### Rule NN` in `CLAUDE.md`. Drift in either direction fails the gate.**
+
+Enforced by [`rule-68.md`](docs/governance/rules/rule-68.md).
+
+---
+#### Rule 69 — Every Active Rule Has a Card
+
+**Every `#### Rule NN` heading in `CLAUDE.md` MUST have a sibling `docs/governance/rules/rule-NN.md` (zero-padded). Every card MUST either appear as a heading in `CLAUDE.md` or as a `Rule NN` reference in `docs/CLAUDE-deferred.md`. Orphan cards that satisfy neither fail the gate.**
+
+Enforced by [`rule-69.md`](docs/governance/rules/rule-69.md).
+
+---
+#### Rule 70 — Always-Loaded Byte Budget
+
+**Every file listed in `gate/always-loaded-budget.txt` MUST be at or below its declared byte ceiling. `gate/measure_always_loaded_tokens.sh` walks the budget file and exits non-zero on any overage. A ceiling of `0` means the file is kept on disk but excluded from the always-loaded budget (used after a file has been demoted to on-demand).**
+
+Enforced by [`rule-70.md`](docs/governance/rules/rule-70.md).
+
+---
+#### Rule 71 — Deferred Doc Not in Always-Loaded Set
+
+**`docs/CLAUDE-deferred.md` MUST NOT be auto-injected into the session context: no `@docs/CLAUDE-deferred.md` include directive in `CLAUDE.md`, and no `ALWAYS` / `ALWAYS-LOAD` marker on its row in `docs/governance/SESSION-START-CONTEXT.md`. Plain prose pointers ("see `docs/CLAUDE-deferred.md`") are fine — only the auto-load mechanisms are forbidden.**
+
+Enforced by [`rule-71.md`](docs/governance/rules/rule-71.md).
 
 ---
 
 ## Deferred Rules
 
-See [`docs/CLAUDE-deferred.md`](docs/CLAUDE-deferred.md). Currently deferred: Rules 7, 8, 11, 13, 14, 15, 16, 17, 18, 19, 22, 23, 24, 26, 27 — plus sub-clauses 29.c, 30.b, 30.d, 31.b, 32.b, 32.c, 32.d, 35.b, 37.c, 40.b, 42.b, 44.b, 44.c, 45.b, 46.b, 46.c, 48.b, 48.c, 28k.b. Each has an explicit re-introduction trigger. Rule 36.b activated in W1.x Phase 8 (`RunCursorFlowIT.createReturns202WithCursorWithin200ms`, enforcer E72, gate Rule 53 per ADR-0070); Rule 41.b activated in W1.x Phase 9 (`SkillCapacityResolutionIT.suspendsSecondCallerWhenCapacityIsOne`, enforcer E73, gate Rule 54 per ADR-0070). Rule 28k.b added in v2.0.0-rc2 per second-pass review F-α category audit (schema↔Java-shape parity ArchUnit deferred to W3). Rule 46.c added in v2.0.0-rc3 per cross-constraint audit α-1 / β-3 (S2C non-blocking lifecycle deferred to W2 async orchestrator).
+On-demand: [`docs/CLAUDE-deferred.md`](docs/CLAUDE-deferred.md). Currently deferred: Rules 7, 8, 11, 13, 14, 15, 16, 17, 18, 19, 22, 23, 24, 26, 27 + sub-clauses.

@@ -1366,3 +1366,23 @@ capabilities:
       - agent-runtime/src/test/java/ascend/springai/runtime/architecture/SpiPurityGeneralizedArchTest.java
       - gate/check_architecture_sync.sh
     allowed_claim: "Section 4 #63 / Rule 32 shipped at L1.x — agent-runtime (kind:domain) declares 2 SPI packages (orchestration.spi, memory.spi). agent-platform + agent-runtime publish docs/dfx/<module>.yaml covering 5 DFX dimensions (releasability, resilience, availability, vulnerability, observability). Enforced by Gate Rule 35 dfx_yaml_present_and_wellformed, Gate Rule 36 domain_module_has_spi_package, and ArchUnit E48 SpiPurityGeneralizedArchTest. TCK module scaffolding + conformance content deferred per CLAUDE-deferred.md 32.b/32.c (W2 trigger)."
+
+  claude_md_token_budget:
+    status: test_verified
+    shipped: true
+    l0_decision: D:/.claude/plans/tokens-token-buzzing-sprout.md
+    l2_documents:
+      - D:/.claude/plans/tokens-token-buzzing-sprout.md
+      - docs/governance/rules/rule-67.md
+      - docs/governance/rules/rule-68.md
+      - docs/governance/rules/rule-69.md
+      - docs/governance/rules/rule-70.md
+      - docs/governance/rules/rule-71.md
+    implementation:
+      - gate/always-loaded-budget.txt
+      - gate/measure_always_loaded_tokens.sh
+      - gate/check_architecture_sync.sh
+    tests:
+      - gate/check_architecture_sync.sh
+      - gate/test_architecture_sync_gate.sh
+    allowed_claim: "2026-05-17 CLAUDE.md token-optimization wave PR1 shipped — Rules 67-71 + enforcers E97-E101 land the kernel/card split + budget gate + deferred demote. Per-rule cards under docs/governance/rules/rule-NN.md carry kernel: scalars that byte-match the CLAUDE.md body (Rule 68); kernel-size bounded by per-card kernel_cap of 12 (daily principles) or 6 (architectural + ironclad) (Rule 67); every active rule has a card (Rule 69); always-loaded budget gate (Rule 70) measures bytes/lines/tokens of every file in gate/always-loaded-budget.txt and fails on overage; CLAUDE-deferred.md demoted from always-loaded set (Rule 71). Always-loaded total dropped from ~99K to ~10.6K tokens per session."

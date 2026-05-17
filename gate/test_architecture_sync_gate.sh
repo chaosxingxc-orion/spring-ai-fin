@@ -2527,10 +2527,329 @@ else
   fail "rule66_spi_package_exhaustiveness_neg" "expected FAIL — undeclared SPI dir was not detected"
 fi
 
+# ===========================================================================
+# 2026-05-17 CLAUDE.md token-optimization wave PR1 -- self-tests
+# Authority: D:/.claude/plans/tokens-token-buzzing-sprout.md + docs/governance/rules/rule-{67..71}.md
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# RULE 67 -- claude_md_kernel_size_bounded
+# Positive: rule body within kernel_cap → pass
+# Negative: rule body exceeds kernel_cap → fail
+# ---------------------------------------------------------------------------
+
+## Positive: 5-line rule body under kernel_cap=8 passes
+_r67_pos="$scratch/r67_pos"
+mkdir -p "$_r67_pos/docs/governance/rules"
+cat > "$_r67_pos/CLAUDE.md" <<'EOF'
+#### Rule 35 — Three-Track Channel Isolation
+
+**Cross-service internal communication MUST be sliced into three physically isolated channels.**
+
+Enforced by Gate Rule 45. Card: docs/governance/rules/rule-35.md.
+
+---
+EOF
+cat > "$_r67_pos/docs/governance/rules/rule-35.md" <<'EOF'
+---
+rule_id: 35
+kernel_cap: 8
+---
+EOF
+_r67_pos_violations=""
+_r67_pos_rule_lines=$(grep -nE '^#### Rule [0-9]+' "$_r67_pos/CLAUDE.md" | sort -t: -k1,1n)
+while IFS= read -r _entry; do
+  [[ -z "$_entry" ]] && continue
+  _ln="${_entry%%:*}"
+  _num=$(printf '%s\n' "${_entry#*:}" | sed -nE 's/^#### Rule ([0-9]+).*/\1/p')
+  _card_padded=$(printf 'rule-%02d.md' "$_num")
+  _card="$_r67_pos/docs/governance/rules/$_card_padded"
+  [[ -f "$_card" ]] || continue
+  _cap=$(awk '/^kernel_cap:[[:space:]]*[0-9]+/{print $2; exit}' "$_card")
+  [[ -z "$_cap" ]] && continue
+  _count=$(awk -v start="$_ln" 'NR < start { next } NR == start { count = 1; next } /^---$/ { exit } { count++ } END { print count + 0 }' "$_r67_pos/CLAUDE.md")
+  if [[ "$_count" -gt "$_cap" ]]; then _r67_pos_violations+="Rule $_num: $_count > $_cap; "; fi
+done <<< "$_r67_pos_rule_lines"
+if [[ -z "$_r67_pos_violations" ]]; then
+  ok "rule67_claude_md_kernel_size_bounded_pos" "5-line rule body fits within kernel_cap=8 (PASS)"
+else
+  fail "rule67_claude_md_kernel_size_bounded_pos" "expected PASS but got violations: $_r67_pos_violations"
+fi
+
+## Negative: 12-line rule body exceeds kernel_cap=8 → fail
+_r67_neg="$scratch/r67_neg"
+mkdir -p "$_r67_neg/docs/governance/rules"
+cat > "$_r67_neg/CLAUDE.md" <<'EOF'
+#### Rule 35 — Three-Track Channel Isolation
+
+**Cross-service internal communication MUST be sliced into three physically isolated channels.**
+
+Extra prose line 1.
+Extra prose line 2.
+Extra prose line 3.
+Extra prose line 4.
+Extra prose line 5.
+
+Enforced by Gate Rule 45. Card: docs/governance/rules/rule-35.md.
+
+---
+EOF
+cat > "$_r67_neg/docs/governance/rules/rule-35.md" <<'EOF'
+---
+rule_id: 35
+kernel_cap: 8
+---
+EOF
+_r67_neg_violations=""
+_r67_neg_rule_lines=$(grep -nE '^#### Rule [0-9]+' "$_r67_neg/CLAUDE.md" | sort -t: -k1,1n)
+while IFS= read -r _entry; do
+  [[ -z "$_entry" ]] && continue
+  _ln="${_entry%%:*}"
+  _num=$(printf '%s\n' "${_entry#*:}" | sed -nE 's/^#### Rule ([0-9]+).*/\1/p')
+  _card_padded=$(printf 'rule-%02d.md' "$_num")
+  _card="$_r67_neg/docs/governance/rules/$_card_padded"
+  [[ -f "$_card" ]] || continue
+  _cap=$(awk '/^kernel_cap:[[:space:]]*[0-9]+/{print $2; exit}' "$_card")
+  [[ -z "$_cap" ]] && continue
+  _count=$(awk -v start="$_ln" 'NR < start { next } NR == start { count = 1; next } /^---$/ { exit } { count++ } END { print count + 0 }' "$_r67_neg/CLAUDE.md")
+  if [[ "$_count" -gt "$_cap" ]]; then _r67_neg_violations+="Rule $_num: $_count > $_cap; "; fi
+done <<< "$_r67_neg_rule_lines"
+if [[ -n "$_r67_neg_violations" ]]; then
+  ok "rule67_claude_md_kernel_size_bounded_neg" "12-line rule body correctly exceeds kernel_cap=8 (FAIL caught)"
+else
+  fail "rule67_claude_md_kernel_size_bounded_neg" "expected FAIL but oversized rule passed"
+fi
+
+# ---------------------------------------------------------------------------
+# RULE 68 -- claude_md_kernel_matches_card
+# Positive: card kernel == CLAUDE.md body → pass
+# Negative: drift between kernel and body → fail
+# ---------------------------------------------------------------------------
+
+## Positive: kernel matches body
+_r68_pos="$scratch/r68_pos"
+mkdir -p "$_r68_pos/docs/governance/rules"
+cat > "$_r68_pos/CLAUDE.md" <<'EOF'
+#### Rule 35 — Three-Track Channel Isolation
+
+**Cross-service internal communication MUST be sliced into three physically isolated channels.**
+
+Enforced by Gate Rule 45. Card: docs/governance/rules/rule-35.md.
+
+---
+EOF
+cat > "$_r68_pos/docs/governance/rules/rule-35.md" <<'EOF'
+---
+rule_id: 35
+kernel_cap: 8
+kernel: |
+  **Cross-service internal communication MUST be sliced into three physically isolated channels.**
+---
+EOF
+_r68_pos_kernel=$(awk '
+  /^kernel:[[:space:]]*\|/ { flag=1; next }
+  /^kernel:[[:space:]]/ { line=$0; sub(/^kernel:[[:space:]]*/, "", line); print line; exit }
+  flag && /^[a-zA-Z_][a-zA-Z_0-9]*:/ { flag=0; exit }
+  flag && /^---$/ { flag=0; exit }
+  flag { sub(/^  /, ""); print }
+' "$_r68_pos/docs/governance/rules/rule-35.md" | tr -s ' \t' ' ' | tr -d '\r' | tr '\n' ' ' | tr -s ' ' | sed -E 's/^ //; s/ $//')
+_r68_pos_body=$(awk -v n=35 '
+  $0 ~ "^#### Rule " n "[[:space:]]" || $0 ~ "^#### Rule " n "$" { flag=1; next }
+  flag && /^---$/ { exit }
+  flag && /^#### / { exit }
+  flag && /^Enforced by/ { exit }
+  flag && NF { print }
+' "$_r68_pos/CLAUDE.md" | tr -s ' \t' ' ' | tr -d '\r' | tr '\n' ' ' | tr -s ' ' | sed -E 's/^ //; s/ $//')
+if [[ "$_r68_pos_kernel" == "$_r68_pos_body" ]]; then
+  ok "rule68_claude_md_kernel_matches_card_pos" "card kernel byte-matches CLAUDE.md body (PASS)"
+else
+  fail "rule68_claude_md_kernel_matches_card_pos" "expected PASS but kernel='$_r68_pos_kernel' body='$_r68_pos_body'"
+fi
+
+## Negative: kernel drifts from body
+_r68_neg="$scratch/r68_neg"
+mkdir -p "$_r68_neg/docs/governance/rules"
+cat > "$_r68_neg/CLAUDE.md" <<'EOF'
+#### Rule 35 — Three-Track Channel Isolation
+
+**Cross-service internal communication MUST use ONE merged channel.**
+
+Enforced by Gate Rule 45. Card: docs/governance/rules/rule-35.md.
+
+---
+EOF
+cat > "$_r68_neg/docs/governance/rules/rule-35.md" <<'EOF'
+---
+rule_id: 35
+kernel_cap: 8
+kernel: |
+  **Cross-service internal communication MUST be sliced into three physically isolated channels.**
+---
+EOF
+_r68_neg_kernel=$(awk '
+  /^kernel:[[:space:]]*\|/ { flag=1; next }
+  flag && /^[a-zA-Z_][a-zA-Z_0-9]*:/ { flag=0; exit }
+  flag && /^---$/ { flag=0; exit }
+  flag { sub(/^  /, ""); print }
+' "$_r68_neg/docs/governance/rules/rule-35.md" | tr -s ' \t' ' ' | tr -d '\r' | tr '\n' ' ' | tr -s ' ' | sed -E 's/^ //; s/ $//')
+_r68_neg_body=$(awk -v n=35 '
+  $0 ~ "^#### Rule " n "[[:space:]]" || $0 ~ "^#### Rule " n "$" { flag=1; next }
+  flag && /^---$/ { exit }
+  flag && /^#### / { exit }
+  flag && /^Enforced by/ { exit }
+  flag && NF { print }
+' "$_r68_neg/CLAUDE.md" | tr -s ' \t' ' ' | tr -d '\r' | tr '\n' ' ' | tr -s ' ' | sed -E 's/^ //; s/ $//')
+if [[ "$_r68_neg_kernel" != "$_r68_neg_body" ]]; then
+  ok "rule68_claude_md_kernel_matches_card_neg" "drift between card kernel and CLAUDE.md body correctly triggers FAIL"
+else
+  fail "rule68_claude_md_kernel_matches_card_neg" "expected drift detection but kernel and body agreed"
+fi
+
+# ---------------------------------------------------------------------------
+# RULE 69 -- every_active_rule_has_card
+# Positive: every active rule has a card → pass
+# Negative: rule heading without matching card → fail
+# ---------------------------------------------------------------------------
+
+## Positive: rule in CLAUDE.md has matching card
+_r69_pos="$scratch/r69_pos"
+mkdir -p "$_r69_pos/docs/governance/rules"
+cat > "$_r69_pos/CLAUDE.md" <<'EOF'
+#### Rule 35 — Three-Track Channel Isolation
+
+Body here.
+
+---
+EOF
+touch "$_r69_pos/docs/governance/rules/rule-35.md"
+_r69_pos_active=$(grep -oE '^#### Rule [0-9]+' "$_r69_pos/CLAUDE.md" | grep -oE '[0-9]+' | sort -un)
+_r69_pos_cards=$(find "$_r69_pos/docs/governance/rules" -maxdepth 1 -name 'rule-*.md' -type f 2>/dev/null \
+                 | sed -E 's|.*/rule-0*([0-9]+)\.md|\1|' | sort -un)
+_r69_pos_missing=""
+while IFS= read -r _n; do
+  [[ -z "$_n" ]] && continue
+  if ! echo "$_r69_pos_cards" | grep -qxF "$_n"; then _r69_pos_missing+="$_n "; fi
+done <<< "$_r69_pos_active"
+if [[ -z "$_r69_pos_missing" ]]; then
+  ok "rule69_every_active_rule_has_card_pos" "all active rules have cards (PASS)"
+else
+  fail "rule69_every_active_rule_has_card_pos" "expected PASS but missing: $_r69_pos_missing"
+fi
+
+## Negative: rule heading without matching card → fail
+_r69_neg="$scratch/r69_neg"
+mkdir -p "$_r69_neg/docs/governance/rules"
+cat > "$_r69_neg/CLAUDE.md" <<'EOF'
+#### Rule 35 — Three-Track Channel Isolation
+
+Body here.
+
+---
+EOF
+# Intentionally no card file created
+_r69_neg_active=$(grep -oE '^#### Rule [0-9]+' "$_r69_neg/CLAUDE.md" | grep -oE '[0-9]+' | sort -un)
+_r69_neg_cards=$(find "$_r69_neg/docs/governance/rules" -maxdepth 1 -name 'rule-*.md' -type f 2>/dev/null \
+                 | sed -E 's|.*/rule-0*([0-9]+)\.md|\1|' | sort -un)
+_r69_neg_missing=""
+while IFS= read -r _n; do
+  [[ -z "$_n" ]] && continue
+  if ! echo "$_r69_neg_cards" | grep -qxF "$_n"; then _r69_neg_missing+="$_n "; fi
+done <<< "$_r69_neg_active"
+if [[ -n "$_r69_neg_missing" ]]; then
+  ok "rule69_every_active_rule_has_card_neg" "missing card correctly triggers FAIL: $_r69_neg_missing"
+else
+  fail "rule69_every_active_rule_has_card_neg" "expected missing-card detection but none reported"
+fi
+
+# ---------------------------------------------------------------------------
+# RULE 70 -- always_loaded_budget_enforced
+# Positive: file size <= ceiling → pass
+# Negative: file size > ceiling → fail
+# ---------------------------------------------------------------------------
+
+## Positive: file under ceiling
+_r70_pos="$scratch/r70_pos"
+mkdir -p "$_r70_pos"
+printf '%s\n' "small file content" > "$_r70_pos/small.md"
+_r70_pos_bytes=$(wc -c < "$_r70_pos/small.md" | tr -d ' \r\n\t')
+_r70_pos_ceil=100
+if [[ "$_r70_pos_bytes" -le "$_r70_pos_ceil" ]]; then
+  ok "rule70_always_loaded_budget_pos" "file bytes=$_r70_pos_bytes <= ceiling=$_r70_pos_ceil (PASS)"
+else
+  fail "rule70_always_loaded_budget_pos" "expected PASS but bytes=$_r70_pos_bytes > ceiling=$_r70_pos_ceil"
+fi
+
+## Negative: file over ceiling
+_r70_neg="$scratch/r70_neg"
+mkdir -p "$_r70_neg"
+# Generate ~200 bytes of content (well over 50-byte ceiling)
+printf 'X%.0s' {1..200} > "$_r70_neg/big.md"
+_r70_neg_bytes=$(wc -c < "$_r70_neg/big.md" | tr -d ' \r\n\t')
+_r70_neg_ceil=50
+if [[ "$_r70_neg_bytes" -gt "$_r70_neg_ceil" ]]; then
+  ok "rule70_always_loaded_budget_neg" "file bytes=$_r70_neg_bytes > ceiling=$_r70_neg_ceil correctly triggers FAIL"
+else
+  fail "rule70_always_loaded_budget_neg" "expected overage detection but bytes=$_r70_neg_bytes <= ceiling=$_r70_neg_ceil"
+fi
+
+# ---------------------------------------------------------------------------
+# RULE 71 -- deferred_doc_not_in_always_loaded
+# Positive: no @-include + no ALWAYS marker → pass
+# Negative: @-include OR ALWAYS marker present → fail
+# ---------------------------------------------------------------------------
+
+## Positive: no @-include + no ALWAYS marker
+_r71_pos="$scratch/r71_pos"
+mkdir -p "$_r71_pos/docs/governance"
+cat > "$_r71_pos/CLAUDE.md" <<'EOF'
+# CLAUDE.md
+
+## Deferred Rules
+
+See docs/CLAUDE-deferred.md.
+EOF
+cat > "$_r71_pos/docs/governance/SESSION-START-CONTEXT.md" <<'EOF'
+| 7 | docs/CLAUDE-deferred.md | (ON-DEMAND) load only when re-introducing a deferred rule |
+EOF
+_r71_pos_fail=0
+if grep -qE '^[[:space:]]*@docs/CLAUDE-deferred\.md' "$_r71_pos/CLAUDE.md" 2>/dev/null; then _r71_pos_fail=1; fi
+if [[ -f "$_r71_pos/docs/governance/SESSION-START-CONTEXT.md" ]]; then
+  _bad=$(grep -E 'CLAUDE-deferred\.md' "$_r71_pos/docs/governance/SESSION-START-CONTEXT.md" 2>/dev/null | grep -E '(\bALWAYS\b|ALWAYS-LOAD)' || true)
+  if [[ -n "$_bad" ]]; then _r71_pos_fail=1; fi
+fi
+if [[ $_r71_pos_fail -eq 0 ]]; then
+  ok "rule71_deferred_doc_not_in_always_loaded_pos" "no @-include + no ALWAYS marker (PASS)"
+else
+  fail "rule71_deferred_doc_not_in_always_loaded_pos" "expected PASS but auto-load detected"
+fi
+
+## Negative: ALWAYS marker present → fail
+_r71_neg="$scratch/r71_neg"
+mkdir -p "$_r71_neg/docs/governance"
+cat > "$_r71_neg/CLAUDE.md" <<'EOF'
+# CLAUDE.md
+
+See docs/CLAUDE-deferred.md.
+EOF
+cat > "$_r71_neg/docs/governance/SESSION-START-CONTEXT.md" <<'EOF'
+| 7 | docs/CLAUDE-deferred.md | ALWAYS-LOAD: deferred rules + re-introduction triggers |
+EOF
+_r71_neg_caught=0
+if grep -qE '^[[:space:]]*@docs/CLAUDE-deferred\.md' "$_r71_neg/CLAUDE.md" 2>/dev/null; then _r71_neg_caught=1; fi
+if [[ -f "$_r71_neg/docs/governance/SESSION-START-CONTEXT.md" ]]; then
+  _bad=$(grep -E 'CLAUDE-deferred\.md' "$_r71_neg/docs/governance/SESSION-START-CONTEXT.md" 2>/dev/null | grep -E '(\bALWAYS\b|ALWAYS-LOAD)' || true)
+  if [[ -n "$_bad" ]]; then _r71_neg_caught=1; fi
+fi
+if [[ $_r71_neg_caught -eq 1 ]]; then
+  ok "rule71_deferred_doc_not_in_always_loaded_neg" "ALWAYS-LOAD marker correctly triggers FAIL"
+else
+  fail "rule71_deferred_doc_not_in_always_loaded_neg" "expected FAIL but auto-load directive not detected"
+fi
+
 # ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
-TOTAL=98
+TOTAL=108
 echo ""
 echo "Tests passed: ${passed}/${TOTAL}"
 
