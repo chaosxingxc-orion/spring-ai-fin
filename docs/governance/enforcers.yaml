@@ -923,3 +923,16 @@
   view: scenarios
   artifact: gate/check_architecture_sync.sh#gate_config_well_formed
   asserts: "gate/config.yaml validates against gate/config.schema.yaml: required top-level keys present (parallelism, logging, scan_cache, regression_detection, rule_filters); leaf types/ranges/enums correct (jobs in [0,256]; batch_strategy in {round_robin, longest_first}; stdout_format in {human, quiet, json}; multiplier_threshold >= 1.0). Implementation lives in gate/lib/load_config.sh#gate_validate_config_against_schema. Schema-first per Rule 48."
+
+# ---------------------------------------------------------------------------
+# 2026-05-18 Linux-first dev environment policy (PR-E7).
+# Authority: docs/governance/rules/rule-74.md + docs/governance/dev-environment.md
+# ---------------------------------------------------------------------------
+
+- id: E104
+  constraint_ref: "CLAUDE.md Rule 74 (linux_first_dev_doc_present); 2026-05-18 PR-E7"
+  kind: gate-script
+  level: L0
+  view: scenarios
+  artifact: gate/check_architecture_sync.sh#linux_first_dev_doc_present
+  asserts: "docs/governance/dev-environment.md exists on disk AND mentions WSL2 (preferred), WSL1 (fallback), and Linux (native). The doc is the canonical onboarding guide; its absence or weakening signals the Linux-first policy has been silently regressed. Codifies the 2026-05-18 lesson: running the gate in WSL surfaced 2 production bugs (Windows-absolute paths + CRLF line endings) that Git Bash for Windows verification had hidden through multiple review cycles. WSL is 6-20x faster than Git Bash AND honest about platform-portability bugs."

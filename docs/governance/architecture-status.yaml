@@ -1405,3 +1405,18 @@ capabilities:
       - gate/check_architecture_sync.sh
       - gate/test_architecture_sync_gate.sh
     allowed_claim: "2026-05-17 gate-script efficiency wave PR-E1 shipped — Rule 73 (gate_config_well_formed, enforcer E103) validates gate/config.yaml against gate/config.schema.yaml on every gate run. Validator (gate_validate_config_against_schema in gate/lib/load_config.sh) checks required top-level keys, leaf types/ranges, enums (batch_strategy, stdout_format), and runtime-resolved values (parallelism.jobs after env override). Configuration knob system enables team-wide tuning of concurrency, logging, scan cache, regression detection, and rule filters without code changes; env vars override config for CI / one-shot use. Schema-first per Rule 48 (CLAUDE.md)."
+
+  linux_first_dev_environment:
+    status: test_verified
+    shipped: true
+    l2_documents:
+      - docs/governance/rules/rule-74.md
+      - docs/governance/dev-environment.md
+    implementation:
+      - docs/governance/dev-environment.md
+      - gate/lib/wsl_speed_probe.sh
+      - gate/check_architecture_sync.sh
+    tests:
+      - gate/check_architecture_sync.sh
+      - gate/test_architecture_sync_gate.sh
+    allowed_claim: "2026-05-18 Linux-first dev environment policy (PR-E7) shipped — Rule 74 + enforcer E104 require docs/governance/dev-environment.md to exist and recommend WSL2/WSL1/Linux. Codifies the empirical finding from running the gate in WSL1 Ubuntu for the first time: (a) wall-clock 6-7x faster than Git Bash, and (b) two latent production bugs (D:/.claude/... paths in YAML; CRLF in generated graph file) surfaced immediately. Git Bash for Windows is now formally a debugging shim, not a verification environment. Benchmark gate/lib/wsl_speed_probe.sh records per-host fork cost; WSL2 (when BIOS VT-x enabled) targets 20x speedup."

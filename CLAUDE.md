@@ -318,6 +318,15 @@ Enforced by [`rule-73.md`](docs/governance/rules/rule-73.md).
 
 ---
 
+### Linux-first dev environment (2026-05-18)
+#### Rule 74 — Linux-First Dev Environment
+
+**All shell-driven operations (gates, builds, tests, generated artefacts, `git push`) MUST be verified on Linux — native, WSL2 (preferred), or WSL1 (fallback) — before merging to `main`. Git Bash for Windows is a debugging shim, not a verification environment. `docs/governance/dev-environment.md` is the canonical setup + verification guide. Measured 2026-05-18: WSL is 6–20× faster than Git Bash, AND surfaces platform-portability bugs that Win-only verification hides.**
+
+Enforced by [`rule-74.md`](docs/governance/rules/rule-74.md).
+
+---
+
 ## Deferred Rules
 
 On-demand: [`docs/CLAUDE-deferred.md`](docs/CLAUDE-deferred.md). Currently deferred: Rules 7, 8, 11, 13, 14, 15, 16, 17, 18, 19, 22, 23, 24, 26, 27 + sub-clauses.

@@ -193,6 +193,13 @@ TAIL_E1
 
 for n in 73; do emit_rule "$n"; done
 
+cat <<'TAIL_E7'
+
+### Linux-first dev environment (2026-05-18)
+TAIL_E7
+
+for n in 74; do emit_rule "$n"; done
+
 cat <<'TAIL2'
 
 ## Deferred Rules

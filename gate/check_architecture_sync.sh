@@ -104,6 +104,8 @@
 #  71.  deferred_doc_not_in_always_loaded               -- docs/CLAUDE-deferred.md not auto-injected (no @-include in CLAUDE.md, no ALWAYS-LOAD mark in SESSION-START-CONTEXT.md once demoted) (Rule 71 / PR1, enforcer E101)
 #  --- 2026-05-17 gate-script efficiency wave PR-E1 (enforcer E103) ---
 #  73.  gate_config_well_formed                          -- gate/config.yaml validates against gate/config.schema.yaml (required keys, types, ranges, enums, no unknown keys) (Rule 73 / PR-E1, enforcer E103)
+#  --- 2026-05-18 Linux-first dev environment policy (enforcer E104) ---
+#  74.  linux_first_dev_doc_present                      -- docs/governance/dev-environment.md exists + recommends WSL2/WSL1/Linux for verification (Rule 74 / PR-E7, enforcer E104)
 
 set -uo pipefail
 export LC_ALL=C
@@ -3287,6 +3289,39 @@ else
     _r73_fail=1
   fi
 fi
+
+# ===========================================================================
+# Linux-first dev environment policy (PR-E7, 2026-05-18)
+# Authority: docs/governance/rules/rule-74.md + docs/governance/dev-environment.md
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# Rule 74 -- linux_first_dev_doc_present (enforcer E104)
+#
+# docs/governance/dev-environment.md MUST exist and MUST mention all three
+# of: WSL2 (preferred), WSL1 (fallback), and Linux (native). The doc is the
+# canonical guide an engineer reads when first joining the project; its
+# absence (or absence of the Linux-first recommendation) signals the policy
+# has been silently weakened.
+# ---------------------------------------------------------------------------
+_r74_fail=0
+_r74_doc='docs/governance/dev-environment.md'
+if [[ ! -f "$_r74_doc" ]]; then
+  fail_rule "linux_first_dev_doc_present" "$_r74_doc missing -- Rule 74 requires the canonical Linux-first setup guide on disk"
+  _r74_fail=1
+else
+  _r74_missing=""
+  for _r74_kw in "WSL2" "WSL1" "Linux"; do
+    if ! grep -qF "$_r74_kw" "$_r74_doc" 2>/dev/null; then
+      _r74_missing+="${_r74_kw} "
+    fi
+  done
+  if [[ -n "$_r74_missing" ]]; then
+    fail_rule "linux_first_dev_doc_present" "$_r74_doc missing required Linux-first keywords: ${_r74_missing}-- Rule 74 requires the doc to recommend WSL2, WSL1, and native Linux"
+    _r74_fail=1
+  fi
+fi
+if [[ $_r74_fail -eq 0 ]]; then pass_rule "linux_first_dev_doc_present"; fi
 
 # ---------------------------------------------------------------------------
 # Summary

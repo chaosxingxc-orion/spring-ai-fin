@@ -40,7 +40,7 @@ fi
 
 passed=0
 failed=0
-TOTAL=117
+TOTAL=119
 
 # PR-E4: parallel-aware ok()/fail().
 # Serial mode (TEST_RESULT_FILE unset): increment globals + print directly.
@@ -3134,6 +3134,52 @@ fi
 }
 
 # ===========================================================================
+# 2026-05-18 Linux-first dev environment policy (PR-E7) -- Rule 74 self-tests
+# Authority: docs/governance/rules/rule-74.md + docs/governance/dev-environment.md
+# ===========================================================================
+test_rule74_linux_first_dev_doc_present() {
+
+## Positive: dev-environment.md mentions WSL2 + WSL1 + Linux -> Rule 74 PASS
+_r74_pos="$scratch/r74_pos"
+mkdir -p "$_r74_pos/docs/governance"
+cat > "$_r74_pos/docs/governance/dev-environment.md" <<'DOCEOF'
+# Linux-First
+WSL2 preferred. WSL1 fallback. Native Linux acceptable.
+DOCEOF
+_r74_pos_missing=""
+for _kw in "WSL2" "WSL1" "Linux"; do
+  if ! grep -qF "$_kw" "$_r74_pos/docs/governance/dev-environment.md" 2>/dev/null; then
+    _r74_pos_missing+="$_kw "
+  fi
+done
+if [[ -z "$_r74_pos_missing" ]]; then
+  ok "rule74_linux_first_dev_doc_present_pos" "dev-environment.md mentions WSL2 + WSL1 + Linux (PASS)"
+else
+  fail "rule74_linux_first_dev_doc_present_pos" "expected PASS but missing keywords: $_r74_pos_missing"
+fi
+
+## Negative: dev-environment.md missing keywords -> Rule 74 FAIL
+_r74_neg="$scratch/r74_neg"
+mkdir -p "$_r74_neg/docs/governance"
+cat > "$_r74_neg/docs/governance/dev-environment.md" <<'DOCEOF'
+# Dev setup
+Use Windows + Git Bash. No mention of alternatives.
+DOCEOF
+_r74_neg_missing=""
+for _kw in "WSL2" "WSL1" "Linux"; do
+  if ! grep -qF "$_kw" "$_r74_neg/docs/governance/dev-environment.md" 2>/dev/null; then
+    _r74_neg_missing+="$_kw "
+  fi
+done
+if [[ -n "$_r74_neg_missing" ]]; then
+  ok "rule74_linux_first_dev_doc_present_neg" "Win-only doc correctly triggers FAIL: missing $_r74_neg_missing"
+else
+  fail "rule74_linux_first_dev_doc_present_neg" "expected FAIL but all keywords present"
+fi
+
+}
+
+# ===========================================================================
 # 2026-05-17 gate-script efficiency wave PR-E2 -- NDJSON logging self-tests
 # Authority: PR-E2 plan + gate/lib/aggregate_summary.sh + gate/lib/prune_old_runs.sh
 # ===========================================================================
@@ -3310,7 +3356,7 @@ fi
 # to a per-batch file. After all batches complete, we sort + concatenate the
 # results for deterministic stdout, then count PASS/FAIL.
 # ---------------------------------------------------------------------------
-TOTAL=117
+TOTAL=119
 
 _pre4_all_tests=$(declare -F | awk '/^declare -f test_rule/{print $3}' | sort)
 _pre4_jobs="${GATE_PARALLELISM_JOBS:-8}"
