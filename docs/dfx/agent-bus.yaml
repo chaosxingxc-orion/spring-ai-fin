@@ -1,0 +1,48 @@
+# DFX (Design-for-X) declaration for the agent-bus module.
+#
+# Required by CLAUDE.md Rule 32 — every module declared `kind: domain` MUST
+# publish a DFX yaml covering all five dimensions.
+#
+# Status: skeleton. Contract scaffolding only; runtime implementations land
+# in W2 per ADR-0050.
+
+module: agent-bus
+kind: domain
+version: 1
+generated_at: 2026-05-17
+
+releasability:
+  artifact_coords: "io.github.springai-ascend:agent-bus"
+  semver_policy: "experimental — module is a skeleton; SPI shape will be set when W2 impls land"
+  deprecation_window: "N/A — pre-1.0"
+  packaging: "library jar; consumed by agent-runtime once W2 lands"
+  status: pending
+
+resilience:
+  fallback_paths: []
+  posture_aware_defaults: "research/prod will fail-closed when bus is unavailable; dev will accept in-memory fallback"
+  cancellation_contract: "PAUSE/KILL/CANCEL intents arrive on the control channel; mailbox enforces single-writer semantics"
+  reference_rule: "Rule 35 (Three-Track Channel Isolation) — design contract shipped, runtime deferred"
+  status: pending
+
+availability:
+  health_endpoints: []
+  readiness_signal: "pending — bus readiness = all 3 channels operational"
+  startup_failure_modes:
+    - "control channel unreachable — fail-closed; refuse to accept new Runs"
+    - "rhythm channel saturated — degrade gracefully, drop oldest heartbeat"
+  status: pending
+
+vulnerability:
+  scan_tooling: "pending — Snyk / OWASP planned at first release"
+  tenant_isolation: "every bus message carries tenant_id; storage tables enforce RLS (Rule 40 / P-J)"
+  payload_integrity: "data channel respects §4 #13 16-KiB inline cap; larger payloads use blob refs"
+  spi_purity: "planned — bus SPI classes will import only java.* + own spi siblings"
+  status: pending
+
+observability:
+  metric_namespace: "springai_ascend_bus_* (planned)"
+  trace_carrier: "W3C traceparent propagated across channel hops"
+  hook_emission_path: "bus emits admission_decided / suspend_declared / wakeup_fired events to the telemetry vertical"
+  audit_trail: "control-channel intents recorded in audit_log"
+  status: pending

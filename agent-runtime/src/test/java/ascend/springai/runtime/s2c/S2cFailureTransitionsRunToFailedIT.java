@@ -7,9 +7,9 @@ import ascend.springai.runtime.orchestration.inmemory.IterativeAgentLoopExecutor
 import ascend.springai.runtime.orchestration.inmemory.SequentialGraphExecutor;
 import ascend.springai.runtime.orchestration.inmemory.SyncOrchestrator;
 import ascend.springai.runtime.orchestration.spi.ExecutorDefinition;
-import ascend.springai.runtime.orchestration.spi.HookOutcome;
-import ascend.springai.runtime.orchestration.spi.HookPoint;
-import ascend.springai.runtime.orchestration.spi.RuntimeMiddleware;
+import ascend.springai.middleware.spi.HookOutcome;
+import ascend.springai.middleware.spi.HookPoint;
+import ascend.springai.middleware.spi.RuntimeMiddleware;
 import ascend.springai.runtime.orchestration.spi.SuspendSignal;
 import ascend.springai.runtime.runs.Run;
 import ascend.springai.runtime.runs.RunRepository;

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  agent-execution-engine — heterogeneous engine surface (per ADR-0072).
+
+  Status: skeleton. Code (EngineRegistry, EngineEnvelope, ExecutorAdapter,
+  ExecutorDefinition, GraphExecutor, AgentLoopExecutor) is extracted from
+  agent-runtime in T2.B2 of the same materialization PR.
+
+  Why this module exists separately: ADR-0072 / Rule 43 declare the engine
+  contract as an independent surface (Graph / AgentLoop today, room for
+  Multi-Agent / Temporal-driven engines in W3+). Pulling it into its own
+  module lets the AgentExecutionEngine team own engine evolution without
+  conflicting with AgentService / Middleware work.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>ascend.springai</groupId>
+    <artifactId>spring-ai-ascend-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>agent-execution-engine</artifactId>
+  <name>agent-execution-engine</name>
+  <description>Heterogeneous execution engine surface — EngineRegistry / EngineEnvelope / ExecutorAdapter / ExecutorDefinition + Graph/AgentLoop adapters (ADR-0072).</description>
+
+  <dependencies>
+    <!-- Engine references the HookPoint enum + RuntimeMiddleware listener -->
+    <dependency>
+      <groupId>ascend.springai</groupId>
+      <artifactId>agent-middleware</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.tngtech.archunit</groupId>
+      <artifactId>archunit-junit5</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+</project>

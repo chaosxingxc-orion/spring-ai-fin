@@ -1,4 +1,4 @@
-package ascend.springai.runtime.orchestration.spi;
+package ascend.springai.middleware.spi;
 
 /**
  * Canonical hook points an execution engine may expose to the Runtime so

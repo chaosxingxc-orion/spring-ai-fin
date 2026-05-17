@@ -1,0 +1,23 @@
+# Module metadata for agent-middleware.
+# Required by CLAUDE.md Rule 31 (Independent Module Evolution).
+# Authority: ADR-0066 + ADR-0073 (Engine Hooks + Runtime Middleware SPI).
+# Enforced by gate rule module_metadata_present_and_complete.
+
+module: agent-middleware
+kind: domain             # platform | domain | starter | bom | sample
+version: 0.0.1-SNAPSHOT
+semver_compatibility: experimental
+description: "Runtime-owned cross-cutting middleware SPI — HookPoint enum + RuntimeMiddleware listener + HookContext + HookOutcome + HookDispatcher. Extracted from agent-runtime/orchestration/spi per T2.B1."
+architecture_doc: agent-middleware/ARCHITECTURE.md
+dfx_doc: docs/dfx/agent-middleware.yaml
+spi_packages:
+  - ascend.springai.middleware.spi
+allowed_dependencies: []  # SPI-pure: java.* only, per Rule 32 / E48
+forbidden_dependencies:
+  - agent-platform
+  - agent-runtime         # middleware is upstream of runtime; runtime depends on middleware, not vice versa
+  - agent-execution-engine # engine references middleware (HookPoint), not the other way
+  - agent-bus
+  - agent-client
+  - agent-evolve
+deployment_plane: compute_control   # Rule 39 / P-I — middleware runs in-process with the runtime kernel

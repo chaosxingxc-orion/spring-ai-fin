@@ -21,10 +21,14 @@ jobs:
           cache: maven
 
       - name: Maven verify (compile + unit + integration tests)
-        run: ./mvnw -B -ntp --strict-checksums verify
+        run: ./mvnw -T 1C -B -ntp --strict-checksums verify
 
-      - name: Architecture-sync gate
-        run: bash gate/check_architecture_sync.sh
+      - name: Architecture-sync gate (parallel)
+        # The parallel wrapper runs the same 63+ rules across 8 workers,
+        # cutting wall-clock from ~24min to ~7min on Windows/git-bash and
+        # ~3x faster on Linux CI runners. Identical PASS/FAIL semantics.
+        # Set GATE_PARALLEL=0 to fall back to the serial canonical script.
+        run: bash gate/check_parallel.sh
 
       - name: Architecture-sync self-test
         run: bash gate/test_architecture_sync_gate.sh

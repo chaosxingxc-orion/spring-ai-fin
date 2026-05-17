@@ -1,6 +1,6 @@
 # spring-ai-ascend
 
-> Enterprise agent platform on Spring AI 2.0.0-M5 + Spring Boot 4.0.5 + Java 21.
+> Enterprise agent platform on Spring AI 2.0.0-M5 + Spring Boot 4.0.5 + Java 21 — as of v2.0.0-rc3 (2026-05-17).
 
 ## What is this?
 
@@ -17,19 +17,65 @@
 ## Quick start
 
 ```bash
-./mvnw clean test
+./mvnw -T 1C verify
 ```
+
+`verify` (not `test`) is the canonical command — `test` skips the `*IT.java` enforcers, several of which are ship-blocking under Rule 9. `-T 1C` builds independent reactor modules in parallel; surefire runs JUnit classes concurrently inside each fork (toggle with `-DjunitParallel=false`); failsafe runs IT classes sequentially within a fork (Spring Boot 4.0.5 isn't thread-safe at `SpringApplication.run()`).
 
 Posture is selected by the `APP_POSTURE` environment variable (`dev` / `research` / `prod`). `dev` is permissive (in-memory backends allowed, missing config emits WARN); `research` and `prod` fail-closed at startup if required config is missing.
 
-## Modules
+## Modules — six-module materialization (in transit)
 
-| Module | Role |
-|--------|------|
-| `agent-platform` | Northbound HTTP facade — filter chain, health endpoint, idempotency, tenant binding |
-| `agent-runtime` | Cognitive runtime — Orchestration SPI, in-memory dev-posture executors, posture gate, SPI scaffolding |
-| `spring-ai-ascend-dependencies` | Bill of Materials — pins all SDK + OSS transitive versions |
-| `spring-ai-ascend-graphmemory-starter` | Graph-memory SPI scaffold; no bean registered at W0; Graphiti REST reference adapter lands W1 (ADR-0034) |
+The L0 architecture (CLAUDE.md P-A..P-M) declares **six team-facing modules**.
+The reactor currently ships 9 modules — the original 4 plus 5 new skeletons
+filed in the six-module materialization PR (2026-05-17). The Phase-C follow-up
+folds `agent-platform` + the runtime kernel into `agent-service`, returning the
+reactor to **6 substantive modules + BoM + graphmemory starter**.
+
+| Module | Plane (P-I) | Owner team | Maturity today |
+|--------|-------------|-----------|----------------|
+| `agent-client` | Edge Access | AgentClient | skeleton (SDK; W3+ per ADR-0049) |
+| `agent-service` (planned) — today: `agent-platform` + `agent-runtime` | Compute & Control | AgentService | shipped; merge in Phase C |
+| `agent-middleware` | Compute & Control | Middleware | SPI extracted from agent-runtime (T2.B1, this PR) |
+| `agent-execution-engine` | Compute & Control | AgentExecutionEngine | skeleton; code-extraction deferred to T2.B2 follow-up PR |
+| `agent-bus` | Bus & State Hub | AgentBus | skeleton (contracts only; W2 impl per ADR-0050) |
+| `agent-evolve` | Evolution | AgentEvolve | skeleton (Python ML pipeline; Java adapter deferred) |
+| `spring-ai-ascend-dependencies` | (build-time) | platform | shipped (BoM) |
+| `spring-ai-ascend-graphmemory-starter` | Bus & State Hub | AgentBus | shipped (graphmemory SPI scaffold; ADR-0034) |
+
+Per-module `module-metadata.yaml` is the authoritative identity + dependency
+declaration. Per-module `ARCHITECTURE.md` carries the L1 view. Per-module
+`docs/dfx/<module>.yaml` declares the five DFX dimensions (Rule 32).
+
+### Five-plane topology (P-I)
+
+Each module is pinned to exactly one of five deployment planes. Workloads
+with different runtime characteristics MUST NOT share infrastructure — see
+`docs/governance/principle-coverage.yaml` for the principle ↔ rule map and
+`docs/governance/bus-channels.yaml` for the three-track channel isolation
+that protects the Bus & State Hub plane.
+
+### Three-track bus channel isolation (P-E / Rule 35)
+
+Cross-service internal traffic is sliced into three physically isolated
+channels declared in `docs/governance/bus-channels.yaml`:
+
+| Channel | Cargo | Priority |
+|---------|-------|----------|
+| `control` | PAUSE / KILL / CANCEL intents | highest — never blocks for `data` congestion |
+| `data` | run payload bodies (≤16 KiB inline cap §4 #13) | normal |
+| `rhythm` | heartbeat / liveness pulses | lowest — drops oldest if saturated |
+
+### W2.x heterogeneous engine contract (v2.0.0-rc3 headline)
+
+The engine surface is a structured contract: `docs/contracts/engine-envelope.v1.yaml`
+governs registration / matching / observability; engines fire canonical
+`HookPoint` events declared in `docs/contracts/engine-hooks.v1.yaml`; the
+server-to-client capability protocol uses `docs/contracts/s2c-callback.v1.yaml`;
+the evolution-scope discriminator lives in
+`docs/governance/evolution-scope.v1.yaml`. Authority: Rules 43–48 +
+ADR-0071..0077. Release note:
+[docs/releases/2026-05-16-W2x-engine-contract-wave.en.md](docs/releases/2026-05-16-W2x-engine-contract-wave.en.md).
 
 ## Integration paths
 
@@ -58,11 +104,16 @@ Full matrix: [docs/cross-cutting/posture-model.md](docs/cross-cutting/posture-mo
 ## Reading order
 
 1. **README.md** — you are here.
-2. **[docs/STATE.md](docs/STATE.md)** — per-capability shipped/deferred table.
+2. **[docs/governance/architecture-status.yaml](docs/governance/architecture-status.yaml)** — per-capability shipped/deferred ledger (the canonical machine-readable index; an earlier README incorrectly linked to a non-existent `docs/STATE.md`).
 3. **[ARCHITECTURE.md](ARCHITECTURE.md)** — system boundary, §4 constraints, SPI contracts, decision chains.
-4. **[docs/contracts/](docs/contracts/)** — HTTP API contracts, SPI semantic contracts, pinned OpenAPI snapshot.
-5. **[docs/adr/README.md](docs/adr/README.md)** — Architecture Decision Records (ADR-0001 … ADR-0070).
+4. **[docs/contracts/](docs/contracts/)** — HTTP API contracts, SPI semantic contracts, pinned OpenAPI snapshot, engine envelope, engine hooks, S2C callback.
+5. **[docs/adr/README.md](docs/adr/README.md)** — Architecture Decision Records (ADR-0001 … ADR-0077).
 6. **[CLAUDE.md](CLAUDE.md)** — Layer-0 governing principles (13: P-A..P-M) + Layer-1 engineering rules (34 active, 15 deferred + 19 sub-clauses with re-introduction triggers — see CLAUDE.md "Deferred Rules" line for the authoritative count). See also [docs/quickstart.md](docs/quickstart.md).
+7. **[docs/CLAUDE-deferred.md](docs/CLAUDE-deferred.md)** — every staged rule + sub-clause with its explicit re-introduction trigger.
+8. **[docs/governance/SESSION-START-CONTEXT.md](docs/governance/SESSION-START-CONTEXT.md)** — machine-readable entrypoint context (graph traversal cues).
+9. **[docs/governance/principle-coverage.yaml](docs/governance/principle-coverage.yaml)** — Layer-0 principle ↔ Layer-1 rule traceability.
+10. **[docs/governance/retracted-tags.txt](docs/governance/retracted-tags.txt)** — released tags retracted by superseding fixes.
+11. **[docs/governance/competitive-baselines.yaml](docs/governance/competitive-baselines.yaml)** — P-B measurement baseline (Performance / Cost / Developer Onboarding / Governance).
 
 ## See also
 

@@ -1,0 +1,42 @@
+# DFX (Design-for-X) declaration for the agent-middleware module.
+#
+# Required by CLAUDE.md Rule 32 — every module declared `kind: domain` MUST
+# publish a DFX yaml covering all five dimensions.
+
+module: agent-middleware
+kind: domain
+version: 1
+generated_at: 2026-05-17
+
+releasability:
+  artifact_coords: "io.github.springai-ascend:agent-middleware"
+  semver_policy: "0.x — SPI under .spi.* contract-frozen at L1; dispatcher impl may evolve"
+  deprecation_window: "two minor versions on SPI; one on non-SPI"
+  packaging: "library jar consumed by agent-runtime and (W2) by agent-execution-engine"
+
+resilience:
+  fallback_paths:
+    - "non-Proceed HookOutcome short-circuits subsequent middlewares for the same HookPoint (fail-fast inside dispatcher chain)"
+  posture_aware_defaults: "no posture coupling at the SPI; consumers (W2 telemetry middleware) may add posture gates"
+  cancellation_contract: "BEFORE_SUSPENSION + BEFORE_RESUME hooks fire even on cancellation paths"
+  reference_rule: "Rule 45 (Runtime-Owned Middleware via Engine Hooks)"
+
+availability:
+  health_endpoints: []
+  readiness_signal: "library-internal — readiness via consumer beans"
+  startup_failure_modes:
+    - "engine-hooks.v1.yaml ↔ HookPoint enum mismatch — gate Rule 57 fails CI"
+
+vulnerability:
+  scan_tooling: "manual review at L1; automated CVE/SCA deferred per CLAUDE-deferred.md 32.d"
+  tenant_isolation: "HookContext carries tenant_id; middleware MUST honour tenant scoping for any externally observable side-effect"
+  payload_integrity: "HookContext exposes only primitive identifiers; full Run/RunContext not leaked across the SPI boundary"
+  spi_purity: "ascend.springai.middleware.spi.* imports only java.* + own spi siblings (E48)"
+
+observability:
+  metric_namespace: "springai_ascend_middleware_*"
+  trace_carrier: "HookContext propagates traceId/spanId from RunContext"
+  hook_emission_path: "this module IS the hook emission path; engines + orchestrator fire hooks here"
+  audit_trail: "audit hooks (W2 LlmSpanEmitterHook, etc.) attach via HookPoint AFTER_LLM_INVOCATION / AFTER_TOOL_INVOCATION"
+  spi_packages:
+    - "ascend.springai.middleware.spi"

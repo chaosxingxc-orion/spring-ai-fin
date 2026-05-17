@@ -15,6 +15,12 @@
   <description>Cognitive runtime: run lifecycle, LLM gateway, tool registry, ActionGuard, memory, outbox, Temporal.</description>
 
   <dependencies>
+    <!-- Sibling runtime modules: middleware (HookPoint/RuntimeMiddleware/HookDispatcher per ADR-0073). -->
+    <dependency>
+      <groupId>ascend.springai</groupId>
+      <artifactId>agent-middleware</artifactId>
+    </dependency>
+
     <!-- Spring AI: LLM gateway. -->
     <dependency>
       <groupId>org.springframework.ai</groupId>

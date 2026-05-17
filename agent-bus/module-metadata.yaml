@@ -1,0 +1,23 @@
+# Module metadata for agent-bus.
+# Required by CLAUDE.md Rule 31 (Independent Module Evolution).
+# Authority: ADR-0066 + ADR-0050 (Bus & State Hub plane).
+# Enforced by gate rule module_metadata_present_and_complete.
+
+module: agent-bus
+kind: domain             # platform | domain | starter | bom | sample
+version: 0.0.1-SNAPSHOT
+semver_compatibility: experimental
+description: "Bus & State Hub plane — three-track channel isolation (control / data / rhythm per Rule 35); WorkflowIntermediary, Mailbox, AdmissionDecision, BackpressureSignal, SleepDeclaration, WakeupPulse, TickEngine. Skeleton; W2 implementation per ADR-0050."
+architecture_doc: agent-bus/ARCHITECTURE.md
+dfx_doc: docs/dfx/agent-bus.yaml
+spi_packages:
+  - ascend.springai.bus.spi      # placeholder; populated in W2 per ADR-0050
+allowed_dependencies: []
+forbidden_dependencies:
+  - agent-platform
+  - agent-runtime         # bus is upstream of runtime; runtime depends on bus, not vice versa
+  - agent-execution-engine
+  - agent-middleware
+  - agent-client
+  - agent-evolve
+deployment_plane: bus_state   # Rule 39 / P-I — Bus & State Hub plane

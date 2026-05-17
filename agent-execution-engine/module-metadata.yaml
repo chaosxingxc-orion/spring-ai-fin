@@ -1,0 +1,23 @@
+# Module metadata for agent-execution-engine.
+# Required by CLAUDE.md Rule 31 (Independent Module Evolution).
+# Authority: ADR-0066 + ADR-0072 (Engine Envelope + Strict Matching).
+# Enforced by gate rule module_metadata_present_and_complete.
+
+module: agent-execution-engine
+kind: domain             # platform | domain | starter | bom | sample
+version: 0.0.1-SNAPSHOT
+semver_compatibility: experimental
+description: "Heterogeneous execution engine surface — EngineRegistry, EngineEnvelope, ExecutorAdapter/Definition, Graph/AgentLoop reference adapters. Extracted from agent-runtime/engine + orchestration.spi per T2.B2."
+architecture_doc: agent-execution-engine/ARCHITECTURE.md
+dfx_doc: docs/dfx/agent-execution-engine.yaml
+spi_packages:
+  - ascend.springai.engine.spi
+allowed_dependencies:
+  - agent-middleware       # engine references HookPoint enum + RuntimeMiddleware listener
+forbidden_dependencies:
+  - agent-platform
+  - agent-runtime          # engine is a contract surface; runtime depends on engine, not vice versa
+  - agent-bus
+  - agent-client
+  - agent-evolve
+deployment_plane: compute_control   # Rule 39 / P-I — engine runs in-process with the runtime kernel

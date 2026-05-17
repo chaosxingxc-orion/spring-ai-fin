@@ -1,5 +1,7 @@
 package ascend.springai.runtime.orchestration.spi;
 
+import ascend.springai.middleware.spi.HookPoint;
+
 import java.util.Set;
 
 /**

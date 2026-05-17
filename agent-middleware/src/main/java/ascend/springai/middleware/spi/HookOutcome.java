@@ -1,4 +1,4 @@
-package ascend.springai.runtime.orchestration.spi;
+package ascend.springai.middleware.spi;
 
 /**
  * Result of a {@link RuntimeMiddleware} hook invocation. The dispatcher

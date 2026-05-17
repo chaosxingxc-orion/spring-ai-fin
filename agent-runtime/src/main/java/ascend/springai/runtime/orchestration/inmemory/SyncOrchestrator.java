@@ -1,12 +1,12 @@
 package ascend.springai.runtime.orchestration.inmemory;
 
 import ascend.springai.runtime.engine.EngineRegistry;
-import ascend.springai.runtime.engine.HookDispatcher;
+import ascend.springai.middleware.HookDispatcher;
 import ascend.springai.runtime.orchestration.spi.Checkpointer;
 import ascend.springai.runtime.orchestration.spi.EngineMatchingException;
 import ascend.springai.runtime.orchestration.spi.ExecutorDefinition;
-import ascend.springai.runtime.orchestration.spi.HookContext;
-import ascend.springai.runtime.orchestration.spi.HookPoint;
+import ascend.springai.middleware.spi.HookContext;
+import ascend.springai.middleware.spi.HookPoint;
 import ascend.springai.runtime.orchestration.spi.Orchestrator;
 import ascend.springai.runtime.orchestration.spi.RunContext;
 import ascend.springai.runtime.orchestration.spi.SuspendSignal;
@@ -52,7 +52,7 @@ public final class SyncOrchestrator implements Orchestrator {
      * <p>W2.x Phase 2 (ADR-0073): the orchestrator fires three structural
      * hooks ({@link HookPoint#ON_ERROR}, {@link HookPoint#BEFORE_SUSPENSION},
      * {@link HookPoint#BEFORE_RESUME}) via {@link EngineRegistry#hookDispatcher()}.
-     * Returned {@link ascend.springai.runtime.orchestration.spi.HookOutcome} is
+     * Returned {@link ascend.springai.middleware.spi.HookOutcome} is
      * DISCARDED at every call-site; Run-state consumption (Fail abort,
      * ShortCircuit bypass) is deferred to W2 Telemetry Vertical per Rule 45.b.
      * The discard is intentional — the dispatcher already enforces in-chain

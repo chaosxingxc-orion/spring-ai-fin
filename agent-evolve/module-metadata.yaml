@@ -1,0 +1,23 @@
+# Module metadata for agent-evolve.
+# Required by CLAUDE.md Rule 31 (Independent Module Evolution).
+# Authority: ADR-0066 + ADR-0075 (Evolution scope default boundary).
+# Enforced by gate rule module_metadata_present_and_complete.
+
+module: agent-evolve
+kind: domain             # platform | domain | starter | bom | sample
+version: 0.0.1-SNAPSHOT
+semver_compatibility: experimental
+description: "Evolution plane — Java-side adapter skeleton for the Python ML pipeline. EvolutionExport discriminator + telemetry-export contract live here once Java integration lands. Bulk implementation deferred indefinitely per ADR-0075 and CLAUDE-deferred.md."
+architecture_doc: agent-evolve/ARCHITECTURE.md
+dfx_doc: docs/dfx/agent-evolve.yaml
+spi_packages:
+  - ascend.springai.evolve.spi   # placeholder; populated when Java adapter activates
+allowed_dependencies: []
+forbidden_dependencies:
+  - agent-platform
+  - agent-runtime
+  - agent-execution-engine
+  - agent-middleware
+  - agent-bus
+  - agent-client
+deployment_plane: evolution   # Rule 39 / P-I — Evolution plane (Python ML; this is the Java adapter shell)

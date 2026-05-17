@@ -1,4 +1,4 @@
-package ascend.springai.runtime.orchestration.spi;
+package ascend.springai.middleware.spi;
 
 import java.util.Map;
 import java.util.Objects;

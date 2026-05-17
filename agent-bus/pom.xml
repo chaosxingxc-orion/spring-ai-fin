@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  agent-bus — Bus and State Hub plane (per Layer-0 principle P-I + P-E).
+
+  Status: contract scaffolding only. The three-track channel isolation
+  contract (Rule 35 / docs/governance/bus-channels.yaml) is shipped;
+  runtime implementations land in W2 per ADR-0050.
+
+  Why this module exists today: gives the AgentBus team a workspace for
+  the workflow intermediary, mailbox, admission decision, backpressure
+  signal, work-state event, sleep declaration, wakeup pulse, and tick
+  engine SPIs/impls without conflicting with AgentService / Middleware
+  / AgentExecutionEngine PRs.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>ascend.springai</groupId>
+    <artifactId>spring-ai-ascend-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>agent-bus</artifactId>
+  <name>agent-bus</name>
+  <description>Bus and State Hub plane — three-track channel isolation (control / data / rhythm). Skeleton; W2 implementation per ADR-0050.</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>

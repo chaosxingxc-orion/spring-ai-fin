@@ -3,7 +3,8 @@ package ascend.springai.runtime.engine;
 import ascend.springai.runtime.orchestration.spi.EngineMatchingException;
 import ascend.springai.runtime.orchestration.spi.ExecutorAdapter;
 import ascend.springai.runtime.orchestration.spi.ExecutorDefinition;
-import ascend.springai.runtime.orchestration.spi.RuntimeMiddleware;
+import ascend.springai.middleware.HookDispatcher;
+import ascend.springai.middleware.spi.RuntimeMiddleware;
 import ascend.springai.runtime.s2c.spi.S2cCallbackTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -214,7 +215,7 @@ public final class EngineRegistry {
 
     /**
      * Register a cross-cutting {@link RuntimeMiddleware} that listens on
-     * {@link ascend.springai.runtime.orchestration.spi.HookPoint} events.
+     * {@link ascend.springai.middleware.spi.HookPoint} events.
      * Order matters — middlewares fire in registration order for before_*
      * and on_* hooks; in reverse order for after_* hooks. ADR-0073.
      */

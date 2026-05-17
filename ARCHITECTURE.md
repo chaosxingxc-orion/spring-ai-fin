@@ -74,12 +74,67 @@ References: §4 #53–#59, ADR-0061/0062/0063, `docs/telemetry/policy.md`.
 
 ## 2. Module layout
 
+### Six-module materialization (in transit — 2026-05-17 PR)
+
+The reactor declares **9 modules** today: the original 4 (`spring-ai-ascend-dependencies`,
+`agent-platform`, `agent-runtime`, `spring-ai-ascend-graphmemory-starter`) plus **5 new
+modules** created by the 2026-05-17 six-module materialization PR (`agent-client`,
+`agent-bus`, `agent-middleware`, `agent-execution-engine`, `agent-evolve`). The Phase C
+follow-up will fold `agent-platform` + the runtime kernel into a single `agent-service`,
+returning the reactor to **8 substantive modules** that map 1:1 to the six L0
+team-facing concepts (AgentClient, AgentService, Middleware, AgentBus, AgentEvolve,
+AgentExecutionEngine) plus the BoM and graphmemory starter.
+
+| Module | Plane (P-I) | Owner team | Maturity today |
+|--------|-------------|-----------|----------------|
+| `agent-client` | edge | AgentClient | skeleton (SDK; W3+ per ADR-0049) |
+| `agent-platform` (→ `agent-service` Phase C) | compute_control | AgentService | shipped — HTTP edge |
+| `agent-runtime` (→ `agent-service` Phase C) | compute_control | AgentService | shipped — orchestration kernel |
+| `agent-middleware` | compute_control | Middleware | SPI extracted from agent-runtime (T2.B1, 2026-05-17) |
+| `agent-execution-engine` | compute_control | AgentExecutionEngine | skeleton; code-extraction deferred to T2.B2 (back-dep on Run/RunContext blocks current move) |
+| `agent-bus` | bus_state | AgentBus | skeleton (contracts only; W2 impl per ADR-0050) |
+| `agent-evolve` | evolution | AgentEvolve | skeleton (Python ML; Java adapter deferred) |
+| `spring-ai-ascend-dependencies` | none | platform | shipped (BoM) |
+| `spring-ai-ascend-graphmemory-starter` | bus_state | AgentBus | shipped (graphmemory SPI scaffold; ADR-0034) |
+
+Per-module `module-metadata.yaml` (Rule 31), `ARCHITECTURE.md` (Rule 33), and
+`docs/dfx/<module>.yaml` (Rule 32) carry the authoritative identity, layered-4+1 view,
+and Design-for-X declarations for each module.
+
+### Tree (skeletons elided for brevity — see each module's own ARCHITECTURE.md)
+
 ```
 spring-ai-ascend/
   pom.xml                                      # parent BOM (Java 21, Spring Boot 4.0.5)
 
   spring-ai-ascend-dependencies/               # Bill of Materials — pins all module +
     pom.xml                                    #   OSS transitive coords; no code
+
+  agent-client/                                # NEW 2026-05-17: SDK skeleton (edge plane; W3+)
+    pom.xml + module-metadata.yaml + ARCHITECTURE.md + docs/dfx/agent-client.yaml
+    src/main/java/ascend/springai/client/spi/  # placeholder SPI
+
+  agent-bus/                                   # NEW 2026-05-17: Bus & State Hub skeleton (bus_state plane; W2 impl per ADR-0050)
+    pom.xml + module-metadata.yaml + ARCHITECTURE.md + docs/dfx/agent-bus.yaml
+    src/main/java/ascend/springai/bus/spi/     # placeholder SPI
+
+  agent-middleware/                            # NEW 2026-05-17: cross-cutting middleware (compute_control plane; ADR-0073)
+    pom.xml + module-metadata.yaml + ARCHITECTURE.md + docs/dfx/agent-middleware.yaml
+    src/main/java/ascend/springai/middleware/
+      HookDispatcher.java                      # moved here from agent-runtime/engine/ (T2.B1)
+      spi/                                     # moved here from agent-runtime/orchestration/spi/ (T2.B1)
+        HookPoint.java                         # 9-value enum mirroring docs/contracts/engine-hooks.v1.yaml
+        HookContext.java
+        HookOutcome.java                       # sealed: Proceed | ShortCircuit | Fail
+        RuntimeMiddleware.java                 # @FunctionalInterface
+
+  agent-execution-engine/                      # NEW 2026-05-17: heterogeneous engine surface skeleton (compute_control plane; ADR-0072)
+    pom.xml + module-metadata.yaml + ARCHITECTURE.md + docs/dfx/agent-execution-engine.yaml
+    src/main/java/ascend/springai/engine/spi/  # placeholder SPI — EngineRegistry/EngineEnvelope/ExecutorAdapter remain in agent-runtime/engine pending T2.B2
+
+  agent-evolve/                                # NEW 2026-05-17: Java adapter skeleton for Python ML pipeline (evolution plane; ADR-0075)
+    pom.xml + module-metadata.yaml + ARCHITECTURE.md + docs/dfx/agent-evolve.yaml
+    src/main/java/ascend/springai/evolve/spi/  # placeholder SPI
 
   agent-platform/                              # Northbound facade (L1: HTTP, JWT, tenant, idempotency)
     src/main/java/ascend/springai/platform/

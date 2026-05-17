@@ -1,9 +1,9 @@
-package ascend.springai.runtime.engine;
+package ascend.springai.middleware;
 
-import ascend.springai.runtime.orchestration.spi.HookContext;
-import ascend.springai.runtime.orchestration.spi.HookOutcome;
-import ascend.springai.runtime.orchestration.spi.HookPoint;
-import ascend.springai.runtime.orchestration.spi.RuntimeMiddleware;
+import ascend.springai.middleware.spi.HookContext;
+import ascend.springai.middleware.spi.HookOutcome;
+import ascend.springai.middleware.spi.HookPoint;
+import ascend.springai.middleware.spi.RuntimeMiddleware;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;

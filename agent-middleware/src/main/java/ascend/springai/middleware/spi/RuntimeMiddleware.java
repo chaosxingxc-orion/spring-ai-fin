@@ -1,4 +1,4 @@
-package ascend.springai.runtime.orchestration.spi;
+package ascend.springai.middleware.spi;
 
 /**
  * SPI for cross-cutting Runtime-owned policies (proposal §5 of 2026-05-15).

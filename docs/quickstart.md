@@ -21,10 +21,13 @@ automatically. Set posture via the `APP_POSTURE` env var.
 ## 2. Build the reactor
 
 ```bash
-./mvnw -q clean install
+./mvnw -T 1C -q clean install
 ```
 
-The build runs unit + ArchUnit tests (~105 tests) for every reactor module.
+The build runs unit + ArchUnit tests for every reactor module. `-T 1C` builds
+independent modules in parallel; surefire runs JUnit classes concurrently within
+each fork. Add `-DjunitParallel=false` to debug intermittent test failures.
+
 Sub-second incremental builds: `./mvnw -pl agent-runtime -am test -q`.
 
 ## 3. Boot `agent-platform`
