@@ -14,19 +14,54 @@ export LC_ALL=C
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
+# PR-E4: resolve $GATE_PARALLELISM_JOBS via gate/lib/load_config.sh, but read
+# the value in a subshell so the loader's exported env vars (especially
+# GATE_PARALLELISM_JOBS itself, plus a dozen sibling GATE_* knobs) do NOT
+# leak into test fixtures that source the same loader with a synthetic
+# GATE_REPO_ROOT (e.g. Rule 73 negative cases — they construct a fake config
+# and would otherwise inherit the real loader's values, defeating the test).
+# Resolution order: GATE_JOBS env > config.yaml > 8.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -n "${GATE_JOBS:-}" ]]; then
+  GATE_PARALLELISM_JOBS="$GATE_JOBS"
+elif [[ -f "$SCRIPT_DIR/lib/load_config.sh" ]]; then
+  GATE_PARALLELISM_JOBS="$(bash -c "
+    source '$SCRIPT_DIR/lib/load_config.sh'
+    gate_load_config >/dev/null 2>&1 || true
+    printf '%s' \"\${GATE_PARALLELISM_JOBS:-8}\"
+  ")"
+else
+  GATE_PARALLELISM_JOBS=8
+fi
+# Resolve auto/0 to a sensible default in case the config requests it.
+if [[ "${GATE_PARALLELISM_JOBS}" == "0" || -z "${GATE_PARALLELISM_JOBS}" ]]; then
+  GATE_PARALLELISM_JOBS=8
+fi
+
 passed=0
 failed=0
-TOTAL=37
+TOTAL=112
 
-ok() {
-  echo "PASS [$1]: $2"
-  passed=$((passed + 1))
+# PR-E4: parallel-aware ok()/fail().
+# Serial mode (TEST_RESULT_FILE unset): increment globals + print directly.
+# Parallel mode (TEST_RESULT_FILE set): append to per-batch file; aggregator counts at end.
+_record_result() {
+  # $1 = status (PASS|FAIL), $2 = test_id, $3 = message
+  if [[ -n "${TEST_RESULT_FILE:-}" ]]; then
+    printf '%s [%s]: %s\n' "$1" "$2" "$3" >> "$TEST_RESULT_FILE"
+  else
+    if [[ "$1" == "PASS" ]]; then
+      printf 'PASS [%s]: %s\n' "$2" "$3"
+      passed=$((passed + 1))
+    else
+      printf 'FAIL [%s]: %s\n' "$2" "$3" >&2
+      failed=$((failed + 1))
+    fi
+  fi
 }
 
-fail() {
-  echo "FAIL [$1]: $2" >&2
-  failed=$((failed + 1))
-}
+ok() { _record_result PASS "$1" "$2"; }
+fail() { _record_result FAIL "$1" "$2"; }
 
 # Scratch directory for synthetic test fixtures (cleaned up on exit).
 scratch="$(mktemp -d)"
@@ -39,6 +74,8 @@ trap 'rm -rf "$scratch"' EXIT
 # (which requires the full repo layout) so each test is self-contained.
 # ---------------------------------------------------------------------------
 
+
+test_rule1_status_enum_invalid() {
 # ---------------------------------------------------------------------------
 # RULE 1 -- status_enum_invalid
 # Allowed: design_accepted implemented_unverified test_verified deferred_w1 deferred_w2
@@ -87,6 +124,10 @@ else
   fail "rule1_status_enum_neg" "expected FAIL for invalid status 'proposed'"
 fi
 
+}
+
+
+test_rule2_delivery_log_parity() {
 # ---------------------------------------------------------------------------
 # RULE 2 -- delivery_log_parity
 # sha field must equal filename basename (without suffix). semantic_pass required.
@@ -124,6 +165,10 @@ else
   fail "rule2_delivery_log_parity_neg" "expected FAIL for sha mismatch"
 fi
 
+}
+
+
+test_rule3_eol_policy() {
 # ---------------------------------------------------------------------------
 # RULE 3 -- eol_policy
 # *.sh files in gate/ must have LF, not CRLF.
@@ -151,6 +196,10 @@ else
   fail "rule3_eol_policy_neg" "expected FAIL for CRLF .sh file"
 fi
 
+}
+
+
+test_rule4_ci_no_or_true_mask() {
 # ---------------------------------------------------------------------------
 # RULE 4 -- ci_no_or_true_mask
 # .github/workflows/*.yml must not have gate/run_* || true.
@@ -188,6 +237,10 @@ else
   fail "rule4_ci_no_or_true_mask_neg" "expected FAIL for gate/run_* || true"
 fi
 
+}
+
+
+test_rule5_required_files_present() {
 # ---------------------------------------------------------------------------
 # RULE 5 -- required_files_present
 # docs/contracts/contract-catalog.md and docs/contracts/openapi-v1.yaml must exist.
@@ -223,6 +276,10 @@ else
   fail "rule5_required_files_present_neg" "expected FAIL when openapi-v1.yaml absent"
 fi
 
+}
+
+
+test_rule6_metric_naming_namespace() {
 # ---------------------------------------------------------------------------
 # RULE 6 -- metric_naming_namespace
 # Metric name strings in Java must start with springai_ascend_.
@@ -269,6 +326,10 @@ else
   fail "rule6_metric_naming_namespace_neg" "expected FAIL for metric without springai_ascend_ prefix"
 fi
 
+}
+
+
+test_rule16_http_contract_w1_tenant_and_cancel_consistency() {
 # ---------------------------------------------------------------------------
 # RULE 16 — http_contract_w1_tenant_and_cancel_consistency (widened)
 # Positive: "cross-check" wording passes (must NOT be flagged)
@@ -294,6 +355,10 @@ else
   fail "rule16_w1_tenant_neg" "expected 'switches to JWT' to be detected as replacement-implying"
 fi
 
+}
+
+
+test_rule19_shipped_row_tests_evidence() {
 # ---------------------------------------------------------------------------
 # RULE 19 — shipped_row_tests_evidence (strengthened)
 # (a) tests: absent on shipped row → FAIL
@@ -396,6 +461,10 @@ else
   fail "rule19_tests_evidence_neg_missing_path" "expected missing test path to be detected"
 fi
 
+}
+
+
+test_rule22_lowercase_metrics_in_contract_docs() {
 # ---------------------------------------------------------------------------
 # RULE 22 — lowercase_metrics_in_contract_docs (widened, case-sensitive)
 # Positive: lowercase metric name passes (must NOT be flagged)
@@ -420,6 +489,10 @@ else
   fail "rule22_lowercase_metrics_neg" "expected SPRINGAI_ASCEND_<lowercase> to be detected"
 fi
 
+}
+
+
+test_rule24_shipped_row_evidence_paths_exist() {
 # ---------------------------------------------------------------------------
 # RULE 24 — shipped_row_evidence_paths_exist
 # Positive: latest_delivery_file points to existing file → PASS
@@ -474,6 +547,10 @@ else
   fail "rule24_evidence_paths_neg" "expected non-existent path to be detected"
 fi
 
+}
+
+
+test_rule25_peripheral_wave_qualifier() {
 # ---------------------------------------------------------------------------
 # RULE 25 — peripheral_wave_qualifier
 # Positive: "Primary sidecar impl:" with W1 qualifier → PASS
@@ -522,6 +599,10 @@ else
   fail "rule25_wave_qualifier_neg" "expected unqualified impl claim to be detected"
 fi
 
+}
+
+
+test_rule26_release_note_shipped_surface_truth() {
 # ---------------------------------------------------------------------------
 # RULE 26 — release_note_shipped_surface_truth
 # 26a — RunLifecycle name guard:
@@ -630,6 +711,10 @@ else
   fail "rule26_runcontext_neg" "expected posture() alongside RunContext to be detected"
 fi
 
+}
+
+
+test_rule27_active_entrypoint_baseline_truth() {
 # ---------------------------------------------------------------------------
 # RULE 27 — active_entrypoint_baseline_truth
 # Positive: synthetic YAML + README with matching §4 count → PASS
@@ -682,6 +767,10 @@ else
   fail "rule27_baseline_neg" "expected mismatched §4 baseline to be detected"
 fi
 
+}
+
+
+test_rule28_release_note_baseline_truth() {
 # ---------------------------------------------------------------------------
 # RULE 28 — release_note_baseline_truth
 # Positive: release note matching canonical baseline → PASS
@@ -765,6 +854,10 @@ else
   fail "rule28_baseline_neg_no_freeze_marker" "expected freeze marker to exempt release note"
 fi
 
+}
+
+
+test_rule29_whitepaper_alignment_matrix_present() {
 # ---------------------------------------------------------------------------
 # RULE 29 — whitepaper_alignment_matrix_present
 # Positive: matrix file exists with all 20 required concepts → PASS
@@ -830,6 +923,10 @@ else
   fail "rule29_matrix_neg" "expected missing concept to be detected"
 fi
 
+}
+
+
+test_rule28j_enforcer_artifact_paths_exist() {
 # ---------------------------------------------------------------------------
 # RULE 28j -- enforcer_artifact_paths_exist (Phase L anchor validation, E35)
 # Phase K (E33) checked file existence only. Phase L extends 28j to validate
@@ -2119,6 +2216,10 @@ else
   fail "rule28k_javadoc_citation_neg" "expected mismatch but paths matched"
 fi
 
+}
+
+
+test_rule61_legacy_powershell_gate_deprecated() {
 # ---------------------------------------------------------------------------
 # RULE 61 -- legacy_powershell_gate_deprecated  (v2.0.0-rc2 second-pass review P0-1)
 # Positive: PS stub with DEPRECATED banner + architecture-status.yaml lists PS only under deprecated_implementations:
@@ -2198,6 +2299,10 @@ else
   fail "rule61_legacy_ps_neg" "expected FAIL for PS listed under implementation:"
 fi
 
+}
+
+
+test_rule62_contract_yaml_declares_status() {
 # ---------------------------------------------------------------------------
 # RULE 62 -- contract_yaml_declares_status  (v2.0.0-rc2 F-β structural prevention)
 # Positive: YAML with top-level status: schema_shipped passes
@@ -2250,6 +2355,10 @@ else
   fail "rule62_contract_status_neg" "expected FAIL for unknown status value"
 fi
 
+}
+
+
+test_rule63_release_note_retracted_tag_qualified() {
 # ---------------------------------------------------------------------------
 # RULE 63 -- release_note_retracted_tag_qualified  (v2.0.0-rc2 F-γ structural prevention)
 # Positive: release note mentioning retracted tag on the same line as "(retracted)" passes
@@ -2316,6 +2425,10 @@ fi
 # Authority: docs/reviews/2026-05-17-cross-corpus-consistency-audit-response.en.md
 # ===========================================================================
 
+}
+
+
+test_rule64_module_count_data_driven() {
 # ---------------------------------------------------------------------------
 # RULE 64 -- module_count_data_driven
 # Positive: pom <module> count == architecture-status.yaml total_reactor_modules → pass
@@ -2369,6 +2482,10 @@ else
   fail "rule64_module_count_data_driven_neg" "expected mismatch detection but values agreed"
 fi
 
+}
+
+
+test_rule65_module_metadata_pom_dep_parity() {
 # ---------------------------------------------------------------------------
 # RULE 65 -- module_metadata_pom_dep_parity
 # Positive: every pom ascend.springai sibling appears in metadata allowed_dependencies → pass
@@ -2470,6 +2587,10 @@ else
   fail "rule65_module_metadata_pom_dep_parity_neg" "expected FAIL but the missing dep was not detected"
 fi
 
+}
+
+
+test_rule66_spi_package_exhaustiveness() {
 # ---------------------------------------------------------------------------
 # RULE 66 -- spi_package_exhaustiveness
 # Positive: every on-disk */spi/ directory is declared in spi_packages → pass
@@ -2532,6 +2653,10 @@ fi
 # Authority: D:/.claude/plans/tokens-token-buzzing-sprout.md + docs/governance/rules/rule-{67..71}.md
 # ===========================================================================
 
+}
+
+
+test_rule67_claude_md_kernel_size_bounded() {
 # ---------------------------------------------------------------------------
 # RULE 67 -- claude_md_kernel_size_bounded
 # Positive: rule body within kernel_cap → pass
@@ -2620,6 +2745,10 @@ else
   fail "rule67_claude_md_kernel_size_bounded_neg" "expected FAIL but oversized rule passed"
 fi
 
+}
+
+
+test_rule68_claude_md_kernel_matches_card() {
 # ---------------------------------------------------------------------------
 # RULE 68 -- claude_md_kernel_matches_card
 # Positive: card kernel == CLAUDE.md body → pass
@@ -2705,6 +2834,10 @@ else
   fail "rule68_claude_md_kernel_matches_card_neg" "expected drift detection but kernel and body agreed"
 fi
 
+}
+
+
+test_rule69_every_active_rule_has_card() {
 # ---------------------------------------------------------------------------
 # RULE 69 -- every_active_rule_has_card
 # Positive: every active rule has a card → pass
@@ -2761,6 +2894,10 @@ else
   fail "rule69_every_active_rule_has_card_neg" "expected missing-card detection but none reported"
 fi
 
+}
+
+
+test_rule70_always_loaded_budget_enforced() {
 # ---------------------------------------------------------------------------
 # RULE 70 -- always_loaded_budget_enforced
 # Positive: file size <= ceiling → pass
@@ -2792,6 +2929,10 @@ else
   fail "rule70_always_loaded_budget_neg" "expected overage detection but bytes=$_r70_neg_bytes <= ceiling=$_r70_neg_ceil"
 fi
 
+}
+
+
+test_rule71_deferred_doc_not_in_always_loaded() {
 # ---------------------------------------------------------------------------
 # RULE 71 -- deferred_doc_not_in_always_loaded
 # Positive: no @-include + no ALWAYS marker → pass
@@ -2851,6 +2992,10 @@ fi
 # Authority: D:/.claude/plans/tokens-token-buzzing-sprout.md + docs/governance/rules/rule-73.md
 # ===========================================================================
 
+}
+
+
+test_rule73_gate_config_well_formed() {
 # ---------------------------------------------------------------------------
 # RULE 73 -- gate_config_well_formed
 # Positive: well-formed gate/config.yaml validates -> pass
@@ -2986,14 +3131,85 @@ else
   fail "rule73_gate_config_invalid_enum_neg" "expected FAIL for invalid enum but got VALID=$_r73_neg3_result"
 fi
 
+}
+
 # ---------------------------------------------------------------------------
-# Summary
+# PR-E4: Parallel orchestrator.
+#
+# Each test_rule*() function is independent (uses its own $scratch/r<N>_*
+# subdirectory). We distribute them round-robin across $GATE_PARALLELISM_JOBS
+# batches; each batch runs sequentially in its own subshell, appending results
+# to a per-batch file. After all batches complete, we sort + concatenate the
+# results for deterministic stdout, then count PASS/FAIL.
 # ---------------------------------------------------------------------------
 TOTAL=112
+
+_pre4_all_tests=$(declare -F | awk '/^declare -f test_rule/{print $3}' | sort)
+_pre4_jobs="${GATE_PARALLELISM_JOBS:-8}"
+if ! [[ "$_pre4_jobs" =~ ^[0-9]+$ ]] || [[ "$_pre4_jobs" -lt 1 ]]; then
+  _pre4_jobs=8
+fi
+
+_pre4_batch_dir="$scratch/_pre4_batches"
+mkdir -p "$_pre4_batch_dir"
+
+# Clear env vars that gate/lib/load_config.sh exports so test fixtures running
+# under bash -c with a synthetic GATE_REPO_ROOT get a clean slate (Rule 73
+# negative cases would otherwise inherit GATE_JOBS=1 and override the
+# synthetic out-of-range value).
+unset GATE_JOBS GATE_PARALLELISM_JOBS GATE_PARALLELISM_ENABLED \
+      GATE_PARALLELISM_RULE_TIMEOUT_SECONDS GATE_PARALLELISM_BATCH_STRATEGY \
+      GATE_LOGGING_NDJSON_ENABLED GATE_LOGGING_SUMMARY_ENABLED \
+      GATE_LOGGING_STDOUT_FORMAT GATE_LOGGING_RETENTION_MAX_RUNS \
+      GATE_LOGGING_RETENTION_AUTO_PRUNE GATE_LOGGING_PROFILE_MODE \
+      GATE_SCAN_CACHE_ENABLED GATE_SCAN_CACHE_PATTERNS \
+      GATE_REGRESSION_DETECTION_ENABLED \
+      GATE_REGRESSION_DETECTION_MULTIPLIER_THRESHOLD \
+      GATE_REGRESSION_DETECTION_ABSOLUTE_MIN_MS \
+      GATE_REGRESSION_DETECTION_BASELINE_WINDOW \
+      GATE_RULE_FILTERS_SKIP GATE_RULE_FILTERS_ONLY \
+      GATE_CONFIG_VALID GATE_CONFIG_ERRORS GATE_REPO_ROOT 2>/dev/null || true
+
+# Distribute functions round-robin into $_pre4_jobs batches.
+_pre4_i=0
+while IFS= read -r _pre4_t; do
+  [[ -z "$_pre4_t" ]] && continue
+  printf '%s\n' "$_pre4_t" >> "$_pre4_batch_dir/batch_$((_pre4_i % _pre4_jobs))"
+  _pre4_i=$((_pre4_i + 1))
+done <<< "$_pre4_all_tests"
+
+# Run each batch in parallel.
+for _pre4_b in "$_pre4_batch_dir"/batch_*; do
+  [[ -f "$_pre4_b" ]] || continue
+  (
+    export TEST_RESULT_FILE="${_pre4_b}.results"
+    : > "$TEST_RESULT_FILE"
+    while IFS= read -r _pre4_func; do
+      "$_pre4_func"
+    done < "$_pre4_b"
+  ) &
+done
+wait
+
+# Aggregate, deterministic sort, count.
+_pre4_all_results="$scratch/_pre4_all_results.txt"
+: > "$_pre4_all_results"
+for _pre4_rf in "$_pre4_batch_dir"/batch_*.results; do
+  [[ -f "$_pre4_rf" ]] && cat "$_pre4_rf" >> "$_pre4_all_results"
+done
+
+passed=$(grep -c '^PASS ' "$_pre4_all_results" 2>/dev/null || true)
+failed=$(grep -c '^FAIL ' "$_pre4_all_results" 2>/dev/null || true)
+passed=${passed:-0}
+failed=${failed:-0}
+
+# Print PASS lines to stdout in deterministic test_id order, FAIL lines to stderr.
+sort "$_pre4_all_results" | awk '/^PASS / {print} /^FAIL / {print > "/dev/stderr"}'
+
 echo ""
 echo "Tests passed: ${passed}/${TOTAL}"
 
-if [[ $failed -gt 0 ]]; then
+if [[ "$failed" -gt 0 ]]; then
   exit 1
 fi
 exit 0
