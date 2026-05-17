@@ -367,7 +367,10 @@ def build_graph(repo: Path) -> dict:
             add_edge(cid, file_id, "tested_by", anchor=tanchor or None, anchor_resolves=t_anchor_ok)
 
     # -- 6. (level, view) → artefact edges from front-matter --
-    for md_path in [repo / "ARCHITECTURE.md", *repo.glob("agent-*/ARCHITECTURE.md"), *discover_l2_docs(L2_DIR)]:
+    # `sorted()` around the glob is required for Rule 38 idempotency: filesystem
+    # iteration order differs between NTFS (Windows) and ext4 (Linux/WSL), so the
+    # graph would otherwise be order-sensitive and fail re-run byte-equality.
+    for md_path in [repo / "ARCHITECTURE.md", *sorted(repo.glob("agent-*/ARCHITECTURE.md")), *discover_l2_docs(L2_DIR)]:
         fm = parse_front_matter(md_path)
         if not fm:
             continue
@@ -565,14 +568,18 @@ def main() -> int:
     )
 
     if not args.no_write:
-        OUTPUT_YAML.write_text(header + yaml_text, encoding="utf-8")
+        # Force LF line endings regardless of platform (Win-native Python would
+        # otherwise translate \n -> \r\n in text mode, breaking Rule 42
+        # cross-platform idempotency when the same input is built on Git Bash
+        # for Windows vs WSL/Linux).
+        OUTPUT_YAML.write_bytes((header + yaml_text).encode("utf-8"))
         print(f"Wrote {OUTPUT_YAML.relative_to(REPO)}: {graph['node_count']} nodes, {graph['edge_count']} edges")
     else:
         print(f"Built graph (not written): {graph['node_count']} nodes, {graph['edge_count']} edges")
 
     if args.mermaid:
         mmd_text = render_mermaid(graph)
-        OUTPUT_MMD.write_text(mmd_text, encoding="utf-8")
+        OUTPUT_MMD.write_bytes(mmd_text.encode("utf-8"))
         print(f"Wrote {OUTPUT_MMD.relative_to(REPO)}")
 
     errors = validate(graph)

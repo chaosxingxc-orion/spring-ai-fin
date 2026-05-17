@@ -15,6 +15,13 @@
 #   _SCAN_ACTIVE_DOCS       newline-separated paths to every active *.md / *.yaml
 #   _SCAN_MIGRATION_SQL     newline-separated paths to every Flyway V*.sql migration
 #   _SCAN_AGENT_JAVA_MAIN   newline-separated paths to every agent-*/src/main/*.java
+#   _SCAN_SHIPPED_ROWS      TSV from extract_shipped_rows.sh — one row per
+#                           (capability, field, value); fields: shipped, impl,
+#                           test, l2_doc, latest_delivery, tests_marker,
+#                           tests_count. Consumed by Rules 7, 19, 24 (replaces
+#                           their per-line printf|grep loops over the 1388-line
+#                           architecture-status.yaml; saves ~25 min of CPU per
+#                           gate run on Git Bash for Windows).
 #
 # Each var is empty if GATE_SCAN_CACHE_ENABLED=false OR the pattern is not in
 # GATE_SCAN_CACHE_PATTERNS. Consumers MUST handle the empty case.
@@ -35,6 +42,7 @@ gate_scan_cache_populate() {
   export _SCAN_ACTIVE_DOCS=""
   export _SCAN_MIGRATION_SQL=""
   export _SCAN_AGENT_JAVA_MAIN=""
+  export _SCAN_SHIPPED_ROWS=""
 
   [[ "$_enabled" != "true" ]] && return 0
 
@@ -69,7 +77,14 @@ gate_scan_cache_populate() {
       2>/dev/null | sort)
   fi
 
-  export _SCAN_MODULE_METADATA _SCAN_ACTIVE_DOCS _SCAN_MIGRATION_SQL _SCAN_AGENT_JAVA_MAIN
+  if [[ " $_patterns " == *" shipped_rows "* ]]; then
+    if [[ -x "$GATE_REPO_ROOT/gate/lib/extract_shipped_rows.sh" ]]; then
+      _SCAN_SHIPPED_ROWS=$(bash "$GATE_REPO_ROOT/gate/lib/extract_shipped_rows.sh" \
+        "$GATE_REPO_ROOT/docs/governance/architecture-status.yaml" 2>/dev/null)
+    fi
+  fi
+
+  export _SCAN_MODULE_METADATA _SCAN_ACTIVE_DOCS _SCAN_MIGRATION_SQL _SCAN_AGENT_JAVA_MAIN _SCAN_SHIPPED_ROWS
 }
 
 # Auto-populate when sourced (consumers can also call manually for re-scan).

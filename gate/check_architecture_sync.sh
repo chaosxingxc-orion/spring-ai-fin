@@ -146,17 +146,26 @@ fi
 # allowed enum. Any other value is a FAIL.
 # ---------------------------------------------------------------------------
 _status_path="docs/governance/architecture-status.yaml"
-_allowed_status_re='^(design_accepted|implemented_unverified|test_verified|deferred_w1|deferred_w2)$'
 _r1_fail=0
 if [[ -f "$_status_path" ]]; then
-  while IFS= read -r _line || [[ -n "$_line" ]]; do
-    _val=$(printf '%s\n' "$_line" | sed -nE 's/^[[:space:]]*status:[[:space:]]*([A-Za-z_]+)[[:space:]]*$/\1/p')
-    if [[ -n "$_val" ]] && ! [[ "$_val" =~ $_allowed_status_re ]]; then
-      fail_rule "status_enum_invalid" "status '$_val' not in allowed enum {design_accepted,implemented_unverified,test_verified,deferred_w1,deferred_w2} in $_status_path"
-      _r1_fail=1
-      break
-    fi
-  done < "$_status_path"
+  # PR-E3.b speedup: single awk pass instead of 1388 sed subprocesses.
+  # awk emits the first invalid status value it finds (or empty for clean).
+  _r1_bad=$(awk '
+    BEGIN {
+      ok["design_accepted"]=1; ok["implemented_unverified"]=1
+      ok["test_verified"]=1; ok["deferred_w1"]=1; ok["deferred_w2"]=1
+    }
+    /^[[:space:]]*status:[[:space:]]*[A-Za-z_]+[[:space:]]*$/ {
+      val = $0
+      sub(/^[[:space:]]*status:[[:space:]]*/, "", val)
+      sub(/[[:space:]]+$/, "", val)
+      if (!(val in ok)) { print val; exit }
+    }
+  ' "$_status_path")
+  if [[ -n "$_r1_bad" ]]; then
+    fail_rule "status_enum_invalid" "status '$_r1_bad' not in allowed enum {design_accepted,implemented_unverified,test_verified,deferred_w1,deferred_w2} in $_status_path"
+    _r1_fail=1
+  fi
   if [[ $_r1_fail -eq 0 ]]; then pass_rule "status_enum_invalid"; fi
 else
   fail_rule "status_enum_invalid" "$_status_path not found"
@@ -290,9 +299,24 @@ if [[ $_r6_fail -eq 0 ]]; then pass_rule "metric_naming_namespace"; fi
 # ---------------------------------------------------------------------------
 _r7_fail=0
 _status_file='docs/governance/architecture-status.yaml'
-_in_shipped=0
-_current_impl=''
-if [[ -f "$_status_file" ]]; then
+if [[ -n "${_SCAN_SHIPPED_ROWS:-}" ]]; then
+  # Fast path (PR-E3.b): one awk pass over the pre-extracted TSV.
+  # Selects every (capability, impl_path) where the capability is shipped:true.
+  while IFS=$'\t' read -r _r7_cap _r7_path; do
+    [[ -z "$_r7_path" ]] && continue
+    [[ "$_r7_path" == "null" ]] && continue
+    if [[ ! -e "$_r7_path" ]]; then
+      fail_rule "shipped_impl_paths_exist" "shipped: true row '$_r7_cap' references non-existent path: $_r7_path"
+      _r7_fail=1
+    fi
+  done < <(printf '%s\n' "$_SCAN_SHIPPED_ROWS" | awk -F'\t' '
+    $2=="shipped" && $3=="true" { shipped[$1]=1 }
+    $2=="impl" { rows[NR]=$1 "\t" $3 }
+    END { for (k in rows) { split(rows[k], a, "\t"); if (a[1] in shipped) print a[1] "\t" a[2] } }
+  ')
+elif [[ -f "$_status_file" ]]; then
+  # Fallback (cache disabled): original per-line scan.
+  _in_shipped=0
   while IFS= read -r _line; do
     if echo "$_line" | grep -qE '^\s*shipped:\s*true'; then
       _in_shipped=1
@@ -617,58 +641,117 @@ if [[ $_r18_fail -eq 0 ]]; then pass_rule "deleted_spi_starter_names_outside_cat
 # Uses [[:space:]] instead of \s for POSIX portability.
 # ---------------------------------------------------------------------------
 _r19_fail=0
-_current_key19=''
-_in_shipped19=0
-_in_tests_list19=0
-_tests_found19=0
-_tests_has_items19=0
-_current_test_paths19=()
-
-_flush_shipped19() {
-  if [[ $_in_shipped19 -eq 1 ]]; then
-    if [[ $_tests_found19 -eq 0 ]]; then
-      fail_rule "shipped_row_tests_evidence" "$_status_path capability '$_current_key19' shipped:true but tests: key absent. Per ADR-0042 Gate Rule 19 all shipped rows must have non-empty test evidence."
-      _r19_fail=1
-    elif [[ $_tests_has_items19 -eq 0 ]]; then
-      fail_rule "shipped_row_tests_evidence" "$_status_path capability '$_current_key19' shipped:true but tests: is empty. Per ADR-0042 Gate Rule 19 all shipped rows must have non-empty test evidence."
-      _r19_fail=1
+if [[ -n "${_SCAN_SHIPPED_ROWS:-}" ]]; then
+  # Fast path (PR-E3.b): single awk pass over the pre-extracted TSV.
+  # For every shipped:true capability, check tests_marker == "present"
+  # AND tests_count > 0 AND every listed test path exists on disk.
+  # Emit: <capability>\t<status>\t<detail> where status ∈ {missing_key,
+  # empty, path_missing:<path>}.
+  while IFS=$'\t' read -r _r19_cap _r19_status _r19_detail; do
+    [[ -z "$_r19_cap" ]] && continue
+    case "$_r19_status" in
+      missing_key)
+        fail_rule "shipped_row_tests_evidence" "$_status_path capability '$_r19_cap' shipped:true but tests: key absent. Per ADR-0042 Gate Rule 19 all shipped rows must have non-empty test evidence."
+        _r19_fail=1
+        ;;
+      empty)
+        fail_rule "shipped_row_tests_evidence" "$_status_path capability '$_r19_cap' shipped:true but tests: is empty. Per ADR-0042 Gate Rule 19 all shipped rows must have non-empty test evidence."
+        _r19_fail=1
+        ;;
+      path_missing)
+        fail_rule "shipped_row_tests_evidence" "$_status_path capability '$_r19_cap' lists test path '$_r19_detail' not found on disk. Per ADR-0042 Gate Rule 19 all test paths must resolve."
+        _r19_fail=1
+        ;;
+    esac
+  done < <(printf '%s\n' "$_SCAN_SHIPPED_ROWS" | awk -F'\t' '
+    $2=="shipped" && $3=="true" { shipped[$1]=1 }
+    $2=="tests_marker" { marker[$1]=$3 }
+    $2=="tests_count" { tcount[$1]=$3 }
+    $2=="test" {
+      if (!(($1) in tests)) tests[$1] = ""
+      tests[$1] = tests[$1] "\n" $3
+    }
+    END {
+      for (cap in shipped) {
+        if (marker[cap] != "present") {
+          printf "%s\tmissing_key\t\n", cap
+          continue
+        }
+        if ((tcount[cap]+0) == 0) {
+          printf "%s\tempty\t\n", cap
+          continue
+        }
+        # Emit each test path so bash can stat-check it.
+        n = split(tests[cap], paths, "\n")
+        for (i = 1; i <= n; i++) {
+          if (paths[i] != "") print cap "\tcandidate\t" paths[i]
+        }
+      }
+    }
+  ' | while IFS=$'\t' read -r _cap _status _path; do
+    if [[ "$_status" == "candidate" ]]; then
+      if [[ ! -e "$_path" ]]; then
+        printf '%s\tpath_missing\t%s\n' "$_cap" "$_path"
+      fi
     else
-      for _tp19 in "${_current_test_paths19[@]}"; do
-        if [[ ! -e "$_tp19" ]]; then
-          fail_rule "shipped_row_tests_evidence" "$_status_path capability '$_current_key19' lists test path '$_tp19' not found on disk. Per ADR-0042 Gate Rule 19 all test paths must resolve."
-          _r19_fail=1
-        fi
-      done
+      printf '%s\t%s\t%s\n' "$_cap" "$_status" "$_path"
     fi
-  fi
-}
+  done)
+elif [[ -f "$_status_path" ]]; then
+  # Fallback (cache disabled): original per-line scan.
+  _current_key19=''
+  _in_shipped19=0
+  _in_tests_list19=0
+  _tests_found19=0
+  _tests_has_items19=0
+  _current_test_paths19=()
 
-while IFS= read -r _line19 || [[ -n "$_line19" ]]; do
-  if printf '%s\n' "$_line19" | grep -qE '^  [a-zA-Z][a-zA-Z_]+:'; then
-    _flush_shipped19
-    _current_key19=$(printf '%s\n' "$_line19" | sed 's/^  \([a-zA-Z][a-zA-Z_]*\):.*/\1/')
-    _in_shipped19=0; _in_tests_list19=0
-    _tests_found19=0; _tests_has_items19=0; _current_test_paths19=()
-    continue
-  fi
-  if printf '%s\n' "$_line19" | grep -qE '^[[:space:]]+shipped:[[:space:]]+true'; then _in_shipped19=1; fi
-  if [[ $_in_shipped19 -eq 1 ]]; then
-    if printf '%s\n' "$_line19" | grep -qE '^[[:space:]]+tests:[[:space:]]*\[\]'; then
-      _tests_found19=1; _in_tests_list19=0
-    elif printf '%s\n' "$_line19" | grep -qE '^[[:space:]]+tests:[[:space:]]*$'; then
-      _tests_found19=1; _in_tests_list19=1
-    elif printf '%s\n' "$_line19" | grep -qE '^[[:space:]]+tests:'; then
-      _tests_found19=1; _in_tests_list19=0
-    elif [[ $_in_tests_list19 -eq 1 ]] && printf '%s\n' "$_line19" | grep -qE '^[[:space:]]+-[[:space:]]+'; then
-      _tests_has_items19=1
-      _tp19_val=$(printf '%s\n' "$_line19" | sed -E 's/^[[:space:]]+-[[:space:]]+(.*)/\1/')
-      _current_test_paths19+=("$_tp19_val")
-    elif [[ $_in_tests_list19 -eq 1 ]] && ! printf '%s\n' "$_line19" | grep -qE '^[[:space:]]+-'; then
-      _in_tests_list19=0
+  _flush_shipped19() {
+    if [[ $_in_shipped19 -eq 1 ]]; then
+      if [[ $_tests_found19 -eq 0 ]]; then
+        fail_rule "shipped_row_tests_evidence" "$_status_path capability '$_current_key19' shipped:true but tests: key absent. Per ADR-0042 Gate Rule 19 all shipped rows must have non-empty test evidence."
+        _r19_fail=1
+      elif [[ $_tests_has_items19 -eq 0 ]]; then
+        fail_rule "shipped_row_tests_evidence" "$_status_path capability '$_current_key19' shipped:true but tests: is empty. Per ADR-0042 Gate Rule 19 all shipped rows must have non-empty test evidence."
+        _r19_fail=1
+      else
+        for _tp19 in "${_current_test_paths19[@]}"; do
+          if [[ ! -e "$_tp19" ]]; then
+            fail_rule "shipped_row_tests_evidence" "$_status_path capability '$_current_key19' lists test path '$_tp19' not found on disk. Per ADR-0042 Gate Rule 19 all test paths must resolve."
+            _r19_fail=1
+          fi
+        done
+      fi
     fi
-  fi
-done < "$_status_path"
-_flush_shipped19
+  }
+
+  while IFS= read -r _line19 || [[ -n "$_line19" ]]; do
+    if printf '%s\n' "$_line19" | grep -qE '^  [a-zA-Z][a-zA-Z_]+:'; then
+      _flush_shipped19
+      _current_key19=$(printf '%s\n' "$_line19" | sed 's/^  \([a-zA-Z][a-zA-Z_]*\):.*/\1/')
+      _in_shipped19=0; _in_tests_list19=0
+      _tests_found19=0; _tests_has_items19=0; _current_test_paths19=()
+      continue
+    fi
+    if printf '%s\n' "$_line19" | grep -qE '^[[:space:]]+shipped:[[:space:]]+true'; then _in_shipped19=1; fi
+    if [[ $_in_shipped19 -eq 1 ]]; then
+      if printf '%s\n' "$_line19" | grep -qE '^[[:space:]]+tests:[[:space:]]*\[\]'; then
+        _tests_found19=1; _in_tests_list19=0
+      elif printf '%s\n' "$_line19" | grep -qE '^[[:space:]]+tests:[[:space:]]*$'; then
+        _tests_found19=1; _in_tests_list19=1
+      elif printf '%s\n' "$_line19" | grep -qE '^[[:space:]]+tests:'; then
+        _tests_found19=1; _in_tests_list19=0
+      elif [[ $_in_tests_list19 -eq 1 ]] && printf '%s\n' "$_line19" | grep -qE '^[[:space:]]+-[[:space:]]+'; then
+        _tests_has_items19=1
+        _tp19_val=$(printf '%s\n' "$_line19" | sed -E 's/^[[:space:]]+-[[:space:]]+(.*)/\1/')
+        _current_test_paths19+=("$_tp19_val")
+      elif [[ $_in_tests_list19 -eq 1 ]] && ! printf '%s\n' "$_line19" | grep -qE '^[[:space:]]+-'; then
+        _in_tests_list19=0
+      fi
+    fi
+  done < "$_status_path"
+  _flush_shipped19
+fi
 if [[ $_r19_fail -eq 0 ]]; then pass_rule "shipped_row_tests_evidence"; fi
 
 # ---------------------------------------------------------------------------
@@ -769,43 +852,73 @@ if [[ $_r23_fail -eq 0 ]]; then pass_rule "active_doc_internal_links_resolve"; f
 # shipped: true row must resolve to an existing file. Closes REF-DRIFT.
 # ---------------------------------------------------------------------------
 _r24_fail=0
-_current_key24=''
-_in_shipped24=0
-_in_l2_list24=0
-while IFS= read -r _line24 || [[ -n "$_line24" ]]; do
-  if printf '%s\n' "$_line24" | grep -qE '^  [a-zA-Z][a-zA-Z_]+:'; then
-    _current_key24=$(printf '%s\n' "$_line24" | sed 's/^  \([a-zA-Z][a-zA-Z_]*\):.*/\1/')
-    _in_shipped24=0; _in_l2_list24=0
-    continue
-  fi
-  if printf '%s\n' "$_line24" | grep -qE '^[[:space:]]+shipped:[[:space:]]+true'; then _in_shipped24=1; fi
-  if [[ $_in_shipped24 -eq 1 ]]; then
-    # latest_delivery_file
-    if printf '%s\n' "$_line24" | grep -qE '^[[:space:]]+latest_delivery_file:[[:space:]]+'; then
-      _ldf24=$(printf '%s\n' "$_line24" | sed -E 's/^[[:space:]]+latest_delivery_file:[[:space:]]+(.*)/\1/')
-      if [[ -n "$_ldf24" && ! -e "$_ldf24" ]]; then
-        fail_rule "shipped_row_evidence_paths_exist" "$_status_path capability '$_current_key24' latest_delivery_file '$_ldf24' not found on disk. Per ADR-0045 Gate Rule 24 all shipped-row evidence paths must resolve."
-        _r24_fail=1
+if [[ -n "${_SCAN_SHIPPED_ROWS:-}" ]]; then
+  # Fast path (PR-E3.b): one awk pass over the pre-extracted TSV.
+  # Emit (capability, field, path) for every l2_doc + latest_delivery
+  # entry whose capability is shipped:true. Bash then does stat() on each.
+  while IFS=$'\t' read -r _r24_cap _r24_field _r24_path; do
+    [[ -z "$_r24_path" ]] && continue
+    if [[ ! -e "$_r24_path" ]]; then
+      case "$_r24_field" in
+        latest_delivery)
+          fail_rule "shipped_row_evidence_paths_exist" "$_status_path capability '$_r24_cap' latest_delivery_file '$_r24_path' not found on disk. Per ADR-0045 Gate Rule 24 all shipped-row evidence paths must resolve."
+          ;;
+        l2_doc)
+          fail_rule "shipped_row_evidence_paths_exist" "$_status_path capability '$_r24_cap' l2_documents entry '$_r24_path' not found on disk. Per ADR-0045 Gate Rule 24."
+          ;;
+      esac
+      _r24_fail=1
+    fi
+  done < <(printf '%s\n' "$_SCAN_SHIPPED_ROWS" | awk -F'\t' '
+    $2=="shipped" && $3=="true" { shipped[$1]=1 }
+    ($2=="l2_doc" || $2=="latest_delivery") { rows[NR]=$1 "\t" $2 "\t" $3 }
+    END {
+      for (k in rows) {
+        split(rows[k], a, "\t")
+        if (a[1] in shipped) print a[1] "\t" a[2] "\t" a[3]
+      }
+    }
+  ')
+elif [[ -f "$_status_path" ]]; then
+  # Fallback (cache disabled): original per-line scan.
+  _current_key24=''
+  _in_shipped24=0
+  _in_l2_list24=0
+  while IFS= read -r _line24 || [[ -n "$_line24" ]]; do
+    if printf '%s\n' "$_line24" | grep -qE '^  [a-zA-Z][a-zA-Z_]+:'; then
+      _current_key24=$(printf '%s\n' "$_line24" | sed 's/^  \([a-zA-Z][a-zA-Z_]*\):.*/\1/')
+      _in_shipped24=0; _in_l2_list24=0
+      continue
+    fi
+    if printf '%s\n' "$_line24" | grep -qE '^[[:space:]]+shipped:[[:space:]]+true'; then _in_shipped24=1; fi
+    if [[ $_in_shipped24 -eq 1 ]]; then
+      # latest_delivery_file
+      if printf '%s\n' "$_line24" | grep -qE '^[[:space:]]+latest_delivery_file:[[:space:]]+'; then
+        _ldf24=$(printf '%s\n' "$_line24" | sed -E 's/^[[:space:]]+latest_delivery_file:[[:space:]]+(.*)/\1/')
+        if [[ -n "$_ldf24" && ! -e "$_ldf24" ]]; then
+          fail_rule "shipped_row_evidence_paths_exist" "$_status_path capability '$_current_key24' latest_delivery_file '$_ldf24' not found on disk. Per ADR-0045 Gate Rule 24 all shipped-row evidence paths must resolve."
+          _r24_fail=1
+        fi
+      fi
+      # l2_documents list
+      if printf '%s\n' "$_line24" | grep -qE '^[[:space:]]+l2_documents:[[:space:]]*\[\]'; then
+        _in_l2_list24=0
+      elif printf '%s\n' "$_line24" | grep -qE '^[[:space:]]+l2_documents:[[:space:]]*$'; then
+        _in_l2_list24=1
+      elif printf '%s\n' "$_line24" | grep -qE '^[[:space:]]+l2_documents:'; then
+        _in_l2_list24=0
+      elif [[ $_in_l2_list24 -eq 1 ]] && printf '%s\n' "$_line24" | grep -qE '^[[:space:]]+-[[:space:]]+'; then
+        _l2p24=$(printf '%s\n' "$_line24" | sed -E 's/^[[:space:]]+-[[:space:]]+(.*)/\1/')
+        if [[ -n "$_l2p24" && ! -e "$_l2p24" ]]; then
+          fail_rule "shipped_row_evidence_paths_exist" "$_status_path capability '$_current_key24' l2_documents entry '$_l2p24' not found on disk. Per ADR-0045 Gate Rule 24."
+          _r24_fail=1
+        fi
+      elif [[ $_in_l2_list24 -eq 1 ]] && ! printf '%s\n' "$_line24" | grep -qE '^[[:space:]]+-'; then
+        _in_l2_list24=0
       fi
     fi
-    # l2_documents list
-    if printf '%s\n' "$_line24" | grep -qE '^[[:space:]]+l2_documents:[[:space:]]*\[\]'; then
-      _in_l2_list24=0
-    elif printf '%s\n' "$_line24" | grep -qE '^[[:space:]]+l2_documents:[[:space:]]*$'; then
-      _in_l2_list24=1
-    elif printf '%s\n' "$_line24" | grep -qE '^[[:space:]]+l2_documents:'; then
-      _in_l2_list24=0
-    elif [[ $_in_l2_list24 -eq 1 ]] && printf '%s\n' "$_line24" | grep -qE '^[[:space:]]+-[[:space:]]+'; then
-      _l2p24=$(printf '%s\n' "$_line24" | sed -E 's/^[[:space:]]+-[[:space:]]+(.*)/\1/')
-      if [[ -n "$_l2p24" && ! -e "$_l2p24" ]]; then
-        fail_rule "shipped_row_evidence_paths_exist" "$_status_path capability '$_current_key24' l2_documents entry '$_l2p24' not found on disk. Per ADR-0045 Gate Rule 24."
-        _r24_fail=1
-      fi
-    elif [[ $_in_l2_list24 -eq 1 ]] && ! printf '%s\n' "$_line24" | grep -qE '^[[:space:]]+-'; then
-      _in_l2_list24=0
-    fi
-  fi
-done < "$_status_path"
+  done < "$_status_path"
+fi
 if [[ $_r24_fail -eq 0 ]]; then pass_rule "shipped_row_evidence_paths_exist"; fi
 
 # ---------------------------------------------------------------------------

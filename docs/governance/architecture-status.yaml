@@ -1370,9 +1370,11 @@ capabilities:
   claude_md_token_budget:
     status: test_verified
     shipped: true
-    l0_decision: D:/.claude/plans/tokens-token-buzzing-sprout.md
+    # l0_decision lives in the user-local plan file
+    # (~/.claude/plans/tokens-token-buzzing-sprout.md) which is OUT of the repo
+    # tree by design; referenced in prose only so Rules 7/24 — which stat()
+    # in-repo paths — do not falsely fail on Linux/WSL where D:/ does not exist.
     l2_documents:
-      - D:/.claude/plans/tokens-token-buzzing-sprout.md
       - docs/governance/rules/rule-67.md
       - docs/governance/rules/rule-68.md
       - docs/governance/rules/rule-69.md
@@ -1390,9 +1392,9 @@ capabilities:
   gate_config_well_formed:
     status: test_verified
     shipped: true
-    l0_decision: D:/.claude/plans/tokens-token-buzzing-sprout.md
+    # l0_decision lives in the user-local plan file
+    # (~/.claude/plans/tokens-token-buzzing-sprout.md) — OUT of repo tree.
     l2_documents:
-      - D:/.claude/plans/tokens-token-buzzing-sprout.md
       - docs/governance/rules/rule-73.md
     implementation:
       - gate/config.yaml

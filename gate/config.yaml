@@ -36,6 +36,9 @@ scan_cache:
     - active_docs
     - migration_sql
     - agent_java_main
+    - shipped_rows             # TSV from gate/lib/extract_shipped_rows.sh (PR-E3.b)
+                               # — feeds Rules 7/19/24 with pre-parsed architecture-status.yaml,
+                               # cutting per-rule wall-clock from minutes to milliseconds.
 
 regression_detection:
   enabled: true                # Rule 72 active (env: GATE_RULE_72)
